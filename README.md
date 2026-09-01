@@ -45,6 +45,24 @@ A preregistered, sealed experiment (4 Mistral open-weight models × 6 tasks × 3
 
 **Deliberately not claimed:** nothing beyond this panel (four models, six tasks); no reinforcement-learning learnability claim (no policy was trained — that is what the environment is *for*); costs are measured, not adjudicated as practical.
 
+### Sample `vf-eval` runs (raw transcripts included)
+
+Standard `vf-eval` runs on the shipped zero-setup task `bank_recon_001`, with full rollout transcripts committed under [`outputs/evals/`](outputs/evals/):
+
+| Model | Rollouts | Reward | Turns | Submitted |
+|---|---|---|---|---|
+| `nvidia/nemotron-3-ultra-550b-a55b` | 3 | 1.0 / 1.0 / 1.0 | 7–8 | 3/3 |
+| `nvidia/nemotron-3-ultra-550b-a55b` | 1 | 1.0 | 7 | 1/1 |
+
+Reproduce with any OpenAI-compatible endpoint:
+
+```bash
+vf-eval beancount-ledger -m <model> --api-base-url <url> --api-key-var <KEY_VAR> \
+  -n 1 -r 3 --max-tokens 8000 --save-results
+```
+
+For the capability *spread* (small models 0–17%, stronger 58–92%), see the sealed fixed-panel measurement above — a single strong model solving the demo task is expected, not news. (A local `gpt-oss-120b` contrast run scored 0.0 by failing to engage the tool loop at all — model-side empty turns, no environment fault; we kept it out of the committed samples to avoid confusion.)
+
 ### Security and provenance
 - Worlds are keyed (HMAC under the evaluator secret); public ids derive from public bytes only — nothing an agent observes regenerates an answer.
 - The Hub artefact ships **no** goldens, no test suite, no provenance records, no secrets (verified per release: the wheel's file list is audited).
