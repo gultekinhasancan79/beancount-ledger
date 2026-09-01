@@ -1,0 +1,61 @@
+[project]
+name = "beancount-ledger"
+description = "Bank reconciliation and month-end close on a Beancount ledger, scored deterministically"
+tags = ["accounting", "tool-use", "multi-turn", "train", "eval"]
+version = "0.1.0"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+# PINNED EXACTLY, on purpose (Codex T48 §8, T47 answer 7).
+#
+# `episode_contract_digest()` binds the tool schemas the MODEL is shown, and we
+# do not write them: `verifiers` calls `openai-agents`' `function_schema`,
+# which parses our docstrings with `griffelib` and emits the JSON schema
+# through `pydantic`/`pydantic-core`. A minor bump in any of those can change a
+# title, a `required` array, an enum form or a description — the digest moves
+# and not a line of ours changed. `openai` is the client that puts that schema
+# on the wire, `datasets` carries the prompt rows, `beancount` is the loader
+# the scorer's verdict comes from.
+#
+# `beancount_ledger.PINNED_LIBRARIES` names the same set, every rollout carries
+# `state["piv_library_versions"]`, and `tests/test_entrypoints.py` fails when
+# the installed versions differ from these pins — so a bump is loud in exactly
+# one place and silent in none. Bumping means: change the pin, re-run the
+# battery, re-pin `EPISODE_CONTRACT_DIGEST` if it moved, and treat any moved
+# digest as a new measurement condition.
+dependencies = [
+    "verifiers==0.3.1",
+    "openai==3.5.0",
+    "openai-agents==0.22.0",
+    "griffelib==2.2.0",
+    "pydantic==2.13.4",
+    "pydantic-core==2.46.4",
+    "datasets==5.0.1",
+    "beancount==3.2.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# The package became a DIRECTORY when the graph/candidate/canonical split
+# landed; the old `include = ["beancount_ledger.py", ...]` (a single file that
+# no longer exists at the root) built an EMPTY wheel. Ship the package with its
+# runtime data (world/, tasks/) and nothing else: no tests/, no reviews/, no
+# caches — the Hub artefact carries no goldens, no provenance records and no
+# secrets (Codex T52 §6.4; serving security rests on the evaluator secret and
+# the signed manifest, never on code secrecy).
+[tool.hatch.build.targets.wheel]
+packages = ["beancount_ledger"]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
+[tool.hatch.build.targets.sdist]
+include = ["beancount_ledger/**", "pyproject.toml", "README.md", "LICENSE"]
+# `README.md` as an include pattern matches at ANY depth in hatchling, which
+# pulled reviews/README.md into the sdist (caught by the artefact audit).
+# Exclude the evidence and test trees outright: the Hub artefact carries no
+# reviews, no tests, no goldens (Codex T52 §6.4).
+exclude = ["**/__pycache__", "**/*.pyc", "reviews/**", "tests/**", ".venv/**"]
+
+[tool.verifiers.eval]
+num_examples = 5
+rollouts_per_example = 3

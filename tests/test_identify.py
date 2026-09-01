@@ -1,0 +1,1530 @@
+"""Public-only identifiability over the new graph's public bytes.
+
+Four things are proved, and the third is the one that makes the other three
+worth anything.
+
+    the shipped world is identifiable, and the repairs the checker finds are
+    exactly the two planted rows — accepted for the right reason, not by an
+    enumeration that found nothing;
+
+    a variant built by editing the public TEXT only is rejected, and rejected
+    *for the stated reason*: a test asserting `not unique` passes for a parse
+    error, an empty enumeration or an unrelated complaint;
+
+    the checker cannot see hidden identity. Its inputs are strings, it refuses
+    anything else, and the module imports nothing from `schema`, `policy`,
+    `project`, `derive` or `worlds`. That is asserted statically over the
+    module's own source and dynamically over its globals, because a checker
+    holding a recognition id would resolve the join it is supposed to prove a
+    reader can resolve, and would certify every ambiguous world as unique;
+
+    the two mutation kinds that are not omissions — a booked entry carrying
+    the wrong vector, and an entry the books carry twice — are reported as a
+    wrong-amount candidate and a duplicate candidate, each uniquely.
+
+Since the matching rewrite (Codex T41 §3) a second block of fixtures carries
+the weight the generator cannot: the generator draws every statement amount
+distinct and every reference once, so 30/30 green seeds would stay green even
+if the checker leaned on those conveniences. The fixtures below take them
+away — repeated amounts, repeated counterparties, two bank fees in one month,
+a reused invoice reference, a cheque issued last month and cleared in this
+one, an exact reference pointing the wrong way — and each one names which of
+the two verdicts the evidence supports and why.
+
+The public files come from `derive_contract`, so what is checked is the bytes
+the environment actually mounts, not a fixture that resembles them.
+
+    python tests/test_identify.py
+"""
+
+from __future__ import annotations
+
+import ast
+import dataclasses
+import inspect
+import re
+import sys
+from decimal import Decimal as D
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from beancount_ledger.graph import derive as DV  # noqa: E402
+from beancount_ledger.graph import identify as ID  # noqa: E402
+from beancount_ledger.graph import project as PJ  # noqa: E402
+from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
+from repair_keys import master_names, planted_key  # noqa: E402
+
+BANK = "Assets:Bank:Checking"
+START, END = "2025-11-01", "2025-11-30"
+PRIVATE_ID = re.compile(r"\b(rec|mov|event|party|doc|mut):[a-z0-9][a-z0-9\-]*\b")
+STDLIB_ONLY = {"__future__", "csv", "io", "re", "dataclasses", "datetime", "decimal"}
+FORBIDDEN = ("schema", "policy", "project", "derive", "worlds", "canonical", "beancount_ledger")
+
+
+def check(name, ok, detail=""):
+    print(f"{'PASS' if ok else 'FAIL'}  {name}")
+    if not ok and detail:
+        for line in str(detail).splitlines()[:20]:
+            print(f"      {line}")
+    return ok
+
+
+def public_files(plan=None) -> dict:
+    """The bytes the agent is mounted, decoded. Never the bundle."""
+    world, task = REGISTRY["bank_recon_001"]
+    if plan is not None:
+        task = dataclasses.replace(task, plan=plan)
+    _, inputs = DV.derive_contract(world, task)
+    return {name: data.decode("utf-8") for name, data in inputs.public_files}
+
+
+def verdict_of(public: dict):
+    return ID.check_identifiable(public, bank_account=BANK, period_start=START, period_end=END)
+
+
+def key(repair) -> tuple:
+    return (repair.kind, repair.date, repair.amount, repair.account)
+
+
+def kinds(verdict) -> list:
+    return sorted(r.kind for r in verdict.repairs)
+
+
+# --------------------------------------------------------------------------
+# editing the public TEXT, and only the text
+# --------------------------------------------------------------------------
+
+def statement_rows(public: dict) -> list:
+    """The statement's movement rows as `(date, description, reference,
+    debit, credit)`. The opening row is held separately by `restate`."""
+    out = []
+    for line in public[ID.STATEMENT_FILE].splitlines()[1:]:
+        if not line.strip():
+            continue
+        date, description, reference, debit, credit, _balance = line.split(",")
+        if not debit and not credit:
+            continue
+        out.append((date, description, reference, debit, credit))
+    return out
+
+
+def restate(public: dict, rows: list) -> dict:
+    """A statement a bank could have printed: the rows in date order, the
+    balance column walked forward from the opening balance the world already
+    carries. The checker never reads the balance, so a fixture that got it
+    wrong would still be rejected — for arithmetic rather than for the thing
+    the fixture is about."""
+    lines = public[ID.STATEMENT_FILE].splitlines()
+    header, opening = lines[0], lines[1]
+    balance = D(opening.rsplit(",", 1)[1])
+    out = [header, opening]
+    for date, description, reference, debit, credit in sorted(rows, key=lambda r: (r[0], r[1])):
+        balance += (D(credit) if credit else D("0")) - (D(debit) if debit else D("0"))
+        out.append(f"{date},{description},{reference},{debit},{credit},{balance:.2f}")
+    return {**public, ID.STATEMENT_FILE: "\n".join(out) + "\n"}
+
+
+def entry(date: str, payee: str, narration: str, legs: list) -> str:
+    body = "".join(f"  {account:<40s} {amount:>10s} USD\n" for account, amount in legs)
+    return f'{date} * "{payee}" "{narration}"\n{body}'
+
+
+def add_entries(public: dict, *entries: str) -> dict:
+    return {**public, ID.LEDGER_FILE: public[ID.LEDGER_FILE].rstrip("\n") + "\n\n" + "\n".join(entries)}
+
+
+def drop_entry(public: dict, header_prefix: str) -> dict:
+    """Remove one ledger entry — its header line and its postings."""
+    out, skipping = [], False
+    for line in public[ID.LEDGER_FILE].splitlines():
+        if line.startswith(header_prefix):
+            skipping = True
+            continue
+        if skipping and (line.startswith(" ") or not line.strip()):
+            if line.startswith(" "):
+                continue
+        skipping = False
+        out.append(line)
+    return {**public, ID.LEDGER_FILE: "\n".join(out) + "\n"}
+
+
+def bank(amount: str) -> tuple:
+    return (BANK, amount)
+
+
+# --------------------------------------------------------------------------
+
+def test_the_shipped_world_is_identifiable():
+    """Unique, and unique because it found the two planted rows.
+
+    The bank fee is the interesting half: the row names no counterparty at
+    all, so the account can only come from the sentence in `policy.md` that
+    puts bank charges in `Expenses:BankFees`. If the checker could not read
+    that, it would have to reject — and asserting the account here is what
+    stops the attribution rule from degenerating into "call it anything".
+    """
+    verdict = verdict_of(public_files())
+    found = sorted(key(r) for r in verdict.repairs)
+    want = sorted([
+        ("missing_entry", "2025-11-26", D("4800.00"), "Assets:AR"),
+        ("missing_entry", "2025-11-30", D("-85.00"), "Expenses:BankFees"),
+    ])
+    payers = {r.date: r.counterparty for r in verdict.repairs}
+    ok = (verdict.unique and found == want
+          and payers.get("2025-11-26") == "Harbor Freight Ltd" and payers.get("2025-11-30") is None
+          and verdict.matched == 5 and len(verdict.outstanding) == 1
+          and "1038" in verdict.outstanding[0])
+    return check("the shipped world is identifiable and the repairs are exactly the two planted rows",
+                 ok, f"{verdict}\nrepairs: {found}\nwant:    {want}\n"
+                     f"matched {verdict.matched}, outstanding {verdict.outstanding}")
+
+
+def test_the_outstanding_cheque_is_not_reported_as_a_difference():
+    """Check 1038 is in the books and not on the November statement.
+
+    A checker that treats every unmatched ledger movement as an error reports
+    it as a third repair, and the world would fail a gate it should pass. The
+    policy calls it a timing difference; so must this.
+    """
+    verdict = verdict_of(public_files())
+    leaked = [r for r in verdict.repairs if r.date == "2025-11-28" or r.amount == D("-3500.00")]
+    ok = verdict.unique and not leaked and len(verdict.outstanding) == 1
+    return check("the outstanding cheque is an outstanding item, not a repair candidate", ok,
+                 f"repairs: {[str(r) for r in verdict.repairs]}\noutstanding: {verdict.outstanding}")
+
+
+def ambiguous_public() -> dict:
+    """The shipped world, with the public TEXT edited and nothing else.
+
+    The 26 November deposit loses its payer and its invoice reference, and a
+    second deposit of the same amount lands the next day. Both are unrecorded,
+    neither names a customer, and no policy sentence places them: crediting
+    Harbor Freight and crediting Summit Wholesale are two different repaired
+    ledgers, and so are the two dates. The balance column is kept honest so
+    the fixture is a bank statement a bank could have printed — the checker
+    does not read it, and a fixture that only broke arithmetic would be
+    rejected for the wrong reason.
+    """
+    public = dict(public_files())
+    out = []
+    for line in public[ID.STATEMENT_FILE].splitlines():
+        if line.startswith("2025-11-26,"):
+            out.append("2025-11-26,DEPOSIT,,,4800.00,54630.00")
+            out.append("2025-11-27,DEPOSIT,,,4800.00,59430.00")
+        elif line.startswith("2025-11-30,"):
+            out.append("2025-11-30,MONTHLY ACCOUNT SERVICE CHARGE,,85.00,,59345.00")
+        else:
+            out.append(line)
+    public[ID.STATEMENT_FILE] = "\n".join(out) + "\n"
+    return public
+
+
+def test_the_ambiguous_variant_is_rejected_for_the_stated_reason():
+    verdict = verdict_of(ambiguous_public())
+    reason = verdict.reason
+    attribution = reason.count("cannot be attributed from the public files") == 2
+    indistinguishable = "no distinguishing reference" in reason
+    return check("an unattributable pair of identical deposits is rejected, for attribution and for "
+                 "indistinguishability", not verdict.unique and attribution and indistinguishable,
+                 f"{verdict}\nambiguities: {verdict.ambiguities}")
+
+
+def test_a_second_movement_of_one_amount_is_rejected():
+    """The other ambiguity: one row, two ledger entries that are not twins.
+
+    Two entries of −3,500.00 dated 10 November, one to rent and one to a
+    premises deposit, and the single CHECK 1037 row could be either. Not a
+    duplicate — the entries differ in narration and in the account they post
+    to — so reporting it as one is exactly the mistake this case exists to
+    catch. The twin quotes no document number on purpose: since the matching
+    rewrite an entry that names *another* cheque is ruled out by the number
+    rather than left to compete, which is the next test.
+    """
+    public = add_entries(public_files(), entry(
+        "2025-11-10", "Cedar Property Group", "Premises deposit held",
+        [("Assets:Prepayments", "3500.00"), bank("-3500.00")]))
+    verdict = verdict_of(public)
+    stated = "matches 2 different ledger movements" in verdict.reason
+    return check("one statement row that two unlike ledger entries could answer is rejected",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+def test_a_competing_entry_naming_another_cheque_is_not_a_competitor():
+    """The same shape, decided: the twin quotes check 1038, the row is 1037.
+
+    A cheque number is the identity of the instrument. An entry that names a
+    different one is not the other half of this row however well the amount
+    and the date line up, so the pairing is forced and the twin is reported
+    on its own — here as a stranded entry, twenty days from the cut-off.
+    """
+    public = add_entries(public_files(), entry(
+        "2025-11-10", "Cedar Property Group", "December rent prepaid, check 1038",
+        [("Assets:Prepayments", "3500.00"), bank("-3500.00")]))
+    verdict = verdict_of(public)
+    stated = ("neither as an outstanding item" in verdict.reason
+              and "matches 2 different ledger movements" not in verdict.reason)
+    return check("an entry naming another cheque number does not compete for a numbered row",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+def test_the_checker_cannot_see_hidden_identity():
+    """Strings in, and a module that has no route to the graph.
+
+    Static, over the source: every import is absolute and stdlib, so there is
+    no `from .project import Bundle` to read a recognition id from. Dynamic,
+    over the globals: nothing bound in the module comes from this package.
+    And the entry point refuses a non-string value rather than coercing it,
+    because a structured fact list is the shortcut this whole split exists to
+    prevent.
+    """
+    problems = []
+    source = Path(ID.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.level:
+                problems.append(f"relative import of {node.module!r} at line {node.lineno}")
+            elif (node.module or "").split(".")[0] not in STDLIB_ONLY:
+                problems.append(f"imports {node.module!r}")
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] not in STDLIB_ONLY:
+                    problems.append(f"imports {alias.name!r}")
+    for word in FORBIDDEN:
+        if re.search(rf"^\s*(from|import)\s+\S*{word}", source, re.MULTILINE):
+            problems.append(f"an import line mentions {word!r}")
+    foreign = [name for name, value in vars(ID).items()
+               if getattr(value, "__module__", "") .startswith("beancount_ledger")
+               and getattr(value, "__module__", "") != ID.__name__]
+    if foreign:
+        problems.append(f"module globals bound from the package: {foreign}")
+
+    params = inspect.signature(ID.check_identifiable).parameters
+    if list(params) != ["public", "bank_account", "period_start", "period_end", "tie_break"]:
+        problems.append(f"signature is {list(params)}")
+    if params["public"].annotation not in ("dict", "dict[str, str]", dict):
+        problems.append(f"public is annotated {params['public'].annotation!r}")
+
+    public = public_files()
+    for bad, label in ((("a", "tuple", "of", "facts"), "a fact tuple"), (b"bytes", "bytes"), (None, "None")):
+        try:
+            ID.check_identifiable({**public, ID.LEDGER_FILE: bad}, bank_account=BANK,
+                                  period_start=START, period_end=END)
+            problems.append(f"accepted {label} as a view")
+        except ID.PublicOnly:
+            pass
+
+    verdict = verdict_of(public)
+    rendered = " ".join([verdict.reason, *(str(r) for r in verdict.repairs), *verdict.outstanding])
+    leaks = sorted(set(PRIVATE_ID.findall(rendered)))
+    if leaks:
+        problems.append(f"the verdict quotes private id kinds {leaks}")
+    if PRIVATE_ID.search(source):
+        problems.append("the module source names a private id")
+    return check("the checker reads text only: stdlib imports, no package globals, non-text refused, "
+                 "no private id in or out", not problems, "\n".join(problems))
+
+
+ALTER_OFFICE = PJ.AlterRecognition("x", "rec:office-2025-11", "transpose_digits", 0, "?")   # 420.00 -> 240.00
+DUP_RENT = PJ.DuplicateRecognition("y", "rec:rent-2025-11", "?")
+
+
+def test_the_alter_and_duplicate_kinds_are_identified():
+    """A wrong vector and a doubled entry, from the bytes alone.
+
+    The wrong amount is found because a movement of another amount shares the
+    row's date and its counterparty — the pairing demands both, so the fee row
+    two days from the outstanding cheque cannot be mistaken for one. The
+    duplicate is found because two movements are indistinguishable in every
+    field a reader can see and one bank row answers them: BOTH maximum
+    matchings leave one copy over, both call it the same surplus, and a
+    reading that is the same in every matching is a reading.
+    """
+    verdict = verdict_of(public_files(PJ.MutationPlan((ALTER_OFFICE, DUP_RENT))))
+    wrong = [r for r in verdict.repairs if r.kind == "wrong_amount"]
+    duplicate = [r for r in verdict.repairs if r.kind == "duplicate"]
+    ok = (verdict.unique and len(verdict.repairs) == 2 and len(wrong) == 1 and len(duplicate) == 1
+          and key(wrong[0]) == ("wrong_amount", "2025-11-18", D("-420.00"), "Expenses:Office")
+          and wrong[0].booked_amount == D("-240.00")
+          and key(duplicate[0]) == ("duplicate", "2025-11-10", D("-3500.00"), "Expenses:Rent")
+          and duplicate[0].copies == 2
+          and len(verdict.outstanding) == 1)
+    return check("a transposed amount and a doubled entry are one wrong-amount and one duplicate candidate",
+                 ok, f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def test_every_planted_kind_is_seen_together():
+    """All three kinds in one task, which is what a realistic month looks like.
+
+    Two omissions, a wrong amount and a duplicate: four candidates, still one
+    reading each. This is the case that would break a checker whose passes
+    interfere — a wrong-amount pairing that stole the fee row, or a duplicate
+    group that swallowed the outstanding cheque.
+    """
+    world, task = REGISTRY["bank_recon_001"]
+    plan = PJ.MutationPlan(task.plan.mutations + (ALTER_OFFICE, DUP_RENT))
+    verdict = verdict_of(public_files(plan))
+    ok = (verdict.unique and kinds(verdict) == ["duplicate", "missing_entry", "missing_entry", "wrong_amount"]
+          and len(verdict.outstanding) == 1)
+    return check("two omissions, a wrong amount and a duplicate in one period are four unique candidates",
+                 ok, f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def test_the_reference_decides_across_a_clearing_float():
+    """A cheque that floats past the amount-and-date window still matches.
+
+    The design puts cheque numbers in the narration of cheque-settled payments
+    precisely so this holds. Without the reference pass, a nine-day float
+    turns a perfectly ordinary payment into a phantom repair and an equally
+    phantom outstanding item, and a generated world would fail the gate for
+    being realistic.
+    """
+    public = dict(public_files())
+    rows, floated = [], "2025-11-19,CHECK 1037 CEDAR PROPERTY GROUP,1037,3500.00,,42250.00"
+    for line in public[ID.STATEMENT_FILE].splitlines():
+        rows.append(floated if line.startswith("2025-11-10,CHECK 1037") else line)
+    public[ID.STATEMENT_FILE] = "\n".join(rows) + "\n"
+    ledger = public[ID.LEDGER_FILE].replace('"November office rent"', '"November office rent, check 1037"')
+    public[ID.LEDGER_FILE] = ledger
+    verdict = verdict_of(public)
+    ok = verdict.unique and len(verdict.repairs) == 2 and all(r.kind == "missing_entry" for r in verdict.repairs)
+    return check("a quoted cheque number matches the payment across a nine-day clearing float", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def test_a_stranded_ledger_movement_far_from_the_cut_off_is_not_outstanding():
+    """The rule has to be able to fail, or "outstanding" excuses everything.
+
+    The same unmatched entry moved to the fourth of the month is not a timing
+    difference — nothing plausible leaves a payment uncleared for twenty-six
+    days and then reconciles — so it must be reported rather than waved away.
+    """
+    public = dict(public_files())
+    public[ID.LEDGER_FILE] = public[ID.LEDGER_FILE].replace(
+        '2025-11-28 * "Cedar Property Group" "December rent prepaid, check 1038"',
+        '2025-11-04 * "Cedar Property Group" "December rent prepaid, check 1038"')
+    verdict = verdict_of(public)
+    stated = "neither as an outstanding item" in verdict.reason
+    return check("an unmatched ledger movement far from the cut-off is reported, not excused",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+# --------------------------------------------------------------------------
+# the conveniences the generator happens to provide, taken away
+# --------------------------------------------------------------------------
+
+def two_receipts_of_one_amount(reference: str = "", quoted: str = "",
+                               row_description: str = "ACH IN DEPOSIT") -> dict:
+    """Two customer receipts of 2,500.00 in the books, one deposit on the
+    statement. `reference`/`quoted` optionally give the row a reference and
+    put it in one entry's narration; `row_description` is what the bank
+    printed, which is what tells a cheque number from an invoice number."""
+    public = public_files()
+    # Both entries carry the row's own day. The bank processes a transaction
+    # on or after the day it happens (`## Dates`), so a receipt recorded the
+    # day AFTER the deposit could not be that deposit and would not compete
+    # at all — the ambiguity this fixture is about needs two entries the row
+    # could actually be.
+    public = add_entries(
+        public,
+        entry("2025-11-20", "Harbor Freight Ltd", f"Customer payment on account{quoted}",
+              [bank("2500.00"), ("Assets:AR", "-2500.00")]),
+        entry("2025-11-20", "Summit Wholesale", "Customer payment on account",
+              [bank("2500.00"), ("Assets:AR", "-2500.00")]))
+    rows = statement_rows(public) + [("2025-11-20", row_description, reference, "", "2500.00")]
+    return restate(public, rows)
+
+
+def test_two_receipts_of_one_amount_are_not_decidable_by_amount():
+    """Repeated amounts: the convenience the generator provides, removed.
+
+    Two receipts of the same amount, one anonymous deposit. Whichever the
+    bank saw, the other is a deposit in transit — and the two readings name
+    DIFFERENT entries as the one still outstanding, so the repaired
+    reconciliation is not the same document. A checker that took the first
+    tie would call this unique and be wrong.
+    """
+    verdict = verdict_of(two_receipts_of_one_amount())
+    stated = "matches 2 different ledger movements" in verdict.reason
+    return check("two ledger receipts of one amount answering one anonymous deposit are not decidable",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+def test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount():
+    """The same fixture with the invoice number the bank prints — and under
+    the reference ontology (Codex T43 §4) that is NOT enough.
+
+    `SI-1052` is quoted once across the statement, the archive and the bank
+    movements of the ledger, so it was decisive until IDENTIFY_VERSION 7. It
+    is an invoice id: it says which receivable the money applies to, and one
+    receivable can be settled by several receipts, a refund and a deposit in
+    transit. Both entries are 2,500.00 on the row's own day, so
+    `## Matching the statement to the ledger` forces a settlement and is
+    equally satisfied by either; `## Customer receipts` applies the deposit
+    against SI-1052 and says nothing about which of two cash records the bank
+    credited. Nothing public separates the two readings — they leave DIFFERENT
+    receipts in transit — so the verdict is ambiguous.
+
+    This is a deliberate contract change, not a regression: the previous
+    expectation was that a globally unique invoice number decides a pairing,
+    which is the class of claim Codex refused.
+    """
+    verdict = verdict_of(two_receipts_of_one_amount("SI-1052", ", settling SI-1052"))
+    stated = "matches 2 different ledger movements" in verdict.reason
+    ok = not verdict.unique and stated and verdict.readings == 2
+    return check("an invoice id quoted once still does not decide between two same-amount receipts: it "
+                 "names the receivable, not the payment", ok, f"{verdict}")
+
+
+def test_a_cheque_number_does_decide_between_two_receipts_of_one_amount():
+    """The other half of the ontology, on the identical fixture.
+
+    Swap the invoice number for a cheque number the bank prints as a cheque
+    row (`CHECK 4210 ...`, reference `4210`) and one entry quotes it. A cheque
+    number is an INSTRUMENT: it names one cash movement, so a globally unique
+    one decides both halves — the row is answered by that entry, and that
+    entry is not free to answer anything else. One reading, the two planted
+    repairs, and the unreferenced receipt is a deposit in transit.
+
+    The only difference between this and the test above is the ROLE of the
+    reference. That is the whole point of typing them.
+    """
+    public = two_receipts_of_one_amount("4210", ", check 4210", "CHECK 4210 HARBOR FREIGHT LTD")
+    verdict = verdict_of(public)
+    rows = ID.statement_rows(public[ID.STATEMENT_FILE], period_start=START, period_end=END)[0]
+    row = next(r for r in rows if r.reference == "4210")
+    facts = ID._evidence(public, BANK, START, END).facts_by_row[row.index]
+    ok = (verdict.unique and kinds(verdict) == ["missing_entry", "missing_entry"]
+          and any("2500.00" in item for item in verdict.outstanding)
+          and facts.ref_role == ID.REF_INSTRUMENT and facts.decisive)
+    return check("a cheque number quoted once DOES decide between the same two receipts: an instrument "
+                 "names one cash movement", ok,
+                 f"{verdict}\nrole={facts.ref_role} decisive={facts.decisive}\noutstanding: {verdict.outstanding}")
+
+
+def two_partial_receipts_on_one_invoice(instrument: bool = False) -> dict:
+    """Codex T43 §4's fixture. One sales invoice, two PART payments of the
+    same amount, one of them still in transit, and a bank row for that amount.
+
+    The books carry 1,500.00 received on 20 November and 1,500.00 received on
+    22 November, both `Part payment received on SI-1044`. The bank credits
+    1,500.00 on 23 November — inside the ACH window of both, and on or after
+    both, so `## Dates` rules out neither. Both are inside the outstanding
+    window and more than `ALTER_WINDOW_DAYS` from the shipped statement's own
+    26 November SI-1044 row, so the only question the fixture asks is which of
+    the two the 23 November credit is. The shipped statement already carries
+    that second SI-1044 row (the planted 4,800.00 omission), so the invoice id
+    is quoted twice on the documents side as well.
+
+    `instrument=True` gives each receipt its own cheque number and prints the
+    row as a cheque row, which is the same topology with an identifying
+    reference instead of an applying one.
+    """
+    first = ", check 4210" if instrument else ""
+    second = ", check 4211" if instrument else ""
+    public = add_entries(
+        public_files(),
+        entry("2025-11-20", "Harbor Freight Ltd", f"Part payment received on SI-1044{first}",
+              [bank("1500.00"), ("Assets:AR", "-1500.00")]),
+        entry("2025-11-22", "Harbor Freight Ltd", f"Part payment received on SI-1044{second}",
+              [bank("1500.00"), ("Assets:AR", "-1500.00")]))
+    row = (("2025-11-23", "CHECK 4210 HARBOR FREIGHT LTD", "4210", "", "1500.00") if instrument
+           else ("2025-11-23", "ACH IN HARBOR FREIGHT LTD", "SI-1044", "", "1500.00"))
+    return restate(public, statement_rows(public) + [row])
+
+
+def test_two_partial_receipts_on_one_invoice_are_not_decided_by_the_invoice():
+    """The strict verdict: AMBIGUOUS, and no other public rule decides it.
+
+    Which rules were asked, and what each of them says:
+
+    `## Matching the statement to the ledger` — a row and an entry of the same
+    amount and the same counterparty inside the clearing window are one
+    transaction. Both entries satisfy it exactly and equally, so it forces the
+    row to be settled by ONE of them and does not say which.
+
+    `## Customer receipts` — where the deposit reference identifies a sales
+    invoice, it is applied against that invoice. Both entries are already
+    applied against SI-1044, so the sentence is satisfied by both readings.
+
+    `## Dates` — the bank processes on or after the day it happens. Both
+    entries are dated before the row, so neither is excluded.
+
+    `## Deposits in transit` — whichever entry is not the row's is cash the
+    statement has not yet shown, which both readings say of the other one.
+
+    The two readings therefore differ only in WHICH receipt is still in
+    transit, which is a different reconciliation, and the invoice id — the
+    one thing that would separate them — names the receivable rather than the
+    payment. Ambiguous is the answer, and `mint` refuses a world of this shape.
+    """
+    verdict = verdict_of(two_partial_receipts_on_one_invoice())
+    stated = "matches 2 different ledger movements" in verdict.reason
+    differ = "maximum readings whose repairs differ" in verdict.reason
+    ok = not verdict.unique and stated and differ and verdict.readings == 2
+    return check("two partial receipts against one invoice, one in transit: the shared invoice id does not "
+                 "choose, and no other public rule does either", ok, f"{verdict}")
+
+
+def test_the_same_two_receipts_are_decided_by_their_cheque_numbers():
+    """The same topology with instruments: 4210 clears, 4211 is outstanding.
+
+    Each receipt names its own cheque, the bank prints 4210, and 4211 appears
+    nowhere on the statement. The instrument decides the pairing and the
+    conflict rule keeps the 4211 entry out of it, so there is one reading:
+    nothing extra is missing and the second receipt is a timing difference.
+    """
+    verdict = verdict_of(two_partial_receipts_on_one_invoice(instrument=True))
+    ok = (verdict.unique and kinds(verdict) == ["missing_entry", "missing_entry"]
+          and any("4211" in item for item in verdict.outstanding)
+          and not any("4210" in item for item in verdict.outstanding))
+    return check("the same two receipts, each naming its own cheque: the instrument decides and the "
+                 "unpresented one is outstanding", ok, f"{verdict}\noutstanding: {verdict.outstanding}")
+
+
+def test_the_reference_ontology_classifies_every_shape_the_worlds_publish():
+    """The ontology as a table, asserted rather than described.
+
+    An invoice or purchase-invoice code is a DOCUMENT whatever text carries
+    it; a number introduced by the word check is an INSTRUMENT and the same
+    number without it is UNKNOWN; text with no reference-shaped token at all
+    is MEMO. A bank trace id is classified as an instrument so that a world
+    which starts printing one gets the instrument rules rather than the
+    unknown ones.
+    """
+    cases = [
+        ("SI-1044", "ACH IN HARBOR FREIGHT LTD SI-1044", ID.REF_DOCUMENT),
+        ("PI-2240", "Payment of purchase invoice PI-2240", ID.REF_DOCUMENT),
+        ("si 1044", "settling si 1044", ID.REF_DOCUMENT),
+        ("1037", "CHECK 1037 CEDAR PROPERTY GROUP", ID.REF_INSTRUMENT),
+        ("1037", "November office rent, check 1037", ID.REF_INSTRUMENT),
+        ("1037", "Deposit slip 1037", ID.REF_UNKNOWN),
+        ("TRACE0284471", "ACH IN TRACE0284471", ID.REF_INSTRUMENT),
+        ("BX-99", "Batch BX-99", ID.REF_UNKNOWN),
+        ("", "Office supplies", ID.REF_MEMO),
+    ]
+    problems = [f"{token!r} in {text!r}: {ID.reference_role(token, text)} != {want}"
+                for token, text, want in cases if ID.reference_role(token, text) != want]
+    if set(ID.REFERENCE_ROLES) != {ID.REF_INSTRUMENT, ID.REF_DOCUMENT, ID.REF_MEMO, ID.REF_UNKNOWN}:
+        problems.append(f"the declared role set is {ID.REFERENCE_ROLES}")
+    return check("every reference shape the worlds publish classifies to its declared role",
+                 not problems, "\n".join(problems))
+
+
+def test_an_invoice_id_alone_never_founds_an_alteration_edge():
+    """Codex T43 §4's class, at the edge level rather than the verdict level.
+
+    A row and an entry that quote one invoice, differ in amount, and share
+    NOTHING else — no counterparty on the row, no fee class — must not be
+    joined by an alteration edge, because the invoice id is the only thing
+    tying them together and it does not claim they are one cash movement.
+    Give the row the counterparty as well and the edge appears, on the
+    counterparty's narrow window rather than the reference's wide one.
+    """
+    base = add_entries(public_files(), entry(
+        "2025-11-21", "Harbor Freight Ltd", "Part payment received on SI-1051",
+        [bank("2200.00"), ("Assets:AR", "-2200.00")]))
+
+    def alter_edges(public):
+        ev = ID._evidence(public, BANK, START, END)
+        edges = ID._build_edges(ev.rows, ev.movements, ev.facts_by_row, parties=ev.parties,
+                                fee_account=ev.fee_account)
+        rows = {r.index: r for r in ev.rows}
+        return [(e.basis, ID.ALTER_WINDOW_DAYS) for e in edges
+                if e.kind == "alter" and rows[e.row].reference == "SI-1051"]
+
+    anonymous = restate(base, statement_rows(base) + [("2025-11-22", "ACH IN DEPOSIT", "SI-1051", "", "2350.00")])
+    named = restate(base, statement_rows(base) + [("2025-11-22", "ACH IN HARBOR FREIGHT LTD", "SI-1051", "", "2350.00")])
+    problems = []
+    if alter_edges(anonymous):
+        problems.append(f"an invoice id alone founded an alteration edge: {alter_edges(anonymous)}")
+    named_edges = alter_edges(named)
+    if [b for b, _ in named_edges] != ["counterparty"]:
+        problems.append(f"with the counterparty named the edge is {named_edges}, not one counterparty edge")
+    return check("an invoice id alone never founds an alteration edge; with the counterparty it does, on the "
+                 "counterparty's window", not problems, "\n".join(problems))
+
+
+def test_a_repeated_counterparty_does_not_decide_a_wrong_amount():
+    """Repeated counterparties: two card payments to one vendor, one row.
+
+    Neither entry equals the row, both are dated on or before it and share
+    its payee and its week, so either could be the one that was keyed wrong.
+    The counterparty is not an identifier — it is the vendor's whole month —
+    and a wrong-amount pairing that leans on it alone has to say so.
+
+    Both entries also sit inside the outstanding window, which puts a THIRD
+    reading on the table since IDENTIFY_VERSION 5: the row is a card payment
+    the books never recorded and both entries are card payments in transit.
+    That reading explains the whole month exactly as well as the two
+    accusations do, and nothing public prefers the cheaper story, so the
+    verdict names both kinds of disagreement.
+    """
+    public = drop_entry(public_files(), '2025-11-18 * "Office Depot"')
+    public = add_entries(
+        public,
+        entry("2025-11-27", "Office Depot", "Printer paper",
+              [("Expenses:Office", "300.00"), bank("-300.00")]),
+        entry("2025-11-28", "Office Depot", "Desk supplies",
+              [("Expenses:Office", "310.00"), bank("-310.00")]))
+    rows = [r for r in statement_rows(public) if not r[0].startswith("2025-11-18")]
+    rows.append(("2025-11-28", "DEBIT CARD OFFICE DEPOT", "", "305.00", ""))
+    verdict = verdict_of(restate(public, rows))
+    stated = ("matches 2 different ledger movements" in verdict.reason
+              and "3 maximum readings" in verdict.reason)
+    return check("two same-party entries of unlike amounts around one row are not decidable by the "
+                 "counterparty", not verdict.unique and stated, f"{verdict}")
+
+
+def two_bank_fees(booked_second: str, second_row_date: str = "2025-11-14") -> dict:
+    """A month with two bank charges: a wire fee mid-month and the monthly
+    service charge, with the second one booked at `booked_second`."""
+    public = add_entries(
+        public_files(),
+        entry(second_row_date, "Cascade Bank", "Wire transfer fee",
+              [("Expenses:BankFees", "30.00"), bank("-30.00")]),
+        entry("2025-11-30", "Cascade Bank", "Monthly account service charge",
+              [("Expenses:BankFees", booked_second), bank(f"-{booked_second}")]))
+    rows = statement_rows(public) + [(second_row_date, "WIRE TRANSFER FEE", "", "30.00", "")]
+    return restate(public, rows)
+
+
+def test_two_bank_fees_attribute_by_class_not_by_position():
+    """Two fees in one month, one of them altered.
+
+    The policy sentence names an ACCOUNT — `Expenses:BankFees` — not a row.
+    So the wire fee settles against the entry that matches it and the service
+    charge is paired with the entry of the wrong amount that shares its day;
+    a checker that read the policy as "the first fee row" would pair the wire
+    fee with the service charge entry and report the wrong difference.
+    """
+    verdict = verdict_of(two_bank_fees("50.00"))
+    wrong = [r for r in verdict.repairs if r.kind == "wrong_amount"]
+    ok = (verdict.unique and len(wrong) == 1 and wrong[0].date == "2025-11-30"
+          and wrong[0].amount == D("-85.00") and wrong[0].booked_amount == D("-50.00")
+          and wrong[0].account == "Expenses:BankFees"
+          and not any(r.amount == D("-30.00") for r in verdict.repairs))
+    return check("two bank fees in one month: the policy identifies the account class and the altered "
+                 "charge is the one the amounts single out", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def test_two_fee_rows_around_one_fee_entry_are_not_decidable():
+    """The same policy rule, where it must refuse.
+
+    One fee entry, two fee rows within the bank's own dating window. The
+    policy places the entry in the fee class; it does not say which of the
+    two charges the class member was, and the two readings differ in both
+    the amount that was mis-keyed and the amount that was never booked.
+    """
+    public = add_entries(public_files(), entry(
+        "2025-11-29", "Cascade Bank", "Monthly account service charge",
+        [("Expenses:BankFees", "70.00"), bank("-70.00")]))
+    rows = statement_rows(public) + [("2025-11-29", "ACCOUNT MAINTENANCE CHARGE", "", "60.00", "")]
+    verdict = verdict_of(restate(public, rows))
+    stated = "matches 2 different ledger movements" in verdict.reason or "maximum readings" in verdict.reason
+    return check("two bank-fee rows competing for one fee entry are reported, not attributed by position",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+def two_altered_fees(same_wording: bool, same_day: bool) -> dict:
+    """Two bank charges close together, BOTH booked at the wrong figure.
+
+    The bank prints each charge's name; the books carry each entry under its
+    own name and day. When the names differ (or the names agree but the days
+    differ), the evidence pairs each row with its own entry; when names and
+    days both agree the two readings are indistinguishable.
+    """
+    first_day, second_day = "2025-11-24", ("2025-11-24" if same_day else "2025-11-26")
+    first_words, second_words = "Wire transfer fee", ("Wire transfer fee" if same_wording else "ACH origination fee")
+    public = add_entries(
+        public_files(),
+        entry(first_day, "Cascade Bank", first_words, [("Expenses:BankFees", "5.75"), bank("-5.75")]),
+        entry(second_day, "Cascade Bank", second_words, [("Expenses:BankFees", "27.55"), bank("-27.55")]))
+    rows = statement_rows(public) + [(first_day, first_words.upper(), "", "15.75", ""),
+                                     (second_day, second_words.upper(), "", "25.75", "")]
+    return restate(public, rows)
+
+
+def test_two_altered_fees_are_ambiguous_under_public_constraints():
+    """The sweep's fee-swap class (train:153, train:135:hard, train:280:hard;
+    train:319:hard under the test secret): two fee rows within three days, one
+    or both mis-keyed. Both pairings cost one alteration each and no public
+    text promises that a mis-keyed entry keeps its day and wording, so under
+    the public constraints alone the verdict is AMBIGUOUS (two readings) —
+    and `mint` refuses such a world (Codex T42 §5). The verdict carries the
+    diagnostic ranking the prior would give, labelled as such."""
+    verdict = verdict_of(two_altered_fees(same_wording=False, same_day=False))
+    ranked = [a for a in verdict.ambiguities if a.startswith("diagnostic ranking")]
+    ok = (not verdict.unique and verdict.readings == 2 and len(ranked) == 1
+          and "-15.75" in ranked[0] and "-25.75" in ranked[0])
+    return check("two altered fees within three days: ambiguous under public constraints, with the prior's "
+                 "ranking reported as diagnostic only", ok, f"{verdict}")
+
+
+def test_the_day_and_wording_prior_ranks_the_fee_pairing_when_asked():
+    """`tie_break=True`: the declared reconciliation prior — an altered entry
+    that carries its row's own day AND wording is the one accused. Diagnostic
+    only; never the production verdict. Different wording, or one wording
+    on different days, both rank; one wording on one day cannot."""
+    a = ID.check_identifiable(two_altered_fees(same_wording=False, same_day=False), bank_account=BANK,
+                              period_start=START, period_end=END, tie_break=True)
+    b = ID.check_identifiable(two_altered_fees(same_wording=True, same_day=False), bank_account=BANK,
+                              period_start=START, period_end=END, tie_break=True)
+    want = [("2025-11-24", D("-15.75"), D("-5.75")), ("2025-11-26", D("-25.75"), D("-27.55"))]
+    wrong_a = sorted((r.date, r.amount, r.booked_amount) for r in a.repairs if r.kind == "wrong_amount")
+    wrong_b = sorted((r.date, r.amount, r.booked_amount) for r in b.repairs if r.kind == "wrong_amount")
+    ok = a.unique and wrong_a == want and b.unique and wrong_b == want
+    return check("the day-and-wording prior, when asked for, ranks each altered fee against its own-named entry",
+                 ok, f"{a}\n{b}")
+
+
+def test_two_altered_fees_of_one_wording_on_one_day_are_not_decidable():
+    """Where even the prior has nothing to hold: same wording, same day, both
+    mis-keyed. Which entry was which charge is not in the public evidence,
+    and the two readings differ in what they accuse — with or without the
+    prior."""
+    verdict = ID.check_identifiable(two_altered_fees(same_wording=True, same_day=True), bank_account=BANK,
+                                    period_start=START, period_end=END, tie_break=True)
+    stated = "maximum readings" in verdict.reason or "matches 2 different ledger movements" in verdict.reason
+    return check("two altered fees of one wording on one day stay ambiguous", not verdict.unique and stated, f"{verdict}")
+
+
+def reused_reference(second_reference: str) -> dict:
+    """One invoice settled by two receipts of 2,400.00, only one booked."""
+    public = add_entries(public_files(), entry(
+        "2025-11-24", "Harbor Freight Ltd", "Customer payment settling SI-1044",
+        [bank("2400.00"), ("Assets:AR", "-2400.00")]))
+    rows = [r for r in statement_rows(public) if not r[0].startswith("2025-11-26")]
+    rows.append(("2025-11-24", "ACH IN HARBOR FREIGHT LTD", "SI-1044", "", "2400.00"))
+    rows.append(("2025-11-26", "ACH IN HARBOR FREIGHT LTD", second_reference, "", "2400.00"))
+    return restate(public, rows)
+
+
+def test_a_reused_reference_falls_back_and_stays_ambiguous():
+    """One invoice, two receipts, one of them missing from the books.
+
+    `SI-1044` is now quoted by two statement rows, so it identifies the
+    invoice and not the payment: reference dominance must switch itself off
+    and the pairing falls back to the amount, which the two rows share. Both
+    readings book one receipt and leave the other; they disagree about which
+    date the missing one carries.
+    """
+    verdict = verdict_of(reused_reference("SI-1044"))
+    stated = ("maximum readings whose repairs differ" in verdict.reason
+              and "2025-11-24" in verdict.reason and "2025-11-26" in verdict.reason)
+    ok = not verdict.unique and stated and verdict.readings > 1
+    return check("a reference quoted by two statement rows decides nothing and the pairing stays "
+                 "ambiguous", ok, f"{verdict}\nambiguities: {verdict.ambiguities}")
+
+
+def test_distinct_references_on_two_equal_receipts_decide():
+    """The same two rows, each naming its own invoice.
+
+    Now `SI-1044` is quoted once and `SI-1045` once, the booked receipt names
+    `SI-1044`, and the second row is the only unrecorded one. One reading.
+    """
+    verdict = verdict_of(reused_reference("SI-1045"))
+    missing = [r for r in verdict.repairs if r.amount == D("2400.00")]
+    ok = (verdict.unique and len(missing) == 1 and missing[0].date == "2025-11-26"
+          and missing[0].kind == "missing_entry" and missing[0].account == "Assets:AR")
+    return check("two same-amount rows carrying their own invoice numbers are decided by the references",
+                 ok, f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def cross_period_cheque(issued: str) -> dict:
+    """A cheque issued on `issued` and cleared on 3 November."""
+    public = add_entries(public_files(), entry(
+        issued, "Cedar Property Group", "October premises rent, check 1034",
+        [("Expenses:Rent", "3100.00"), bank("-3100.00")]))
+    rows = statement_rows(public) + [("2025-11-03", "CHECK 1034 CEDAR PROPERTY GROUP", "1034", "3100.00", "")]
+    return restate(public, rows)
+
+
+def test_a_cheque_issued_last_month_clears_in_this_one():
+    """Cross-period clearing, which the policy describes from the other side.
+
+    October's outstanding cheque is November's cleared row. The entry is
+    dated before the period and is still the other half of the row: pairing
+    it is not optional, because refusing would invent a missing entry for
+    money the books already spent. It is never itself a repair candidate —
+    it belongs to a reconciliation nobody mounted.
+    """
+    verdict = verdict_of(cross_period_cheque("2025-10-29"))
+    ok = (verdict.unique and kinds(verdict) == ["missing_entry", "missing_entry"]
+          and not any(r.amount == D("-3100.00") for r in verdict.repairs)
+          and verdict.matched == 6)
+    return check("a cheque issued in October and cleared in November pairs across the cut-off", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\nmatched {verdict.matched}")
+
+
+def test_an_entry_far_outside_the_period_is_not_carry_forward():
+    """The carry-forward window has to be able to fail.
+
+    The same cheque dated in August is not last month's outstanding item; no
+    statement in the mounted files covers it, and the November row it would
+    have answered becomes a difference the checker has to report.
+    """
+    verdict = verdict_of(cross_period_cheque("2025-08-15"))
+    stated = "dated outside" in verdict.reason
+    return check("an entry months before the period is reported, not adopted as carry-forward",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+def test_an_exact_reference_does_not_override_an_impossible_direction():
+    """A refund quoting the invoice the deposit settles.
+
+    `SI-1044` is quoted once on the statement and once in the books, so the
+    reference is decisive — and it still must not pair, because the bank saw
+    money arrive and the entry sends money out. An exact reference is
+    evidence about WHICH document, never about which way the money went.
+    """
+    public = add_entries(public_files(), entry(
+        "2025-11-26", "Harbor Freight Ltd", "Refund issued against SI-1044",
+        [("Assets:AR", "4800.00"), bank("-4800.00")]))
+    verdict = verdict_of(public)
+    missing = [r for r in verdict.repairs if r.amount == D("4800.00")]
+    ok = (verdict.unique and not any(r.kind == "wrong_amount" for r in verdict.repairs)
+          and len(missing) == 1 and missing[0].kind == "missing_entry"
+          and any("4800.00" in item for item in verdict.outstanding))
+    return check("an exact reference does not pair a credit row with a debit entry", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\n"
+                 f"outstanding: {verdict.outstanding}")
+
+
+def paired_receipts(rows_wanted: int) -> dict:
+    """Two indistinguishable receipts in the books and `rows_wanted` rows of
+    the same amount on the statement."""
+    public = public_files()
+    for date in ("2025-11-20", "2025-11-20"):
+        public = add_entries(public, entry(date, "Ridgeline Retail", "Customer payment on account",
+                                           [bank("1750.00"), ("Assets:AR", "-1750.00")]))
+    rows = statement_rows(public)
+    for date in ("2025-11-20", "2025-11-21")[:rows_wanted]:
+        rows.append((date, "ACH IN RIDGELINE RETAIL", "", "", "1750.00"))
+    return restate(public, rows)
+
+
+def test_two_matchings_with_one_repair_multiset_are_unique():
+    """Two maximum matchings, one reading: the case the rewrite exists for.
+
+    Two identical receipts, two rows of that amount. Swapping which row
+    answers which entry is a different MATCHING and the same reconciliation —
+    nothing is missing, nothing is outstanding, no repair changes. A checker
+    that rejected on multiplicity alone would fail a world that is perfectly
+    determined; the test is whether the readings AGREE, not whether there is
+    only one of them.
+    """
+    verdict = verdict_of(paired_receipts(2))
+    ok = (verdict.unique and kinds(verdict) == ["missing_entry", "missing_entry"]
+          and not any(r.amount == D("1750.00") for r in verdict.repairs))
+    return check("two maximum matchings that mean the same reconciliation are one reading", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def test_two_matchings_with_different_repair_multisets_are_ambiguous():
+    """The same evidence with one row removed: now the readings disagree.
+
+    One row, two identical receipts — and because the entries are twins in
+    every field a reader can see, one of them is a copy the books should not
+    carry. That reading is the same whichever twin is consumed, so this is
+    still unique; what makes the pair below ambiguous is the row, not the
+    entries. Asserted here as the duplicate it is.
+    """
+    verdict = verdict_of(paired_receipts(1))
+    duplicate = [r for r in verdict.repairs if r.kind == "duplicate"]
+    ok = (verdict.unique and len(duplicate) == 1 and duplicate[0].amount == D("1750.00")
+          and duplicate[0].copies == 2)
+    return check("one row and two indistinguishable entries are a duplicate, identically in every "
+                 "matching", ok, f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}")
+
+
+def test_two_unlike_rows_of_one_amount_with_one_entry_disagree():
+    """The disagreeing half: two rows a day apart, one receipt in the books.
+
+    The entry answers either row. The two readings name different dates for
+    the entry that has to be written, which is a different set of books —
+    ambiguous, and for a reason that has nothing to do with iteration order.
+    """
+    public = public_files()
+    public = add_entries(public, entry("2025-11-20", "Ridgeline Retail", "Customer payment on account",
+                                       [bank("1750.00"), ("Assets:AR", "-1750.00")]))
+    rows = statement_rows(public)
+    rows.append(("2025-11-20", "ACH IN RIDGELINE RETAIL", "", "", "1750.00"))
+    rows.append(("2025-11-21", "ACH IN RIDGELINE RETAIL", "", "", "1750.00"))
+    verdict = verdict_of(restate(public, rows))
+    ok = (not verdict.unique and verdict.readings == 2
+          and "maximum readings whose repairs differ" in verdict.reason
+          and "2025-11-20" in verdict.reason and "2025-11-21" in verdict.reason)
+    return check("two same-amount rows and one entry are two readings that disagree", ok, f"{verdict}")
+
+# --------------------------------------------------------------------------
+# IDENTIFY_VERSION 5: the readings cardinality and cheapness used to erase
+# --------------------------------------------------------------------------
+
+def duplicated_fee_twin() -> dict:
+    """A duplicated bank charge, and another charge the books never carried.
+
+    The month has two bank-initiated rows: a 20 November charge of 32.60
+    that no entry answers, and a 23 November charge of 18.50 whose entry the
+    books carry TWICE. The two rows are three days apart, which is inside
+    the window a bank's own dating slack allows.
+    """
+    public = add_entries(
+        public_files(),
+        entry("2025-11-23", "Cascade Bank", "Wire transfer fee",
+              [("Expenses:BankFees", "18.50"), bank("-18.50")]),
+        entry("2025-11-23", "Cascade Bank", "Wire transfer fee",
+              [("Expenses:BankFees", "18.50"), bank("-18.50")]))
+    rows = statement_rows(public) + [("2025-11-20", "CHECK PRINTING FEE", "", "32.60", ""),
+                                     ("2025-11-23", "WIRE TRANSFER FEE", "", "18.50", "")]
+    return restate(public, rows)
+
+
+def test_a_duplicated_fee_twin_beside_a_missing_fee_row_is_ambiguous():
+    """The train:184 class, which cardinality used to hide (Codex T42 Q4).
+
+    Two readings explain this month completely:
+
+        the 32.60 row is a charge the books never recorded, and the second
+        copy of the 18.50 entry is a duplicate that must go;
+
+        the 32.60 row IS one of the two 18.50 entries, mis-keyed, and the
+        23 November row settles the other one.
+
+    Until version 5 only the second was ever enumerated: it pairs one more
+    row, and maximum cardinality was applied before anyone compared the
+    accounting. Both readings now stand, they disagree about which entry the
+    books should end up carrying, and the verdict is ambiguous — which is
+    also why `mint` refuses to ship a world of this shape.
+    """
+    verdict = verdict_of(duplicated_fee_twin())
+    named = " ".join(verdict.ambiguities)
+    both = "duplicate" in named and "missing_entry" in named and "wrong_amount" in named
+    ok = not verdict.unique and verdict.readings == 2 and both
+    return check("a duplicated fee twin beside a missing fee row is two readings, not one: the duplicate "
+                 "reading is enumerated even though it pairs one row fewer", ok,
+                 f"{verdict}\nambiguities: {verdict.ambiguities}")
+
+
+def test_a_check_printing_fee_is_a_bank_charge_and_not_a_cheque():
+    """`CHECK PRINTING FEE` is a fee for printing checks.
+
+    The rail decides the window: a cheque floats for twelve days, a charge
+    the bank levies itself is dated by the bank and slips by three. Reading
+    the instrument word first gave this row the whole cheque float to find a
+    partner in — which is the other half of the train:184 defect — so the
+    bank-initiated class is decided FIRST. Asserted where it bites: the
+    duplicated 18.50 twin twelve days away is out of reach of the 32.60 row
+    as a cheque would not be.
+    """
+    public = duplicated_fee_twin()
+    rows = ID.statement_rows(public[ID.STATEMENT_FILE], period_start=START, period_end=END)[0]
+    printing = next(r for r in rows if "PRINTING" in r.description)
+    cheque = next(r for r in rows if "CHECK 1037" in r.description)
+    facts = {r.index: ID._row_facts(r, parties=ID._parties(public), chart=ID._chart(public),
+                                    fee_account="Expenses:BankFees", documents={}, ledger={}, precedents={})
+             for r in (printing, cheque)}
+    ok = (facts[printing.index].fee and facts[printing.index].rail == "bank"
+          and ID.RAIL_WINDOW_DAYS["bank"] == ID.BANK_INITIATED_WINDOW_DAYS
+          and not facts[cheque.index].fee and facts[cheque.index].rail == "cheque"
+          and ID.RAIL_WINDOW_DAYS["cheque"] > ID.RAIL_WINDOW_DAYS["bank"])
+    return check("a bank-initiated row is classified before its wording is read for a rail, so CHECK PRINTING "
+                 "FEE gets the bank's three days and a real cheque row still gets twelve", ok,
+                 f"printing {facts[printing.index]}\ncheque {facts[cheque.index]}")
+
+
+def deposit_in_transit_quoting_the_missing_receipt() -> dict:
+    """The train:715 class: a missing deposit and a later one on one invoice.
+
+    The bank credits 1,855.51 on 25 November quoting SI-1044 and the books
+    record nothing. On 29 November the books record a PART payment of
+    4,329.51 against the same invoice, which the bank has not seen yet.
+    """
+    public = add_entries(public_files(), entry(
+        "2025-11-29", "Harbor Freight Ltd", "Part payment received on SI-1044",
+        [bank("4329.51"), ("Assets:AR", "-4329.51")]))
+    rows = statement_rows(public) + [("2025-11-25", "ACH IN HARBOR FREIGHT LTD", "SI-1044", "", "1855.51")]
+    return restate(public, rows)
+
+
+def test_a_deposit_in_transit_is_not_the_wrong_amount_for_an_earlier_row():
+    """Time direction: the bank processes on or after the day it happens.
+
+    Both entries quote SI-1044, so a checker that let reference dominance
+    force a pairing read the 29 November entry as the 25 November row keyed
+    wrong — a difference of 2,474.00 out of nowhere. The bank credited the
+    money on the 25th; an entry dated the 29th cannot be what it credited.
+    `## Dates` says so, so there is no edge at all: the row is a receipt the
+    books never recorded and the entry is a deposit in transit.
+    """
+    verdict = verdict_of(deposit_in_transit_quoting_the_missing_receipt())
+    missing = [r for r in verdict.repairs if r.amount == D("1855.51")]
+    ok = (verdict.unique and not any(r.kind == "wrong_amount" for r in verdict.repairs)
+          and len(missing) == 1 and missing[0].kind == "missing_entry"
+          and missing[0].date == "2025-11-25" and missing[0].account == "Assets:AR"
+          and missing[0].counterparty == "Harbor Freight Ltd"
+          and any("4329.51" in item for item in verdict.outstanding))
+    return check("a later entry quoting the same invoice is a deposit in transit, never the earlier row's "
+                 "wrong amount", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\n"
+                 f"outstanding: {verdict.outstanding}")
+
+
+def dominated_settlement() -> dict:
+    """One receipt in the books, two rows that could want it.
+
+    The books record 2,500.00 from Harbor Freight on 20 November settling
+    SI-1052. The bank shows an unreferenced credit of exactly 2,500.00 that
+    same day — the settlement — and a SECOND credit of 2,450.00 two days
+    later that quotes SI-1052, which the books never recorded.
+    """
+    public = add_entries(public_files(), entry(
+        "2025-11-20", "Harbor Freight Ltd", "Customer payment settling SI-1052",
+        [bank("2500.00"), ("Assets:AR", "-2500.00")]))
+    rows = statement_rows(public) + [("2025-11-20", "ACH IN HARBOR FREIGHT LTD", "", "", "2500.00"),
+                                     ("2025-11-22", "ACH IN HARBOR FREIGHT LTD", "SI-1052", "", "2450.00")]
+    return restate(public, rows)
+
+
+def test_reference_dominance_never_removes_a_settlement():
+    """A reference may force an alteration; it may not empty a settlement.
+
+    `SI-1052` is quoted once on the statement and once in the books, so it is
+    decisive, and it points the 2,450.00 row at the entry — as an ALTERATION,
+    because the amounts differ. Dominance used to clear that entry's diary for
+    the pairing it had just won: the exact, same-day, same-party 2,500.00
+    settlement was deleted as a competitor, the entry was then accused of
+    being 50.00 out, and the 2,500.00 the bank really did credit was reported
+    as money the books never saw. The settlement is the identity
+    `## Matching the statement to the ledger` declares and the reference is
+    weaker evidence than an exact amount with the same counterparty on the
+    same day, so it survives — and the 2,450.00 row is simply unrecorded.
+    """
+    verdict = verdict_of(dominated_settlement())
+    kept = not any(r.amount == D("2500.00") for r in verdict.repairs)
+    missing = [r for r in verdict.repairs if r.amount == D("2450.00")]
+    ok = (verdict.unique and kept and len(missing) == 1 and missing[0].kind == "missing_entry"
+          and missing[0].date == "2025-11-22" and missing[0].account == "Assets:AR"
+          and not any(r.kind == "wrong_amount" for r in verdict.repairs))
+    return check("a reference-based pairing never prunes the equal-amount settlement of the entry it names",
+                 ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\nmatched {verdict.matched}")
+
+
+# --------------------------------------------------------------------------
+# IDENTIFY_VERSION 7: `## Payments to suppliers` is the public rule, and
+# this month's entries corroborate it (the verifier's follow-up B)
+# --------------------------------------------------------------------------
+
+def unrecorded_supplier_payment(precedent: str = "") -> dict:
+    """A supplier payment the books never recorded, with NO other payment to
+    that supplier in the month.
+
+    November's only other money-out row to Northwind Supplies is dropped
+    (entry and statement row alike), so nothing in this month's ledger says
+    how a payment to Northwind is posted. `vendors.csv` gives Northwind
+    `Assets:Inventory`, which is where its GOODS land — the ledger's
+    21 November purchase entry shows exactly that — and reading the master
+    file as if it named the payment account posts the same money to stock
+    twice. Only `## Payments to suppliers` can attribute this row.
+
+    `precedent` optionally re-adds a money-out entry to Northwind booked to
+    that account, which is the ledger contradicting the rule.
+    """
+    public = drop_entry(public_files(), '2025-11-04 * "Northwind Supplies"')
+    if precedent:
+        public = add_entries(public, entry(
+            "2025-11-12", "Northwind Supplies", "Payment of purchase invoice PI-2211",
+            [(precedent, "6200.00"), bank("-6200.00")]))
+    rows = [r for r in statement_rows(public) if not r[0].startswith("2025-11-04")]
+    if precedent:
+        rows.append(("2025-11-12", "ACH OUT NORTHWIND SUPPLIES", "PI-2211", "6200.00", ""))
+    rows.append(("2025-11-24", "ACH OUT NORTHWIND SUPPLIES", "PI-2240", "5100.00", ""))
+    return restate(public, rows)
+
+
+def test_a_supplier_payment_is_attributed_by_the_policy_not_by_default_account():
+    """The row is posted to the payables account, on the policy's authority.
+
+    `vendors.csv` books Northwind's purchases to `Assets:Inventory`;
+    `accounts.csv` types that account as an asset; `## Payments to suppliers`
+    says the payable was therefore raised when the goods arrived and the cash
+    settles it in `Liabilities:AP`. No entry in this month's books says so —
+    the precedent has been removed — and the answer is still `Liabilities:AP`,
+    which is the whole point of making it a published rule rather than an
+    inference. The repair's `authority` quotes the section by name.
+    """
+    verdict = verdict_of(unrecorded_supplier_payment())
+    payment = [r for r in verdict.repairs if r.amount == D("-5100.00")]
+    ok = (verdict.unique and len(payment) == 1 and payment[0].kind == "missing_entry"
+          and payment[0].account == "Liabilities:AP"
+          and payment[0].counterparty == "Northwind Supplies"
+          and "## Payments to suppliers" in payment[0].authority
+          and "Assets:Inventory" in payment[0].authority)
+    return check("a supplier payment with no precedent is posted to the payables account the policy names, "
+                 "not to the master file's default_account", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\n"
+                 f"authority: {[r.authority for r in verdict.repairs]}")
+
+
+def test_the_supplier_payment_key_is_the_planted_key_literally():
+    """The literal tuple, both sides, for the case follow-up B was about.
+
+    Pinned as a value rather than as an equality between two functions: if
+    `repair_key` and `planted_key` both drifted the same way, an
+    equality-only test would still pass (Codex T43 Q3).
+    """
+    world, base = REGISTRY["bank_recon_001"]
+    plan = PJ.MutationPlan((PJ.OmitRecognition("unrecorded_supplier_payment", "rec:pi-2211-payment",
+                                               "the statement row names the supplier and the invoice"),))
+    _, inputs = DV.derive_contract(world, dataclasses.replace(base, plan=plan))
+    public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+    verdict = verdict_of(public)
+    want = ("missing_entry", "2025-11-04",
+            (("Assets:Bank:Checking", "-6200.00"), ("Liabilities:AP", "6200.00")),
+            "Northwind Supplies", None, 1)
+    planted = [planted_key(p, master_names(public), bank_account=BANK) for p in inputs.planted]
+    found = [ID.repair_key(r) for r in verdict.repairs]
+    ok = verdict.unique and planted == [want] and found == [want]
+    return check("an omitted supplier payment keys to the literal tuple on both sides", ok,
+                 f"want    {want}\nplanted {planted}\nchecker {found}")
+
+
+def test_a_ledger_that_contradicts_the_policy_is_a_refusal():
+    """Corroboration that fails. The books post money out to Northwind to
+    `Assets:Inventory`, which is what the policy says a payment is NOT. Rule
+    and ledger cannot both be right about the unrecorded row, so it is
+    refused rather than resolved in either direction — and the refusal names
+    both readings.
+    """
+    verdict = verdict_of(unrecorded_supplier_payment(precedent="Assets:Inventory"))
+    stated = ("the rule and the books disagree" in verdict.reason
+              and "## Payments to suppliers" in verdict.reason
+              and "Assets:Inventory" in verdict.reason)
+    return check("a ledger that books a supplier payment against the policy's rule is a refusal, not a guess",
+                 not verdict.unique and stated, f"{verdict}")
+
+
+def test_an_expense_supplier_payment_is_the_expense_by_the_same_rule():
+    """The other branch of the one section, with the precedent removed too.
+
+    Office Depot's purchases are booked to `Expenses:Office`, which
+    `accounts.csv` types as an expense, so no payable was raised and the
+    payment IS the expense. The account happens to equal `default_account`
+    here — which is exactly why the rule has to be stated: the two coincide
+    for an expense supplier and diverge for a stock supplier, and only the
+    section says which case a row is in.
+    """
+    public = drop_entry(public_files(), '2025-11-18 * "Office Depot"')
+    rows = [r for r in statement_rows(public) if not r[0].startswith("2025-11-18")]
+    rows.append(("2025-11-19", "DEBIT CARD OFFICE DEPOT", "", "305.00", ""))
+    verdict = verdict_of(restate(public, rows))
+    card = [r for r in verdict.repairs if r.amount == D("-305.00")]
+    ok = (verdict.unique and len(card) == 1 and card[0].account == "Expenses:Office"
+          and "## Payments to suppliers" in card[0].authority
+          and "expense" in card[0].authority)
+    return check("a payment to a supplier whose purchases are an expense posts to that expense account, on "
+                 "the same section's authority", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\n"
+                 f"authority: {[r.authority for r in verdict.repairs]}")
+
+
+def test_the_policy_section_is_in_every_world_the_environment_ships():
+    """The contract sentence itself: identical in the template and in the
+    hand-authored world, naming exactly one chart account, and required by
+    `check_content`. A generated world and Alpine must not disagree about a
+    rule the checker reads."""
+    from beancount_ledger.graph import content as C
+    from beancount_ledger.graph.policy import POLICY_SECTIONS
+    from beancount_ledger.graph.worlds import alpine_2025_11 as A
+
+    def section(text: str) -> str:
+        lines = text.splitlines()
+        at = lines.index(ID.SUPPLIER_PAYMENT_SECTION)
+        body = []
+        for line in lines[at + 1:]:
+            if line.startswith("## "):
+                break
+            body.append(line)
+        return "\n".join(body).strip()
+
+    problems = []
+    template = section(C.POLICY_TEMPLATE)
+    if template != section(A.POLICY_TEXT):
+        problems.append("the template and Alpine do not share the section")
+    if ID.SUPPLIER_PAYMENT_SECTION not in C.POLICY_TEMPLATE or ID.SUPPLIER_PAYMENT_SECTION not in A.POLICY_TEXT:
+        problems.append("a world is missing the section")
+    if POLICY_SECTIONS.get("vendor_payment") != ID.SUPPLIER_PAYMENT_SECTION:
+        problems.append(f"the vendor_payment rule cites {POLICY_SECTIONS.get('vendor_payment')!r}")
+    if POLICY_SECTIONS.get("expense_payment") != ID.SUPPLIER_PAYMENT_SECTION:
+        problems.append(f"the expense_payment rule cites {POLICY_SECTIONS.get('expense_payment')!r}")
+    # `check_content` must require it, so a future edit that drops it fails here
+    stripped = C.POLICY_TEMPLATE.replace(ID.SUPPLIER_PAYMENT_SECTION + "\n", "")
+    saved, C.POLICY_TEMPLATE = C.POLICY_TEMPLATE, stripped
+    try:
+        if not any("Payments to suppliers" in p for p in C.check_content()):
+            problems.append("check_content does not require the section")
+    finally:
+        C.POLICY_TEMPLATE = saved
+    public = public_files()
+    chart = set(ID._chart(public))
+    named = ID._policy_account(public[ID.POLICY_FILE], ID.SUPPLIER_PAYMENT_SECTION, chart)
+    if named != "Liabilities:AP":
+        problems.append(f"the section names {named!r}, not one payables account")
+    return check("the supplier-payment section is identical in the template and in Alpine, is required by "
+                 "check_content, is cited by the two money-out rules, and names one chart account",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# currency and annotations: refused at the parse boundary (Codex T43 §2, Q2)
+# --------------------------------------------------------------------------
+
+def test_costs_prices_and_a_second_currency_never_reach_the_scorer():
+    """Why `repair_key` omits currency: it is an ENFORCED INVARIANT.
+
+    Three refusals, asserted at the boundary rather than asserted in a
+    comment. A posting carrying a cost lot, a posting carrying an `@` price,
+    and a posting denominated in something other than the declared operating
+    currency are each a `ProtocolFailure` with a named code, so no such
+    posting can be allocated, resolved or scored. A document declaring two
+    operating currencies is refused as well. Every posting the scorer can
+    ever compare is therefore in the one operating currency, and a currency
+    component of the key would be a constant on both sides.
+    """
+    from beancount_ledger.candidate.mapping import POSTING_FIELDS, Disposition
+    from beancount_ledger.candidate.normalise import ProtocolFailure, parse_once
+
+    header = ('option "title" "T"\noption "operating_currency" "USD"\n'
+              "2025-01-01 open Assets:Bank:Checking USD\n"
+              "2025-01-01 open Assets:Inventory USD\n"
+              "2025-01-01 open Expenses:Office USD\n\n")
+    cases = {
+        "cost": header + ('2025-11-18 * "X" "Y"\n  Assets:Inventory   10 WIDGET {42.00 USD}\n'
+                          "  Assets:Bank:Checking  -420.00 USD\n"),
+        "price": header + ('2025-11-18 * "X" "Y"\n  Assets:Inventory   10 WIDGET @ 42.00 USD\n'
+                           "  Assets:Bank:Checking  -420.00 USD\n"),
+        "currency": header + ('2025-11-18 * "X" "Y"\n  Expenses:Office   420.00 EUR\n'
+                              "  Assets:Bank:Checking  -420.00 USD\n"),
+        "two_currencies": ('option "title" "T"\noption "operating_currency" "USD"\n'
+                           'option "operating_currency" "EUR"\n'
+                           "2025-01-01 open Assets:Bank:Checking USD\n"),
+    }
+    want = {"cost": "posting.cost", "price": "posting.price",
+            "currency": "posting.units.currency", "two_currencies": "option.operating_currency"}
+    problems = []
+    for label, text in cases.items():
+        result = parse_once(text)
+        if not isinstance(result, ProtocolFailure):
+            problems.append(f"{label}: accepted, not refused ({type(result).__name__})")
+        elif not result.reason.startswith(want[label]):
+            problems.append(f"{label}: refused as {result.reason!r}, not {want[label]}*")
+    for field in ("cost", "price"):
+        if POSTING_FIELDS[field].disposition is not Disposition.REJECTED:
+            problems.append(f"Posting.{field} is classified {POSTING_FIELDS[field].disposition}")
+    # and the key is documented as omitting currency FOR THIS REASON
+    if "ENFORCED INVARIANT" not in (ID.repair_key.__doc__ or ""):
+        problems.append("repair_key does not document why currency is absent")
+    return check("cost lots, prices, a foreign posting currency and a second operating currency are all "
+                 "refused at the parse boundary, which is why the repair key omits currency",
+                 not problems, "\n".join(problems))
+
+
+def test_both_key_implementations_match_literal_tuples_per_kind():
+    """Codex T43 Q3: literal pins, one fixture per planted kind.
+
+    `identify.repair_key` and `derive.planted_key` are separate
+    implementations, and this compares each of them to a WRITTEN-OUT tuple
+    rather than to the other, so a common-mode change to both is a failure
+    here instead of a silent agreement.
+    """
+    world, base = REGISTRY["bank_recon_001"]
+    fixtures = {
+        "omit": (base.plan, [
+            ("missing_entry", "2025-11-26",
+             (("Assets:AR", "-4800.00"), ("Assets:Bank:Checking", "4800.00")), "Harbor Freight Ltd", None, 1),
+            ("missing_entry", "2025-11-30",
+             (("Assets:Bank:Checking", "-85.00"), ("Expenses:BankFees", "85.00")), None, None, 1),
+        ]),
+        "alter": (PJ.MutationPlan((ALTER_OFFICE,)), [
+            ("wrong_amount", "2025-11-18",
+             (("Assets:Bank:Checking", "-420.00"), ("Expenses:Office", "420.00")), "Office Depot", "-240.00", 1),
+        ]),
+        "duplicate": (PJ.MutationPlan((DUP_RENT,)), [
+            ("duplicate", "2025-11-10",
+             (("Assets:Bank:Checking", "-3500.00"), ("Expenses:Rent", "3500.00")), "Cedar Property Group", None, 1),
+        ]),
+    }
+    problems = []
+    for kind, (plan, want) in fixtures.items():
+        _, inputs = DV.derive_contract(world, dataclasses.replace(base, plan=plan))
+        public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+        verdict = verdict_of(public)
+        names = master_names(public)
+        planted = sorted(planted_key(p, names, bank_account=BANK) for p in inputs.planted)
+        found = sorted(ID.repair_key(r) for r in verdict.repairs)
+        if planted != sorted(want):
+            problems.append(f"{kind}: planted_key {planted} != pinned {sorted(want)}")
+        if not verdict.unique or found != sorted(want):
+            problems.append(f"{kind}: repair_key {found} != pinned {sorted(want)} (unique={verdict.unique})")
+        for tuple_ in planted + found:
+            if any("USD" in str(part) for part in tuple_):
+                problems.append(f"{kind}: a currency reached the key: {tuple_}")
+    return check("repair_key and planted_key each equal the literal pinned tuple for omit, alter and "
+                 "duplicate, and neither carries a currency", not problems, "\n".join(problems))
+
+
+def test_an_omitted_item_is_repaired_on_the_bank_s_date_and_the_keys_agree():
+    """Contract change B, end to end on the shipped world.
+
+    The planted omissions carry the date the statement shows, the checker
+    reads that same date off the row, and the two projections of a repair —
+    `identify.repair_key` over what the checker inferred and `planted_key`
+    over what the graph planted — are equal tuple for tuple. That is the
+    whole claim the sweep's old `(kind, signed amount)` comparison could not
+    make: same kind, same date, same postings, same counterparty, same
+    multiplicity.
+    """
+    world, task = REGISTRY["bank_recon_001"]
+    bundle, inputs = DV.derive_contract(world, task)
+    public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+    verdict = verdict_of(public)
+    names = master_names(public)
+    want = sorted(planted_key(p, names, bank_account=BANK) for p in inputs.planted)
+    got = sorted(ID.repair_key(r) for r in verdict.repairs)
+    statement_dates = {line.split(",")[0] for line in public[ID.STATEMENT_FILE].splitlines()[1:]}
+    on_bank_date = all(p.date in statement_dates for p in inputs.planted if p.kind == "omit")
+    ok = verdict.unique and want == got and on_bank_date
+    return check("an omitted item's repair date is the bank's date, and planted_key == repair_key on the "
+                 "shipped world's planted items", ok,
+                 f"planted: {want}\nchecker: {got}\nomissions on a statement date: {on_bank_date}")
+
+
+def test_a_cheque_the_statement_shows_is_never_also_in_transit():
+    """The verifier's post-dated-cheque case (D1). An entry for check 1055
+    dated AFTER the row that shows check 1055 clearing: the time-direction
+    rule severs the edge, so row and entry fall into different components.
+    A component-scoped 'presented' set then read the row as a missing entry
+    AND the entry as a deposit in transit — a unique verdict that books one
+    cheque twice. Presentation is world-wide: a row nothing can answer is
+    missing in every reading, and an entry naming its cheque is not in
+    transit. The verdict must not be a confident double booking."""
+    public = add_entries(public_files(), entry(
+        "2025-11-25", "Office Depot", "Office supplies, check 1055",
+        [("Expenses:Office", "640.00"), bank("-640.00")]))
+    rows = statement_rows(public) + [("2025-11-20", "CHECK 1055 OFFICE DEPOT", "1055", "640.00", "")]
+    verdict = verdict_of(restate(public, rows))
+    double = (any(r.kind == "missing_entry" and r.amount == D("-640.00") for r in verdict.repairs)
+              and any("1055" in o for o in verdict.outstanding))
+    ok = not (verdict.unique and double)
+    return check("a cheque the statement shows is never also reported in transit: the post-dated entry is not a "
+                 "confident double booking", ok,
+                 f"{verdict}\nrepairs: {[str(r) for r in verdict.repairs]}\noutstanding: {verdict.outstanding}")
+
+
+def test_a_conflicting_invoice_id_prunes_the_settlement_but_never_the_alteration():
+    """The second verifier's repro. An entry `Part payment received on
+    SI-1097` (+2200) and a bank row two days later for +2350 naming the same
+    customer: with no reference, or an unrecognised one, the world has two
+    readings (the row missing + the entry in transit, or the entry mis-keyed).
+    Adding the invoice id `SI-1098` to the row — a DOCUMENT conflict with
+    the entry's `SI-1097` — must not turn those two readings into one: a
+    document says which receivable the money applies to, not which cash
+    movement this is, so it prunes a settlement of equal amount but never
+    the alteration that stands on the counterparty. A ROW naming an
+    INSTRUMENT (a cheque number) that the entry contradicts prunes both."""
+    problems = []
+    base = add_entries(public_files(), entry(
+        "2025-11-21", "Harbor Freight Ltd", "Part payment received on SI-1097",
+        [("Assets:AR", "-2200.00"), bank("2200.00")]))
+    readings = {}
+    for label, reference in (("none", ""), ("unknown", "XX-1098"), ("invoice", "SI-1098")):
+        rows = statement_rows(base) + [("2025-11-22", "ACH IN HARBOR FREIGHT LTD", reference, "", "2350.00")]
+        verdict = verdict_of(restate(base, rows))
+        readings[label] = (verdict.unique, verdict.readings)
+    if readings["none"][0] or readings["unknown"][0]:
+        problems.append(f"the reference-free / unknown-reference rows should be ambiguous: {readings}")
+    if readings["invoice"] != readings["none"]:
+        problems.append(f"an invoice id changed the verdict: {readings}")
+    # the same amount and a conflicting invoice id: the settlement is pruned (row missing, entry not its match)
+    rows = statement_rows(base) + [("2025-11-22", "ACH IN HARBOR FREIGHT LTD", "SI-1098", "", "2200.00")]
+    same = verdict_of(restate(base, rows))
+    settled_anyway = same.unique and not any(r.amount == D("2200.00") for r in same.repairs)
+    if settled_anyway:
+        problems.append("a row naming SI-1098 was settled by an entry naming SI-1097")
+    # a cheque number on the row that the entry contradicts prunes the alteration too
+    cheque = add_entries(public_files(), entry(
+        "2025-11-21", "Harbor Freight Ltd", "Part payment received, check 4277",
+        [("Assets:AR", "-2200.00"), bank("2200.00")]))
+    rows = statement_rows(cheque) + [("2025-11-22", "CHECK 4278 HARBOR FREIGHT LTD", "4278", "", "2350.00")]
+    instrument = verdict_of(restate(cheque, rows))
+    if any(r.kind == "wrong_amount" and r.amount == D("2350.00") for r in instrument.repairs):
+        problems.append("a row naming check 4278 was read as a mis-keyed check 4277")
+    return check("a conflicting invoice id prunes an equal-amount settlement but never the counterparty-based "
+                 "alteration (two readings stay two); a conflicting cheque number prunes both",
+                 not problems, f"{readings}\n" + "\n".join(problems))
+
+
+TESTS = [
+    test_a_conflicting_invoice_id_prunes_the_settlement_but_never_the_alteration,
+    test_a_cheque_the_statement_shows_is_never_also_in_transit,
+    test_the_shipped_world_is_identifiable,
+    test_the_outstanding_cheque_is_not_reported_as_a_difference,
+    test_the_ambiguous_variant_is_rejected_for_the_stated_reason,
+    test_a_second_movement_of_one_amount_is_rejected,
+    test_a_competing_entry_naming_another_cheque_is_not_a_competitor,
+    test_the_checker_cannot_see_hidden_identity,
+    test_the_alter_and_duplicate_kinds_are_identified,
+    test_every_planted_kind_is_seen_together,
+    test_the_reference_decides_across_a_clearing_float,
+    test_a_stranded_ledger_movement_far_from_the_cut_off_is_not_outstanding,
+    test_two_receipts_of_one_amount_are_not_decidable_by_amount,
+    test_the_reference_ontology_classifies_every_shape_the_worlds_publish,
+    test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount,
+    test_a_cheque_number_does_decide_between_two_receipts_of_one_amount,
+    test_two_partial_receipts_on_one_invoice_are_not_decided_by_the_invoice,
+    test_the_same_two_receipts_are_decided_by_their_cheque_numbers,
+    test_an_invoice_id_alone_never_founds_an_alteration_edge,
+    test_a_repeated_counterparty_does_not_decide_a_wrong_amount,
+    test_two_bank_fees_attribute_by_class_not_by_position,
+    test_two_fee_rows_around_one_fee_entry_are_not_decidable,
+    test_two_altered_fees_are_ambiguous_under_public_constraints,
+    test_the_day_and_wording_prior_ranks_the_fee_pairing_when_asked,
+    test_two_altered_fees_of_one_wording_on_one_day_are_not_decidable,
+    test_a_reused_reference_falls_back_and_stays_ambiguous,
+    test_distinct_references_on_two_equal_receipts_decide,
+    test_a_cheque_issued_last_month_clears_in_this_one,
+    test_an_entry_far_outside_the_period_is_not_carry_forward,
+    test_an_exact_reference_does_not_override_an_impossible_direction,
+    test_two_matchings_with_one_repair_multiset_are_unique,
+    test_two_matchings_with_different_repair_multisets_are_ambiguous,
+    test_two_unlike_rows_of_one_amount_with_one_entry_disagree,
+    test_a_duplicated_fee_twin_beside_a_missing_fee_row_is_ambiguous,
+    test_a_check_printing_fee_is_a_bank_charge_and_not_a_cheque,
+    test_a_deposit_in_transit_is_not_the_wrong_amount_for_an_earlier_row,
+    test_reference_dominance_never_removes_a_settlement,
+    test_an_omitted_item_is_repaired_on_the_bank_s_date_and_the_keys_agree,
+    test_the_policy_section_is_in_every_world_the_environment_ships,
+    test_a_supplier_payment_is_attributed_by_the_policy_not_by_default_account,
+    test_the_supplier_payment_key_is_the_planted_key_literally,
+    test_a_ledger_that_contradicts_the_policy_is_a_refusal,
+    test_an_expense_supplier_payment_is_the_expense_by_the_same_rule,
+    test_costs_prices_and_a_second_currency_never_reach_the_scorer,
+    test_both_key_implementations_match_literal_tuples_per_kind,
+]
+
+
+def run() -> int:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    results = [t() for t in TESTS]
+    failed = results.count(False)
+    print(f"\n{len(results) - failed} passed, {failed} failed")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(run())

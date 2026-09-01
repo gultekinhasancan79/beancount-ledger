@@ -1,0 +1,79 @@
+option "title" "Alpine Trading Co. - FY2025"
+option "operating_currency" "USD"
+
+; Chart of accounts
+2025-01-01 open Assets:Bank:Checking          USD
+2025-01-01 open Assets:AR                     USD
+2025-01-01 open Assets:Inventory              USD
+2025-01-01 open Assets:Prepayments            USD
+2025-01-01 open Liabilities:AP                USD
+2025-01-01 open Liabilities:SalesTax-Payable  USD
+2025-01-01 open Income:Sales                  USD
+2025-01-01 open Expenses:COGS                 USD
+2025-01-01 open Expenses:Office               USD
+2025-01-01 open Expenses:Rent                 USD
+2025-01-01 open Expenses:BankFees             USD
+2025-01-01 open Equity:Opening                USD
+
+; Opening balances as of 2025-11-01
+2025-11-01 * "Opening balance" "Carried forward from October close"
+  Assets:Bank:Checking                     42150.00 USD
+  Assets:AR                                18400.00 USD
+  Assets:Inventory                         26000.00 USD
+  Liabilities:AP                          -11300.00 USD
+  Equity:Opening                          -75250.00 USD
+
+; ---------------------------------------------------------------------------
+; November 2025 activity
+; ---------------------------------------------------------------------------
+
+2025-11-04 * "Northwind Supplies" "Payment of purchase invoice PI-2211"
+  Liabilities:AP                            6200.00 USD
+  Assets:Bank:Checking                     -6200.00 USD
+
+2025-11-06 * "Harbor Freight Ltd" "Customer payment for SI-1043"
+  Assets:Bank:Checking                      9800.00 USD
+  Assets:AR                                -9800.00 USD
+
+2025-11-07 * "Harbor Freight Ltd" "Sale SI-1044"
+  Assets:AR                                 4800.00 USD
+  Income:Sales                             -4000.00 USD
+  Liabilities:SalesTax-Payable              -800.00 USD
+
+2025-11-07 * "Harbor Freight Ltd" "Cost of goods sold on SI-1044"
+  Expenses:COGS                             2600.00 USD
+  Assets:Inventory                         -2600.00 USD
+
+2025-11-10 * "Cedar Property Group" "November office rent"
+  Expenses:Rent                             3500.00 USD
+  Assets:Bank:Checking                     -3500.00 USD
+
+2025-11-13 * "Summit Wholesale" "Sale SI-1051"
+  Assets:AR                                14400.00 USD
+  Income:Sales                            -12000.00 USD
+  Liabilities:SalesTax-Payable            -2400.00 USD
+
+2025-11-13 * "Summit Wholesale" "Cost of goods sold on SI-1051"
+  Expenses:COGS                             7800.00 USD
+  Assets:Inventory                         -7800.00 USD
+
+2025-11-18 * "Office Depot" "Stationery and printer supplies"
+  Expenses:Office                            420.00 USD
+  Assets:Bank:Checking                      -420.00 USD
+
+2025-11-21 * "Northwind Supplies" "Purchase invoice PI-2240 received"
+  Assets:Inventory                          5100.00 USD
+  Liabilities:AP                           -5100.00 USD
+
+2025-11-25 * "Summit Wholesale" "Partial payment against SI-1051"
+  Assets:Bank:Checking                      8000.00 USD
+  Assets:AR                                -8000.00 USD
+
+
+2025-11-26 * "Harbor Freight Ltd" "Customer payment settling SI-1044"
+  Assets:Bank:Checking                      4800.00 USD
+  Assets:AR                                -4800.00 USD
+
+2025-11-30 * "Cascade Bank" "Monthly account service charge"
+  Expenses:BankFees                           85.00 USD
+  Assets:Bank:Checking                       -85.00 USD

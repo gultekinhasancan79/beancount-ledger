@@ -1,0 +1,172 @@
+option "title" "Saltmarsh Supply Co. - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-05-01 * "Vasquez Trading" "Invoice SI-1436 raised"
+  Assets:AR                                     1502.41 USD
+  Income:Sales                                 -1391.12 USD
+  Liabilities:SalesTax-Payable                  -111.29 USD
+
+2025-05-01 * "Vasquez Trading" "Invoice SI-1437 raised"
+  Assets:AR                                     5853.72 USD
+  Income:Sales                                 -5420.11 USD
+  Liabilities:SalesTax-Payable                  -433.61 USD
+
+2025-05-01 * "Yamashita Business Supply" "Shipping labels and envelopes"
+  Expenses:Office                                587.93 USD
+  Assets:Bank:Checking                          -587.93 USD
+
+2025-05-01 * "Vasquez Trading" "Stock relieved for SI-1437"
+  Expenses:COGS                                 3523.07 USD
+  Assets:Inventory                             -3523.07 USD
+
+2025-05-01 * "Opening balance" "Carried forward from April close"
+  Assets:Bank:Checking                         24667.90 USD
+  Assets:AR                                    11486.92 USD
+  Assets:Inventory                             53654.36 USD
+  Liabilities:AP                              -26541.43 USD
+  Equity:Opening                              -63267.75 USD
+
+2025-05-01 * "Vasquez Trading" "Stock relieved for SI-1436"
+  Expenses:COGS                                  973.78 USD
+  Assets:Inventory                              -973.78 USD
+
+2025-05-02 * "Vasquez Trading" "Stock relieved for SI-1439"
+  Expenses:COGS                                 9317.68 USD
+  Assets:Inventory                             -9317.68 USD
+
+2025-05-02 * "Vasquez Trading" "Stock relieved for SI-1438"
+  Expenses:COGS                                 8905.91 USD
+  Assets:Inventory                             -8905.91 USD
+
+2025-05-02 * "Vasquez Trading" "Invoice SI-1439 raised"
+  Assets:AR                                    16230.79 USD
+  Income:Sales                                -15028.51 USD
+  Liabilities:SalesTax-Payable                 -1202.28 USD
+
+2025-05-02 * "Vasquez Trading" "Invoice SI-1438 raised"
+  Assets:AR                                    14573.31 USD
+  Income:Sales                                -13493.81 USD
+  Liabilities:SalesTax-Payable                 -1079.50 USD
+
+2025-05-05 * "Axiom Merchants" "Settlement of PI-2226, check 1495"
+  Liabilities:AP                                2191.68 USD
+  Assets:Bank:Checking                         -2191.68 USD
+
+2025-05-05 * "Axiom Merchants" "Settlement of PI-2225"
+  Liabilities:AP                                4552.00 USD
+  Assets:Bank:Checking                         -4552.00 USD
+
+2025-05-05 * "Westmoor Property Holdings" "May office rent, check 1496"
+  Expenses:Rent                                 4500.00 USD
+  Assets:Bank:Checking                         -4500.00 USD
+
+2025-05-05 * "Yamashita Business Supply" "Packaging and office supplies"
+  Expenses:Office                                705.14 USD
+  Assets:Bank:Checking                          -705.14 USD
+
+2025-05-06 * "Axiom Merchants" "Settlement of PI-2227"
+  Liabilities:AP                                3260.26 USD
+  Assets:Bank:Checking                         -3260.26 USD
+
+2025-05-07 * "Vasquez Trading" "SI-1434 settled in full"
+  Assets:Bank:Checking                           145.59 USD
+  Assets:AR                                     -145.59 USD
+
+2025-05-08 * "Yamashita Business Supply" "Filing and desk supplies"
+  Expenses:Office                                353.67 USD
+  Assets:Bank:Checking                          -353.67 USD
+
+2025-05-12 * "Vasquez Trading" "Partial payment against SI-1437, check 8402"
+  Assets:Bank:Checking                          4097.60 USD
+  Assets:AR                                    -4097.60 USD
+
+2025-05-12 * "Vasquez Trading" "SI-1436 settled in full"
+  Assets:Bank:Checking                          1502.41 USD
+  Assets:AR                                    -1502.41 USD
+
+2025-05-16 * "Axiom Merchants" "Purchase invoice PI-2228 received"
+  Assets:Inventory                              4845.31 USD
+  Liabilities:AP                               -4845.31 USD
+
+2025-05-19 * "Vasquez Trading" "SI-1435 settled in full"
+  Assets:Bank:Checking                          3494.65 USD
+  Assets:AR                                    -3494.65 USD
+
+2025-05-19 * "Axiom Merchants" "Settlement of PI-2224, check 1497"
+  Liabilities:AP                                8307.24 USD
+  Assets:Bank:Checking                         -8307.24 USD
+
+2025-05-19 * "Vasquez Trading" "SI-1439 settled in full"
+  Assets:Bank:Checking                         16230.79 USD
+  Assets:AR                                   -16230.79 USD
+
+2025-05-22 * "Axiom Merchants" "Purchase invoice PI-2229 received"
+  Assets:Inventory                              2279.46 USD
+  Liabilities:AP                               -2279.46 USD
+
+2025-05-23 * "Vasquez Trading" "Partial payment against SI-1437"
+  Assets:Bank:Checking                          1756.12 USD
+  Assets:AR                                    -1756.12 USD
+
+2025-05-26 * "Vasquez Trading" "Stock relieved for SI-1440"
+  Expenses:COGS                                  738.48 USD
+  Assets:Inventory                              -738.48 USD
+
+2025-05-26 * "Vasquez Trading" "Invoice SI-1440 raised"
+  Assets:AR                                     1139.37 USD
+  Income:Sales                                 -1054.97 USD
+  Liabilities:SalesTax-Payable                   -84.40 USD
+
+2025-05-27 * "Vasquez Trading" "Partial payment against SI-1438"
+  Assets:Bank:Checking                          8743.99 USD
+  Assets:AR                                    -8743.99 USD
+
+2025-05-28 * "Axiom Merchants" "Settlement of PI-2223"
+  Liabilities:AP                                1801.10 USD
+  Assets:Bank:Checking                         -1801.10 USD
+
+2025-05-29 * "Axiom Merchants" "Purchase invoice PI-2230 received"
+  Assets:Inventory                              1317.97 USD
+  Liabilities:AP                               -1317.97 USD
+
+2025-05-30 * "Havenport State Bank" "Business account service charge"
+  Expenses:BankFees                               12.25 USD
+  Assets:Bank:Checking                           -12.25 USD
+
+2025-05-30 * "Vasquez Trading" "Partial payment against SI-1441"
+  Assets:Bank:Checking                           883.83 USD
+  Assets:AR                                     -883.83 USD
+
+2025-05-30 * "Westmoor Property Holdings" "June premises rent settled early, check 1498"
+  Assets:Prepayments                            4500.00 USD
+  Assets:Bank:Checking                         -4500.00 USD
+
+2025-05-30 * "Vasquez Trading" "Stock relieved for SI-1441"
+  Expenses:COGS                                 1718.55 USD
+  Assets:Inventory                             -1718.55 USD
+
+2025-05-30 * "Vasquez Trading" "Partial payment against SI-1440"
+  Assets:Bank:Checking                           455.75 USD
+  Assets:AR                                     -455.75 USD
+
+2025-05-30 * "Vasquez Trading" "Invoice SI-1441 raised"
+  Assets:AR                                     2946.09 USD
+  Income:Sales                                 -2727.86 USD
+  Liabilities:SalesTax-Payable                  -218.23 USD
+
+2025-05-30 * "Vasquez Trading" "Partial payment against SI-1438"
+  Assets:Bank:Checking                          3206.13 USD
+  Assets:AR                                    -3206.13 USD

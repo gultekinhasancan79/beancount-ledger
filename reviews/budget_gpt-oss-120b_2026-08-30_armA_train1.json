@@ -1,0 +1,11 @@
+[
+ {
+  "selector": "train:1",
+  "quarantined": true,
+  "status": "INVALID",
+  "reasons": {
+   "ModelError": 1
+  },
+  "seconds": 2183.7
+ }
+]

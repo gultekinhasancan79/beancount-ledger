@@ -1,0 +1,70 @@
+[
+ {
+  "selector": "train:1",
+  "task_id": "task-34316a41da6b23bdf0b1e93e",
+  "reward": 1.0,
+  "stop": "piv_submitted",
+  "truncated": true,
+  "error": null,
+  "batch_status": "VALID",
+  "turns": 8.0,
+  "tools": [
+   "list_files",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "run_beancount",
+   "read_file",
+   "write_ledger",
+   "submit"
+  ],
+  "wrote_ledger": true,
+  "prompt_tokens": 67555.0,
+  "completion_tokens": 21365.0,
+  "final_output_tokens": 21365,
+  "final_input_tokens": 0,
+  "total_tokens": 88920,
+  "last_assistant_chars": 0,
+  "volume": {
+   "assistant_content": 2354,
+   "assistant_reasoning": 31055,
+   "tool_replies": 17855,
+   "assistant_messages": 8,
+   "tool_messages": 12
+  },
+  "last_assistant_tail": "",
+  "metrics": {
+   "piv/evaluator_failed": 0.0,
+   "piv/protocol_failed": 0.0,
+   "piv/training_eligible": 1.0,
+   "piv/submitted": 1.0,
+   "piv/no_tool_turns": 1.0,
+   "piv/no_tool_limit": 0.0,
+   "piv/no_tool_truncated": 1.0,
+   "piv/truncation_limit": 0.0,
+   "piv/turn_cap_no_submit": 0.0,
+   "piv/turn_cap_submit_unexecuted": 0.0,
+   "piv/submit_refused": 0.0
+  },
+  "seconds": 446.9,
+  "delivery": {
+   "artifact_logical_text_digest": "NO_ARTIFACT",
+   "artifact_stored_bytes_digest": "NO_ARTIFACT",
+   "committed_revision": 1,
+   "completion": "incomplete",
+   "delivery_receipt_digest": "dbc5c9367d4bd92f4a1f8c700733c082c79afe46bc4d77df94276e8f77f59c50",
+   "evaluation_receipt_digest": "0659237ba67062e5a248fe87778a1823f746120ad374deed8679839dac895635",
+   "input_logical_text_digest": "0e0b0c6410d771f3726edf29004830406dbb52d6c2341aeeca5c72beaf861989",
+   "input_stored_bytes_digest": "3c2f4b79739ca15bfbcc3b438127f5ba424cdaccf658b5f0636c0af799309bd2",
+   "outcome": "policy_blocked",
+   "rollout_id": "4ab6860db3c04ae6b6ccb3e0f7a56b0c",
+   "schema": "piv.delivery/1",
+   "score": "0",
+   "score_result_digest": "5b46cf80b9b3fe511808ed66564798b6e34d8b7de965016d7796b2260d89b265"
+  }
+ }
+]

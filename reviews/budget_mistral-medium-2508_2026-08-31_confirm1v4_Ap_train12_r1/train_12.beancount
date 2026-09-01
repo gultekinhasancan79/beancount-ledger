@@ -1,0 +1,181 @@
+option "title" "Elmridge Supply Co. - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-10-01 * "Opening balance" "Carried forward from September close"
+  Assets:Bank:Checking                         22417.76 USD
+  Assets:AR                                    12266.10 USD
+  Assets:Inventory                             44089.19 USD
+  Liabilities:AP                              -20399.39 USD
+  Equity:Opening                              -58373.66 USD
+
+2025-10-02 * "Zabala Family Stores" "Cost of sales - SI-1362"
+  Expenses:COGS                                 1497.43 USD
+  Assets:Inventory                             -1497.43 USD
+
+2025-10-02 * "Zabala Family Stores" "Invoice SI-1362 raised"
+  Assets:AR                                     3593.84 USD
+  Income:Sales                                 -3327.63 USD
+  Liabilities:SalesTax-Payable                  -266.21 USD
+
+2025-10-02 * "Pinecrest Stores" "Invoice SI-1361 raised"
+  Assets:AR                                    13877.98 USD
+  Income:Sales                                -12849.98 USD
+  Liabilities:SalesTax-Payable                 -1028.00 USD
+
+2025-10-02 * "Pinecrest Stores" "Cost of sales - SI-1361"
+  Expenses:COGS                                 8737.99 USD
+  Assets:Inventory                             -8737.99 USD
+
+2025-10-03 * "Greenfield Materials Co" "Settlement of PI-2694"
+  Liabilities:AP                                1680.31 USD
+  Assets:Bank:Checking                         -1680.31 USD
+
+2025-10-03 * "Vector Property Group" "October warehouse and office rent, check 1868"
+  Expenses:Rent                                 2500.00 USD
+  Assets:Bank:Checking                         -2500.00 USD
+
+2025-10-06 * "Pinecrest Stores" "Invoice SI-1363 raised"
+  Assets:AR                                     2568.42 USD
+  Income:Sales                                 -2378.17 USD
+  Liabilities:SalesTax-Payable                  -190.25 USD
+
+2025-10-06 * "Calloway Business Supply" "Printer toner and paper"
+  Expenses:Office                                321.68 USD
+  Assets:Bank:Checking                          -321.68 USD
+
+2025-10-06 * "Pinecrest Stores" "Cost of sales - SI-1363"
+  Expenses:COGS                                 1355.56 USD
+  Assets:Inventory                             -1355.56 USD
+
+2025-10-07 * "Greenfield Materials Co" "Goods received on PI-2697"
+  Assets:Inventory                              2393.53 USD
+  Liabilities:AP                               -2393.53 USD
+
+2025-10-08 * "Zabala Family Stores" "Customer payment for SI-1362"
+  Assets:Bank:Checking                          3593.84 USD
+  Assets:AR                                    -3593.84 USD
+
+2025-10-10 * "Pinecrest Stores" "Cost of sales - SI-1364"
+  Expenses:COGS                                 2175.51 USD
+  Assets:Inventory                             -2175.51 USD
+
+2025-10-10 * "Pinecrest Stores" "Invoice SI-1364 raised"
+  Assets:AR                                     3405.15 USD
+  Income:Sales                                 -3152.92 USD
+  Liabilities:SalesTax-Payable                  -252.23 USD
+
+2025-10-14 * "Calloway Business Supply" "Packaging and office supplies, check 1869"
+  Expenses:Office                                802.43 USD
+  Assets:Bank:Checking                          -802.43 USD
+
+2025-10-15 * "Pinecrest Stores" "Cost of sales - SI-1365"
+  Expenses:COGS                                  965.03 USD
+  Assets:Inventory                              -965.03 USD
+
+2025-10-15 * "Pinecrest Stores" "Invoice SI-1365 raised"
+  Assets:AR                                     1603.43 USD
+  Income:Sales                                 -1484.66 USD
+  Liabilities:SalesTax-Payable                  -118.77 USD
+
+2025-10-20 * "Greenfield Materials Co" "Settlement of PI-2696, check 1870"
+  Liabilities:AP                                2657.90 USD
+  Assets:Bank:Checking                         -2657.90 USD
+
+2025-10-20 * "Zabala Family Stores" "Customer payment for SI-1360, check 4001"
+  Assets:Bank:Checking                          8844.85 USD
+  Assets:AR                                    -8844.85 USD
+
+2025-10-20 * "Calloway Business Supply" "Filing and desk supplies"
+  Expenses:Office                                151.66 USD
+  Assets:Bank:Checking                          -151.66 USD
+
+2025-10-20 * "Greenfield Materials Co" "Settlement of PI-2693"
+  Liabilities:AP                                3521.89 USD
+  Assets:Bank:Checking                         -3521.89 USD
+
+2025-10-20 * "Pinecrest Stores" "Part payment received on SI-1363"
+  Assets:Bank:Checking                           898.95 USD
+  Assets:AR                                     -898.95 USD
+
+2025-10-21 * "Greenfield Materials Co" "Settlement of PI-2695, check 1871"
+  Liabilities:AP                                2339.37 USD
+  Assets:Bank:Checking                         -2339.37 USD
+
+2025-10-21 * "Greenfield Materials Co" "Settlement of PI-2692"
+  Liabilities:AP                                2558.13 USD
+  Assets:Bank:Checking                         -2558.13 USD
+
+2025-10-23 * "Calloway Business Supply" "Shipping labels and envelopes"
+  Expenses:Office                                292.67 USD
+  Assets:Bank:Checking                          -292.67 USD
+
+2025-10-24 * "Pinecrest Stores" "Customer payment for SI-1364"
+  Assets:Bank:Checking                          3405.15 USD
+  Assets:AR                                    -3405.15 USD
+
+2025-10-24 * "Zabala Family Stores" "Invoice SI-1366 raised"
+  Assets:AR                                    12780.10 USD
+  Income:Sales                                -11833.43 USD
+  Liabilities:SalesTax-Payable                  -946.67 USD
+
+2025-10-24 * "Greenfield Materials Co" "Goods received on PI-2698"
+  Assets:Inventory                              1796.25 USD
+  Liabilities:AP                               -1796.25 USD
+
+2025-10-24 * "Zabala Family Stores" "Cost of sales - SI-1366"
+  Expenses:COGS                                 6626.72 USD
+  Assets:Inventory                             -6626.72 USD
+
+2025-10-27 * "Greenfield Materials Co" "Settlement of PI-2691, check 1872"
+  Liabilities:AP                                3286.99 USD
+  Assets:Bank:Checking                         -3286.99 USD
+
+2025-10-27 * "Pinecrest Stores" "Part payment received on SI-1363"
+  Assets:Bank:Checking                           417.37 USD
+  Assets:AR                                     -417.37 USD
+
+2025-10-27 * "Pinecrest Stores" "Customer payment for SI-1361, check 5600"
+  Assets:Bank:Checking                         13877.98 USD
+  Assets:AR                                   -13877.98 USD
+
+2025-10-27 * "Pinecrest Stores" "Part payment received on SI-1365"
+  Assets:Bank:Checking                           962.06 USD
+  Assets:AR                                     -962.06 USD
+
+2025-10-27 * "Zabala Family Stores" "Part payment received on SI-1366"
+  Assets:Bank:Checking                          7029.06 USD
+  Assets:AR                                    -7029.06 USD
+
+2025-10-28 * "Vector Property Group" "November rent prepaid, check 1873"
+  Assets:Prepayments                            2500.00 USD
+  Assets:Bank:Checking                         -2500.00 USD
+
+2025-10-29 * "Zabala Family Stores" "Invoice SI-1367 raised"
+  Assets:AR                                     1683.64 USD
+  Income:Sales                                 -1558.93 USD
+  Liabilities:SalesTax-Payable                  -124.71 USD
+
+2025-10-29 * "Zabala Family Stores" "Cost of sales - SI-1367"
+  Expenses:COGS                                  873.00 USD
+  Assets:Inventory                              -873.00 USD
+
+2025-10-30 * "Pinecrest Stores" "Part payment received on SI-1365"
+  Assets:Bank:Checking                           641.37 USD
+  Assets:AR                                     -641.37 USD
+
+2025-10-31 * "Oakvale Community Bank" "Monthly service fee"
+  Expenses:BankFees                               42.00 USD
+  Assets:Bank:Checking                           -42.00 USD

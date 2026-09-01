@@ -1,0 +1,29 @@
+[
+ {
+  "selector": "train:0",
+  "quarantined": true,
+  "status": "INVALID",
+  "reasons": {
+   "ModelError": 1
+  },
+  "seconds": 783.1
+ },
+ {
+  "selector": "train:1",
+  "quarantined": true,
+  "status": "INVALID",
+  "reasons": {
+   "ModelError": 1
+  },
+  "seconds": 773.8
+ },
+ {
+  "selector": "train:0:hard",
+  "quarantined": true,
+  "status": "INVALID",
+  "reasons": {
+   "ModelError": 1
+  },
+  "seconds": 777.9
+ }
+]

@@ -1,0 +1,88 @@
+{
+  "id": "bank_recon_001",
+  "type": "bank_reconciliation",
+  "period_end": "2025-11-30",
+  "prompt": "The November checking account statement has arrived and the month needs to be closed. Bring the ledger into agreement with the statement, following the bookkeeping policy. Write the corrected ledger back to ledger.beancount.",
+  "statement_closing_balance": "54545.00",
+  "_scored_accounts_doc": "Accounts the task is expected to move. Scored as targets_hit. Every other account in expected_balances must come out unchanged and is scored as no_collateral.",
+  "scored_accounts": [
+    "Assets:Bank:Checking",
+    "Assets:AR",
+    "Expenses:BankFees"
+  ],
+  "expected_balances": {
+    "Assets:Bank:Checking": "51045.00",
+    "Assets:AR": "15000.00",
+    "Assets:Inventory": "20700.00",
+    "Assets:Prepayments": "3500.00",
+    "Liabilities:AP": "-10200.00",
+    "Liabilities:SalesTax-Payable": "-3200.00",
+    "Income:Sales": "-16000.00",
+    "Expenses:COGS": "10400.00",
+    "Expenses:Office": "420.00",
+    "Expenses:Rent": "3500.00",
+    "Expenses:BankFees": "85.00",
+    "Equity:Opening": "-75250.00"
+  },
+  "planted": [
+    {
+      "id": "unrecorded_customer_deposit",
+      "description": "ACH receipt of 4800.00 from Harbor Freight Ltd on 2025-11-26 settling sales invoice SI-1044 appears on the statement but was never posted.",
+      "required_postings": [
+        [
+          "Assets:Bank:Checking",
+          "4800.00"
+        ],
+        [
+          "Assets:AR",
+          "-4800.00"
+        ]
+      ],
+      "date": "2025-11-26",
+      "must_be_payee": [
+        "Harbor Freight Ltd"
+      ]
+    },
+    {
+      "id": "unrecorded_bank_fee",
+      "description": "Monthly account service charge of 85.00 on 2025-11-30 appears on the statement but was never posted to the ledger.",
+      "required_postings": [
+        [
+          "Expenses:BankFees",
+          "85.00"
+        ],
+        [
+          "Assets:Bank:Checking",
+          "-85.00"
+        ]
+      ],
+      "date": "2025-11-30",
+      "must_be_payee": [
+        "Cascade Bank"
+      ]
+    }
+  ],
+  "traps": [
+    {
+      "id": "outstanding_check_1038",
+      "description": "Check 1038 for 3500.00, issued 2025-11-28 to prepay December rent, is recorded in the ledger but had not cleared by the cut-off. It is a timing difference and must be left untouched.",
+      "narration": "December rent prepaid, check 1038"
+    }
+  ],
+  "allowed_accounts": [
+    "Assets:Bank:Checking",
+    "Assets:AR",
+    "Assets:Inventory",
+    "Assets:Prepayments",
+    "Liabilities:AP",
+    "Liabilities:SalesTax-Payable",
+    "Income:Sales",
+    "Expenses:COGS",
+    "Expenses:Office",
+    "Expenses:Rent",
+    "Expenses:BankFees",
+    "Equity:Opening"
+  ],
+  "_planted_doc": "Each planted item must be posted as its own transaction, on its own date, carrying exactly its required postings and nothing else. Merging several events into one entry produces correct balances but unusable books.",
+  "_must_be_payee_doc": "The resolving entry's payee field must equal one of these after collapsing internal whitespace, and NOTHING ELSE is normalised: the comparison is case-sensitive and no punctuation is stripped. An exact match on a dedicated field, not a substring of the narration: a substring test is satisfiable by burying the keyword in a sentence that means the opposite, which a review round duly did, and every loosening of the comparison was defeated in turn -- case-insensitivity by a name written in mocking case. Every accepted name appears verbatim in a world file, so this asks the agent to copy a string it has read rather than to guess a spelling. This description previously claimed case-insensitivity and punctuation stripping, which the code has never done; the code is right and the description was wrong, which matters because the description is what a generator author reads."
+}

@@ -1,0 +1,85 @@
+[
+ {
+  "selector": "train:12",
+  "task_id": "task-803e24e72017ce25ae454de8",
+  "reward": 1.0,
+  "stop": "piv_submitted",
+  "truncated": true,
+  "error": null,
+  "batch_status": "VALID",
+  "turns": 7.0,
+  "tools": [
+   "list_files",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "write_ledger",
+   "run_beancount",
+   "submit"
+  ],
+  "wrote_ledger": true,
+  "prompt_tokens": 58915.0,
+  "completion_tokens": 17444.0,
+  "final_output_tokens": 17444,
+  "final_input_tokens": 0,
+  "total_tokens": 76359,
+  "last_assistant_chars": 0,
+  "volume": {
+   "assistant_content": 1116,
+   "assistant_reasoning": 26527,
+   "tool_replies": 18431,
+   "assistant_messages": 7,
+   "tool_messages": 12
+  },
+  "last_assistant_tail": "",
+  "metrics": {
+   "piv/evaluator_failed": 0.0,
+   "piv/protocol_failed": 0.0,
+   "piv/training_eligible": 1.0,
+   "piv/submitted": 1.0,
+   "piv/no_tool_turns": 1.0,
+   "piv/no_tool_limit": 0.0,
+   "piv/no_tool_truncated": 1.0,
+   "piv/truncation_limit": 0.0,
+   "piv/turn_cap_no_submit": 0.0,
+   "piv/turn_cap_submit_unexecuted": 0.0,
+   "piv/submit_refused": 0.0
+  },
+  "seconds": 498.4,
+  "breakdown": {
+   "total": 1.0,
+   "verdict": "CORRECT_SOLUTION",
+   "outcome": "delivered",
+   "renderable": true,
+   "components": {
+    "targets_hit": "1.000000",
+    "errors_resolved": "1.000000"
+   },
+   "penalties": {},
+   "protocol_reason": null,
+   "protocol_detail": null,
+   "gated": false,
+   "same_books_as_golden": true
+  },
+  "delivery": {
+   "artifact_logical_text_digest": "e37d89a2c7a51d52d32908d3dfa6b1f246e089b229537a3238957d978469a732",
+   "artifact_stored_bytes_digest": "03111516d43c811ce7423e6697b6c301ef70ab9547c31af3baf2a5d101e3454f",
+   "committed_revision": 1,
+   "completion": "complete",
+   "delivery_receipt_digest": "b4fdbe6dcbd32ac2b868e19a03997ef0f0ef70d9c39f1767a8ecbae17e68e9ee",
+   "evaluation_receipt_digest": "d9a33dd285bdf87c514da2908a4970c67272b5bc0743f5ba679fddd32578550b",
+   "input_logical_text_digest": "8b173a87ea6b9102d9f5dd9b87976d65627c74714e8d8c3b9b3e5c388890df39",
+   "input_stored_bytes_digest": "03a57eab7e9e40ada520f75e5c1878eaa0c26302154db11d73b42185b5e28d05",
+   "outcome": "delivered",
+   "rollout_id": "85acd7f033cd47df801d20078d38fa46",
+   "schema": "piv.delivery/1",
+   "score": "1",
+   "score_result_digest": "12197179c639760457596412825705763c08e47497998fd17bf8f376ee6ab86d"
+  }
+ }
+]

@@ -1,0 +1,245 @@
+option "title" "Cobblestone Wholesale Co. - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-03-01 * "Opening balance" "Carried forward from February close"
+  Assets:Bank:Checking                         14454.01 USD
+  Assets:AR                                     8070.99 USD
+  Assets:Inventory                             53332.30 USD
+  Liabilities:AP                              -31525.59 USD
+  Equity:Opening                              -44331.71 USD
+
+2025-03-03 * "Birchwood Business Supply" "Office consumables"
+  Expenses:Office                                130.08 USD
+  Assets:Bank:Checking                          -130.08 USD
+
+2025-03-03 * "Kinetic Realty" "March premises rent, check 1542"
+  Expenses:Rent                                 4500.00 USD
+  Assets:Bank:Checking                         -4500.00 USD
+
+2025-03-03 * "Redstone Retail" "Cost of sales - SI-1195"
+  Expenses:COGS                                 6251.36 USD
+  Assets:Inventory                             -6251.36 USD
+
+2025-03-03 * "Redstone Retail" "Sale SI-1195"
+  Assets:AR                                    10915.08 USD
+  Income:Sales                                 -9922.80 USD
+  Liabilities:SalesTax-Payable                  -992.28 USD
+
+2025-03-03 * "Brennan Retail" "Cost of sales - SI-1194"
+  Expenses:COGS                                  429.00 USD
+  Assets:Inventory                              -429.00 USD
+
+2025-03-03 * "Brennan Retail" "Sale SI-1194"
+  Assets:AR                                     1025.87 USD
+  Income:Sales                                  -932.61 USD
+  Liabilities:SalesTax-Payable                   -93.26 USD
+
+2025-03-04 * "Redstone Retail" "Sale SI-1196"
+  Assets:AR                                     6921.44 USD
+  Income:Sales                                 -6292.22 USD
+  Liabilities:SalesTax-Payable                  -629.22 USD
+
+2025-03-04 * "Redstone Retail" "Cost of sales - SI-1196"
+  Expenses:COGS                                 4404.55 USD
+  Assets:Inventory                             -4404.55 USD
+
+2025-03-10 * "Redstone Retail" "Instalment against SI-1196"
+  Assets:Bank:Checking                          4498.94 USD
+  Assets:AR                                    -4498.94 USD
+
+2025-03-10 * "Vector Trading Co" "Cost of sales - SI-1197"
+  Expenses:COGS                                 5821.25 USD
+  Assets:Inventory                             -5821.25 USD
+
+2025-03-10 * "Birchwood Business Supply" "Filing and desk supplies"
+  Expenses:Office                                709.94 USD
+  Assets:Bank:Checking                          -709.94 USD
+
+2025-03-10 * "Vector Trading Co" "Sale SI-1197"
+  Assets:AR                                    12314.18 USD
+  Income:Sales                                -11194.71 USD
+  Liabilities:SalesTax-Payable                 -1119.47 USD
+
+2025-03-10 * "Redstone Retail" "Instalment against SI-1195"
+  Assets:Bank:Checking                          7640.56 USD
+  Assets:AR                                    -7640.56 USD
+
+2025-03-11 * "Brennan Retail" "Sale SI-1198"
+  Assets:AR                                     2660.38 USD
+  Income:Sales                                 -2418.53 USD
+  Liabilities:SalesTax-Payable                  -241.85 USD
+
+2025-03-11 * "Brennan Retail" "Cost of sales - SI-1198"
+  Expenses:COGS                                 1451.12 USD
+  Assets:Inventory                             -1451.12 USD
+
+2025-03-12 * "Birchwood Business Supply" "Printer toner and paper"
+  Expenses:Office                                589.03 USD
+  Assets:Bank:Checking                          -589.03 USD
+
+2025-03-12 * "Redstone Retail" "Sale SI-1199"
+  Assets:AR                                    12382.58 USD
+  Income:Sales                                -11256.89 USD
+  Liabilities:SalesTax-Payable                 -1125.69 USD
+
+2025-03-12 * "Redstone Retail" "Cost of sales - SI-1199"
+  Expenses:COGS                                 7091.84 USD
+  Assets:Inventory                             -7091.84 USD
+
+2025-03-14 * "Pennwood Bank" "Wire transfer fee"
+  Expenses:BankFees                                9.75 USD
+  Assets:Bank:Checking                            -9.75 USD
+
+2025-03-17 * "Pettersen and Partners Distribution" "Settlement of PI-2111, check 1543"
+  Liabilities:AP                                4352.74 USD
+  Assets:Bank:Checking                         -4352.74 USD
+
+2025-03-17 * "Birchwood Business Supply" "Office consumables"
+  Expenses:Office                                376.87 USD
+  Assets:Bank:Checking                          -376.87 USD
+
+2025-03-17 * "Brennan Retail" "Sale SI-1200"
+  Assets:AR                                     2328.99 USD
+  Income:Sales                                 -2117.26 USD
+  Liabilities:SalesTax-Payable                  -211.73 USD
+
+2025-03-17 * "Vector Trading Co" "Receipt against SI-1197"
+  Assets:Bank:Checking                         12314.18 USD
+  Assets:AR                                   -12314.18 USD
+
+2025-03-17 * "Brennan Retail" "Cost of sales - SI-1200"
+  Expenses:COGS                                 1037.46 USD
+  Assets:Inventory                             -1037.46 USD
+
+2025-03-19 * "Redstone Retail" "Cost of sales - SI-1201"
+  Expenses:COGS                                  597.09 USD
+  Assets:Inventory                              -597.09 USD
+
+2025-03-19 * "Pettersen and Partners Distribution" "Goods received on PI-2117"
+  Assets:Inventory                               903.66 USD
+  Liabilities:AP                                -903.66 USD
+
+2025-03-19 * "Redstone Retail" "Sale SI-1201"
+  Assets:AR                                     1239.25 USD
+  Income:Sales                                 -1126.59 USD
+  Liabilities:SalesTax-Payable                  -112.66 USD
+
+2025-03-20 * "Redstone Retail" "Cost of sales - SI-1202"
+  Expenses:COGS                                 1014.73 USD
+  Assets:Inventory                             -1014.73 USD
+
+2025-03-20 * "Redstone Retail" "Sale SI-1202"
+  Assets:AR                                     1924.49 USD
+  Income:Sales                                 -1749.54 USD
+  Liabilities:SalesTax-Payable                  -174.95 USD
+
+2025-03-20 * "Pettersen and Partners Distribution" "Settlement of PI-2115"
+  Liabilities:AP                                1200.13 USD
+  Assets:Bank:Checking                         -1200.13 USD
+
+2025-03-21 * "Pettersen and Partners Distribution" "Settlement of PI-2114"
+  Liabilities:AP                                8854.02 USD
+  Assets:Bank:Checking                         -8854.02 USD
+
+2025-03-24 * "Vector Trading Co" "Sale SI-1204"
+  Assets:AR                                     7550.36 USD
+  Income:Sales                                 -6863.96 USD
+  Liabilities:SalesTax-Payable                  -686.40 USD
+
+2025-03-24 * "Brennan Retail" "Instalment against SI-1194"
+  Assets:Bank:Checking                           307.76 USD
+  Assets:AR                                     -307.76 USD
+
+2025-03-24 * "Pettersen and Partners Distribution" "Settlement of PI-2113"
+  Liabilities:AP                                1492.47 USD
+  Assets:Bank:Checking                         -1492.47 USD
+
+2025-03-24 * "Vector Trading Co" "Sale SI-1203"
+  Assets:AR                                    11216.18 USD
+  Income:Sales                                -10196.53 USD
+  Liabilities:SalesTax-Payable                 -1019.65 USD
+
+2025-03-24 * "Vector Trading Co" "Cost of sales - SI-1203"
+  Expenses:COGS                                 6423.81 USD
+  Assets:Inventory                             -6423.81 USD
+
+2025-03-24 * "Brennan Retail" "Receipt against SI-1198"
+  Assets:Bank:Checking                          2660.38 USD
+  Assets:AR                                    -2660.38 USD
+
+2025-03-24 * "Vector Trading Co" "Cost of sales - SI-1204"
+  Expenses:COGS                                 4461.57 USD
+  Assets:Inventory                             -4461.57 USD
+
+2025-03-25 * "Redstone Retail" "Instalment against SI-1196"
+  Assets:Bank:Checking                          2422.50 USD
+  Assets:AR                                    -2422.50 USD
+
+2025-03-25 * "Brennan Retail" "Instalment against SI-1200"
+  Assets:Bank:Checking                          1397.39 USD
+  Assets:AR                                    -1397.39 USD
+
+2025-03-25 * "Birchwood Business Supply" "Office consumables"
+  Expenses:Office                                 94.27 USD
+  Assets:Bank:Checking                           -94.27 USD
+
+2025-03-26 * "Redstone Retail" "Receipt against SI-1193"
+  Assets:Bank:Checking                          2331.91 USD
+  Assets:AR                                    -2331.91 USD
+
+2025-03-26 * "Pettersen and Partners Distribution" "Settlement of PI-2112, check 1544"
+  Liabilities:AP                                6461.54 USD
+  Assets:Bank:Checking                         -6461.54 USD
+
+2025-03-27 * "Kinetic Realty" "April rent prepaid, check 1545"
+  Assets:Prepayments                            4500.00 USD
+  Assets:Bank:Checking                         -4500.00 USD
+
+2025-03-28 * "Pettersen and Partners Distribution" "Goods received on PI-2118"
+  Assets:Inventory                              2614.36 USD
+  Liabilities:AP                               -2614.36 USD
+
+2025-03-28 * "Vector Trading Co" "Receipt against SI-1204"
+  Assets:Bank:Checking                          7550.36 USD
+  Assets:AR                                    -7550.36 USD
+
+2025-03-30 * "Pennwood Bank" "Account maintenance charge"
+  Expenses:BankFees                              125.25 USD
+  Assets:Bank:Checking                          -125.25 USD
+
+2025-03-31 * "Redstone Retail" "Instalment against SI-1202, check 7201"
+  Assets:Bank:Checking                           673.57 USD
+  Assets:AR                                     -673.57 USD
+
+2025-03-31 * "Brennan Retail" "Instalment against SI-1194, check 6201"
+  Assets:Bank:Checking                           718.11 USD
+  Assets:AR                                     -718.11 USD
+
+2025-03-31 * "Pettersen and Partners Distribution" "Goods received on PI-2119"
+  Assets:Inventory                              2470.61 USD
+  Liabilities:AP                               -2470.61 USD
+
+2025-03-31 * "Vector Trading Co" "Receipt against SI-1203, check 5800"
+  Assets:Bank:Checking                         11216.18 USD
+  Assets:AR                                   -11216.18 USD
+
+2025-03-31 * "Brennan Retail" "Instalment against SI-1200"
+  Assets:Bank:Checking                           931.60 USD
+  Assets:AR                                     -931.60 USD
+
+2025-03-31 * "Redstone Retail" "Instalment against SI-1199, check 7200"
+  Assets:Bank:Checking                          6810.42 USD
+  Assets:AR                                    -6810.42 USD

@@ -1,0 +1,236 @@
+option "title" "Orchard Hill Provisions Co. - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-11-01 * "Opening balance" "Carried forward from October close"
+  Assets:Bank:Checking                         30470.59 USD
+  Assets:AR                                    12853.64 USD
+  Assets:Inventory                             57494.28 USD
+  Liabilities:AP                              -38790.48 USD
+  Equity:Opening                              -62028.03 USD
+
+2025-11-03 * "Nakamura Property Holdings" "November premises rent, check 1061"
+  Expenses:Rent                                 4000.00 USD
+  Assets:Bank:Checking                         -4000.00 USD
+
+2025-11-03 * "Meridian Materials Co" "PI-2076 paid"
+  Liabilities:AP                                2808.82 USD
+  Assets:Bank:Checking                         -2808.82 USD
+
+2025-11-05 * "Sprocket Markets" "Cost of goods sold on SI-1139"
+  Expenses:COGS                                 3302.23 USD
+  Assets:Inventory                             -3302.23 USD
+
+2025-11-05 * "Sprocket Markets" "Invoice SI-1139 raised"
+  Assets:AR                                     8255.57 USD
+  Income:Sales                                 -6879.64 USD
+  Liabilities:SalesTax-Payable                 -1375.93 USD
+
+2025-11-05 * "Eastgate Business Supply" "Packaging and office supplies"
+  Expenses:Office                                852.57 USD
+  Assets:Bank:Checking                          -852.57 USD
+
+2025-11-07 * "Meridian Materials Co" "PI-2074 paid"
+  Liabilities:AP                                7581.22 USD
+  Assets:Bank:Checking                         -7581.22 USD
+
+2025-11-10 * "Clearwater Mercantile" "Invoice SI-1140 raised"
+  Assets:AR                                     1938.07 USD
+  Income:Sales                                 -1615.06 USD
+  Liabilities:SalesTax-Payable                  -323.01 USD
+
+2025-11-10 * "Meridian Materials Co" "PI-2079 paid"
+  Liabilities:AP                                9786.46 USD
+  Assets:Bank:Checking                         -9786.46 USD
+
+2025-11-10 * "Eastgate Business Supply" "Packaging and office supplies"
+  Expenses:Office                                131.66 USD
+  Assets:Bank:Checking                          -131.66 USD
+
+2025-11-10 * "Meridian Materials Co" "Stock purchase PI-2080"
+  Assets:Inventory                              6106.05 USD
+  Liabilities:AP                               -6106.05 USD
+
+2025-11-10 * "Sprocket Markets" "Customer payment for SI-1138"
+  Assets:Bank:Checking                          2734.75 USD
+  Assets:AR                                    -2734.75 USD
+
+2025-11-10 * "Clearwater Mercantile" "Cost of goods sold on SI-1140"
+  Expenses:COGS                                  759.08 USD
+  Assets:Inventory                              -759.08 USD
+
+2025-11-12 * "Sprocket Markets" "Payment on account against SI-1139, check 6601"
+  Assets:Bank:Checking                          4127.78 USD
+  Assets:AR                                    -4127.78 USD
+
+2025-11-13 * "Clearwater Mercantile" "Invoice SI-1141 raised"
+  Assets:AR                                    13656.14 USD
+  Income:Sales                                -11380.12 USD
+  Liabilities:SalesTax-Payable                 -2276.02 USD
+
+2025-11-13 * "Clearwater Mercantile" "Cost of goods sold on SI-1141"
+  Expenses:COGS                                 7624.68 USD
+  Assets:Inventory                             -7624.68 USD
+
+2025-11-13 * "Meridian Materials Co" "PI-2077 paid"
+  Liabilities:AP                                3735.69 USD
+  Assets:Bank:Checking                         -3735.69 USD
+
+2025-11-13 * "Lindqvist Family Stores" "Invoice SI-1142 raised"
+  Assets:AR                                     6515.06 USD
+  Income:Sales                                 -5429.22 USD
+  Liabilities:SalesTax-Payable                 -1085.84 USD
+
+2025-11-13 * "Lindqvist Family Stores" "Cost of goods sold on SI-1142"
+  Expenses:COGS                                 2497.44 USD
+  Assets:Inventory                             -2497.44 USD
+
+2025-11-13 * "Meridian Materials Co" "PI-2075 paid"
+  Liabilities:AP                                1907.62 USD
+  Assets:Bank:Checking                         -1907.62 USD
+
+2025-11-14 * "Eastgate Business Supply" "Shipping labels and envelopes"
+  Expenses:Office                                226.48 USD
+  Assets:Bank:Checking                          -226.48 USD
+
+2025-11-17 * "Clearwater Mercantile" "Invoice SI-1143 raised"
+  Assets:AR                                     2878.26 USD
+  Income:Sales                                 -2398.55 USD
+  Liabilities:SalesTax-Payable                  -479.71 USD
+
+2025-11-17 * "Clearwater Mercantile" "Customer payment for SI-1137"
+  Assets:Bank:Checking                          1547.57 USD
+  Assets:AR                                    -1547.57 USD
+
+2025-11-17 * "Lindqvist Family Stores" "Payment on account against SI-1142"
+  Assets:Bank:Checking                          4234.79 USD
+  Assets:AR                                    -4234.79 USD
+
+2025-11-17 * "Lindqvist Family Stores" "Invoice SI-1144 raised"
+  Assets:AR                                     1687.87 USD
+  Income:Sales                                 -1406.56 USD
+  Liabilities:SalesTax-Payable                  -281.31 USD
+
+2025-11-17 * "Lindqvist Family Stores" "Cost of goods sold on SI-1145"
+  Expenses:COGS                                 2206.53 USD
+  Assets:Inventory                             -2206.53 USD
+
+2025-11-17 * "Lindqvist Family Stores" "Invoice SI-1145 raised"
+  Assets:AR                                     5633.70 USD
+  Income:Sales                                 -4694.75 USD
+  Liabilities:SalesTax-Payable                  -938.95 USD
+
+2025-11-17 * "Clearwater Mercantile" "Cost of goods sold on SI-1143"
+  Expenses:COGS                                 1631.01 USD
+  Assets:Inventory                             -1631.01 USD
+
+2025-11-17 * "Lindqvist Family Stores" "Cost of goods sold on SI-1144"
+  Expenses:COGS                                  647.02 USD
+  Assets:Inventory                              -647.02 USD
+
+2025-11-18 * "Sprocket Markets" "Invoice SI-1146 raised"
+  Assets:AR                                      973.46 USD
+  Income:Sales                                  -811.22 USD
+  Liabilities:SalesTax-Payable                  -162.24 USD
+
+2025-11-18 * "Meridian Materials Co" "Stock purchase PI-2081"
+  Assets:Inventory                              3832.06 USD
+  Liabilities:AP                               -3832.06 USD
+
+2025-11-18 * "Clearwater Mercantile" "Payment on account against SI-1141, check 6401"
+  Assets:Bank:Checking                          7510.88 USD
+  Assets:AR                                    -7510.88 USD
+
+2025-11-18 * "Sprocket Markets" "Cost of goods sold on SI-1146"
+  Expenses:COGS                                  397.50 USD
+  Assets:Inventory                              -397.50 USD
+
+2025-11-20 * "Eastgate Business Supply" "Packaging and office supplies"
+  Expenses:Office                                471.22 USD
+  Assets:Bank:Checking                          -471.22 USD
+
+2025-11-21 * "Clearwater Mercantile" "Cost of goods sold on SI-1147"
+  Expenses:COGS                                 1193.86 USD
+  Assets:Inventory                             -1193.86 USD
+
+2025-11-21 * "Clearwater Mercantile" "Invoice SI-1147 raised"
+  Assets:AR                                     2470.06 USD
+  Income:Sales                                 -2058.38 USD
+  Liabilities:SalesTax-Payable                  -411.68 USD
+
+2025-11-21 * "Sprocket Markets" "Cost of goods sold on SI-1148"
+  Expenses:COGS                                 3105.17 USD
+  Assets:Inventory                             -3105.17 USD
+
+2025-11-21 * "Sprocket Markets" "Invoice SI-1148 raised"
+  Assets:AR                                     6900.37 USD
+  Income:Sales                                 -5750.31 USD
+  Liabilities:SalesTax-Payable                 -1150.06 USD
+
+2025-11-24 * "Sprocket Markets" "Payment on account against SI-1148"
+  Assets:Bank:Checking                          3795.20 USD
+  Assets:AR                                    -3795.20 USD
+
+2025-11-24 * "Meridian Materials Co" "PI-2078 paid, check 1062"
+  Liabilities:AP                                9142.46 USD
+  Assets:Bank:Checking                         -9142.46 USD
+
+2025-11-25 * "Eastgate Business Supply" "Office supplies"
+  Expenses:Office                                204.91 USD
+  Assets:Bank:Checking                          -204.91 USD
+
+2025-11-26 * "Clearwater Mercantile" "Payment on account against SI-1147"
+  Assets:Bank:Checking                          1482.04 USD
+  Assets:AR                                    -1482.04 USD
+
+2025-11-26 * "Lindqvist Family Stores" "Payment on account against SI-1144"
+  Assets:Bank:Checking                          1097.12 USD
+  Assets:AR                                    -1097.12 USD
+
+2025-11-26 * "Sprocket Markets" "Payment on account against SI-1146"
+  Assets:Bank:Checking                           535.40 USD
+  Assets:AR                                     -535.40 USD
+
+2025-11-28 * "Clearwater Mercantile" "Customer payment for SI-1140, check 6402"
+  Assets:Bank:Checking                          1938.07 USD
+  Assets:AR                                    -1938.07 USD
+
+2025-11-28 * "Clearwater Mercantile" "Customer payment for SI-1143"
+  Assets:Bank:Checking                          2878.26 USD
+  Assets:AR                                    -2878.26 USD
+
+2025-11-28 * "Lindqvist Family Stores" "Payment on account against SI-1142, check 5400"
+  Assets:Bank:Checking                          2280.27 USD
+  Assets:AR                                    -2280.27 USD
+
+2025-11-28 * "Sprocket Markets" "Payment on account against SI-1139"
+  Assets:Bank:Checking                          1651.12 USD
+  Assets:AR                                    -1651.12 USD
+
+2025-11-28 * "Nakamura Property Holdings" "December rent prepaid, check 1063"
+  Assets:Prepayments                            4000.00 USD
+  Assets:Bank:Checking                         -4000.00 USD
+
+2025-11-29 * "Lindqvist Family Stores" "Payment on account against SI-1144"
+  Assets:Bank:Checking                           295.38 USD
+  Assets:AR                                     -295.38 USD
+
+2025-11-29 * "Clearwater Mercantile" "Payment on account against SI-1147, check 6403"
+  Assets:Bank:Checking                           988.02 USD
+  Assets:AR                                     -988.02 USD
+
+2025-11-30 * "Merchants Row National Bank" "Account maintenance charge"
+  Expenses:BankFees                               25.60 USD
+  Assets:Bank:Checking                           -25.60 USD

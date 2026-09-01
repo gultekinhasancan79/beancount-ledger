@@ -1,0 +1,254 @@
+option "title" "Vantage Point Provisions Co. - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-08-01 * "Opening balance" "Carried forward from July close"
+  Assets:Bank:Checking                         40039.99 USD
+  Assets:AR                                    15158.59 USD
+  Assets:Inventory                             66093.44 USD
+  Liabilities:AP                              -36432.15 USD
+  Equity:Opening                              -84859.87 USD
+
+2025-08-01 * "Magneto Wholesale Supply" "Supplier payment for PI-2408"
+  Liabilities:AP                                4664.65 USD
+  Assets:Bank:Checking                         -4664.65 USD
+
+2025-08-01 * "Pettersen Land and Buildings" "Rent for August, check 1069"
+  Expenses:Rent                                 5000.00 USD
+  Assets:Bank:Checking                         -5000.00 USD
+
+2025-08-01 * "Kinetic Distributors" "Invoice SI-1513 raised"
+  Assets:AR                                     4323.81 USD
+  Income:Sales                                 -4003.53 USD
+  Liabilities:SalesTax-Payable                  -320.28 USD
+
+2025-08-01 * "Kinetic Distributors" "Stock relieved for SI-1513"
+  Expenses:COGS                                 2762.44 USD
+  Assets:Inventory                             -2762.44 USD
+
+2025-08-04 * "Magneto Wholesale Supply" "Supplier payment for PI-2404, check 1070"
+  Liabilities:AP                                6241.64 USD
+  Assets:Bank:Checking                         -6241.64 USD
+
+2025-08-04 * "Greenfield Paper and Print" "Stationery and printer supplies"
+  Expenses:Office                                182.60 USD
+  Assets:Bank:Checking                          -182.60 USD
+
+2025-08-04 * "Kinetic Distributors" "Stock relieved for SI-1514"
+  Expenses:COGS                                 7965.37 USD
+  Assets:Inventory                             -7965.37 USD
+
+2025-08-04 * "Kinetic Distributors" "Invoice SI-1514 raised"
+  Assets:AR                                    15092.29 USD
+  Income:Sales                                -13974.34 USD
+  Liabilities:SalesTax-Payable                 -1117.95 USD
+
+2025-08-05 * "Kinetic Distributors" "Stock relieved for SI-1516"
+  Expenses:COGS                                 2492.61 USD
+  Assets:Inventory                             -2492.61 USD
+
+2025-08-05 * "Kinetic Distributors" "Stock relieved for SI-1515"
+  Expenses:COGS                                 1234.03 USD
+  Assets:Inventory                             -1234.03 USD
+
+2025-08-05 * "Kinetic Distributors" "Invoice SI-1515 raised"
+  Assets:AR                                     2221.26 USD
+  Income:Sales                                 -2056.72 USD
+  Liabilities:SalesTax-Payable                  -164.54 USD
+
+2025-08-05 * "Kinetic Distributors" "Invoice SI-1516 raised"
+  Assets:AR                                     4894.57 USD
+  Income:Sales                                 -4532.01 USD
+  Liabilities:SalesTax-Payable                  -362.56 USD
+
+2025-08-07 * "Magneto Wholesale Supply" "Supplier payment for PI-2405, check 1071"
+  Liabilities:AP                                1569.34 USD
+  Assets:Bank:Checking                         -1569.34 USD
+
+2025-08-11 * "Kinetic Distributors" "Payment received settling SI-1512"
+  Assets:Bank:Checking                          4071.18 USD
+  Assets:AR                                    -4071.18 USD
+
+2025-08-11 * "Magneto Wholesale Supply" "Supplier invoice PI-2410 booked"
+  Assets:Inventory                              2776.00 USD
+  Liabilities:AP                               -2776.00 USD
+
+2025-08-11 * "Lindqvist and Daughters" "Stock relieved for SI-1518"
+  Expenses:COGS                                 1678.15 USD
+  Assets:Inventory                             -1678.15 USD
+
+2025-08-11 * "Magneto Wholesale Supply" "Supplier payment for PI-2406"
+  Liabilities:AP                                8780.89 USD
+  Assets:Bank:Checking                         -8780.89 USD
+
+2025-08-11 * "Lindqvist and Daughters" "Invoice SI-1519 raised"
+  Assets:AR                                      934.53 USD
+  Income:Sales                                  -865.31 USD
+  Liabilities:SalesTax-Payable                   -69.22 USD
+
+2025-08-11 * "Kinetic Distributors" "Invoice SI-1517 raised"
+  Assets:AR                                     1594.61 USD
+  Income:Sales                                 -1476.49 USD
+  Liabilities:SalesTax-Payable                  -118.12 USD
+
+2025-08-11 * "Lindqvist and Daughters" "Stock relieved for SI-1519"
+  Expenses:COGS                                  389.39 USD
+  Assets:Inventory                              -389.39 USD
+
+2025-08-11 * "Lindqvist and Daughters" "Invoice SI-1518 raised"
+  Assets:AR                                     3940.00 USD
+  Income:Sales                                 -3648.15 USD
+  Liabilities:SalesTax-Payable                  -291.85 USD
+
+2025-08-11 * "Kinetic Distributors" "Stock relieved for SI-1517"
+  Expenses:COGS                                  900.66 USD
+  Assets:Inventory                              -900.66 USD
+
+2025-08-11 * "Whitmore Supply Group" "Stock relieved for SI-1520"
+  Expenses:COGS                                 3740.53 USD
+  Assets:Inventory                             -3740.53 USD
+
+2025-08-11 * "Greenfield Paper and Print" "Packaging and office supplies"
+  Expenses:Office                                859.84 USD
+  Assets:Bank:Checking                          -859.84 USD
+
+2025-08-11 * "Whitmore Supply Group" "Invoice SI-1520 raised"
+  Assets:AR                                     7087.33 USD
+  Income:Sales                                 -6562.34 USD
+  Liabilities:SalesTax-Payable                  -524.99 USD
+
+2025-08-13 * "Kinetic Distributors" "Partial payment against SI-1514, check 6201"
+  Assets:Bank:Checking                          5282.30 USD
+  Assets:AR                                    -5282.30 USD
+
+2025-08-13 * "Magneto Wholesale Supply" "Supplier payment for PI-2407"
+  Liabilities:AP                                2463.71 USD
+  Assets:Bank:Checking                         -2463.71 USD
+
+2025-08-13 * "Greenfield Paper and Print" "Shipping labels and envelopes"
+  Expenses:Office                                121.12 USD
+  Assets:Bank:Checking                          -121.12 USD
+
+2025-08-13 * "Whitmore Supply Group" "Payment received settling SI-1511, check 5400"
+  Assets:Bank:Checking                          1278.28 USD
+  Assets:AR                                    -1278.28 USD
+
+2025-08-13 * "Greenfield Paper and Print" "Office consumables"
+  Expenses:Office                                632.83 USD
+  Assets:Bank:Checking                          -632.83 USD
+
+2025-08-14 * "Whitmore Supply Group" "Partial payment against SI-1520, check 5401"
+  Assets:Bank:Checking                          4961.13 USD
+  Assets:AR                                    -4961.13 USD
+
+2025-08-15 * "Magneto Wholesale Supply" "Supplier payment for PI-2409"
+  Liabilities:AP                                9396.39 USD
+  Assets:Bank:Checking                         -9396.39 USD
+
+2025-08-18 * "Whitmore Supply Group" "Invoice SI-1522 raised"
+  Assets:AR                                     1312.89 USD
+  Income:Sales                                 -1215.64 USD
+  Liabilities:SalesTax-Payable                   -97.25 USD
+
+2025-08-18 * "Lindqvist and Daughters" "Invoice SI-1521 raised"
+  Assets:AR                                     2398.41 USD
+  Income:Sales                                 -2220.75 USD
+  Liabilities:SalesTax-Payable                  -177.66 USD
+
+2025-08-18 * "Whitmore Supply Group" "Stock relieved for SI-1522"
+  Expenses:COGS                                  741.54 USD
+  Assets:Inventory                              -741.54 USD
+
+2025-08-18 * "Lindqvist and Daughters" "Stock relieved for SI-1521"
+  Expenses:COGS                                 1288.04 USD
+  Assets:Inventory                             -1288.04 USD
+
+2025-08-19 * "Kinetic Distributors" "Payment received settling SI-1513, check 6202"
+  Assets:Bank:Checking                          4323.81 USD
+  Assets:AR                                    -4323.81 USD
+
+2025-08-19 * "Kinetic Distributors" "Partial payment against SI-1515"
+  Assets:Bank:Checking                          1221.69 USD
+  Assets:AR                                    -1221.69 USD
+
+2025-08-20 * "Whitmore Supply Group" "Invoice SI-1523 raised"
+  Assets:AR                                     5440.56 USD
+  Income:Sales                                 -5037.56 USD
+  Liabilities:SalesTax-Payable                  -403.00 USD
+
+2025-08-20 * "Whitmore Supply Group" "Stock relieved for SI-1523"
+  Expenses:COGS                                 3022.54 USD
+  Assets:Inventory                             -3022.54 USD
+
+2025-08-25 * "Kinetic Distributors" "Payment received settling SI-1517"
+  Assets:Bank:Checking                          1594.61 USD
+  Assets:AR                                    -1594.61 USD
+
+2025-08-25 * "Whitmore Supply Group" "Partial payment against SI-1523"
+  Assets:Bank:Checking                          2992.31 USD
+  Assets:AR                                    -2992.31 USD
+
+2025-08-26 * "Kinetic Distributors" "Partial payment against SI-1515, check 6203"
+  Assets:Bank:Checking                           999.57 USD
+  Assets:AR                                     -999.57 USD
+
+2025-08-26 * "Kinetic Distributors" "Stock relieved for SI-1524"
+  Expenses:COGS                                11197.85 USD
+  Assets:Inventory                            -11197.85 USD
+
+2025-08-26 * "Kinetic Distributors" "Invoice SI-1524 raised"
+  Assets:AR                                    19196.31 USD
+  Income:Sales                                -17774.36 USD
+  Liabilities:SalesTax-Payable                 -1421.95 USD
+
+2025-08-27 * "Magneto Wholesale Supply" "Supplier invoice PI-2411 booked"
+  Assets:Inventory                              6748.87 USD
+  Liabilities:AP                               -6748.87 USD
+
+2025-08-28 * "Lindqvist and Daughters" "Payment received settling SI-1519, check 8800"
+  Assets:Bank:Checking                           934.53 USD
+  Assets:AR                                     -934.53 USD
+
+2025-08-29 * "Greenfield Paper and Print" "Filing and desk supplies"
+  Expenses:Office                                 43.64 USD
+  Assets:Bank:Checking                           -43.64 USD
+
+2025-08-29 * "Whitmore Supply Group" "Payment received settling SI-1522"
+  Assets:Bank:Checking                          1312.89 USD
+  Assets:AR                                    -1312.89 USD
+
+2025-08-29 * "Whitmore Supply Group" "Partial payment against SI-1520, check 5402"
+  Assets:Bank:Checking                          2126.20 USD
+  Assets:AR                                    -2126.20 USD
+
+2025-08-29 * "Whitmore Supply Group" "Partial payment against SI-1523"
+  Assets:Bank:Checking                          2448.25 USD
+  Assets:AR                                    -2448.25 USD
+
+2025-08-29 * "Pettersen Land and Buildings" "September premises rent settled early, check 1072"
+  Assets:Prepayments                            5000.00 USD
+  Assets:Bank:Checking                         -5000.00 USD
+
+2025-08-29 * "Kinetic Distributors" "Payment received settling SI-1524"
+  Assets:Bank:Checking                         19196.31 USD
+  Assets:AR                                   -19196.31 USD
+
+2025-08-29 * "Lindqvist and Daughters" "Partial payment against SI-1521, check 8801"
+  Assets:Bank:Checking                          1558.97 USD
+  Assets:AR                                    -1558.97 USD
+
+2025-08-30 * "Longmeadow Community Bank" "Monthly account service charge"
+  Expenses:BankFees                               35.85 USD
+  Assets:Bank:Checking                           -35.85 USD

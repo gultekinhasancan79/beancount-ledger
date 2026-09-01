@@ -1,0 +1,167 @@
+option "title" "Underhill Supply Co. - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-06-01 * "Opening balance" "Carried forward from May close"
+  Assets:Bank:Checking                         35704.23 USD
+  Assets:AR                                     8403.12 USD
+  Assets:Inventory                             29974.28 USD
+  Liabilities:AP                              -33493.72 USD
+  Equity:Opening                              -40587.91 USD
+
+2025-06-02 * "Magneto Paper and Print" "Office supplies"
+  Expenses:Office                                669.83 USD
+  Assets:Bank:Checking                          -669.83 USD
+
+2025-06-02 * "Stonegate Property Group" "Rent for June, check 1180"
+  Expenses:Rent                                 5750.00 USD
+  Assets:Bank:Checking                         -5750.00 USD
+
+2025-06-02 * "Jarreau Retail" "Stock relieved for SI-1326"
+  Expenses:COGS                                 2169.26 USD
+  Assets:Inventory                             -2169.26 USD
+
+2025-06-02 * "Jarreau Retail" "Goods sold on SI-1326"
+  Assets:AR                                     5005.98 USD
+  Income:Sales                                 -4171.65 USD
+  Liabilities:SalesTax-Payable                  -834.33 USD
+
+2025-06-06 * "Castellano and Sons Supply" "Goods received on PI-2501"
+  Assets:Inventory                              1924.19 USD
+  Liabilities:AP                               -1924.19 USD
+
+2025-06-09 * "Magneto Paper and Print" "Printer toner and paper"
+  Expenses:Office                                655.51 USD
+  Assets:Bank:Checking                          -655.51 USD
+
+2025-06-09 * "Castellano and Sons Supply" "Supplier payment for PI-2500, check 1181"
+  Liabilities:AP                                1118.45 USD
+  Assets:Bank:Checking                         -1118.45 USD
+
+2025-06-11 * "Jarreau Retail" "Stock relieved for SI-1327"
+  Expenses:COGS                                 3392.62 USD
+  Assets:Inventory                             -3392.62 USD
+
+2025-06-11 * "Sextant Outfitters" "Stock relieved for SI-1328"
+  Expenses:COGS                                 1256.53 USD
+  Assets:Inventory                             -1256.53 USD
+
+2025-06-11 * "Sextant Outfitters" "Goods sold on SI-1328"
+  Assets:AR                                     2393.39 USD
+  Income:Sales                                 -1994.49 USD
+  Liabilities:SalesTax-Payable                  -398.90 USD
+
+2025-06-11 * "Jarreau Retail" "Goods sold on SI-1327"
+  Assets:AR                                     8142.29 USD
+  Income:Sales                                 -6785.24 USD
+  Liabilities:SalesTax-Payable                 -1357.05 USD
+
+2025-06-13 * "Sextant Outfitters" "Stock relieved for SI-1329"
+  Expenses:COGS                                 2972.60 USD
+  Assets:Inventory                             -2972.60 USD
+
+2025-06-13 * "Sextant Outfitters" "Goods sold on SI-1329"
+  Assets:AR                                     5847.74 USD
+  Income:Sales                                 -4873.12 USD
+  Liabilities:SalesTax-Payable                  -974.62 USD
+
+2025-06-16 * "Castellano and Sons Supply" "Supplier payment for PI-2496, check 1183"
+  Liabilities:AP                                8725.75 USD
+  Assets:Bank:Checking                         -8725.75 USD
+
+2025-06-16 * "Jarreau Retail" "Partial payment against SI-1327"
+  Assets:Bank:Checking                          2849.80 USD
+  Assets:AR                                    -2849.80 USD
+
+2025-06-16 * "Castellano and Sons Supply" "Supplier payment for PI-2498, check 1182"
+  Liabilities:AP                                5211.29 USD
+  Assets:Bank:Checking                         -5211.29 USD
+
+2025-06-18 * "Castellano and Sons Supply" "Supplier payment for PI-2499"
+  Liabilities:AP                                4347.02 USD
+  Assets:Bank:Checking                         -4347.02 USD
+
+2025-06-18 * "Sextant Outfitters" "Partial payment against SI-1328, check 4801"
+  Assets:Bank:Checking                          1077.03 USD
+  Assets:AR                                    -1077.03 USD
+
+2025-06-19 * "Sextant Outfitters" "Stock relieved for SI-1330"
+  Expenses:COGS                                 1508.20 USD
+  Assets:Inventory                             -1508.20 USD
+
+2025-06-19 * "Castellano and Sons Supply" "Supplier payment for PI-2495"
+  Liabilities:AP                                3433.73 USD
+  Assets:Bank:Checking                         -3433.73 USD
+
+2025-06-19 * "Sextant Outfitters" "Goods sold on SI-1330"
+  Assets:AR                                     2827.87 USD
+  Income:Sales                                 -2356.56 USD
+  Liabilities:SalesTax-Payable                  -471.31 USD
+
+2025-06-24 * "Castellano and Sons Supply" "Supplier payment for PI-2497, check 1184"
+  Liabilities:AP                                2259.04 USD
+  Assets:Bank:Checking                         -2259.04 USD
+
+2025-06-25 * "Sextant Outfitters" "Customer payment for SI-1325, check 4802"
+  Assets:Bank:Checking                          4162.35 USD
+  Assets:AR                                    -4162.35 USD
+
+2025-06-25 * "Jarreau Retail" "Partial payment against SI-1326"
+  Assets:Bank:Checking                          1501.79 USD
+  Assets:AR                                    -1501.79 USD
+
+2025-06-26 * "Stonegate Property Group" "Rent for July paid in advance, check 1185"
+  Assets:Prepayments                            5750.00 USD
+  Assets:Bank:Checking                         -5750.00 USD
+
+2025-06-26 * "Magneto Paper and Print" "Stationery and printer supplies"
+  Expenses:Office                                440.01 USD
+  Assets:Bank:Checking                          -440.01 USD
+
+2025-06-26 * "Castellano and Sons Supply" "Goods received on PI-2502"
+  Assets:Inventory                              2187.13 USD
+  Liabilities:AP                               -2187.13 USD
+
+2025-06-26 * "Sextant Outfitters" "Partial payment against SI-1330"
+  Assets:Bank:Checking                           848.36 USD
+  Assets:AR                                     -848.36 USD
+
+2025-06-26 * "Jarreau Retail" "Partial payment against SI-1327"
+  Assets:Bank:Checking                          5292.49 USD
+  Assets:AR                                    -5292.49 USD
+
+2025-06-27 * "Magneto Paper and Print" "Printer toner and paper"
+  Expenses:Office                                 90.50 USD
+  Assets:Bank:Checking                           -90.50 USD
+
+2025-06-27 * "Sextant Outfitters" "Partial payment against SI-1328, check 4803"
+  Assets:Bank:Checking                          1316.36 USD
+  Assets:AR                                    -1316.36 USD
+
+2025-06-29 * "Longmeadow Savings Bank" "Account maintenance charge"
+  Expenses:BankFees                               25.00 USD
+  Assets:Bank:Checking                           -25.00 USD
+
+2025-06-30 * "Jarreau Retail" "Partial payment against SI-1326, check 9000"
+  Assets:Bank:Checking                          3504.19 USD
+  Assets:AR                                    -3504.19 USD
+
+2025-06-30 * "Sextant Outfitters" "Partial payment against SI-1330"
+  Assets:Bank:Checking                          1979.51 USD
+  Assets:AR                                    -1979.51 USD
+
+2025-06-30 * "Sextant Outfitters" "Partial payment against SI-1329, check 4804"
+  Assets:Bank:Checking                          3801.03 USD
+  Assets:AR                                    -3801.03 USD

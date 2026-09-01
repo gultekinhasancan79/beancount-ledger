@@ -1,0 +1,280 @@
+[
+ {
+  "selector": "train:12",
+  "arm": "A",
+  "replicate": 1,
+  "per_turn_cap": 8000,
+  "reasoning_replay": true,
+  "replay_policy": "full",
+  "max_total_completion_tokens": 40000,
+  "timeout": 180.0,
+  "retries": 0,
+  "provider": "mistral",
+  "endpoint": "https://api.mistral.ai/v1",
+  "model": "mistral-medium-2508",
+  "client_version": "0.3.1",
+  "started_at": "2026-08-30T22:01:50.898023",
+  "temperature": 0.0,
+  "top_p": 1.0,
+  "seed": null,
+  "prompt_schema_digest": "d67f5324e599d78c4ce68f70d89c2c1bf39bdc6ea230330df72155623e4e0c33",
+  "episode_contract_version": 1,
+  "order_seed": 0,
+  "block_index": 5,
+  "arm_position": 2,
+  "task_id": "task-803e24e72017ce25ae454de8",
+  "reward": 1.0,
+  "stop": "piv_submitted",
+  "truncated": false,
+  "error": null,
+  "batch_status": "VALID",
+  "turns": 4.0,
+  "tools": [
+   "list_files",
+   "read_file",
+   "read_file",
+   "read_file",
+   "write_ledger",
+   "submit"
+  ],
+  "wrote_ledger": true,
+  "budget_accounting": "VALID",
+  "budget_accounting_detail": null,
+  "wire_caps": [
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 1131,
+    "usage_completion_tokens": 6
+   },
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 1211,
+    "usage_completion_tokens": 79
+   },
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 6329,
+    "usage_completion_tokens": 3107
+   },
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 9739,
+    "usage_completion_tokens": 5
+   }
+  ],
+  "wire_caps_all_attempts": [
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 1131,
+    "usage_completion_tokens": 6
+   },
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 1211,
+    "usage_completion_tokens": 79
+   },
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 6329,
+    "usage_completion_tokens": 3107
+   },
+   {
+    "max_tokens": null,
+    "max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "usage_prompt_tokens": 9739,
+    "usage_completion_tokens": 5
+   }
+  ],
+  "attempts": 1,
+  "billed_input_tokens_all_attempts": 18410,
+  "billed_output_tokens_all_attempts": 3197,
+  "episode_contract_digest": "43a1150324889cc405f3292865ad92154e4b02e4d9c8ca6801048397caf21698",
+  "optional_columns_present": true,
+  "candidate_logical_text_digest": "a8d31278da7d2a4a224292d091ac40dbb55f061f92d80dae5821ad41653ea10a",
+  "candidate_stored_bytes_digest": "426441bab66cc9846b3d155f66ea5438e5587237b70d000d1146a24d7519a9cd",
+  "prompt_tokens": 18410.0,
+  "completion_tokens": 3197.0,
+  "total_tokens": 21607,
+  "token_usage": {
+   "input_tokens": 18410.0,
+   "output_tokens": 3197.0,
+   "final_output_tokens": 3197,
+   "final_input_tokens": 6547
+  },
+  "last_turn_input_tokens": 9739,
+  "last_turn_output_tokens": 5,
+  "last_assistant_chars": 0,
+  "volume": {
+   "assistant_content": 520,
+   "assistant_reasoning": 0,
+   "tool_replies": 14645,
+   "assistant_messages": 4,
+   "tool_messages": 6
+  },
+  "last_assistant_tail": "",
+  "metrics": {
+   "piv/evaluator_failed": 0.0,
+   "piv/protocol_failed": 0.0,
+   "piv/training_eligible": 1.0,
+   "piv/submitted": 1.0,
+   "piv/no_tool_turns": 0.0,
+   "piv/no_tool_limit": 0.0,
+   "piv/no_tool_truncated": 0.0,
+   "piv/truncation_limit": 0.0,
+   "piv/turn_cap_no_submit": 0.0,
+   "piv/turn_cap_submit_unexecuted": 0.0,
+   "piv/submit_refused": 0.0,
+   "piv/output_budget_exhausted": 0.0,
+   "piv/budget_accounting_invalid": 0.0
+  },
+  "seconds": 68.0,
+  "per_turn": [
+   {
+    "turn": 1,
+    "input_tokens": 1131,
+    "output_tokens": 6,
+    "reasoning_tokens": 0,
+    "prompt_messages": 2,
+    "reasoning_chars_in_history": 0,
+    "reasoning_chars_sent": 0,
+    "visible_chars_in_history": 191,
+    "assistant_content_chars": 0,
+    "assistant_reasoning_chars": 0,
+    "request_max_tokens": 8000,
+    "wire_max_tokens": null,
+    "wire_max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "list_files"
+    ],
+    "cumulative_input_tokens": 1131,
+    "cumulative_output_tokens": 6
+   },
+   {
+    "turn": 2,
+    "input_tokens": 1211,
+    "output_tokens": 79,
+    "reasoning_tokens": 0,
+    "prompt_messages": 4,
+    "reasoning_chars_in_history": 0,
+    "reasoning_chars_sent": 0,
+    "visible_chars_in_history": 408,
+    "assistant_content_chars": 0,
+    "assistant_reasoning_chars": 0,
+    "request_max_tokens": 8000,
+    "wire_max_tokens": null,
+    "wire_max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "read_file",
+     "read_file",
+     "read_file"
+    ],
+    "cumulative_input_tokens": 2342,
+    "cumulative_output_tokens": 85
+   },
+   {
+    "turn": 3,
+    "input_tokens": 6329,
+    "output_tokens": 3107,
+    "reasoning_tokens": 0,
+    "prompt_messages": 8,
+    "reasoning_chars_in_history": 0,
+    "reasoning_chars_sent": 0,
+    "visible_chars_in_history": 14343,
+    "assistant_content_chars": 520,
+    "assistant_reasoning_chars": 0,
+    "request_max_tokens": 8000,
+    "wire_max_tokens": null,
+    "wire_max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "write_ledger"
+    ],
+    "cumulative_input_tokens": 8671,
+    "cumulative_output_tokens": 3192
+   },
+   {
+    "turn": 4,
+    "input_tokens": 9739,
+    "output_tokens": 5,
+    "reasoning_tokens": 0,
+    "prompt_messages": 10,
+    "reasoning_chars_in_history": 0,
+    "reasoning_chars_sent": 0,
+    "visible_chars_in_history": 24237,
+    "assistant_content_chars": 0,
+    "assistant_reasoning_chars": 0,
+    "request_max_tokens": 8000,
+    "wire_max_tokens": null,
+    "wire_max_completion_tokens": 8000,
+    "provider_model": "mistral-medium-2508",
+    "system_fingerprint": null,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "submit"
+    ],
+    "cumulative_input_tokens": 18410,
+    "cumulative_output_tokens": 3197
+   }
+  ],
+  "rollout_id": "f5ba0bae1f134d7d8277a7c7d07630a2",
+  "revision": 1,
+  "phase": "TERMINAL",
+  "submitted": true,
+  "workspace": "C:\\Users\\gulte\\AppData\\Local\\Temp\\beancount_env_3lyenqdy",
+  "artifact": "BOUND",
+  "artifact_reason": null,
+  "artifact_stored_bytes_digest": "03111516d43c811ce7423e6697b6c301ef70ab9547c31af3baf2a5d101e3454f",
+  "artifact_logical_text_digest": "e37d89a2c7a51d52d32908d3dfa6b1f246e089b229537a3238957d978469a732",
+  "breakdown": {
+   "total": 1.0,
+   "verdict": "CORRECT_SOLUTION",
+   "outcome": "delivered",
+   "renderable": true,
+   "components": {
+    "targets_hit": "1.000000",
+    "errors_resolved": "1.000000"
+   },
+   "penalties": {},
+   "protocol_reason": null,
+   "protocol_detail": null,
+   "gated": false,
+   "same_books_as_golden": true,
+   "complete": true
+  }
+ }
+]

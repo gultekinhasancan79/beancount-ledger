@@ -1,0 +1,70 @@
+[
+ {
+  "selector": "train:12",
+  "task_id": "task-803e24e72017ce25ae454de8",
+  "reward": 0.0,
+  "stop": "piv_submitted",
+  "truncated": true,
+  "error": null,
+  "batch_status": "VALID",
+  "turns": 14.0,
+  "tools": [
+   "list_files",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "run_beancount",
+   "grep",
+   "read_file",
+   "read_file",
+   "write_ledger",
+   "run_beancount",
+   "submit"
+  ],
+  "wrote_ledger": true,
+  "prompt_tokens": 199303.0,
+  "completion_tokens": 37830.0,
+  "final_output_tokens": 37830,
+  "final_input_tokens": 0,
+  "total_tokens": 237133,
+  "last_assistant_chars": 0,
+  "volume": {
+   "assistant_content": 23694,
+   "assistant_reasoning": 92895,
+   "tool_replies": 30972,
+   "assistant_messages": 14,
+   "tool_messages": 12
+  },
+  "last_assistant_tail": "",
+  "metrics": {
+   "piv/evaluator_failed": 0.0,
+   "piv/protocol_failed": 0.0,
+   "piv/training_eligible": 1.0,
+   "piv/submitted": 1.0,
+   "piv/no_tool_turns": 2.0,
+   "piv/no_tool_limit": 0.0,
+   "piv/no_tool_truncated": 2.0,
+   "piv/truncation_limit": 0.0,
+   "piv/turn_cap_no_submit": 0.0,
+   "piv/turn_cap_submit_unexecuted": 0.0,
+   "piv/submit_refused": 0.0
+  },
+  "seconds": 1069.2,
+  "delivery": {
+   "artifact_logical_text_digest": "NO_ARTIFACT",
+   "artifact_stored_bytes_digest": "NO_ARTIFACT",
+   "committed_revision": 1,
+   "completion": "incomplete",
+   "delivery_receipt_digest": "3ef028a33ec9377e4593be9250ce65634f784c6baac105ca2efe0e9f8fc786c6",
+   "evaluation_receipt_digest": "2b0247a36721948e6871e078f2f0c80f1608ef068a352aa5c70dd474b8c32fd7",
+   "input_logical_text_digest": "fec6707af0b1850d70599abd8c4884dae9e2e52f8706eac8a2d0fa910c7ab42f",
+   "input_stored_bytes_digest": "ecd977013b09c451438fa7bc2447792b09d1f5b7811fc5a32fa25ad017b15584",
+   "outcome": "policy_blocked",
+   "rollout_id": "5ca335eb887e4d25b29e93119e6b6e92",
+   "schema": "piv.delivery/1",
+   "score": "0",
+   "score_result_digest": "ab9137caa5e2e620cf2f520b86bd87a516667f5400acfc07a6b667623f0cbc33"
+  }
+ }
+]

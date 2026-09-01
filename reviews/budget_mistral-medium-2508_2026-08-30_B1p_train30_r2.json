@@ -1,0 +1,32 @@
+[
+ {
+  "selector": "train:30",
+  "arm": "B1",
+  "replicate": 2,
+  "per_turn_cap": 16000,
+  "reasoning_replay": true,
+  "replay_policy": "full",
+  "max_total_completion_tokens": 40000,
+  "timeout": 180.0,
+  "retries": 0,
+  "provider": "mistral",
+  "endpoint": "https://api.mistral.ai/v1",
+  "model": "mistral-medium-2508",
+  "client_version": "0.3.1",
+  "started_at": "2026-08-30T23:35:48.041855",
+  "temperature": 0.0,
+  "top_p": 1.0,
+  "seed": null,
+  "prompt_schema_digest": "d67f5324e599d78c4ce68f70d89c2c1bf39bdc6ea230330df72155623e4e0c33",
+  "episode_contract_version": 1,
+  "order_seed": 0,
+  "block_index": 17,
+  "arm_position": 1,
+  "quarantined": true,
+  "status": "INVALID",
+  "reasons": {
+   "ModelError": 1
+  },
+  "seconds": 50.0
+ }
+]

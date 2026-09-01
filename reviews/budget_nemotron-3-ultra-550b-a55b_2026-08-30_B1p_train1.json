@@ -1,0 +1,274 @@
+[
+ {
+  "selector": "train:1",
+  "arm": "B1",
+  "per_turn_cap": 16000,
+  "reasoning_replay": true,
+  "replay_policy": "full",
+  "max_total_completion_tokens": 40000,
+  "timeout": 180.0,
+  "retries": 1,
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "client_version": "0.3.1",
+  "started_at": "2026-08-30T18:52:06.824856",
+  "task_id": "task-34316a41da6b23bdf0b1e93e",
+  "reward": 1.0,
+  "stop": "piv_submitted",
+  "truncated": false,
+  "error": null,
+  "batch_status": "VALID",
+  "turns": 9.0,
+  "tools": [
+   "list_files",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "read_file",
+   "run_beancount",
+   "grep",
+   "write_ledger",
+   "run_beancount",
+   "run_beancount",
+   "submit"
+  ],
+  "wrote_ledger": true,
+  "candidate_logical_text_digest": "805e528f90e7e8e9b7e50bdc44c65785d48d07366da72b54ad0ac9f2ff2e2407",
+  "candidate_stored_bytes_digest": "7d7cd6e949dc66c729cc4deef748dfe4157e62b3657e7651e979a8dbed1f744f",
+  "prompt_tokens": 123754.0,
+  "completion_tokens": 18957.0,
+  "total_tokens": 142711,
+  "token_usage": {
+   "input_tokens": 123754.0,
+   "output_tokens": 18957.0,
+   "final_output_tokens": 18957,
+   "final_input_tokens": 8357
+  },
+  "last_turn_input_tokens": 26006,
+  "last_turn_output_tokens": 1308,
+  "last_assistant_chars": 312,
+  "volume": {
+   "assistant_content": 3340,
+   "assistant_reasoning": 28507,
+   "tool_replies": 18593,
+   "assistant_messages": 9,
+   "tool_messages": 15
+  },
+  "last_assistant_tail": "iation is complete and verified. The checking account balance in the ledger (23,561.01) matches the bank statement ending balance (25,509.98) after accounting for the outstanding check 1185 (-5,750.00) and deposit in transit check 4804 (+3,801.03), per the bookkeeping policy on timing differences.\n\n",
+  "metrics": {
+   "piv/evaluator_failed": 0.0,
+   "piv/protocol_failed": 0.0,
+   "piv/training_eligible": 1.0,
+   "piv/submitted": 1.0,
+   "piv/no_tool_turns": 0.0,
+   "piv/no_tool_limit": 0.0,
+   "piv/no_tool_truncated": 0.0,
+   "piv/truncation_limit": 0.0,
+   "piv/turn_cap_no_submit": 0.0,
+   "piv/turn_cap_submit_unexecuted": 0.0,
+   "piv/submit_refused": 0.0,
+   "piv/output_budget_exhausted": 0.0
+  },
+  "seconds": 1679.7,
+  "per_turn": [
+   {
+    "turn": 1,
+    "input_tokens": 1295,
+    "output_tokens": 91,
+    "reasoning_tokens": 0,
+    "prompt_messages": 2,
+    "reasoning_chars_in_history": 0,
+    "reasoning_chars_sent": 0,
+    "visible_chars_in_history": 192,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "list_files"
+    ],
+    "cumulative_input_tokens": 1295,
+    "cumulative_output_tokens": 91
+   },
+   {
+    "turn": 2,
+    "input_tokens": 1474,
+    "output_tokens": 162,
+    "reasoning_tokens": 0,
+    "prompt_messages": 4,
+    "reasoning_chars_in_history": 319,
+    "reasoning_chars_sent": 319,
+    "visible_chars_in_history": 409,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "read_file",
+     "read_file",
+     "read_file"
+    ],
+    "cumulative_input_tokens": 2769,
+    "cumulative_output_tokens": 253
+   },
+   {
+    "turn": 3,
+    "input_tokens": 5693,
+    "output_tokens": 260,
+    "reasoning_tokens": 0,
+    "prompt_messages": 8,
+    "reasoning_chars_in_history": 410,
+    "reasoning_chars_sent": 410,
+    "visible_chars_in_history": 13017,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "read_file",
+     "read_file",
+     "read_file",
+     "read_file",
+     "read_file"
+    ],
+    "cumulative_input_tokens": 8462,
+    "cumulative_output_tokens": 513
+   },
+   {
+    "turn": 4,
+    "input_tokens": 7821,
+    "output_tokens": 4813,
+    "reasoning_tokens": 0,
+    "prompt_messages": 14,
+    "reasoning_chars_in_history": 513,
+    "reasoning_chars_sent": 513,
+    "visible_chars_in_history": 16540,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "run_beancount"
+    ],
+    "cumulative_input_tokens": 16283,
+    "cumulative_output_tokens": 5326
+   },
+   {
+    "turn": 5,
+    "input_tokens": 12661,
+    "output_tokens": 3802,
+    "reasoning_tokens": 0,
+    "prompt_messages": 16,
+    "reasoning_chars_in_history": 11021,
+    "reasoning_chars_sent": 11021,
+    "visible_chars_in_history": 16574,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "grep"
+    ],
+    "cumulative_input_tokens": 28944,
+    "cumulative_output_tokens": 9128
+   },
+   {
+    "turn": 6,
+    "input_tokens": 17115,
+    "output_tokens": 8364,
+    "reasoning_tokens": 0,
+    "prompt_messages": 18,
+    "reasoning_chars_in_history": 18194,
+    "reasoning_chars_sent": 18194,
+    "visible_chars_in_history": 18622,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "write_ledger"
+    ],
+    "cumulative_input_tokens": 46059,
+    "cumulative_output_tokens": 17492
+   },
+   {
+    "turn": 7,
+    "input_tokens": 25795,
+    "output_tokens": 72,
+    "reasoning_tokens": 0,
+    "prompt_messages": 20,
+    "reasoning_chars_in_history": 26060,
+    "reasoning_chars_sent": 26060,
+    "visible_chars_in_history": 30239,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "run_beancount"
+    ],
+    "cumulative_input_tokens": 71854,
+    "cumulative_output_tokens": 17564
+   },
+   {
+    "turn": 8,
+    "input_tokens": 25894,
+    "output_tokens": 85,
+    "reasoning_tokens": 0,
+    "prompt_messages": 22,
+    "reasoning_chars_in_history": 26323,
+    "reasoning_chars_sent": 26323,
+    "visible_chars_in_history": 30273,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "run_beancount"
+    ],
+    "cumulative_input_tokens": 97748,
+    "cumulative_output_tokens": 17649
+   },
+   {
+    "turn": 9,
+    "input_tokens": 26006,
+    "output_tokens": 1308,
+    "reasoning_tokens": 0,
+    "prompt_messages": 24,
+    "reasoning_chars_in_history": 26553,
+    "reasoning_chars_sent": 26553,
+    "visible_chars_in_history": 30409,
+    "request_max_tokens": 16000,
+    "finish_reason": "tool_calls",
+    "truncated": false,
+    "tools": [
+     "submit"
+    ],
+    "cumulative_input_tokens": 123754,
+    "cumulative_output_tokens": 18957
+   }
+  ],
+  "rollout_id": "49f53bbe1486496ab5fe8985d0453b74",
+  "revision": 1,
+  "phase": "TERMINAL",
+  "submitted": true,
+  "workspace": "C:\\Users\\gulte\\AppData\\Local\\Temp\\beancount_env_1c67a2yg",
+  "artifact": "BOUND",
+  "artifact_reason": null,
+  "artifact_stored_bytes_digest": "ddb2116cd4611e4b497334931948555be797206547bf2d5047ea70758d304c7b",
+  "artifact_logical_text_digest": "0b1d414ea170a12b6f4b00c9d3976012462c26a505f9577744adcb3ba57291d7",
+  "breakdown": {
+   "total": 1.0,
+   "verdict": "CORRECT_SOLUTION",
+   "outcome": "delivered",
+   "renderable": true,
+   "components": {
+    "targets_hit": "1.000000",
+    "errors_resolved": "1.000000"
+   },
+   "penalties": {},
+   "protocol_reason": null,
+   "protocol_detail": null,
+   "gated": false,
+   "same_books_as_golden": true
+  },
+  "prompt_schema_digest": "b1f3d055eec605dd147a559d24ef6aa28b051d704212bfc4d349a55e2c9074d0",
+  "stamped_from": "C:\\Users\\gulte\\Desktop\\PIV\\prime\\environments\\beancount_ledger"
+ }
+]

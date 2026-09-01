@@ -1,0 +1,13 @@
+account,type,description
+Assets:Bank:Checking,asset,Primary operating checking account held at Cascade Bank
+Assets:AR,asset,Trade receivables from customers
+Assets:Inventory,asset,Goods held for resale
+Assets:Prepayments,asset,Amounts paid in advance of the period they relate to
+Liabilities:AP,liability,Trade payables to suppliers
+Liabilities:SalesTax-Payable,liability,Sales tax collected from customers and owed to the state
+Income:Sales,income,Revenue from goods sold
+Expenses:COGS,expense,Cost of goods sold
+Expenses:Office,expense,Office supplies and consumables
+Expenses:Rent,expense,Premises rent for the period
+Expenses:BankFees,expense,Bank service charges and transaction fees
+Equity:Opening,equity,Opening balance equity
