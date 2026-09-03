@@ -1,8 +1,57 @@
 # beancount-ledger
 
-Bank reconciliation and month-end close on a [Beancount](https://beancount.github.io/) ledger, scored **deterministically** — the trial balance either ties or it does not; no LLM judge anywhere in the reward path.
+**A reinforcement-learning environment where an agent does a small company's bookkeeping, and the reward is whether the books actually balance.** No LLM judge. Every discrepancy is planted by a generator that knows the correct ledger, so the scorer pays exact partial credit and cannot be argued with.
 
-The agent is a bookkeeper for a small trading company. It receives a workspace of public files — the ledger, a bank statement, a chart of accounts, counterparty registers, a prior-period archive and the accounting policy — finds what is missing, wrong or duplicated, writes the corrected ledger back, and submits. Every discrepancy is planted by a generator whose world graph is the single source of truth, so the scorer knows the exact correct books and pays exact partial credit.
+Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `beancount-ledger`. Apache-2.0.
+
+```bash
+uv run vf-eval beancount-ledger     # zero setup: runs the shipped hand-authored task
+```
+
+### Results at a glance
+
+Preregistered, sealed measurement: 4 open-weight Mistral models × 6 generated tasks × 3 episode-contract arms × 2 replicates. 143 of 144 cells ran, 138 valid, **0 scorer disputes, 0 exploits**. Full table with every failure named: [`reviews/arms_confirm1v4.md`](reviews/arms_confirm1v4.md).
+
+| Model | Arm A: 8k tok/turn, reasoning replayed | Arm B1: 16k tok/turn, replayed | Arm B2: 8k tok/turn, no replay |
+|---|---|---|---|
+| `devstral-2512` | 58% | 73% | **92%** |
+| `mistral-medium-2508` | **82%** | 45% | 64% |
+| `ministral-14b-2512` | 0% | 0% | 17% |
+| `ministral-8b-2512` | 0% | 8% | 0% |
+
+*Correct deliveries out of valid completed episodes. Accepted-submit rate 83–100% everywhere; the 40K-token episode ceiling never bound.*
+
+Two things this shows and one it does not:
+
+- The reward **separates capability**: small models score near zero, stronger ones 58–92%, with real partial credit in between. That is what you want from a training signal.
+- **Whether to replay prior-turn reasoning is a model-specific knob.** On `devstral-2512`, not replaying improved correct delivery by +0.36 at about half the tokens per correct answer; on `mistral-medium-2508` the direction reversed. Neither is a default recommendation.
+- It does **not** show RL learnability. No policy was trained here; that is what the environment is for.
+
+### Why this is hard to game
+
+- **The reward is derived, not judged.** Trial balance ties or it does not; planted discrepancies are resolved or they are not. Penalties for damaging existing records, fabricating entries or inventing accounts.
+- **Nothing the agent sees regenerates an answer.** Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The Hub artefact ships no goldens, no tests, no provenance.
+- **19 exploit probes and an adversary loop** live in `tests/` (canonicalisation, decimal edge cases, duplicate detection, entitlement, and more). The exploit corpus is scored against an oracle independent of the scorer.
+- **Every number above is reproducible from a sealed contract.** The pre-registration is hashed into the schedule id; the instrument commit, episode-contract digest and package pins are recorded in [`reviews/RELEASE_ATTESTATION.md`](reviews/RELEASE_ATTESTATION.md).
+
+### How to read this repository
+
+| Path | What it is |
+|---|---|
+| `beancount_ledger/` | The environment: world generator (`graph/`), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
+| `tests/` | 60 files: the test battery, 19 exploit probes, adversary loop, liveness witness, preflight and sealing scripts. Not shipped. |
+| `reviews/` | Dated evidence: pre-registration, sealed schedule, 143 rollout records, rendered arm tables, release attestation. Not shipped. |
+| `outputs/evals/` | Raw `vf-eval` transcripts on the demo task. |
+
+### Author
+
+Designed and built by Hasancan Gültekin in 2026 as a deterministic-reward alternative to judge-scored agent benchmarks. Registered as a project on [Manifund](https://manifund.org/projects/beancount-ledger-a-deterministic-reward-rl-environment-for-agentic-bookkeeping). Questions, collaboration, or a run on your own models: gultekinhasancan79@gmail.com · [GitHub](https://github.com/gultekinhasancan79) · [LinkedIn](https://linkedin.com/in/can79).
+
+---
+
+## Technical reference
+
+Everything below is the detailed contract: how worlds are keyed and manifested, the observation and episode contracts, the rubric, security properties and provenance.
 
 ### Overview
 - **Environment ID**: `beancount-ledger`
