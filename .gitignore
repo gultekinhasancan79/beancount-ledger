@@ -1,3 +1,11 @@
 __pycache__/
 *.pyc
 .venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+# raw provider outputs of the adversary loop: retained outside the source tree
+# (reviews/RELEASE_ATTESTATION.md, "Control-round raw evidence")
+tests/adversary_out/
