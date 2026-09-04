@@ -4865,8 +4865,39 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
         if "/site-packages/openai/" in key and key.endswith(".py") and "__init__" not in key:
             victim = Path(sys.prefix) / Path(key.split("prefix/", 1)[1])
             break
+    # The venv is shared by every process on this machine. Two batteries running
+    # at once would each read the other's appended byte as "the original" and
+    # restore it, leaving the file dirty for good (seen on 2026-09-05: the
+    # startup witness then refused every later run with record_hash[openai]).
+    # So: never mutate a file that already fails its wheel's RECORD hash, and
+    # hold an O_EXCL lock beside it while the witness runs.
+    already_dirty = [d for d in manifest["distributions"] if d["name"] == "openai" and d["declared_hash_mismatch"]]
+    witness_lock = None
+    if victim is not None and victim.is_file() and not already_dirty:
+        # The lock lives OUTSIDE site-packages: a file beside the victim would itself be an
+        # "extra file" in the environment walk and change the count the witness compares.
+        import hashlib as _hashlib  # noqa: PLC0415
+        import tempfile as _tempfile  # noqa: PLC0415
+        witness_lock = Path(_tempfile.gettempdir()) / f"piv-venv-witness-{_hashlib.sha256(sys.prefix.encode('utf-8')).hexdigest()[:12]}.lock"
+        for _attempt in range(120):                       # another witness holds it for a few seconds at most
+            try:
+                fd = os.open(str(witness_lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.close(fd)
+                break
+            except FileExistsError:
+                time.sleep(0.5)
+        else:
+            witness_lock = None
+            problems.append(f"could not take the witness lock {victim.name}.witness-lock within 60 s; "
+                            "another battery is holding it or a crashed one left it behind")
     if victim is None or not victim.is_file():
         problems.append(f"no installed openai/*.py could be found to mutate: {victim}")
+    elif already_dirty:
+        problems.append("the shared venv is ALREADY dirty (openai RECORD hash mismatch: "
+                        f"{already_dirty[0]['declared_hash_mismatch'][:3]}) — refusing to mutate on top of it; "
+                        "restore the file from the wheel (uv cache) and rerun")
+    elif witness_lock is None:
+        pass                                              # the lock problem is already recorded
     else:
         version_before = importlib_metadata.version("openai")
         lock_before = SA.package_lock()
@@ -4926,6 +4957,10 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
         finally:
             victim.write_bytes(original)
             SA._ENVIRONMENT_MANIFEST = None
+            try:
+                witness_lock.unlink()
+            except OSError:
+                pass
         # 5. RESTORED: green again. A witness that cannot come back is not a
         #    witness, and this venv is shared by every process on the machine.
         if victim.read_bytes() != original:
