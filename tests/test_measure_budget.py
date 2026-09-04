@@ -72,6 +72,17 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
+#: The generated tasks are KEYED, so `load_environment` refuses to build one
+#: without a secret — and this file reaches it through
+#: `build_experiment_contract` -> `expected_public_task_ids`, which every
+#: contract-sealing witness below calls. `setdefault`, never assignment: a
+#: machine that has a real `~/.piv` secret keeps it, and a machine that has
+#: none (a fresh container, a CI runner) gets the SAME fixed test secret every
+#: other keyed suite here uses — `test_exploits`, `test_sentinels`,
+#: `test_generator`, `liveness_witness` and `test_lag` all pin this exact
+#: value, and the sentinel/exploit fixtures are derived from it.
+os.environ.setdefault("PIV_EVAL_SECRET", "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e")
+
 import verifiers as vf  # noqa: E402
 from verifiers.legacy.types import (  # noqa: E402
     AssistantMessage, ClientConfig, Response, SystemMessage, Tool, ToolCall, ToolMessage, Usage, UserMessage,
@@ -3870,14 +3881,33 @@ def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
 
     # The sealed set is the WHOLE package directory minus named exclusions,
     # and the contract binds every part of it.
-    if list(SA.EXECUTION_PATHS) != ["environments/beancount_ledger/**"]:
+    #
+    # THE EXECUTION ROOT IS ASSERTED AS A RESOLVED DIRECTORY, not as a
+    # hardcoded string. The package is vendored at
+    # `environments/beancount_ledger` in the development monorepo and IS the
+    # repository top level in a standalone checkout; a name pinned to one
+    # layout resolves to NOTHING in the other, and a walk over nothing yields
+    # `None`, which compares equal to the sealed `None` on both sides of every
+    # check. So the property witnessed here is the one that actually matters:
+    # the sealed root resolves to the very package directory this process is
+    # importing from, and the path set is that directory's whole subtree.
+    resolved = SA.execution_root_for()
+    package = Path(SA.__file__).resolve().parents[1]
+    base = SA.repo_root() if resolved == "." else SA.repo_root() / resolved
+    if base.resolve() != package:
+        problems.append(f"the sealed execution root {resolved!r} resolves to {base} — not to the package "
+                        f"directory {package} that is executing, so the digest would seal other bytes "
+                        f"(or, resolving to nothing, no bytes at all)")
+    if list(SA.EXECUTION_PATHS) != ["**" if resolved == "." else f"{resolved}/**"]:
         problems.append(f"the execution set is not the whole package directory: {SA.EXECUTION_PATHS}")
-    if set(SA.EXECUTION_EXCLUDES) != {"reviews/**", ".venv/**", "**/__pycache__/**", "*.pyc"}:
+    if set(SA.EXECUTION_EXCLUDES) != {"reviews/**", ".venv/**", ".git/**", "**/__pycache__/**", "*.pyc"}:
         problems.append(f"the exclusion list is not the sealed one: {SA.EXECUTION_EXCLUDES}")
     for relative, excluded in (("reviews/schedule_x.json", True), (".venv/Lib/site-packages/x.py", True),
+                               (".git/objects/ab/cdef", True), (".git/index", True),
                                ("tests/__pycache__/x.pyc", True), ("tests/x.pyc", True),
                                ("openai.py", False), ("tests/x.py", False),
                                ("beancount_ledger/graph/policy.py", False),
+                               ("tests/gitignore_helper.py", False),
                                ("tests/reviews_of_x.py", False)):
         if SA._excluded(relative) is not excluded:
             problems.append(f"the exclusion matcher is wrong for {relative!r}")
@@ -4760,11 +4790,19 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
             problems.append(f"the walked roots are not maximal: {root} sits inside another")
     if manifest["stdlib_file_count"] < 100:
         problems.append(f"only {manifest['stdlib_file_count']} stdlib file(s) were hashed")
+    # The stdlib directory is `Lib/` on Windows and `lib/python3.12/` on POSIX,
+    # so the key is taken from `sysconfig`'s OWN stdlib path — the same source
+    # the manifest uses — rather than from a hardcoded `/Lib/`. A hardcoded one
+    # does not merely misreport: on the platform it does not match it turns
+    # this row into a check of nothing at all.
+    stdlib_key = SA._environment_key(stdlib)
+    hashed = {key for key, _ in manifest["files"]}
     for module in ("json/encoder.py", "ssl.py", "subprocess.py"):
-        if not any(key.endswith("/Lib/" + module) for key, _ in manifest["files"]):
+        if f"{stdlib_key}/{module}" not in hashed:
             problems.append(f"the stdlib's {module} — which shapes every provider request — is not "
-                            f"hashed")
-    if any(key.startswith("prefix/Lib/site-packages/") for key in manifest["extra_files"]) and \
+                            f"hashed under {stdlib_key}/")
+    site_prefixes = tuple(f"{SA._environment_key(r)}/" for r in SA.site_package_roots())
+    if any(key.startswith(site_prefixes) for key in manifest["extra_files"]) and \
             len(manifest["extra_files"]) > 50:
         problems.append("the stdlib leaked into the no-RECORD-reference count and drowned its signal")
     source = Path(SA.__file__).read_text(encoding="utf-8")
@@ -5088,10 +5126,19 @@ def test_the_instrument_is_verified_per_cell_and_per_request_and_drift_makes_no_
             problems.append(f"the session must stop AT the drifted cell: {len(commands)} of "
                             f"{schedule['n_cells']} cells were attempted")
         # The sealed digests are handed down to every cell.
+        #
+        # A session that REFUSED before cell 1 builds no command at all, and a
+        # flag whose value is missing leaves it as the last element: indexing
+        # `commands[0]` or `index(flag) + 1` blind crashes the whole file and
+        # takes every witness after this one down with it. Both absences are
+        # reported the same way every other disagreement here is.
+        first = commands[0] if commands else []
         for flag, want in (("--sealed-execution-tree-digest", contract["execution_tree_digest"]),
                            ("--sealed-runtime-environment-digest", contract["runtime_environment_digest"])):
-            if flag not in commands[0] or commands[0][commands[0].index(flag) + 1] != want:
-                problems.append(f"the cell command does not carry {flag}")
+            carried = first[first.index(flag) + 1] if flag in first[:-1] else None
+            if carried != want:
+                problems.append(f"the cell command does not carry {flag}: {carried!r} (sealed {want!r}; "
+                                f"{len(commands)} command(s) were built)")
         journal = AT.load_execution_journal(SA.journal_path_for(reviews, schedule))
         events = [e.get("event") for e in journal["events"]]
         if "instrument_drift" not in events:
@@ -5452,11 +5499,20 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
         plain subprocess DOES execute, and that the same subprocess under a
         fresh prefix does not.
 
-    C3  Four real `sys.path` members were outside the walk —
-        `base_prefix/DLLs` (37 extension modules, `_ssl.pyd` among them), the
-        `base_prefix/pythonXY.zip` slot, `prefix/pyvenv.cfg`, and every file
-        in `Scripts/` that no RECORD references. Closed by taking the roots
-        from `sys.path` itself.
+    C3  Four real `sys.path` members were outside the walk — the EXTENSION
+        MODULE directory (37 modules, `_ssl` among them), the `pythonXY.zip`
+        slot, `prefix/pyvenv.cfg`, and every file in the CONSOLE SCRIPT
+        directory that no RECORD references. Closed by taking the roots from
+        `sys.path` itself.
+
+        The first, second and fourth of those have a different NAME on every
+        platform — `base_prefix/DLLs/*.pyd` and `prefix/Scripts/` and
+        `base_prefix/pythonXY.zip` on Windows, `<stdlib>/lib-dynload/*.so` and
+        `prefix/bin/` and `base_prefix/lib/pythonXY.zip` on POSIX — so this
+        witness asks `SA.interpreter_layout()` (which asks `sysconfig`) what
+        they are called here rather than spelling one platform's answer. A
+        witness that names `DLLs/` literally is green on Windows and red
+        everywhere else while the seal it is about is perfectly sound.
 
     THE SHARED-VENV RULE. This interpreter is shared by every process on the
     machine. The two files this test adds are uniquely named, removed in a
@@ -5475,22 +5531,32 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
     keys = {key for key, _digest in manifest["files"]}
 
     # ---------------------------------------------------------------- C3 --
-    # What the walk now covers, by name. Each of these was outside it.
+    # What the walk now covers, by name — under THIS platform's names for the
+    # four members, resolved from `sysconfig` by `SA.interpreter_layout()`.
+    # Each of them was outside the walk.
     survey = {key: status for key, status in manifest["sys_path"]}
+    layout = SA.interpreter_layout()
+    extension_prefix = SA._environment_key(layout["extension_dir"]) + "/"
+    scripts_prefix = SA._environment_key(layout["scripts_dir"]) + "/"
+    zip_key = SA._environment_key(layout["zip_slot"])
     if "prefix/pyvenv.cfg" not in keys:
         problems.append("C3: prefix/pyvenv.cfg — which names the interpreter this venv points at and "
                         "whether the system site-packages are visible — is not hashed")
-    pyd = sorted(k for k in keys if k.startswith("base_prefix/DLLs/") and k.endswith(".pyd"))
-    if len(pyd) < 10:
-        problems.append(f"C3: base_prefix/DLLs holds the extension modules every provider request runs "
-                        f"through (_ssl, _socket, select) and only {len(pyd)} .pyd are hashed")
-    scripts = sorted(k for k in keys if k.startswith("prefix/Scripts/"))
-    if not any(k.endswith(("activate.bat", "activate", "activate.ps1")) for k in scripts):
-        problems.append(f"C3: Scripts/ is hashed only where a RECORD references it — the activate "
-                        f"shims are not in the manifest: {scripts[:8]}")
+    extensions = sorted(k for k in keys if k.startswith(extension_prefix)
+                        and k.endswith(layout["extension_suffix"]))
+    if len(extensions) < 10:
+        problems.append(f"C3: {extension_prefix.rstrip('/')} holds the extension modules every provider "
+                        f"request runs through (_ssl, _socket, select) and only {len(extensions)} "
+                        f"{layout['extension_suffix']} are hashed")
+    scripts = sorted(k for k in keys if k.startswith(scripts_prefix))
+    if not any(k.rsplit("/", 1)[-1].startswith("activate") for k in scripts):
+        problems.append(f"C3: {scripts_prefix.rstrip('/')} is hashed only where a RECORD references it "
+                        f"— the activate shims are not in the manifest: {scripts[:8]}")
     zip_slots = [k for k, status in survey.items() if k.endswith(".zip")]
-    if not zip_slots:
-        problems.append(f"C3: the pythonXY.zip sys.path slot is not surveyed at all: {sorted(survey)}")
+    if zip_key not in survey:
+        problems.append(f"C3: the pythonXY.zip sys.path slot {zip_key} is not surveyed at all — it "
+                        f"PRECEDES the standard library, so creating it shadows every module in it: "
+                        f"{sorted(survey)}")
     for slot in zip_slots:
         if survey[slot] not in ("absent", "file"):
             problems.append(f"C3: the {slot} slot is recorded as {survey[slot]!r}; it must be sealed "
@@ -5501,11 +5567,13 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
                         f"not left unclassified: {survey}")
 
     # ... and a file ADDED where nothing referenced one moves both the digest
-    # and the count. Two additions, one walk: `Scripts/` (where only RECORD
-    # entries used to be seen) and `DLLs/` (not walked at all).
+    # and the count. Two additions, one walk: the CONSOLE SCRIPT directory
+    # (where only RECORD entries used to be seen) and the EXTENSION MODULE
+    # directory (not walked at all) — `Scripts/` and `base_prefix/DLLs` on
+    # Windows, `prefix/bin` and `<stdlib>/lib-dynload` on POSIX.
     nonce = _uuid.uuid4().hex[:12]
-    added = [Path(sys.prefix) / "Scripts" / f"_piv_c3_witness_{nonce}.bat",
-             Path(sys.base_prefix) / "DLLs" / f"_piv_c3_witness_{nonce}.pyd"]
+    added = [layout["scripts_dir"] / f"_piv_c3_witness_{nonce}{layout['script_suffix']}",
+             layout["extension_dir"] / f"_piv_c3_witness_{nonce}{layout['extension_suffix']}"]
     written = []
     try:
         for path in added:
@@ -5517,8 +5585,9 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
         if written:
             after = SA.runtime_environment_manifest(use_cache=False)
             if SA.environment_manifest_digest(after) == sealed:
-                problems.append(f"C3: {len(written)} NEW file(s) under Scripts/ and DLLs/ left the "
-                                f"environment digest unchanged — the perimeter is still open")
+                problems.append(f"C3: {len(written)} NEW file(s) under {scripts_prefix.rstrip('/')} "
+                                f"and {extension_prefix.rstrip('/')} left the environment digest "
+                                f"unchanged — the perimeter is still open")
             if len(after["files"]) != len(manifest["files"]) + len(written):
                 problems.append(f"C3: the file COUNT did not move by {len(written)}: "
                                 f"{len(manifest['files'])} -> {len(after['files'])}")
@@ -5616,7 +5685,15 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
     #       healthy state is an empty list, an unmoved digest and a green
     #       witness. Without this the closure would just be a tripwire that
     #       fires on the normal case.
-    already = str(Path(sys.prefix) / "Lib" / "site-packages")
+    #
+    #       THE ENTRY MUST BE THE REAL SITE-PACKAGES DIRECTORY, asked of the
+    #       running interpreter. `sys.prefix/Lib/site-packages` is its name on
+    #       Windows only; on POSIX it is `prefix/lib/pythonX.Y/site-packages`,
+    #       and inserting the Windows spelling there adds a sys.path slot that
+    #       does not exist — which the survey correctly seals as `absent`, so
+    #       the digest moves and this check reports a stationarity failure that
+    #       is really a typo in the check.
+    already = str(SA.site_package_roots()[0])
     sys.path.insert(0, already)
     try:
         benign = SA.runtime_environment_manifest(use_cache=False)
@@ -5747,8 +5824,9 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
                  "classified and an uncovered one is named by the witness and refused, the executor "
                  "strips PYTHONPATH/PYTHONHOME/PYTHONSTARTUP from every confirmatory cell and journals "
                  "it, a fresh PYTHONPYCACHEPREFIX makes an in-place .pyc edit unreachable (witnessed "
-                 "end-to-end against a real tampered cache), and DLLs/, Scripts/, pyvenv.cfg and the "
-                 "pythonXY.zip slot are inside the walk",
+                 "end-to-end against a real tampered cache), and this platform's extension-module "
+                 "directory, console-script directory, pyvenv.cfg and pythonXY.zip slot are inside "
+                 "the walk",
                  not problems, "\n".join(problems))
 
 

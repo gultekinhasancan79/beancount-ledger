@@ -343,11 +343,16 @@ def test_read_tools_grant_only_the_manifest():
     # a manifest name that is a junction to an outside directory is denied,
     # and a declared public file that is not plain is OUR failure — never a
     # silently narrower listing
-    import _winapi
     outside = tempfile.mkdtemp(prefix="beancount_outside_")
     (Path(outside) / "x.txt").write_text("x", encoding="utf-8")
     os.remove(Path(ws) / "policy.md")
-    _winapi.CreateJunction(outside, str(Path(ws) / "policy.md"))
+    if os.name == "nt":
+        # a junction is the reparse point an attacker can plant without
+        # SeCreateSymbolicLinkPrivilege; a directory symlink is the POSIX twin
+        import _winapi
+        _winapi.CreateJunction(outside, str(Path(ws) / "policy.md"))
+    else:
+        os.symlink(outside, Path(ws) / "policy.md", target_is_directory=True)
     if not env.read_file("policy.md", workspace=ws).startswith("no such file"):
         problems.append("a junction under a manifest name was readable")
     try:

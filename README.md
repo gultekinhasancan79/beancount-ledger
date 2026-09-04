@@ -1,5 +1,9 @@
 # beancount-ledger
 
+[![CI](https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+
 **A reinforcement-learning environment where an agent does a small company's bookkeeping, and the reward is whether the books actually balance.** No LLM judge. Every discrepancy is planted by a generator that knows the correct ledger, so the scorer pays exact partial credit and cannot be argued with.
 
 Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `beancount-ledger`. Apache-2.0.

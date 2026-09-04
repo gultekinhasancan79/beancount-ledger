@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  battery:
+    name: test battery (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
+      - name: Install (exact pins from pyproject)
+        run: |
+          uv venv .venv
+          uv pip install -e .
+
+      - name: Pins match the package's declared set
+        shell: bash
+        run: |
+          uv run --no-sync python - <<'EOF'
+          import beancount_ledger
+          for name, version in beancount_ledger.library_versions().items():
+              print(f"{name}=={version}")
+          EOF
+
+      - name: Run every suite (tests/run_all.py)
+        shell: bash
+        # No evaluator secret is set here on purpose: every keyed suite
+        # `setdefault`s its own pinned TEST_SECRET, and the sentinel/exploit
+        # fixtures are minted under that one. The production secret and the
+        # released manifest never appear in CI.
+        run: uv run --no-sync python tests/run_all.py
+
+  artefact-audit:
+    name: wheel/sdist ship no tests, goldens or evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: uv build
+
+      - name: Audit artefact file lists
+        shell: bash
+        run: |
+          uv run --no-project --with hatchling python - <<'EOF'
+          import sys, tarfile, zipfile, pathlib
+          FORBIDDEN = ("tests/", "reviews/", "outputs/", ".piv", "eval_secret", "adversary", "solutions/")
+          bad = []
+          for path in pathlib.Path("dist").iterdir():
+              if path.suffix == ".whl":
+                  names = zipfile.ZipFile(path).namelist()
+              elif path.name.endswith(".tar.gz"):
+                  names = [m.name.split("/", 1)[-1] for m in tarfile.open(path).getmembers()]
+              else:
+                  continue
+              print(f"{path.name}: {len(names)} files")
+              for name in names:
+                  if any(token in name for token in FORBIDDEN):
+                      bad.append(f"{path.name}: {name}")
+              # the runtime data the environment needs MUST be present
+              for required in ("beancount_ledger/world/ledger.beancount",
+                               "beancount_ledger/tasks/bank_recon_001.json",
+                               "beancount_ledger/world/policy.md"):
+                  if not any(name.endswith(required) for name in names):
+                      bad.append(f"{path.name}: missing {required}")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("artefacts clean")
+          EOF

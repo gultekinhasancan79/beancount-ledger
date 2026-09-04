@@ -359,9 +359,22 @@ SEALED_SCHEDULE_VERSION = 2
 #: `environments/beancount_ledger/openai.py`, and `package_lock` cannot see it
 #: (`importlib.metadata` reads distribution metadata, not the module that was
 #: actually imported).
-EXECUTION_PATHS = ("environments/beancount_ledger/**",)
-#: The execution root, relative to the repository root: what the walk descends.
-EXECUTION_ROOT = "environments/beancount_ledger"
+#:
+#: THE NAME IS RESOLVED, NEVER HARDCODED. The package directory is VENDORED
+#: inside a larger repository during development (`environments/beancount_ledger`
+#: beside `design_chat/` and the other environments) and IS the repository top
+#: level in a standalone checkout of the published repository. Both layouts
+#: name exactly the same bytes, but a hardcoded relative name that does not
+#: exist makes the walk descend nothing: `execution_tree_digest()` then returns
+#: `None`, and `None` compares equal to `None` on both sides of every
+#: comparison — the identity would be vacuously green in precisely the checkout
+#: where it must be loudest. `execution_root_for()` below asks the repository
+#: which layout it is; `EXECUTION_ROOT`/`EXECUTION_PATHS` are that answer for
+#: the package this module belongs to, and every per-root caller re-resolves.
+VENDORED_EXECUTION_ROOT = "environments/beancount_ledger"
+#: What makes "this directory IS the package" a FACT rather than a guess: the
+#: three things a beancount-ledger checkout always has at its own top.
+PACKAGE_MARKERS = ("pyproject.toml", "tests", "beancount_ledger")
 #: What the walk skips, RELATIVE to the execution root. `reviews/**` is the
 #: evidence directory (schedules, journals, ledgers, tables — all written BY a
 #: run, all content-bound by their own digests where it matters). `.venv/**` is
@@ -374,28 +387,60 @@ EXECUTION_ROOT = "environments/beancount_ledger"
 #: A bare `**/<name>/**` pattern matches that directory component at ANY depth;
 #: a `<name>/**` pattern is anchored at the execution root; a `*.ext` pattern
 #: matches by file extension.
-EXECUTION_EXCLUDES = ("reviews/**", ".venv/**", "**/__pycache__/**", "*.pyc")
+#:
+#: `.git/**` is the REPOSITORY's own metadata, and it is excluded for the same
+#: reason `reviews/**` is: it is not the instrument. It sits ABOVE the execution
+#: root in the vendored layout, so the exclusion is a no-op there; it sits
+#: INSIDE it in a standalone checkout, where hashing it would be both wrong and
+#: non-stationary — `git status`, which this very module runs on the way to the
+#: witness, rewrites `.git/index`, so the digest would move during the run it
+#: authenticates. Nothing under `.git/` is importable and nothing there is on
+#: `sys.path`, so the exclusion opens no shadowing hole; git remains SECONDARY
+#: evidence either way.
+EXECUTION_EXCLUDES = ("reviews/**", ".venv/**", ".git/**", "**/__pycache__/**", "*.pyc")
 #: Bumping this changes every execution-tree digest, and therefore every
 #: sealed schedule id: the ALGORITHM that computes the identity is part of the
 #: identity. Version 2 is the on-disk walk; version 1 asked git's index, which
 #: three different attacks defeated while leaving the witness fully green.
-INSTRUMENT_IDENTITY_VERSION = 2
+#: Version 3 RESOLVES the execution root per repository (vendored
+#: `environments/beancount_ledger`, or the repository top level in a standalone
+#: checkout of the published package) and excludes `.git/**` from the walk;
+#: version 2 hardcoded the vendored name, so in a standalone checkout the walk
+#: descended nothing, the digest was `None`, and `None == None` left every
+#: identity check vacuously green. Every schedule sealed at version 2
+#: (`reviews/schedule_confirm1v4.json` was, in the vendored layout, with a real
+#: 321-file digest) stays exactly what it was: a v2 seal names v2 bytes and is
+#: neither re-run nor re-sealed under this constant.
+INSTRUMENT_IDENTITY_VERSION = 3
 #: Paths outside `EXECUTION_PATHS` that the contract explicitly recognises as
 #: EVIDENCE. Documentation only — the rule is "not in the execution set" — but
 #: naming them keeps the witness's error messages honest about what it allows.
 EVIDENCE_PATH_HINTS = ("environments/beancount_ledger/reviews/", "design_chat/", "*.md at the repository root")
 
 
-def _pathspecs(paths=EXECUTION_PATHS) -> list[str]:
+def _pathspecs(paths=None, root: Path | None = None) -> list[str]:
     """The execution set as git pathspecs anchored at the repository root, so
     the same set is meant whatever directory git is invoked from. Used only by
     the SECONDARY git checks (ancestry, diff, working-tree status); the
-    PRIMARY identity is the on-disk digest below."""
-    out = [f":(top){path[:-3] if path.endswith('/**') else path}" for path in paths]
+    PRIMARY identity is the on-disk digest below.
+
+    RESOLVED PER REPOSITORY, like the walk. A pathspec naming a directory that
+    does not exist matches nothing, and `git status -- <nothing>` is silently
+    EMPTY — i.e. reported clean. A stale hardcoded name would therefore turn
+    this check into one that always passes, which is worse than not having it."""
+    relative = execution_root_for(root)
+    paths = execution_paths_for(root) if paths is None else paths
+    out = []
+    for path in paths:
+        base = path[:-3] if path.endswith("/**") else path
+        # `**` is the whole repository (the package IS the top level): the bare
+        # `:(top)` pathspec means exactly that, and no glob magic is involved.
+        out.append(":(top)" if base in ("**", ".") else f":(top){base}")
+    prefix = "" if relative == "." else f"{relative}/"
     for pattern in EXECUTION_EXCLUDES:
         if pattern.startswith("**/") or pattern.startswith("*."):
             continue                         # git ignores these already (build droppings)
-        out.append(f":(top,exclude){EXECUTION_ROOT}/{pattern[:-3] if pattern.endswith('/**') else pattern}")
+        out.append(f":(top,exclude){prefix}{pattern[:-3] if pattern.endswith('/**') else pattern}")
     return out
 
 
@@ -441,6 +486,74 @@ def repo_root(root: Path | None = None) -> Path:
     return Path(root or ROOT)
 
 
+def _is_package_directory(path: Path) -> bool:
+    """Does this directory carry every marker a beancount-ledger checkout has
+    at its own top? Used to decide "the repository top level IS the package",
+    and deliberately conjunctive: a repository that merely happens to contain a
+    `tests/` is not this package."""
+    try:
+        return path.is_dir() and all((path / marker).exists() for marker in PACKAGE_MARKERS)
+    except OSError:                                                        # noqa: BLE001
+        return False
+
+
+def execution_root_for(root: Path | None = None) -> str:
+    """The package directory, named RELATIVE to the repository that contains
+    it — the string the walk descends and the manifest records.
+
+    Two real layouts, the same bytes:
+
+      `environments/beancount_ledger`  the development monorepo, where the
+                                       package is vendored beside
+                                       `design_chat/` and the other
+                                       environments and `.git/` sits ABOVE it;
+      `.`                              a standalone checkout of the published
+                                       repository, where the package IS the
+                                       repository top level.
+
+    The vendored name WINS whenever that directory exists, so this resolution
+    is a no-op — byte-for-byte the previous behaviour — in every checkout that
+    had one. The fallback exists because the alternative is silent: a relative
+    name that resolves to nothing makes `execution_tree_manifest` return zero
+    files, `execution_tree_digest` return `None`, and `None == None` on both
+    sides of the startup witness, the per-cell check and row admission. The
+    identity would pass while sealing nothing at all.
+
+    When NEITHER holds, the vendored name is returned unchanged and the walk
+    fails closed on it exactly as before: `unreadable` names the missing root
+    and the digest is `None`, which every caller treats as a refusal."""
+    return _execution_root_under(repo_root(root))
+
+
+def _execution_root_under(top: Path) -> str:
+    """`execution_root_for`, with the repository top level already in hand.
+    Split out because the pre-request check re-derives the execution tree
+    before EVERY provider request, and `repo_root` is a `git` subprocess."""
+    try:
+        if (Path(top) / VENDORED_EXECUTION_ROOT).is_dir():
+            return VENDORED_EXECUTION_ROOT
+    except OSError:                                                        # noqa: BLE001
+        pass
+    if _is_package_directory(Path(top)):
+        return "."
+    return VENDORED_EXECUTION_ROOT
+
+
+def execution_paths_for(root: Path | None = None) -> tuple[str, ...]:
+    """The CLOSED path set — the whole package directory — as it is named in
+    the repository that holds it. `("**",)` when the package IS the repository
+    top level; the walk and the git pathspecs both read it the same way."""
+    relative = execution_root_for(root)
+    return ("**",) if relative == "." else (f"{relative}/**",)
+
+
+#: The execution root of THIS package, relative to its own repository: what the
+#: walk descends and what the manifest records. Resolved once at import; every
+#: function that takes a `root` re-resolves for that root.
+EXECUTION_ROOT = execution_root_for()
+EXECUTION_PATHS = execution_paths_for()
+
+
 def git_head(root: Path | None = None) -> str | None:
     """The commit that will execute this schedule. `None` when the checkout
     is not a git repository or `git` is unavailable — never guessed."""
@@ -472,27 +585,28 @@ def git_is_ancestor(ancestor: str | None, descendant: str | None, root: Path | N
 
 
 def git_diff_execution_paths(base: str | None, head: str | None, root: Path | None = None,
-                             paths=EXECUTION_PATHS) -> tuple[bool, list[str]]:
+                             paths=None) -> tuple[bool, list[str]]:
     """`(empty, changed_files)` for `git diff base..head` restricted to the
     execution paths. `(False, ["<git failed: ...>"])` when git cannot answer:
     "I could not check" is not "nothing changed"."""
     if not base or not head:
         return False, ["<no commit to compare>"]
-    code, out = _git(root or ROOT, "diff", "--name-only", f"{base}..{head}", "--", *_pathspecs(paths))
+    code, out = _git(root or ROOT, "diff", "--name-only", f"{base}..{head}", "--",
+                     *_pathspecs(paths, root))
     if code != 0:
         return False, [f"<git diff failed: {out}>"]
     changed = [line.strip() for line in out.splitlines() if line.strip()]
     return (not changed), changed
 
 
-def git_execution_tree_status(root: Path | None = None, paths=EXECUTION_PATHS) -> tuple[bool, str]:
+def git_execution_tree_status(root: Path | None = None, paths=None) -> tuple[bool, str]:
     """`(clean, detail)` for the WORKING TREE over the execution paths only.
 
     A dirty evidence file — `reviews/arms_*.log`, `design_chat/`, a root
     `*.md` — is not a reason to refuse a run: those files are written BY the
     run. A dirty `tests/` or `beancount_ledger/` file is: the sealed digest
     then describes bytes that are not the bytes about to execute."""
-    code, out = _git(root or ROOT, "status", "--porcelain", "--", *_pathspecs(paths))
+    code, out = _git(root or ROOT, "status", "--porcelain", "--", *_pathspecs(paths, root))
     if code != 0:
         return False, f"git status failed: {out}"
     if out:
@@ -501,7 +615,7 @@ def git_execution_tree_status(root: Path | None = None, paths=EXECUTION_PATHS) -
     return True, "clean over the execution paths"
 
 
-def execution_tree_manifest(root: Path | None = None, execution_root: str = EXECUTION_ROOT,
+def execution_tree_manifest(root: Path | None = None, execution_root: str | None = None,
                             excludes=EXECUTION_EXCLUDES) -> dict:
     """Every file ON DISK under the execution root, with the sha256 of its
     ACTUAL BYTES: `{"files": [(relative_posix_path, sha256), ...], ...}`.
@@ -536,7 +650,13 @@ def execution_tree_manifest(root: Path | None = None, execution_root: str = EXEC
     changed since the seal in a way a reviewer could read as a diff), but they
     are no longer the identity.
     """
-    base = repo_root(root) / execution_root
+    # `None` means "ask THIS repository where its package directory is" (the
+    # vendored `environments/beancount_ledger`, or the repository top level in
+    # a standalone checkout). An explicit string is honoured as given, so a
+    # caller can still name a root that does not exist and get the refusal.
+    top = repo_root(root)
+    execution_root = _execution_root_under(top) if execution_root is None else execution_root
+    base = top if execution_root == "." else top / execution_root
     files: list[tuple[str, str]] = []
     unreadable: list[str] = []
     if not base.is_dir():
@@ -566,7 +686,7 @@ def execution_tree_manifest(root: Path | None = None, execution_root: str = EXEC
             "execution_root": execution_root, "excludes": list(excludes), "bytes": total}
 
 
-def execution_tree_digest(root: Path | None = None, execution_root: str = EXECUTION_ROOT,
+def execution_tree_digest(root: Path | None = None, execution_root: str | None = None,
                           excludes=EXECUTION_EXCLUDES) -> str | None:
     """sha256 over the sorted `(relative path, sha256 of the file's bytes)`
     pairs on disk, plus the root and the exclusion list themselves.
@@ -772,6 +892,78 @@ def site_package_roots() -> list[Path]:
     return roots
 
 
+def interpreter_layout() -> dict:
+    """The PLATFORM'S OWN NAMES for the four `sys.path` members that are
+    neither site-packages nor the standard library proper — asked of
+    `sysconfig` and of the interpreter, never spelled as a Windows literal.
+
+    The C3 closure was written against one layout and named it directly:
+    `base_prefix/DLLs/*.pyd`, `prefix/Scripts/`, `base_prefix/pythonXY.zip`.
+    Those are the WINDOWS names of four things every CPython has:
+
+      `extension_dir`     the compiled extension modules the interpreter
+                          imports before any `.py` in the standard library can
+                          run — `_ssl`, `_socket`, `select`, `pyexpat`. Windows
+                          keeps them in `base_prefix/DLLs`; POSIX keeps them in
+                          `<stdlib>/lib-dynload` (`sysconfig`'s `DESTSHARED`).
+      `extension_suffix`  what one of those files is called at the end:
+                          `.pyd` or `.so`, taken from `EXT_SUFFIX` rather than
+                          assumed.
+      `scripts_dir`       the console scripts and the activation shims:
+                          `prefix/Scripts` or `prefix/bin`. `sysconfig`'s
+                          `scripts` path is the portable name of both.
+      `zip_slot`          the `pythonXY.zip` entry that PRECEDES the standard
+                          library on `sys.path`. It sits beside the stdlib
+                          directory on every platform — `base_prefix/` on
+                          Windows because the stdlib is `base_prefix/Lib`,
+                          `base_prefix/lib/` on POSIX because the stdlib is
+                          `base_prefix/lib/pythonX.Y`. Usually absent on disk;
+                          creating it shadows the whole standard library,
+                          which is why its ABSENCE is sealed.
+
+    `script_suffix` is only the extension the witness gives the file it adds to
+    `scripts_dir`; nothing imports it, it just has to be a plausible name for
+    the platform.
+
+    Every value is a NAME, computed without requiring the thing to exist: the
+    zip slot's whole point is that it usually does not, and the witness has to
+    be able to say which path it means."""
+    version = f"{sys.version_info.major}{sys.version_info.minor}"
+    try:
+        stdlib = Path(sysconfig.get_paths()["stdlib"])
+    except (KeyError, OSError):                                            # noqa: BLE001
+        stdlib = Path(sys.base_prefix) / "Lib"
+    try:
+        scripts = Path(sysconfig.get_paths()["scripts"])
+    except (KeyError, OSError):                                            # noqa: BLE001
+        scripts = Path(sys.prefix) / ("Scripts" if sys.platform == "win32" else "bin")
+    # `<stdlib>/lib-dynload` is asked FIRST because a relocated interpreter
+    # (uv's managed CPython, a python-build-standalone tarball) can carry a
+    # `DESTSHARED` that still names the directory the build was staged in,
+    # while the stdlib path is resolved from the running interpreter. On
+    # Windows neither exists, and the answer is `base_prefix/DLLs`.
+    extension_dir = Path(sys.base_prefix) / "DLLs"
+    for candidate in (stdlib / "lib-dynload", sysconfig.get_config_var("DESTSHARED"),
+                      Path(sys.base_prefix) / "DLLs"):
+        if not candidate:
+            continue
+        try:
+            path = Path(candidate)
+            if path.is_dir():
+                extension_dir = path
+                break
+        except OSError:                                                    # noqa: BLE001, PERF203
+            continue
+    full_suffix = sysconfig.get_config_var("EXT_SUFFIX") or ""
+    extension_suffix = os.path.splitext(full_suffix)[1] or full_suffix or (
+        ".pyd" if sys.platform == "win32" else ".so")
+    return {"extension_dir": extension_dir,
+            "extension_suffix": extension_suffix,
+            "scripts_dir": scripts,
+            "script_suffix": ".bat" if sys.platform == "win32" else ".sh",
+            "zip_slot": stdlib.parent / f"python{version}.zip"}
+
+
 def environment_prefixes() -> list[Path]:
     """The interpreter's OWN two prefixes: the venv (`sys.prefix`) and the
     installation it was made from (`sys.base_prefix`). Everything inside them
@@ -840,6 +1032,16 @@ def environment_roots() -> list[Path]:
         hashed, so an ADDED file there (a `python.bat` shim, a replaced
         `activate`) was invisible.
 
+    Those four are the WINDOWS NAMES of four things every CPython has, and
+    `interpreter_layout()` is where the platform's own names for them live:
+    the extension modules are `base_prefix/DLLs/*.pyd` on Windows and
+    `<stdlib>/lib-dynload/*.so` on POSIX; the console scripts and activation
+    shims are `prefix/Scripts` on Windows and `prefix/bin` on POSIX (both are
+    `sysconfig`'s `scripts` path); the zip slot sits beside the stdlib
+    directory on both. All of them are named as CANDIDATES below, so the walk
+    covers them because it was told to and not because one platform happens to
+    nest them inside a root that was already there.
+
     The generalisation that covers all four, and C1's `PYTHONPATH` shadow with
     them: take the roots from `sys.path` itself, keeping the ones the
     interpreter owns. On this machine that collapses to `sys.prefix` and
@@ -861,12 +1063,23 @@ def environment_roots() -> list[Path]:
             continue
         if path.is_dir() and path not in candidates:
             candidates.append(path)
-    try:
-        dlls = (Path(sys.base_prefix) / "DLLs").resolve()
-        if dlls.is_dir() and dlls not in candidates:
-            candidates.append(dlls)
-    except OSError:                                                        # noqa: BLE001
-        pass
+    # The EXTENSION MODULE directory under its platform's own name
+    # (`base_prefix/DLLs` on Windows, `<stdlib>/lib-dynload` on POSIX) and the
+    # console-script directory, named explicitly so the walk does not depend on
+    # a layout accident. On POSIX both are nested inside a root that is already
+    # a candidate (`lib-dynload` under `stdlib`, and `bin` is `sysconfig`'s own
+    # `scripts` path above), so the maximal-root rule below drops them again
+    # and the digest does not move; naming them here is what makes the coverage
+    # a stated fact rather than a consequence of where CPython happens to put
+    # them on one platform.
+    layout = interpreter_layout()
+    for named in (layout["extension_dir"], layout["scripts_dir"]):
+        try:
+            path = Path(named).resolve()
+        except OSError:                                                    # noqa: BLE001, PERF203
+            continue
+        if path.is_dir() and path not in candidates:
+            candidates.append(path)
     prefixes = environment_prefixes()
     for _raw, resolved in sys_path_entries():
         if resolved is None or not resolved.is_dir():
@@ -1028,6 +1241,11 @@ def runtime_environment_manifest(use_cache: bool = True) -> dict:
     #    well as reaching the witness by name (C1). It is not a walked ROOT:
     #    the survey above already recorded it as uncovered, and the witness
     #    refuses on that record whether or not the walk could read it.
+    #
+    #    `walked_keys` is the set of directories this loop covers, as manifest
+    #    keys. Step 2 classifies every RECORD entry against IT rather than
+    #    against "is this key already in `files`" — see the note there.
+    walked_keys = tuple(_environment_key(r) for r in list(roots) + list(survey["extra_roots"]))
     for root in list(roots) + list(survey["extra_roots"]):
         root_key = _environment_key(root)
         if not root.is_dir():
@@ -1062,6 +1280,30 @@ def runtime_environment_manifest(use_cache: bool = True) -> dict:
     #    them (console scripts in `Scripts/`, data files), verifies the
     #    RECORD-DECLARED hash where a wheel published one, and names every
     #    referenced file that no longer exists.
+    #
+    #    `outside_roots` IS COUNTED FROM THE KEY, NOT FROM `files`. It used to
+    #    be incremented whenever the entry's key was not yet in `files` — which
+    #    made it depend on WHETHER THIS DISTRIBUTION HAD ALREADY BEEN
+    #    ENUMERATED ONCE, because the first pass puts the file in `files` and
+    #    the second therefore counts zero. `importlib.metadata` enumerates per
+    #    `sys.path` ENTRY, so a duplicate entry (a `.pth`, a re-inserted path,
+    #    a `PYTHONPATH` naming a directory that is already there) produced two
+    #    records for the same distribution that differed ONLY in that field,
+    #    the exact-duplicate collapse below could not collapse them, and the
+    #    digest moved with no byte on disk having changed. On the Windows
+    #    layout the field is 0 for every distribution — `sys.prefix` itself is
+    #    a walked root, so nothing a RECORD names is outside one — and the bug
+    #    was invisible; on POSIX the walked roots are `bin/`, the venv's `lib/`
+    #    and the stdlib, a wheel that ships a man page under `prefix/share/`
+    #    lands outside all three, and the seal stopped being stationary.
+    #
+    #    Counting from the key says the same thing about the FIRST enumeration
+    #    (the walk covers exactly `walked_keys`, minus the names excluded on
+    #    both sides) and says it identically about every later one.
+    def _under_walked_root(key: str) -> bool:
+        return any(key == root_key or key.startswith(root_key + "/")
+                   for root_key in walked_keys)
+
     distributions: list[dict] = []
     referenced: set[str] = set()
     try:
@@ -1102,10 +1344,11 @@ def runtime_environment_manifest(use_cache: bool = True) -> dict:
             record["record_entries"] += 1
             key = _join_key(base_key, text)
             referenced.add(key)
-            if key not in files:
+            if not _under_walked_root(key):
                 # Outside the walked roots (a console script, a data file) —
-                # located through the distribution itself and hashed here.
+                # located through the distribution itself and hashed below.
                 record["outside_roots"] += 1
+            if key not in files:
                 try:
                     target = Path(dist.locate_file(entry))
                 except Exception:                                          # noqa: BLE001

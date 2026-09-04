@@ -577,8 +577,21 @@ def test_the_raised_exception_carries_no_canary():
     canaries = ("CANARY-HEAD-7f3a", "CANARY-MID-9c1e", "CANARY-TAIL-2b8d", "CANARY-LEDGER-5e4f")
     real = env_mod.write_ledger
 
+    class CanaryToolBug(RuntimeError):
+        """A defect type of this test's own.
+
+        `EVALUATOR_DIAGNOSTICS` folds records by `_fingerprint` — (phase,
+        exception type, top owned frame) — and a folded record keeps the
+        FIRST message it saw. `test_tool_bug_route` already raised a plain
+        `RuntimeError` from `write_ledger` earlier in this process, so a
+        plain `RuntimeError` here lands on that record and the head canary is
+        never stored: the non-vacuity probe below would read a store that had
+        silently dropped the string it looks for. A distinct type is a
+        distinct fingerprint, so this failure gets its own record.
+        """
+
     def broken_write(content, workspace=""):
-        raise RuntimeError(f"{canaries[0]} {'x' * 3000} {canaries[1]} {'y' * 3000} {canaries[2]}")
+        raise CanaryToolBug(f"{canaries[0]} {'x' * 3000} {canaries[1]} {'y' * 3000} {canaries[2]}")
 
     env = load_environment()
     env.tool_map["write_ledger"] = broken_write
@@ -598,7 +611,10 @@ def test_the_raised_exception_carries_no_canary():
         # detail), the agent's own text reaches the artifact's trajectory.
         artifact = env_mod.quarantine_artifact(exc.batch_id)
         artifact_text = json.dumps(artifact, default=str)
-        diagnostics_text = json.dumps(list(env_mod.EVALUATOR_DIAGNOSTICS.values()), default=str)
+        # This failure's OWN diagnostic record, not whatever else the store
+        # holds: reading the whole store would pass on some other test's text.
+        diagnostics_text = json.dumps([d for d in env_mod.EVALUATOR_DIAGNOSTICS.values()
+                                       if d.get("type") == CanaryToolBug.__name__], default=str)
         planted = canaries[0] in diagnostics_text and canaries[3] in artifact_text
         return check("raised exception: no canary in str/repr/args/metadata/quarantined; size capped",
                      not leaks and cap_ok and planted,
