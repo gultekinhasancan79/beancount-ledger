@@ -9,3 +9,8 @@ build/
 # raw provider outputs of the adversary loop: retained outside the source tree
 # (reviews/RELEASE_ATTESTATION.md, "Control-round raw evidence")
 tests/adversary_out/
+# per-person run records: what a model did on THIS machine (results.jsonl, metadata,
+# quarantined batches) and the replay page built from them. Every user sees their
+# own runs; nobody ships theirs.
+outputs/
+docs/replay.html
