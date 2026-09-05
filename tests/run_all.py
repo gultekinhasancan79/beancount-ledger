@@ -31,6 +31,7 @@ SUITES = [
     ("test_committed", "the committed state: environment-bound, single allocation, finalised by digest"),
     ("test_calibration", "candidate/1 rankings and the semantic-equivalence claim"),
     ("test_graph", "the world graph as production authority: projection, derivation, identity, oracles"),
+    ("test_worlds", "every hand-authored world/task: derivable, golden 1.0, original unresolved, identifiable, no merged trap, no leaked ids or derived literals"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),
