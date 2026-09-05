@@ -9,7 +9,7 @@
 Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `beancount-ledger`. Apache-2.0.
 
 ```bash
-uv run vf-eval beancount-ledger     # zero setup: runs the default hand-authored task (ten ship; see the workflow table)
+uv run vf-eval beancount-ledger     # zero setup: runs the default hand-authored task (91 ship; see the workflow table)
 ```
 
 ### Results at a glance
@@ -42,7 +42,7 @@ Two things this shows and one it does not:
 
 | Path | What it is |
 |---|---|
-| `beancount_ledger/` | The environment: world generator (`graph/`) and the ten hand-authored worlds (`graph/worlds/`), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
+| `beancount_ledger/` | The environment: world generator (`graph/`) and the ten hand-authored worlds, 91 workflow tasks (`graph/worlds/`), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
 | `tests/` | 60 files: the test battery, 19 exploit probes, adversary loop, liveness witness, preflight and sealing scripts. Not shipped. |
 | `reviews/` | Dated evidence: pre-registration, sealed schedule, 143 rollout records, rendered arm tables, release attestation. Not shipped. |
 | `outputs/evals/` | Raw `vf-eval` transcripts on the demo task. |
@@ -82,20 +82,24 @@ uv run vf-eval beancount-ledger --env-args '{"task_id": "ap_payment_run_001"}'  
 
 ### Hand-authored workflow tasks
 
-Ten tasks ship in the wheel and need no secret. Each is one small company's month, authored as facts only (`beancount_ledger/graph/worlds/`); the eight public files, the golden ledger, the scored accounts and the expected balances are all derived, never typed. Every task plants two or three discrepancies of the kinds the scorer understands — an entry the books lack (`omit`), an entry keyed with the wrong amount (`alter`), an entry posted twice (`duplicate`) — and carries one timing-difference trap the agent must leave alone. `tests/test_worlds.py` proves, for every entry, that the golden ledger scores 1.0, the untouched ledger leaves every planted item unresolved, the repairs are uniquely inferable from the public files, and no two planted items share a posting pair (the scorer's merged-entry rule would otherwise zero a perfect answer).
+Ninety-one tasks ship in the wheel and need no secret: ten small companies, one month each, authored as facts only (`beancount_ledger/graph/worlds/`), and every company except the original Alpine world carries all ten accounting workflows over the SAME statement and the SAME facts — a person opening Ironwood's October picks the job: the payment run, collections, payroll, the sales-tax filing, the month-end close. The eight public files, the golden ledger, the scored accounts and the expected balances are all derived, never typed. Every task plants two or three discrepancies of the kinds the scorer understands — an entry the books lack (`omit`, `o` below), an entry keyed with the wrong amount (`alter`, `a`), an entry posted twice (`duplicate`, `d`) — and most carry one timing-difference trap the agent must leave alone (an outstanding cheque, a deposit in transit). `tests/test_worlds.py` proves, for every entry, that the golden ledger scores 1.0, the untouched ledger leaves every planted item unresolved, the repairs are uniquely inferable from the public files, and no two planted items share a posting pair (the scorer's merged-entry rule would otherwise zero a perfect answer).
 
-| task id | company, period | workflow | planted | scored accounts |
-|---|---|---|---|---|
-| `bank_recon_001` | Alpine Trading Co., Nov 2025 | bank reconciliation, month-end close | omit, omit | Bank, AR, BankFees |
-| `ap_payment_run_001` | Ironwood Furniture Works, Oct 2025 | accounts-payable payment run: a run payment never posted, one keyed with transposed digits, one posted twice | omit, alter, duplicate | Bank, AP |
-| `ar_collections_001` | Silverbrook Dental Supply, Nov 2025 | receivables and collections, a partial receipt, a deposit in transit | omit, alter, duplicate | Bank, AR |
-| `bank_feed_categorisation_001` | Thistle & Quill Design Studio, Jan 2026 | card spend categorised from the bank feed by vendor default account | omit, omit, alter | Bank, Software, Travel, Office |
-| `expense_reports_001` | Falcon Ridge Surveying, Feb 2026 | employee expense claims reimbursed by cheque, a fuel card | omit, duplicate, alter | Bank, Travel, FieldSupplies, Vehicle |
-| `payroll_001` | Hawthorn Bakery, Dec 2025 | net pay by cheque for five employees, withholdings remitted | omit, alter, omit | Bank, PayrollTax, Salaries |
-| `sales_tax_remittance_001` | Bluewater Marine Supply, Oct 2025 | tax collected on sales and remitted to the state | omit, alter, duplicate | Bank, AR, SalesTax-Payable, BankFees |
-| `fixed_assets_001` | Oakridge Machining, Mar 2026 | equipment capitalised on payment, repairs expensed | omit, alter, omit | Bank, Equipment, Repairs, BankFees |
-| `intercompany_transfers_001` | Redwood Analytics Group, Nov 2025 | cash advanced to a group company, booked as due from the subsidiary | omit, duplicate, alter | Bank, AR, Due-From-Subsidiary |
-| `month_end_close_001` | Maple Street Veterinary Clinic, Dec 2025 | prepaid insurance, two bank charges, client receipts | omit, alter, duplicate | Bank, AR, Prepayments, BankFees |
+Task ids are `<workflow>_<company>`; the ten original tasks keep their `_001` ids. In the table, the letters after each id are the planted kinds in plan order.
+
+| company, period | bank recon | AP run | AR collections | bank feed | expense reports | payroll | sales tax | fixed assets | intercompany | month-end close |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Hawthorn Bakery, December 2025 | `bank_recon_hawthorn` (oad) | `ap_payment_run_hawthorn` (oad) | `ar_collections_hawthorn` (oad) | `bank_feed_categorisation_hawthorn` (ooa) | `expense_reports_hawthorn` (oda) | `payroll_001` (oao) | `sales_tax_remittance_hawthorn` (oad) | `fixed_assets_hawthorn` (oao) | `intercompany_transfers_hawthorn` (oda) | `month_end_close_hawthorn` (oad) |
+| Maple Street Veterinary Clinic, December 2025 | `bank_recon_maple` (oad) | `ap_payment_run_maple` (oad) | `ar_collections_maple` (oad) | `bank_feed_categorisation_maple` (ooa) | `expense_reports_maple` (oda) | `payroll_maple` (oao) | `sales_tax_remittance_maple` (oad) | `fixed_assets_maple` (oao) | `intercompany_transfers_maple` (oda) | `month_end_close_001` (oad) |
+| Falcon Ridge Surveying, February 2026 | `bank_recon_falcon` (oao) | `ap_payment_run_falcon` (oad) | `ar_collections_falcon` (oad) | `bank_feed_categorisation_falcon` (ooa) | `expense_reports_001` (oda) | `payroll_falcon` (oao) | `sales_tax_remittance_falcon` (oad) | `fixed_assets_falcon` (oad) | `intercompany_transfers_falcon` (oda) | `month_end_close_falcon` (oad) |
+| Thistle & Quill Design Studio, January 2026 | `bank_recon_thistle` (oad) | `ap_payment_run_thistle` (oad) | `ar_collections_thistle` (oad) | `bank_feed_categorisation_001` (ooa) | `expense_reports_thistle` (oda) | `payroll_thistle` (oao) | `sales_tax_remittance_thistle` (oad) | `fixed_assets_thistle` (oao) | `intercompany_transfers_thistle` (oda) | `month_end_close_thistle` (oad) |
+| Oakridge Machining, March 2026 | `bank_recon_oakridge` (oad) | `ap_payment_run_oakridge` (oad) | `ar_collections_oakridge` (oad) | `bank_feed_categorisation_oakridge` (oad) | `expense_reports_oakridge` (oda) | `payroll_oakridge` (oao) | `sales_tax_remittance_oakridge` (oad) | `fixed_assets_001` (oao) | `intercompany_transfers_oakridge` (oda) | `month_end_close_oakridge` (oad) |
+| Redwood Analytics Group, November 2025 | `bank_recon_redwood` (oao) | `ap_payment_run_redwood` (oad) | `ar_collections_redwood` (oad) | `bank_feed_categorisation_redwood` (ooa) | `expense_reports_redwood` (oda) | `payroll_redwood` (oao) | `sales_tax_remittance_redwood` (oad) | `fixed_assets_redwood` (oad) | `intercompany_transfers_001` (oda) | `month_end_close_redwood` (oad) |
+| Silverbrook Dental Supply, November 2025 | `bank_recon_silverbrook` (oad) | `ap_payment_run_silverbrook` (oad) | `ar_collections_001` (oad) | `bank_feed_categorisation_silverbrook` (ooa) | `expense_reports_silverbrook` (oda) | `payroll_silverbrook` (oao) | `sales_tax_remittance_silverbrook` (oad) | `fixed_assets_silverbrook` (oad) | `intercompany_transfers_silverbrook` (oda) | `month_end_close_silverbrook` (oad) |
+| Alpine Trading Co., November 2025 | `bank_recon_001` (oo) | — | — | — | — | — | — | — | — | — |
+| Ironwood Furniture Works, October 2025 | `bank_recon_ironwood` (oao) | `ap_payment_run_001` (oad) | `ar_collections_ironwood` (oad) | `bank_feed_categorisation_ironwood` (ooa) | `expense_reports_ironwood` (oda) | `payroll_ironwood` (oao) | `sales_tax_remittance_ironwood` (oad) | `fixed_assets_ironwood` (oad) | `intercompany_transfers_ironwood` (oda) | `month_end_close_ironwood` (oad) |
+| Bluewater Marine Supply, October 2025 | `bank_recon_bluewater` (oad) | `ap_payment_run_bluewater` (oad) | `ar_collections_bluewater` (oad) | `bank_feed_categorisation_bluewater` (ooa) | `expense_reports_bluewater` (oda) | `payroll_bluewater` (oao) | `sales_tax_remittance_001` (oad) | `fixed_assets_bluewater` (oao) | `intercompany_transfers_bluewater` (oda) | `month_end_close_bluewater` (oad) |
+
+Workflows, and what each plants: **bank recon** a receipt, a supplier payment and a bank charge; **AP run** supplier payments never posted, keyed with transposed digits, posted twice; **AR collections** customer receipts, a partial receipt, a deposit in transit; **bank feed** card spend categorised by the vendor's default account (software, telecom, office, travel); **expense reports** employee claims reimbursed by cheque and a fuel card; **payroll** net pay by cheque and the withholding remittance; **sales tax** tax collected on sales and remitted to the state; **fixed assets** equipment capitalised on payment, repairs expensed; **intercompany** cash advanced to a group company, booked as due from it; **month-end close** a prepayment for next month, two bank charges, client receipts.
 
 The workflow lives in the prompt, the policy text, the parties and what is planted; the scoring contract (`candidate/1`), the tools, the episode contract and the observation contract are the same for every task, so results are comparable across the table.
 
@@ -103,7 +107,7 @@ Generated tasks are **keyed and manifested**: each world derives from an HMAC un
 
 ### Datasets
 - **Primary**: generated worlds, selectors `train:<n>`, `eval:<n>`, `train:<n>:hard` (n < 100,000). The released population is preflighted 1,400/1,400 (1,000 train / 200 eval / 200 hard).
-- **Shipped**: ten hand-authored tasks (`bank_recon_001` and the nine workflow tasks above) usable with no secret, for smoke tests, demos and cross-workflow comparison.
+- **Shipped**: 91 hand-authored tasks (ten companies, ten workflows each except Alpine; see the table above) usable with no secret, for smoke tests, demos and cross-workflow comparison.
 - Each world is a projection of a private fact graph; everything the scorer requires is derivable from the mounted files or stated in `policy.md`. Ledgers are 7–14 KB; the public observation contract is eight named files, nothing else.
 
 ### Task
