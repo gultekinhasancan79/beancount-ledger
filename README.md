@@ -145,7 +145,7 @@ For the capability *spread* (small models 0–17%, stronger 58–92%), see the s
 - The Hub artefact ships **no** goldens, no test suite, no provenance records, no secrets (verified per release: the wheel's file list is audited).
 - Read tools accept only the eight declared names — never paths; symlinks, reparse points and oversized content are refused; agent input can never quarantine an evaluation.
 - Dependencies are pinned exactly (`verifiers==0.3.1`, `openai==3.5.0`, pydantic/griffe/datasets/beancount pinned) because the model-facing tool schemas are generated through them; a bump moves the episode-contract digest and is loud, never silent.
-- Versions: generator 8, identify 7, scorer contract 1, manifest schema 2, episode contract 2.
+- Versions: generator 9, identify 7, scorer contract 1, manifest schema 2, episode contract 2.
 
 ### Provenance of this README's numbers
 `reviews/confirmatory_design.md` (pre-registration, dated corrections included), `reviews/schedule_confirm1v4.json` (the sealed experiment contract), `reviews/arms_confirm1v4.md` (the rendered table). The internal design-review log is retained outside the public release; public evidence and dated corrections are in the three review artifacts named above.

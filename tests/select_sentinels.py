@@ -91,11 +91,23 @@ def features(namespace: str, index: int, profile_name: str) -> dict:
 
     found = {f"profile:{profile_name}"}
     kinds = sorted(p.kind for p in minted.inputs.planted)
-    found.add("mix:" + "+".join(kinds))
+    # Which kinds a plan combines, and which it repeats. Under the dense
+    # profiles (GENERATOR_VERSION 9: five to eight items a world) the exact
+    # multiset of kinds is a forty-way vocabulary that would pin a sentinel
+    # per shape; what moves a checker's branches is co-occurrence and
+    # repetition, so those are the features.
+    found.add("mix:" + "+".join(sorted(set(kinds))))
     for kind in set(kinds):
         found.add(f"kind:{kind}")
+        if kinds.count(kind) > 1:
+            found.add(f"repeat:{kind}")
         if kind == "duplicate":
             found.add("duplicate-multiplicity")
+    # Which (kind, rule) pairs the plan carries — the mutation id without its
+    # "-again" suffix: an omitted fee and a transposed receipt reach different
+    # accounts and different repair shapes.
+    for spec in minted.inputs.planted:
+        found.add("plant:" + spec.id.split("-again")[0])
     for spec in minted.inputs.planted:
         rec = minted.bundle.recognition(spec.recognition_id)
         movement = next((m for m in minted.bundle.movements if m.event_id == rec.event_id), None)
@@ -177,7 +189,7 @@ def cover(described: list) -> list:
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pool", type=int, default=300, help="selectors per profile to consider (300 reaches every mix the 2,100 population carries)")
+    parser.add_argument("--pool", type=int, default=300, help="selectors per profile to consider (300 reaches every kind mix and repetition the population carries)")
     parser.add_argument("--json", type=Path, default=None)
     args = parser.parse_args()
 

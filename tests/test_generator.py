@@ -390,8 +390,8 @@ def test_the_population_is_valid():
             if profile_name == "standard":
                 n_parties = counterparties(files)
                 parties_seen[n_parties] += 1
-                if not (6 <= n_parties <= 7):
-                    problems.append(f"{label}: {n_parties} counterparties, the profile shape says 6-7")
+                if not (8 <= n_parties <= 10):
+                    problems.append(f"{label}: {n_parties} counterparties, the profile shape says 8-10")
     if not problems:
         for name in ("standard", "hard"):
             rows = rows_seen[name]
@@ -796,7 +796,8 @@ def test_realism_metrics_are_reported():
 
 CONTENT_DIGESTS = {6: "56f50db08301d1d75747a99173f32791a5261206e0ee02eb6b6d1b1d83bc23cb",
                    7: "4248be1965abbd77ba5102e50e7ed8af20e2f707788a869290c7251bdbc0c1cf",
-                   8: "bc1bca1e3f40c097c18733e9e898542300f35134ae83a4cfbbf14b975e74087a"}   # per GENERATOR_VERSION: a content change without a bump fails here
+                   8: "bc1bca1e3f40c097c18733e9e898542300f35134ae83a4cfbbf14b975e74087a",
+                   9: "bc1bca1e3f40c097c18733e9e898542300f35134ae83a4cfbbf14b975e74087a"}   # per GENERATOR_VERSION: a content change without a bump fails here
 
 
 def test_the_content_library_is_pinned_to_the_generator_version():

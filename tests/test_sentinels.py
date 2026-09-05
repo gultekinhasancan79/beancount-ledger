@@ -55,31 +55,21 @@ from repair_keys import master_names, planted_key  # noqa: E402
 
 BANK = "Assets:Bank:Checking"
 
-# Chosen by `python tests/select_sentinels.py --pool 300` (the 120 pool missed the rarest
-# four-item mix, duplicate+omit+omit+omit, whose first test-secret selector is train:120:hard) over the minted
-# worlds (150 standard, 120 hard) under the test secret: a deterministic
-# greedy cover of the 43 structural features that pool exhibits. Regenerate
-# with that script and re-pin whenever the generator version changes — the
-# worlds a selector names move with `(secret, generator version, profile)`.
+# Chosen by `python tests/select_sentinels.py --pool 300` over the minted
+# worlds (300 standard train, 300 hard, 75 eval: 675/675 minted, none
+# refused, none ambiguous) under the test secret at GENERATOR_VERSION 9: a
+# deterministic greedy cover of the 44 structural features that pool
+# exhibits. Under the dense profiles (five to eight items a world) almost
+# every world carries almost every feature, so the cover is four worlds; the
+# rarest features are the two-kind mixes (alter+omit 37/675, duplicate+omit
+# 71/675) and a transposed office payment (171/675). Regenerate with that
+# script and re-pin whenever the generator version changes — the worlds a
+# selector names move with `(secret, generator version, profile)`.
 SENTINELS = [
-    "train:162:hard",
-    "eval:0",
+    "train:263:hard",
+    "eval:2",
     "eval:10",
     "eval:11",
-    "eval:12",
-    "eval:14",
-    "eval:1",
-    "train:0:hard",
-    "train:100:hard",
-    "train:101:hard",
-    "train:104:hard",
-    "train:106:hard",
-    "train:107:hard",
-    "train:110:hard",
-    "train:112:hard",
-    "train:120:hard",
-    "train:145:hard",
-    "train:154:hard",
 ]
 
 # Every feature the set was chosen to cover. Grouped as Codex names the
@@ -87,16 +77,16 @@ SENTINELS = [
 # against the script.
 REQUIRED = {
     "each plant kind": ("kind:omit", "kind:alter", "kind:duplicate"),
-    "every pair/triple mix in the population": (
-        "mix:alter+omit", "mix:duplicate+omit", "mix:alter+duplicate",
-        "mix:alter+omit+omit", "mix:duplicate+omit+omit", "mix:alter+duplicate+omit",
-        "mix:alter+alter+omit", "mix:alter+alter+duplicate", "mix:alter+duplicate+duplicate",
-        "mix:duplicate+duplicate+omit",
-        "mix:duplicate+omit+omit+omit",
-        "mix:alter+alter+omit+omit", "mix:alter+alter+duplicate+omit",
-        "mix:alter+alter+duplicate+duplicate", "mix:alter+duplicate+duplicate+omit",
-        "mix:alter+duplicate+omit+omit", "mix:alter+omit+omit+omit",
-        "mix:duplicate+duplicate+omit+omit"),
+    "every kind mix in the population": (
+        "mix:alter+duplicate+omit", "mix:alter+omit", "mix:duplicate+omit"),
+    "a kind planted more than once": ("repeat:omit", "repeat:alter", "repeat:duplicate"),
+    "every (kind, rule) pair the generator plants": (
+        "plant:unrecorded_customer_deposit", "plant:unrecorded_supplier_payment",
+        "plant:unrecorded_card_payment", "plant:unrecorded_bank_fee",
+        "plant:transposed_customer_receipt", "plant:transposed_vendor_payment",
+        "plant:transposed_expense_payment", "plant:transposed_bank_fee",
+        "plant:duplicated_customer_receipt", "plant:duplicated_vendor_payment",
+        "plant:duplicated_expense_payment", "plant:duplicated_bank_fee"),
     "every rail": ("rail:ach_in", "rail:ach_out", "rail:cheque", "rail:card", "rail:bank_initiated"),
     "positive and zero date lag": ("lag:positive", "lag:zero"),
     "duplicate multiplicity": ("duplicate-multiplicity",),

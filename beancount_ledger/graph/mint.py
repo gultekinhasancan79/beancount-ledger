@@ -31,7 +31,7 @@ from .derive import ContractInputs, TaskSpec, derive_contract
 from .project import Bundle
 from .schema import World
 
-GENERATOR_VERSION = 8          # 8: `## Payments to suppliers` — the policy says where money moving to a vendor is posted, and default_account is not it; 7: the bank date is the repair date for an omitted item, and the policy says so; 6: public-uniqueness gate at mint; 5: profile in the substream; 4: fee wording; 3: keyed seeds; 2: "Dates"
+GENERATOR_VERSION = 9          # 9: dense plans — 5–6 (standard) / 6–8 (hard) items spanning at least three rules, 3–4 customers and 2–3 inventory vendors so every rule keeps candidates, wrong figures pairwise distinct, residual cancellation refused at the generator; 8: `## Payments to suppliers` — the policy says where money moving to a vendor is posted, and default_account is not it; 7: the bank date is the repair date for an omitted item, and the policy says so; 6: public-uniqueness gate at mint; 5: profile in the substream; 4: fee wording; 3: keyed seeds; 2: "Dates"
 NAMESPACES = ("train", "eval")
 PUBLIC_ID_DOMAIN = b"piv:public-task-id:v1\0"
 _SEED_DOMAIN = b"piv:private-seed:v2\0"

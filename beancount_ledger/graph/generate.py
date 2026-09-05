@@ -45,6 +45,7 @@ import random
 import re
 from collections import Counter
 from dataclasses import dataclass, replace
+from itertools import combinations
 from datetime import date, timedelta
 from decimal import Decimal as D
 
@@ -57,6 +58,7 @@ from .project import (
     MutationPlan,
     OmitRecognition,
     Period,
+    derive_mutant,
     prior_period,
 )
 from .schema import (
@@ -106,19 +108,22 @@ class Profile:
     and what a reader counts.
     """
 
-    statement_rows: tuple = (20, 30)
-    customers: tuple = (2, 3)
-    vendors: tuple = (3, 3)                 # one per default account (inventory, rent, office); with the bank: 6–7 counterparties
-    planted: tuple = (2, 3)
+    statement_rows: tuple = (26, 30)
+    customers: tuple = (3, 4)
+    vendors: tuple = (4, 5)                 # rent, office and 2–3 inventory vendors; with the bank: 8–10 counterparties
+    planted: tuple = (5, 6)
     kinds: tuple = ("omit", "alter", "duplicate")
-    max_per_kind: tuple = (("alter", 1), ("duplicate", 1))   # Codex T40's standard profile; a hard profile lifts it
+    max_per_kind: tuple = (("alter", 2), ("duplicate", 2))   # the hard profile lifts both to 3
+    min_rules: int = 3                      # the planted items span at least this many rules, so with the bank
+                                            # they move at least min_rules + 1 target accounts (version 9)
     prior_rows: tuple = (5, 8)
     tax_rates: tuple = (D("0.08"), D("0.10"), D("0.20"))
     name: str = "standard-v1"
 
 
 DEFAULT_PROFILE = Profile()
-HARD_PROFILE = Profile(statement_rows=(24, 30), planted=(3, 4), max_per_kind=(("alter", 2), ("duplicate", 2)), name="hard-v1")
+HARD_PROFILE = Profile(statement_rows=(28, 30), vendors=(5, 5), planted=(6, 8),
+                       max_per_kind=(("alter", 3), ("duplicate", 3)), name="hard-v1")
 
 
 # --------------------------------------------------------------------------
@@ -861,6 +866,13 @@ def _plan(seed: int, profile: Profile, world: World, period: Period) -> Mutation
     for event in candidates:
         by_rule.setdefault(_RULE_OF[type(event)], []).append(event)
     rules = sorted(by_rule)
+    if len(rules) < profile.min_rules:
+        # The round-robin below puts one candidate of every rule first, so the
+        # number of rules among the candidates is the number of counter
+        # accounts the plan can move; a world with too few is refused.
+        raise GenerationError(f"seed {seed}: candidates span {len(rules)} rule(s), profile {profile.name} needs "
+                              f"{profile.min_rules} so the planted items touch {profile.min_rules + 1} target accounts; "
+                              "unsupported topology")
     for rule in rules:                                   # by name, never by dict order
         rng.shuffle(by_rule[rule])
     rng.shuffle(rules)
@@ -897,15 +909,30 @@ def _plan(seed: int, profile: Profile, world: World, period: Period) -> Mutation
     if count >= 2 and len(set(kinds)) < 2 and "duplicate" in profile.kinds and caps.get("duplicate", count) >= 1:
         kinds[kinds.index("omit")] = "duplicate"
 
-    mutations, taken = [], set()
+    mutations, taken, residuals = [], set(), []
+    roles = Roles(**dict(world.roles))
     for event, kind in zip(chosen, kinds):
         rule = _RULE_OF[type(event)]
         movement = movements[event.id]
         recognition = f"rec:{event.id.split(':', 1)[1]}"
         choice = _alter_choice(rng, world, event, printed) if kind == "alter" else None
         wrong = choice[2] if choice else None
+        if wrong is not None:
+            printed[wrong] += 1                          # two altered entries never share a wrong figure
         if kind == "alter" and choice is None:
             kind = "omit"
+        # The residual each item leaves on the books, as `derive` will compute
+        # it: the clean legs for an omission, clean minus wrong for an
+        # alteration, minus the clean legs for a duplicate.
+        clean = {leg.account: leg.amount for leg in recognitions_of(world, roles, event)[0].legs}
+        if kind == "omit":
+            residual = dict(clean)
+        elif kind == "alter":
+            observed = dict(derive_mutant(tuple(clean.items()), choice[0], choice[1]))
+            residual = {a: clean[a] - observed.get(a, D("0")) for a in clean if clean[a] != observed.get(a, D("0"))}
+        else:
+            residual = {a: -v for a, v in clean.items()}
+        residuals.append(residual)
         if kind == "omit":
             mutation_id = _OMIT_ID[rule]
         elif kind == "alter":
@@ -923,6 +950,19 @@ def _plan(seed: int, profile: Profile, world: World, period: Period) -> Mutation
             mutations.append(AlterRecognition(mutation_id, recognition, strategy, parameter, claim))
         else:
             mutations.append(DuplicateRecognition(mutation_id, recognition, claim))
+    # No subset of the planted items may cancel on every target account
+    # (`derive` refuses such a plan). Two transpositions on one rule can leave
+    # equal and opposite residuals; refusing here makes it a retried layout
+    # rather than a selector that fails to derive.
+    support = {a for r in residuals for a in r}
+    for n in range(2, len(residuals) + 1):
+        for subset in combinations(residuals, n):
+            total: dict = {}
+            for r in subset:
+                for a, v in r.items():
+                    total[a] = total.get(a, D("0")) + v
+            if all(total.get(a, D("0")) == 0 for a in support):
+                raise GenerationError(f"seed {seed}: planted residuals cancel on a subset of the plan; unsupported topology")
     return MutationPlan(tuple(mutations))
 
 

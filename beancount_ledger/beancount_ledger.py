@@ -175,12 +175,13 @@ MAX_EPISODE_OBSERVATION_BYTES = 16 * 48_000
 
 # The ledger is observed WHOLE, in one call (Codex T46 §4), so the envelope
 # that makes that safe is a property of the world rather than a hope about
-# the generator. Measured over 231 minted worlds under the test secret (the
-# 18 CI sentinels plus train:0-99 standard, train:0-59 hard, eval:0-59
-# standard, GENERATOR_VERSION 8): MAXIMUM 13,630 bytes / 303 logical lines;
-# minimum 7,102 bytes / 157 lines; the shipped hand-authored world is 3,314
-# bytes / 74 lines. The envelope is >= 3x that maximum (3.52x on bytes,
-# 3.30x on lines), which leaves room for the generator to grow a world
+# the generator. Measured over 221 minted worlds under the test secret (the
+# 4 CI sentinels plus train:0-99 standard, train:0-59 hard, eval:0-59
+# standard, GENERATOR_VERSION 9): MAXIMUM 13,219 bytes / 290 logical lines;
+# minimum 8,987 bytes / 203 lines; the shipped hand-authored world is 3,314
+# bytes / 74 lines. (Version 8 measured 13,630 / 303 over 231 worlds.) The
+# envelope is >= 3x that maximum (3.63x on bytes, 3.45x on lines), which
+# leaves room for the generator to grow a world
 # without a silent contract change and still keeps one read around 12K
 # tokens in the worst admissible case.
 #
