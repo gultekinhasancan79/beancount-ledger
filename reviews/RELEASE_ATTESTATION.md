@@ -38,3 +38,28 @@
 
 ## Control-round raw evidence
 The raw provider outputs of the fresh-family adversary (tests/adversary_out/) are retained OUTSIDE the tagged source; their summarized results are in this attestation and the committed review artifacts. The blind-review artifacts (nemotron-super full, minimax partial) ARE committed.
+
+---
+
+# Branch attestation — feat/dense-rewards, GENERATOR_VERSION 9 (2026-09-05)
+
+Not a release. What the dense-plan generator (commit `a149060`, "Dense plans: five to eight planted items a world") was checked against before the user decides on merge and manifest promotion. The tag target above stays the shipped state.
+
+## Contracts and versions
+- component versions: `{'generator': 9, 'identify': 7, 'scorer_contract': 1, 'renderer': 1, 'task_contract': 1, 'manifest_schema': 2, 'preflight_contract': 1, 'gate_set': 'e2f26ab5cdf60d53'}` — only the generator moved; scorer, gates and contracts are the release's
+- v9 manifest, written to a SEPARATE path (`~/.piv/manifest_v9.json`, the v8 file untouched and still the rotation's active manifest): sha256 `48500f6c3ee7c06ede2ea93ddbcd1fd55ce95fb75237d6299d3a82168df9be60`; preflight 1400/1400 (1,000 train / 200 eval / 200 hard; phase 1 offline gates AND phase 2 signed-manifest serving door), 197 s with 6 workers; layout attempts {0: 1064, 1: 259, 2: 63, 3: 10, 4: 3, 5: 1}; the secret never appears here
+- ledger census over the 1,400: max 13,901 bytes / 304 lines, min 8,821 / 191; envelope 48,000 / 1,000 (headroom x3.45 bytes, x3.29 lines)
+- serving door witnessed with `PIV_MANIFEST` pointing at the v9 file: `tests/liveness_witness.py --production --sentinels` 10/10 (the six confirm1 panel selectors and the four v9 sentinels), reward 1.0, identical across 2 runs. Without `PIV_MANIFEST` the same code refuses every generated selector ("minted under other component versions: ['generator']") — the intended behaviour of the untouched v8 file
+
+## What the bump is for (measured under the test secret, train:0-299 / eval:0-99 / train:0-299:hard)
+- 700/700 minted, no refusals; planted 5-6 standard, 6-8 hard; target accounts 5 in 85% of worlds, 4 otherwise (v8: 2-4 items, 3-4 targets)
+- reachable reward ladder (every subset of planted items solved perfectly): 9-13 distinct totals standard (mean 10.3), 10-21 hard (mean 14.5); largest gap between adjacent rungs mean 0.35, max 0.41 (v8: 3-4 rungs standard, mean gap 0.54, max 0.85)
+
+## Suites at this commit
+- tests/run_all.py in the clean clone: all 27 suites pass (test_generator 14/14, test_sentinels 2/2 over the four-world cover, test_exploits 17/17 with the payee-attribution witness re-derived on `train:263:hard` at 0.4825 / 0.6825, liveness witness 6/6)
+- release-gate sweeps: generator 2,100 seeds clean (52 s; 24 sentinel re-mints identical under another PYTHONHASHSEED); differential 330 selectors (300 hard + 30 standard, shard 48 of 50) 0 violations in 559 s; exploit corpus 0 gaps over 34 selectors (4 sentinels + 30 rotating standard, shard 0), every family reached at least one payload
+- `reviews/sweep_failures.json` and `tests/exploits/failures.json` unchanged (clean)
+
+## Not done here, by design
+- the v9 manifest is not promoted: copying it over `~/.piv/manifest.json` would make the sealed confirm1v4 schedule un-runnable (manifest digest and expected public task ids are bound); any new confirmatory schedule must be sealed under the manifest it will run against
+- no model panel was run on the dense worlds; the ladder figures above are structural (what a partial repair CAN score), not observed model behaviour
