@@ -9,7 +9,7 @@
 Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `beancount-ledger`. Apache-2.0.
 
 ```bash
-uv run vf-eval beancount-ledger     # zero setup: runs the shipped hand-authored task
+uv run vf-eval beancount-ledger     # zero setup: runs the default hand-authored task (ten ship; see the workflow table)
 ```
 
 ### Results at a glance
@@ -42,7 +42,7 @@ Two things this shows and one it does not:
 
 | Path | What it is |
 |---|---|
-| `beancount_ledger/` | The environment: world generator (`graph/`), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
+| `beancount_ledger/` | The environment: world generator (`graph/`) and the ten hand-authored worlds (`graph/worlds/`), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
 | `tests/` | 60 files: the test battery, 19 exploit probes, adversary loop, liveness witness, preflight and sealing scripts. Not shipped. |
 | `reviews/` | Dated evidence: pre-registration, sealed schedule, 143 rollout records, rendered arm tables, release attestation. Not shipped. |
 | `outputs/evals/` | Raw `vf-eval` transcripts on the demo task. |
@@ -65,21 +65,45 @@ Everything below is the detailed contract: how worlds are keyed and manifested, 
 ### Quickstart
 
 ```bash
-uv run vf-eval beancount-ledger          # the shipped hand-authored task, works out of the box
+uv run vf-eval beancount-ledger          # the default hand-authored task, works out of the box
 ```
 
 ```python
 import beancount_ledger
 
-env = beancount_ledger.load_environment()            # default: the hand-authored task "bank_recon_001"
-env = beancount_ledger.load_environment("train:7")   # a generated task (requires the operator setup below)
+env = beancount_ledger.load_environment()               # default: the hand-authored task "bank_recon_001"
+env = beancount_ledger.load_environment("payroll_001")  # any other hand-authored workflow task (table below)
+env = beancount_ledger.load_environment("train:7")      # a generated task (requires the operator setup below)
 ```
+
+```bash
+uv run vf-eval beancount-ledger --env-args '{"task_id": "ap_payment_run_001"}'   # a workflow task from the CLI
+```
+
+### Hand-authored workflow tasks
+
+Ten tasks ship in the wheel and need no secret. Each is one small company's month, authored as facts only (`beancount_ledger/graph/worlds/`); the eight public files, the golden ledger, the scored accounts and the expected balances are all derived, never typed. Every task plants two or three discrepancies of the kinds the scorer understands — an entry the books lack (`omit`), an entry keyed with the wrong amount (`alter`), an entry posted twice (`duplicate`) — and carries one timing-difference trap the agent must leave alone. `tests/test_worlds.py` proves, for every entry, that the golden ledger scores 1.0, the untouched ledger leaves every planted item unresolved, the repairs are uniquely inferable from the public files, and no two planted items share a posting pair (the scorer's merged-entry rule would otherwise zero a perfect answer).
+
+| task id | company, period | workflow | planted | scored accounts |
+|---|---|---|---|---|
+| `bank_recon_001` | Alpine Trading Co., Nov 2025 | bank reconciliation, month-end close | omit, omit | Bank, AR, BankFees |
+| `ap_payment_run_001` | Ironwood Furniture Works, Oct 2025 | accounts-payable payment run: a run payment never posted, one keyed with transposed digits, one posted twice | omit, alter, duplicate | Bank, AP |
+| `ar_collections_001` | Silverbrook Dental Supply, Nov 2025 | receivables and collections, a partial receipt, a deposit in transit | omit, alter, duplicate | Bank, AR |
+| `bank_feed_categorisation_001` | Thistle & Quill Design Studio, Jan 2026 | card spend categorised from the bank feed by vendor default account | omit, omit, alter | Bank, Software, Travel, Office |
+| `expense_reports_001` | Falcon Ridge Surveying, Feb 2026 | employee expense claims reimbursed by cheque, a fuel card | omit, duplicate, alter | Bank, Travel, FieldSupplies, Vehicle |
+| `payroll_001` | Hawthorn Bakery, Dec 2025 | net pay by cheque for five employees, withholdings remitted | omit, alter, omit | Bank, PayrollTax, Salaries |
+| `sales_tax_remittance_001` | Bluewater Marine Supply, Oct 2025 | tax collected on sales and remitted to the state | omit, alter, duplicate | Bank, AR, SalesTax-Payable, BankFees |
+| `fixed_assets_001` | Oakridge Machining, Mar 2026 | equipment capitalised on payment, repairs expensed | omit, alter, omit | Bank, Equipment, Repairs, BankFees |
+| `intercompany_transfers_001` | Redwood Analytics Group, Nov 2025 | cash advanced to a group company, booked as due from the subsidiary | omit, duplicate, alter | Bank, AR, Due-From-Subsidiary |
+| `month_end_close_001` | Maple Street Veterinary Clinic, Dec 2025 | prepaid insurance, two bank charges, client receipts | omit, alter, duplicate | Bank, AR, Prepayments, BankFees |
+
+The workflow lives in the prompt, the policy text, the parties and what is planted; the scoring contract (`candidate/1`), the tools, the episode contract and the observation contract are the same for every task, so results are comparable across the table.
 
 Generated tasks are **keyed and manifested**: each world derives from an HMAC under an evaluator secret (`PIV_EVAL_SECRET` or `~/.piv/eval_secret`, ≥16 bytes), and production serving admits only selectors recorded in a signed release manifest written by the preflight (`tests/preflight_manifest.py`, two-phase: offline gates on every minted world, then every record verified through the real serving door). Without the secret and manifest, a generated selector is refused with a named reason — the refusal path is structural: installed copies of this package **cannot** enable the development override (`PIV_DEV_UNMANIFESTED` is ignored outside the repository's own test entry points; witnessed from an installed wheel).
 
 ### Datasets
 - **Primary**: generated worlds, selectors `train:<n>`, `eval:<n>`, `train:<n>:hard` (n < 100,000). The released population is preflighted 1,400/1,400 (1,000 train / 200 eval / 200 hard).
-- **Shipped**: one hand-authored task (`bank_recon_001`) usable with no secret, for smoke tests and demos.
+- **Shipped**: ten hand-authored tasks (`bank_recon_001` and the nine workflow tasks above) usable with no secret, for smoke tests, demos and cross-workflow comparison.
 - Each world is a projection of a private fact graph; everything the scorer requires is derivable from the mounted files or stated in `policy.md`. Ledgers are 7–14 KB; the public observation contract is eight named files, nothing else.
 
 ### Task
