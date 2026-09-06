@@ -299,3 +299,4 @@ bookkeeping (Codex T49 §13.6).
   separately and the conservative combined bucket, the ledger gap and health
   status, and both censuses. It is audit evidence for the pre-registered
   estimands: it introduces no outcome metric and no decision threshold.
+- `reward_lattice_v9.json` — the exhaustive golden-repair-subset audit of the reward (generated v9 through the serving door, and the hand-authored registry): counts, jump percentiles, the four cancelling-hit cases

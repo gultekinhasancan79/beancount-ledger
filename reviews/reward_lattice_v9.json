@@ -1,0 +1,131 @@
+{
+ "note": "tests/reward_lattice_audit.py: every subset of a world's golden repairs scored through the real chain (parse_once -> commit -> score_committed, candidate/1); a sample also through the production loop. Generated worlds under the evaluator secret through the serving door (PIV_MANIFEST = the v9 file); hand-authored tasks from the registry. No secret, seed or rotation appears here.",
+ "generated_v9": {
+  "summary": {
+   "generator_version": 9,
+   "mode": "production",
+   "selectors": 1400,
+   "audited": 1400,
+   "refused": 0,
+   "crashed": 0,
+   "subsets": 82016,
+   "loop_checked": 2800,
+   "monotonicity_violations": 0,
+   "penalty_activations": 0,
+   "unexpected_states": 0,
+   "loop_mismatches": 0,
+   "jumps": 251952,
+   "big_jumps": 7916,
+   "big_jumps_bank": 7916,
+   "max_jump": 0.41,
+   "cancelling_hits": 4,
+   "cancelling_worlds": 4,
+   "seconds": 1210
+  },
+  "per_world_p95_jump": {
+   "median": 0.225,
+   "max": 0.41
+  },
+  "ladder_rungs": {
+   "min": 9,
+   "median": 12.0,
+   "max": 21
+  },
+  "cancelling_hits": [
+   {
+    "selector": "train:166",
+    "subset": [
+     0,
+     3,
+     4,
+     5
+    ],
+    "targets": [
+     "Assets:Bank:Checking"
+    ],
+    "unresolved": [
+     "transposed_bank_fee",
+     "transposed_expense_payment"
+    ]
+   },
+   {
+    "selector": "train:568",
+    "subset": [
+     1,
+     2,
+     3
+    ],
+    "targets": [
+     "Assets:Bank:Checking"
+    ],
+    "unresolved": [
+     "transposed_vendor_payment",
+     "transposed_expense_payment"
+    ]
+   },
+   {
+    "selector": "eval:39",
+    "subset": [
+     1,
+     2,
+     4
+    ],
+    "targets": [
+     "Assets:Bank:Checking"
+    ],
+    "unresolved": [
+     "transposed_vendor_payment",
+     "transposed_bank_fee"
+    ]
+   },
+   {
+    "selector": "eval:132",
+    "subset": [
+     2,
+     3,
+     4
+    ],
+    "targets": [
+     "Assets:Bank:Checking"
+    ],
+    "unresolved": [
+     "transposed_customer_receipt",
+     "transposed_expense_payment"
+    ]
+   }
+  ]
+ },
+ "hand_authored": {
+  "summary": {
+   "generator_version": 9,
+   "mode": "test",
+   "selectors": 91,
+   "audited": 91,
+   "refused": 0,
+   "crashed": 0,
+   "subsets": 724,
+   "loop_checked": 182,
+   "monotonicity_violations": 0,
+   "penalty_activations": 0,
+   "unexpected_states": 0,
+   "loop_mismatches": 0,
+   "jumps": 1084,
+   "big_jumps": 810,
+   "big_jumps_bank": 272,
+   "max_jump": 0.8,
+   "cancelling_hits": 0,
+   "cancelling_worlds": 0,
+   "seconds": 24
+  },
+  "per_world_p95_jump": {
+   "median": 0.566667,
+   "max": 0.8
+  },
+  "ladder_rungs": {
+   "min": 3,
+   "median": 4,
+   "max": 5
+  },
+  "cancelling_hits": []
+ }
+}

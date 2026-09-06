@@ -63,3 +63,11 @@ Not a release. What the dense-plan generator (commit `a149060`, "Dense plans: fi
 ## Not done here, by design
 - the v9 manifest is not promoted: copying it over `~/.piv/manifest.json` would make the sealed confirm1v4 schedule un-runnable (manifest digest and expected public task ids are bound); any new confirmatory schedule must be sealed under the manifest it will run against
 - no model panel was run on the dense worlds; the ladder figures above are structural (what a partial repair CAN score), not observed model behaviour
+
+## Reward lattice audit (2026-09-06, `tests/reward_lattice_audit.py`, evidence `reviews/reward_lattice_v9.json`)
+Every subset of a world's golden repairs applied to the untouched ledger and scored through the real chain (candidate/1), a sample re-scored through the production loop.
+- generated v9, the 1,400 preflighted selectors through the serving door: 82,016 subsets scored, 2,800 also through the loop; monotonicity violations 0; correct-repair penalty activations 0; unexpected states 0; loop mismatches 0; 1,210 s with 8 workers
+- marginal reward jumps over 251,952 steps: per-world p95 median 0.225, per-world p95 max 0.410, overall max 0.410; 7,916 steps (3.14%) jump above 0.25 and every one of them is the step that unlocks the bank target (the bank balance is right only when the last item touching it is repaired)
+- ladder rungs per world: min 9, median 12, max 21
+- cancelling hits: 4 subsets in 4 worlds (train:166, train:568, eval:39, eval:132) where two unresolved transpositions of the same magnitude leave the bank balance right while both counter accounts still miss; the scorer measures balances, so the reward is exactly its arithmetic and stays monotone — a compensating-error case a v10 generator could refuse (equal and opposite bank residuals), noted, not changed
+- hand-authored, all 91 registry tasks: 724 subsets, 182 through the loop; 0 / 0 / 0 / 0; 2–3 items a task, so 75% of steps jump above 0.25 (the demo set is small by design; its ladders are 3–5 rungs)
