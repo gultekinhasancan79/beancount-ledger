@@ -15,19 +15,23 @@ env:
 
 jobs:
   battery:
-    name: test battery (${{ matrix.os }})
+    name: test battery (${{ matrix.os }}, python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        python: ["3.12"]
+        include:
+          - os: ubuntu-latest
+            python: "3.10"      # the oldest interpreter pyproject admits
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
           enable-cache: true
           cache-dependency-glob: pyproject.toml
 
@@ -38,11 +42,22 @@ jobs:
 
       - name: Pins match the package's declared set
         shell: bash
+        # The installed versions must be exactly the pins pyproject declares;
+        # a resolver that quietly picked another version fails the job here.
         run: |
           uv run --no-sync python - <<'EOF'
-          import beancount_ledger
-          for name, version in beancount_ledger.library_versions().items():
-              print(f"{name}=={version}")
+          import re, sys, beancount_ledger
+          text = open("pyproject.toml", encoding="utf-8").read()
+          block = text.split("dependencies = [", 1)[1].split("]", 1)[0]
+          norm = lambda s: s.lower().replace("_", "-")
+          pins = {norm(n): v for n, v in re.findall(r'"([A-Za-z0-9_.-]+)==([^"]+)"', block)}
+          installed = {norm(n): v for n, v in beancount_ledger.library_versions().items()}
+          bad = {n: (pins.get(n), installed.get(n)) for n in sorted(set(pins) | set(installed)) if pins.get(n) != installed.get(n)}
+          for n in sorted(installed):
+              print(f"{n}=={installed[n]}" + ("" if n not in bad else "   <- pin says " + str(pins.get(n))))
+          if bad:
+              print("PIN MISMATCH:", bad); sys.exit(1)
+          print(f"{len(pins)} pins match the installed set")
           EOF
 
       - name: Run every suite (tests/run_all.py)
@@ -58,9 +73,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
         with:
           python-version: "3.12"
 

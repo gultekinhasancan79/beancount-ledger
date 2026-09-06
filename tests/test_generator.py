@@ -74,7 +74,7 @@ except Exception:                           # noqa: BLE001 - never a reason to f
 
 # The evaluator secret, for this suite and the interpreters it spawns. A
 # fixed value: determinism properties compare runs under the SAME secret.
-TEST_SECRET = "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e"
+TEST_SECRET = "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e"  # gitleaks:allow  (a public test constant, not a credential: determinism compares runs under one key)
 os.environ.setdefault("PIV_EVAL_SECRET", TEST_SECRET)
 os.environ.setdefault("PIV_DEV_UNMANIFESTED", "1")     # development: a test secret has no release manifest
 

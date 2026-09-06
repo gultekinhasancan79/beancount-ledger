@@ -1,5 +1,7 @@
 # Gerçekçilik denetimi — minimaxai/minimax-m3, 2026-08-29
 
+> This review is in Turkish: on 2026-08-29 `tests/review_world.py` prompted the reviewer model in Turkish. It is kept exactly as recorded (it is evidence of that day's realism pass over the demo world, `bank_recon_001`, generator version of the time); the script's prompt has since been translated to English, so later reviews are in English.
+
 *Model, ajanın gördüğü sistem mesajını, görev metnini ve 8 dünya dosyasını satır numaralı olarak gördü; ayrıca denetçi-only olarak görev tanımını ve cevap anahtarını. Tek istek, araç yok, temperature 0.3.*
 
 *Token: 5074 giriş, 2846 çıkış.*

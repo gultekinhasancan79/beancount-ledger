@@ -34,8 +34,8 @@ Two things this shows and one it does not:
 ### Why this is hard to game
 
 - **The reward is derived, not judged.** Trial balance ties or it does not; planted discrepancies are resolved or they are not. Penalties for damaging existing records, fabricating entries or inventing accounts.
-- **Nothing the agent sees regenerates an answer.** Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The Hub artefact ships no goldens, no tests, no provenance.
-- **19 exploit probes and an adversary loop** live in `tests/` (canonicalisation, decimal edge cases, duplicate detection, entitlement, and more). The exploit corpus is scored against an oracle independent of the scorer.
+- **Nothing the agent sees regenerates an answer.** Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The wheel ships no golden ledgers, no tests and no provenance for generated worlds. The hand-authored tasks are the exception by construction: their facts live in the package (`graph/worlds/`) and the demo task's scoring contract (`tasks/bank_recon_001.json`: expected balances and planted keys) ships with it, because a demo must score without a secret. Treat them as demos, never as a held-out evaluation.
+- **An exploit corpus and an adversary loop** live in `tests/`: 26 hand-written attacks on the demo world, 14 constructions (13 families, 92 payloads) that read a minted world's public bytes to build their attack, and a nightly sweep over rotating shards (canonicalisation, decimal edge cases, duplicate detection, entitlement, and more). The exploit corpus is scored against an oracle independent of the scorer.
 - **Every number above is reproducible from a sealed contract.** The pre-registration is hashed into the schedule id; the instrument commit, episode-contract digest and package pins are recorded in [`reviews/RELEASE_ATTESTATION.md`](reviews/RELEASE_ATTESTATION.md).
 
 ### How to read this repository
@@ -43,8 +43,8 @@ Two things this shows and one it does not:
 | Path | What it is |
 |---|---|
 | `beancount_ledger/` | The environment: world generator (`graph/`) and the ten hand-authored worlds, 91 workflow tasks (`graph/worlds/`), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
-| `tests/` | 60 files: the test battery, 19 exploit probes, adversary loop, liveness witness, preflight and sealing scripts. Not shipped. |
-| `reviews/` | Dated evidence: pre-registration, sealed schedule, 143 rollout records, rendered arm tables, release attestation. Not shipped. |
+| `tests/` | The 27-suite battery, the exploit corpus (14 constructions over 13 families), the adversary loop, the liveness witness, the preflight, sealing and audit scripts; about 110 tracked files. Not shipped. |
+| `reviews/` | Dated evidence: pre-registration, the sealed confirm1v4 schedule with its 143 executed cells, the pilot and budget records that preceded it, rendered arm tables, the release attestation, the reward-lattice audit and the audit receipt. The budget records were run on generator-8 worlds; under generator 9 the same selectors name different worlds, so nothing in them describes a world that is served today. Not shipped. |
 | `outputs/evals/` | Raw `vf-eval` transcripts on the demo task. |
 
 ### Author
@@ -106,6 +106,8 @@ Workflows, and what each plants: **bank recon** a receipt, a supplier payment an
 The workflow lives in the prompt, the policy text, the parties and what is planted; the scoring contract (`candidate/1`), the tools, the episode contract and the observation contract are the same for every task, so results are comparable across the table.
 
 Generated tasks are **keyed and manifested**: each world derives from an HMAC under an evaluator secret (`PIV_EVAL_SECRET` or `~/.piv/eval_secret`, ≥16 bytes), and production serving admits only selectors recorded in a signed release manifest written by the preflight (`tests/preflight_manifest.py`, two-phase: offline gates on every minted world, then every record verified through the real serving door). Without the secret and manifest, a generated selector is refused with a named reason — the refusal path is structural: installed copies of this package **cannot** enable the development override (`PIV_DEV_UNMANIFESTED` is ignored outside the repository's own test entry points; witnessed from an installed wheel).
+
+`PIV` is the prefix of everything the evaluator side owns and the framework does not: `PIV_EVAL_SECRET`, `PIV_MANIFEST`, `PIV_DEV_UNMANIFESTED`, the `~/.piv/` directory, the `piv_*` state keys a rollout carries and the `PIV*` exception classes. When you see it, you are looking at this package's evaluator, not at `verifiers`.
 
 ### Datasets
 - **Primary**: generated worlds, selectors `train:<n>`, `eval:<n>`, `train:<n>:hard` (n < 100,000). The released population is preflighted 1,400/1,400 (1,000 train / 200 eval / 200 hard).

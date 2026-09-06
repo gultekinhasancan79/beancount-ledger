@@ -27,6 +27,11 @@
 - README.md: `6e87615f7b596cde9ef30f8601098178483dc5b717af1ef07d37958cccbc875c`
 - LICENSE: `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
 
+### Errata to the evidence hashes (2026-09-06)
+- The values above for `reviews/schedule_confirm1v4.json` and `reviews/arms_confirm1v4.md` were computed on CRLF working copies on Windows. The bytes git stores (`.gitattributes` normalises to LF) hash to `a5bc3895f52889b162d5519adea91d8e02b4c6b23d6f8faeab94f6476e1edf84` (schedule) and `7712ea7c7b025ce28b84e0ec2c6cee12625aed695a50bdaccb59aa442b501048` (arms table); those are the values a fresh clone reproduces. `reviews/confirmatory_design.md` (`c0659a48124b84025591211f246ba2d9dc0af72d98d1b909754dfcc0d099266c`), `release_lock.txt`, `README.md` and `LICENSE` were already LF.
+- The schedule's sealed `analysis_plan_sha256` (`c3c96b1b571d0412d7a881facb8a2948455eef2037263f5d8a6b48c01b9482a5`) is the hash of `confirmatory_design.md` as sealed on 2026-08-30, BEFORE its dated "Post-run corrections" section was appended; the current file therefore hashes differently by design. The sealed value is the pre-registration identity; the corrections section is outcome-independent and is the only later change.
+- `reviews/submission_texts.md` was a marketing draft, not evidence; it was removed from the repository on 2026-09-06 and its line above is void.
+
 ## Panel census (confirm1v4, INCOMPLETE, as rendered)
 - 144 scheduled = 143 exactly-matched rows + 1 unrun + 0 execution-integrity
 - 143 = 138 valid + 5 exogenous provider-failed + 0 instrument-invalid + 0 other

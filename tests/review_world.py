@@ -1,6 +1,6 @@
 """Have a model review the world and the task scenario for realism.
 
-PLAN.md's M0 steps 1–2 end with a human realism review (rule 24). This puts
+The first milestone ended with a human realism review of the demo world. This puts
 a model in that seat: it sees exactly what the agent sees (system prompt,
 task prompt, every world file) plus — marked as reviewer-only — the task
 definition with the answer key, so it can judge whether the planted
@@ -34,54 +34,54 @@ WORLD_ORDER = ["manifest.md", "policy.md", "accounts.csv", "customers.csv", "ven
                "archive_prior_period.csv", "ledger.beancount", "bank_statement.csv"]
 
 REVIEW_INSTRUCTIONS = """\
-Sen yirmi yıllık bir küçük-işletme muhasebecisisin ve aynı zamanda RL ortamı
-tasarımı inceleyen bir denetçisin. Aşağıda bir RL ortamının "dünyası" var:
-küçük bir ticaret şirketinin Beancount defteri, banka ekstresi, hesap planı,
-müşteri/tedarikçi listeleri, önceki dönem arşivi, muhasebe politikası; ve
-ajana verilen görev metni. En sonda, SADECE SENİN GÖRMEN İÇİN, görev tanımı ve
-cevap anahtarı var (ajan bunu görmüyor).
+You are a small-business accountant with twenty years of practice, and at the same
+time an auditor of reinforcement-learning environment design. Below is the "world"
+of one such environment: a small trading company's Beancount ledger, its bank
+statement, chart of accounts, customer and vendor lists, the prior period's archive,
+the bookkeeping policy; and the task text the agent receives. At the very end, FOR
+YOUR EYES ONLY, the task definition and the answer key (the agent never sees them).
 
-Görevin GERÇEKÇİLİK denetimi. Puanlama kodunu değil, dünyayı ve senaryoyu
-değerlendir. Somut ol: her bulguda dosya adı ve satır (ya da kayıt) ver, neden
-gerçekçi olmadığını bir cümleyle söyle, düzeltme öner. Övgü yazma; sorun yoksa
-"sorun yok" de ve geç.
+Your job is a REALISM review. Judge the world and the scenario, not the scoring
+code. Be concrete: for every finding give the file name and the line (or record),
+say in one sentence why it is not realistic, and propose the fix. No praise; where
+there is no problem say "no problem" and move on.
 
-Şu başlıklarla, Türkçe, Markdown olarak cevap ver:
+Answer in English, in Markdown, under these headings:
 
-## A. Genel izlenim
-Tek paragraf: bu, gerçek bir küçük şirketin defteri ve gerçek bir banka ekstresi
-gibi mi duruyor? İlk bakışta "sentetik" diye ele veren ne var?
+## A. Overall impression
+One paragraph: does this look like a real small company's books and a real bank
+statement? What gives it away as "synthetic" at first glance?
 
-## B. Dosya dosya bulgular
-Her dosya için bir alt başlık. Tutarlar, tarihler, isimler, hesap adları, KDV
-oranı, marjlar, kira, bakiyeler, referans numaraları, ekstre formatı (bir bankanın
-gerçekten böyle CSV verir mi?), narration/payee dili — gerçek dünyada böyle olur
-mu? Yuvarlak sayılar, tekdüze aralıklar, isim şablonları, tarih dizilişleri gibi
-sentetik izleri özellikle ara.
+## B. Findings file by file
+One subheading per file. Amounts, dates, names, account names, the sales-tax
+rate, margins, rent, balances, reference numbers, the statement format (would a
+bank really export a CSV like this?), the wording of narrations and payees — would
+the real world look like this? Look especially for synthetic traces: round numbers,
+uniform intervals, name templates, date patterns.
 
-## C. Görev senaryosu
-Görev metni + politika: gerçek bir muhasebecinin alacağı iş gibi mi? Belirsiz
-ya da haksız bir şey var mı (politikanın söylemediği ama puanlamanın beklediği
-bir davranış)? Ekili farklar (kaydedilmemiş ACH tahsilatı, kaydedilmemiş banka
-ücreti) ve tuzak (bekleyen çek) gerçek mutabakatlarda böyle olur mu? Gerçek
-mutabakatlarda tipik olup burada olmayan fark türleri neler (NSF/karşılıksız
-çek, tarih kayması, çift kayıt, transpoze rakam, yanlış tutar, kesinti yapılmış
-tahsilat vb.)?
+## C. The task scenario
+The task text plus the policy: is this the job a real accountant would be given? Is
+anything vague or unfair (a behaviour the policy does not state but the scoring
+expects)? Do the planted differences (an unrecorded ACH receipt, an unrecorded bank
+fee) and the trap (an outstanding cheque) occur like this in real reconciliations?
+Which difference kinds are typical of real reconciliations and absent here (NSF or
+bounced cheques, date drift, double entries, transposed digits, wrong amounts,
+receipts net of a deduction, and so on)?
 
-## D. Kanıt ve belirlenebilirlik
-Ekstredeki satırlar, ajanın doğru kaydı TEK bir şekilde yazmasına yetecek kanıt
-veriyor mu? Bir muhasebeci bu ekstreyle bu defterden başka bir doğru sonuca
-varabilir mi? (Örneğin tahsilatın hangi faturaya ait olduğu ekstreden mi, yoksa
-sadece tutar eşleşmesinden mi anlaşılıyor?)
+## D. Evidence and determinability
+Do the statement rows give the agent enough evidence to write the correct entry in
+ONE way only? Could an accountant reach a different correct result from this
+statement and this ledger? (For example: is the invoice a receipt settles visible on
+the statement, or inferred from the amount alone?)
 
-## E. Puanlar (1–5, tek satır gerekçe)
-- Gerçekçilik
-- Zorluk (bir junior muhasebeci için)
-- Belirsizlik yokluğu
-- Tuzağın adilliği
+## E. Scores (1–5, one line of reasoning each)
+- Realism
+- Difficulty (for a junior accountant)
+- Absence of ambiguity
+- Fairness of the trap
 
-## F. En önemli 5 düzeltme
-Öncelik sırasıyla, her biri bir cümle + hangi dosya/satır.
+## F. The five most important fixes
+In priority order, one sentence each plus the file and line.
 """
 
 
@@ -108,9 +108,9 @@ def build_prompt(task_id: str) -> tuple[str, str]:
 
     task_prompt = json.loads(task_json)["prompt"]
 
-    parts = [REVIEW_INSTRUCTIONS, "\n---\n\n# Ajanın gördüğü sistem mesajı\n\n```\n" + SYSTEM_PROMPT.strip() + "\n```\n",
-             "\n# Ajanın gördüğü görev metni\n\n```\n" + task_prompt.strip() + "\n```\n",
-             "\n# Dünya dosyaları (ajan bunları araçlarla okuyor; satır numaraları senin için)\n"]
+    parts = [REVIEW_INSTRUCTIONS, "\n---\n\n# The system message the agent sees\n\n```\n" + SYSTEM_PROMPT.strip() + "\n```\n",
+             "\n# The task text the agent sees\n\n```\n" + task_prompt.strip() + "\n```\n",
+             "\n# World files (the agent reads these through tools; the line numbers are for you)\n"]
     for name in WORLD_ORDER:
         path = WORLD / name
         if not path.is_file():
@@ -119,7 +119,7 @@ def build_prompt(task_id: str) -> tuple[str, str]:
     extra = sorted(p.name for p in WORLD.iterdir() if p.is_file() and p.name not in WORLD_ORDER)
     for name in extra:
         parts.append(f"\n## {name}\n\n```\n{numbered((WORLD / name).read_text(encoding='utf-8'))}\n```\n")
-    parts.append("\n---\n\n# SADECE DENETÇİ İÇİN — görev tanımı ve cevap anahtarı (ajan görmez)\n\n```json\n" + task_json.strip() + "\n```\n")
+    parts.append("\n---\n\n# FOR THE REVIEWER ONLY — task definition and answer key (the agent never sees this)\n\n```json\n" + task_json.strip() + "\n```\n")
     return "".join(parts), task_prompt
 
 
@@ -168,11 +168,11 @@ def main() -> int:
     stamp = dt.date.today().isoformat()
     slug = args.model.split("/")[-1]
     out = REVIEWS / f"realism_{slug}_{stamp}.md"
-    header = (f"# Gerçekçilik denetimi — {args.model}, {stamp}\n\n"
-              f"*Model, ajanın gördüğü sistem mesajını, görev metnini ve {len(WORLD_ORDER)} dünya dosyasını "
-              f"satır numaralı olarak gördü; ayrıca denetçi-only olarak görev tanımını ve cevap anahtarını. "
-              f"Tek istek, araç yok, temperature 0.3.*\n\n"
-              + (f"*Token: {usage.prompt_tokens} giriş, {usage.completion_tokens} çıkış.*\n\n" if usage else "")
+    header = (f"# Realism review — {args.model}, {stamp}\n\n"
+              f"*The model saw the system message the agent sees, the task text and the {len(WORLD_ORDER)} world files "
+              f"with line numbers, plus, marked reviewer-only, the task definition and the answer key. "
+              f"One request, no tools, temperature 0.3.*\n\n"
+              + (f"*Tokens: {usage.prompt_tokens} in, {usage.completion_tokens} out.*\n\n" if usage else "")
               + "---\n\n")
     out.write_text(header + text.strip() + "\n", encoding="utf-8")
     print(f"written: {out}")

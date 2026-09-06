@@ -55,7 +55,7 @@ for _path in (str(ROOT), str(ROOT / "tests")):
 #: The suites' own fixed development secret (never the evaluator's). Set
 #: BEFORE the package is imported: `load_environment` resolves the secret at
 #: call time, but the rotation/manifest logic reads the environment early.
-TEST_SECRET = "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e"
+TEST_SECRET = "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e"  # gitleaks:allow  (a public test constant, not a credential: determinism compares runs under one key)
 
 #: The `confirm1` panel — the six selectors the confirmatory schedule runs.
 PANEL_SELECTORS = ("train:1", "train:12", "train:30", "eval:5", "train:3:hard", "train:107:hard")

@@ -4,6 +4,8 @@ description = "Bank reconciliation and month-end close on a Beancount ledger, sc
 tags = ["accounting", "tool-use", "multi-turn", "train", "eval"]
 version = "0.1.0"
 license = {text = "Apache-2.0"}
+readme = "README.md"
+authors = [{name = "Hasancan Gültekin", email = "gultekinhasancan79@gmail.com"}]
 requires-python = ">=3.10"
 # PINNED EXACTLY, on purpose (Codex T48 §8, T47 answer 7).
 #
@@ -32,6 +34,11 @@ dependencies = [
     "datasets==5.0.1",
     "beancount==3.2.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/gultekinhasancan79/beancount-ledger"
+Repository = "https://github.com/gultekinhasancan79/beancount-ledger"
+Issues = "https://github.com/gultekinhasancan79/beancount-ledger/issues"
 
 [build-system]
 requires = ["hatchling"]

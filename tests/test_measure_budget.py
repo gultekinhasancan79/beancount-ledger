@@ -81,7 +81,7 @@ sys.path.insert(0, str(ROOT / "tests"))
 #: other keyed suite here uses — `test_exploits`, `test_sentinels`,
 #: `test_generator`, `liveness_witness` and `test_lag` all pin this exact
 #: value, and the sentinel/exploit fixtures are derived from it.
-os.environ.setdefault("PIV_EVAL_SECRET", "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e")
+os.environ.setdefault("PIV_EVAL_SECRET", "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e")  # gitleaks:allow  (a public test constant, not a credential: determinism compares runs under one key)
 
 import verifiers as vf  # noqa: E402
 from verifiers.legacy.types import (  # noqa: E402
