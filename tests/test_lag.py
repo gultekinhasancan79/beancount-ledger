@@ -6,7 +6,7 @@ the entry and nothing public reveals it. That claim is only worth anything
 where the two dates DIFFER, and the shipped world's two omissions happen to
 be zero-lag: `rec:si-1044-receipt` and `rec:fee-2025-11` are recognised on
 the day the bank saw them, so every one of Alpine's fixtures would pass
-under the old contract too (Codex T43 §1, §8).
+under the old contract too.
 
 This suite builds the cases the shipped world does not have, as hand-authored
 variants of Alpine's facts and nothing else — no literal posting, no literal

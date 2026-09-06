@@ -217,7 +217,7 @@ def analysed_approaches(text: str) -> int:
 
 
 def classify(text: str, ledger, out) -> str:
-    """Participation class of one sample (Codex T42 §6): the denominator of
+    """Participation class of one sample: the denominator of
     an adversary result is the VALID attempts, never the requested samples.
 
       VALID_CANDIDATE   a parseable ledger that the environment scored

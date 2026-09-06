@@ -4,7 +4,7 @@ Termination is the agent calling `submit`, or the turn limit. Nothing else.
 
 The contract had been the framework's default instead, and the price was
 measured: in six real rollouts across two model families (reviews/budget_*
-2026-08-30, design_chat/to_codex.md "Second addendum") not one ledger was
+2026-08-30 and a private notes file) not one ledger was
 delivered. Every rollout died on `ToolEnv.no_tools_called` — the first
 assistant turn without a tool call ends the episode — and a reasoning model
 produces such a turn three different ways:
@@ -20,7 +20,7 @@ loop — after MAX_CONSECUTIVE_NO_TOOL_TURNS turns in a row without a tool call,
 or MAX_CONSECUTIVE_TRUNCATED_TURNS of them in a row cut off at the completion
 cap.
 
-The contract is an explicit state machine (Codex T44 §9), one named value in
+The contract is an explicit state machine, one named value in
 `state["piv_phase"]`:
 
     ACTIVE_NO_CANDIDATE --write accepted--> ACTIVE_CANDIDATE --submit--> TERMINAL
@@ -657,7 +657,7 @@ def test_submit_freezes_the_workspace():
 
     # and the same-turn ordering: submit first, write second in ONE call list
     # is representable, so the SUFFIX is refused before the tool body runs
-    # (Codex T47 §5: terminality is true at the instant submit is accepted,
+    # (terminality is true at the instant submit is accepted,
     # not merely from the next turn).
     state2 = {}
     workspace2 = Path(env._workspace(state2))
@@ -668,7 +668,7 @@ def test_submit_freezes_the_workspace():
     contents = [getattr(r, "content", None) for r in replies]
     # The accepted receipt names the bound hash, so it is compared by prefix
     # and then by the digest it must carry — the constant alone is no longer
-    # the whole reply (Codex T44 §9 item 3).
+    # the whole reply.
     if (len(contents) != 2 or not str(contents[0]).startswith(env_mod.SUBMIT_ACCEPTED)
             or env_mod.digest_short(state2["piv_logical_text_digest"]) not in str(contents[0])
             or contents[1] != env_mod.TURN_AFTER_SUBMIT):
@@ -940,7 +940,7 @@ def test_two_per_turn_caps_are_measured_at_exactly_the_same_output_budget():
     it is consulted only after a turn has been generated. An arm capped at
     16K per turn would end up to 16K past a 40K ceiling and an 8K arm up to
     8K past it — a 20 % difference in the budget between two arms whose
-    comparison is supposed to be about the policy (Codex T46 §6).
+    comparison is supposed to be about the policy.
 
     So the ceiling is enforced on the REQUEST: each turn asks for
     `min(per-turn cap, ceiling - spent)`. Both arms below run to exhaustion
@@ -1160,7 +1160,7 @@ def test_max_turns_without_submit_scores_the_last_committed_revision():
     consecutive no-tool turns never starts and the episode can only end at the
     cap — which is exactly the "or the turn limit" half of PLAN §6.
 
-    THE TURN-CAP RULE (Codex T44 §9 item 2), pinned here: reaching `max_turns`
+    THE TURN-CAP RULE, pinned here: reaching `max_turns`
     without an accepted `submit` scores the LAST COMMITTED REVISION exactly as
     before — this route's ledger is the golden one and it is worth 1.0 — and
     the only thing that changes is the NAME of the ending,
@@ -1237,7 +1237,7 @@ def test_a_submit_on_the_last_turn_is_named_unexecuted_not_never_submitted():
 
 
 # --------------------------------------------------------------------------
-# 3c. the two token-limit spellings are ONE field on the wire (Codex T47 §4)
+# 3c. the two token-limit spellings are ONE field on the wire
 # --------------------------------------------------------------------------
 
 class SamplingScript(TurnScript):
@@ -1300,7 +1300,7 @@ def test_both_token_limit_spellings_are_clamped_into_one_field():
     exactly one field leaves, `TOKEN_CAP_FIELD`, carrying
     `min(every valid caller cap, remaining ceiling)`.
 
-    AND A MALFORMED CAP IS NOT AN ABSENT CAP (Codex T48 §9, Q7). The exact
+    AND A MALFORMED CAP IS NOT AN ABSENT CAP. The exact
     answers are pinned below, because "minimum of every valid cap" left one
     ambiguity that costs money in the wrong direction: a caller who typed one
     good spelling and one bad one asked for something we cannot honour, and
@@ -1357,11 +1357,11 @@ def test_both_token_limit_spellings_are_clamped_into_one_field():
             if sent.get(key) != value:
                 problems.append(f"{label}: the caller's {key} was dropped or changed: {sent.get(key)!r}")
 
-    # THE NORMALIZER'S EXACT ANSWERS (Codex T48 §9, Q7). A malformed cap is a
+    # THE NORMALIZER'S EXACT ANSWERS. A malformed cap is a
     # TypeError, not a bigger budget: it used to be swallowed as "not a cap",
     # so `{"max_tokens": "8000"}` out of an untyped config asked the provider
     # for the whole 40,000-token remainder — five times what the caller typed,
-    # on a paid call. Every case Codex named is pinned by value.
+    # on a paid call. Every case the reviewer named is pinned by value.
     for bad in ("8000", 3_000.5, 8_000.0, True, False, 0, -5, -1, [8_000], {"n": 8_000}):
         try:
             env_mod._token_cap("max_tokens", bad)
@@ -1484,7 +1484,7 @@ def test_the_native_request_body_carries_the_intended_cap():
     """The WIRE assertion, through the real client's own transformation.
 
     `state["piv_request_max_tokens"]` is our arithmetic; it cannot witness
-    what the provider was actually asked for (Codex T47 Q2). The scripted
+    what the provider was actually asked for. The scripted
     clients above override `get_response`/`get_native_response` and so never
     execute the rename at all — so this drives the REAL
     `OpenAIChatCompletionsClient.get_native_response` over the environment's
@@ -1581,7 +1581,7 @@ def test_the_native_request_body_carries_the_intended_cap():
 
 
 # --------------------------------------------------------------------------
-# 3d. provider usage that cannot meter the ceiling fails CLOSED (Codex T47 §4)
+# 3d. provider usage that cannot meter the ceiling fails CLOSED
 # --------------------------------------------------------------------------
 
 class BadUsageScript(TurnScript):
@@ -1690,7 +1690,7 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
     # so every rollout landed in its own histogram bucket
     if len(set(env_mod.BUDGET_ACCOUNTING_CODES)) != len(env_mod.BUDGET_ACCOUNTING_CODES):
         problems.append("the code vocabulary has duplicates")
-    # SUSPICIOUS IS NOT INVALID (Codex T48 §3, Q2). The five codes above are
+    # SUSPICIOUS IS NOT INVALID. The five codes above are
     # theorems about the provider's arithmetic; the chars/token floor is a
     # heuristic over an unknown tokenizer, and a replay arm changes the shape
     # of the emitted text — so letting it decide validity would exclude one
@@ -1782,7 +1782,7 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
 
 
 # --------------------------------------------------------------------------
-# 3e. the episode contract has its own identity (Codex T47 §2)
+# 3e. the episode contract has its own identity
 # --------------------------------------------------------------------------
 
 #: The pinned episode-contract digest. It covers the system prompt, the tool
@@ -1799,8 +1799,8 @@ def test_the_episode_contract_digest_is_pinned():
     `task_contract_digest` binds the scorer's normative view. Neither notices
     that the SYSTEM prompt, the whole-read rule, the output ceiling or a stop
     priority changed — so the same task id could be served under materially
-    different rules and two batches compared as if they were one condition
-    (Codex T47 §2). This is the pin that makes such a change loud.
+    different rules and two batches compared as if they were one condition.
+    This is the pin that makes such a change loud.
     """
     problems = []
     if env_mod.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
@@ -1855,12 +1855,12 @@ def test_the_episode_contract_digest_is_pinned():
                        "max_episode_output_tokens": env_mod.MAX_EPISODE_OUTPUT_TOKENS}:
             problems.append(f"the batch metadata does not carry the contract: {stamped}")
 
-    # ...and the RELEASE MANIFEST is deliberately NOT bound to it (Codex T48
-    # §6, Q8). It was, and the binding was unsound: `load_environment` admits
+    # ...and the RELEASE MANIFEST is deliberately NOT bound to it. It was,
+    # and the binding was unsound: `load_environment` admits
     # BEFORE it constructs the environment, and then takes
     # `max_episode_output_tokens` — so a world admitted under the 40,000-token
     # digest could be served at 8,000 with no second check, the manifest
-    # attesting a contract nobody preflighted. Codex preferred separation over
+    # attesting a contract nobody preflighted. Separation was preferred over
     # strict binding, because golden bookkeeping validity does not depend on
     # the ceiling and experiment comparability does. So the manifest binds the
     # WORLD; the episode contract is bound on every rollout and every batch,
@@ -2108,7 +2108,7 @@ def test_the_digest_moves_with_the_contract_and_is_stable_across_processes():
 
 
 def test_the_prompt_discloses_the_terminal_budgets():
-    """Codex T47 §6: a budget the agent cannot see is one it cannot act on.
+    """A budget the agent cannot see is one it cannot act on.
 
     The prompt already stated the turn cap. It said nothing about the 40,000
     completion-token ceiling or about the three-consecutive-no-tool-turns
@@ -2126,7 +2126,7 @@ def test_the_prompt_discloses_the_terminal_budgets():
         "keep responses concise and use tools early",
         "Tool calls emitted on the turn that exhausts this token ceiling are executed",
         f"calls emitted on turn {env_mod.MAX_TURNS} are not",
-        # THE DELIVERY RULE (Codex T48 §11, Q10). "submit by turn 24" alone
+        # THE DELIVERY RULE. "submit by turn 24" alone
         # reads as a precondition for delivery, and it is not one: every
         # non-protocol ending scores the last committed revision. The agent
         # and the results table have to describe the same contract, so the
@@ -2155,7 +2155,7 @@ def test_the_prompt_discloses_the_terminal_budgets():
 
 
 # --------------------------------------------------------------------------
-# 3f. terminality cuts off the same-turn suffix (Codex T47 §5)
+# 3f. terminality cuts off the same-turn suffix
 # --------------------------------------------------------------------------
 
 def test_an_accepted_submit_cuts_off_the_rest_of_its_own_call_list():
@@ -2298,7 +2298,7 @@ def test_the_tool_surface_is_six_tools_one_write_one_terminal():
 
 
 # --------------------------------------------------------------------------
-# 4. the tool-call payload is part of the plausibility floor (Codex T48 §3.1)
+# 4. the tool-call payload is part of the plausibility floor
 # --------------------------------------------------------------------------
 
 def write_of_exactly(chars: int, tag: str = "w1") -> ResponseMessage:
@@ -2323,7 +2323,7 @@ def test_tool_call_arguments_are_counted_in_the_plausibility_floor():
     completion payload this task can produce is a `write_ledger` argument, up
     to MAX_WRITE_BYTES, and a turn carrying 48,000 characters of it with no
     prose at all had `chars == 0`, so `completion_tokens=1` passed the floor
-    trivially (Codex T48 §3.1, Q3). The one turn where under-reporting pays
+    trivially. The one turn where under-reporting pays
     was the one turn the check could not see.
 
     Two witnesses at exactly 48,000 counted characters — the write envelope:
@@ -2391,12 +2391,12 @@ def test_tool_call_arguments_are_counted_in_the_plausibility_floor():
 
 
 # --------------------------------------------------------------------------
-# 5. every model-facing reply is a bound constant (Codex T48 §4)
+# 5. every model-facing reply is a bound constant
 # --------------------------------------------------------------------------
 
 #: The functions that talk to the model, and every string literal each one is
 #: allowed to carry. A literal outside this set is a reply the digest cannot
-#: see — the exact seam Codex named — so adding one FAILS until it is hoisted
+#: see — the reviewer's exact seam — so adding one FAILS until it is hoisted
 #: into a constant in `model_facing_messages()`. Every entry here is either a
 #: structural separator or a non-model-facing key/encoding, and is justified.
 MODEL_FACING_FUNCTIONS = ("_clip", "_clip_bytes", "list_files", "read_file", "_whole_ledger_reply",
@@ -2481,8 +2481,8 @@ def test_every_model_facing_reply_is_a_bound_constant():
     `grep` and `_public_report` BUILT — "no such file", the numbered slice, the
     continuation tail, the hit line, the stopped-at-N tail, the parse headings.
     Those change the next model request exactly as much as a refusal does, and
-    the remedy on offer was "remember to bump the integer". Codex called that
-    the same generous seam earlier rounds kept exploiting (T48 §4).
+    the remedy on offer was "remember to bump the integer". The reviewer called
+    that the same generous seam earlier rounds kept exploiting.
 
     Two halves, both checked, because either alone is defeatable:
 
@@ -2592,7 +2592,7 @@ def test_every_model_facing_reply_is_a_bound_constant():
 
 
 # --------------------------------------------------------------------------
-# 6. the ledger is sent once per revision (Codex T48 §7, Q9)
+# 6. the ledger is sent once per revision
 # --------------------------------------------------------------------------
 
 def test_the_ledger_is_sent_once_per_revision():
@@ -2751,7 +2751,7 @@ def test_the_ledger_is_sent_once_per_revision():
 
 
 # --------------------------------------------------------------------------
-# 7. the envelope is UTF-8 bytes, at both doors (Codex T48 §6, Q9)
+# 7. the envelope is UTF-8 bytes, at both doors
 # --------------------------------------------------------------------------
 
 def test_the_envelope_is_utf8_bytes_and_both_doors_enforce_it():
@@ -2856,7 +2856,7 @@ def test_the_envelope_is_utf8_bytes_and_both_doors_enforce_it():
 
 
 # --------------------------------------------------------------------------
-# 8. dependency pins and attempt identity (Codex T48 §8, §10)
+# 8. dependency pins and attempt identity
 # --------------------------------------------------------------------------
 
 def test_bounded_replies_are_bounded_in_bytes_and_the_episode_in_aggregate():
@@ -2871,7 +2871,7 @@ def test_bounded_replies_are_bounded_in_bytes_and_the_episode_in_aggregate():
     handful of completion tokens: exactly the amplification the read rule was
     added to remove, through a different door.
 
-    Codex offered two closures (T48 §7) and both are taken here:
+    The reviewer offered two closures and both are taken here:
 
       - MAX_TOOL_OUTPUT_BYTES bounds ONE bounded reply. Measured honest use
         over the shipped world and 50 generated ones: largest sliced read
@@ -2981,10 +2981,9 @@ def test_the_generated_schema_dependencies_are_pinned_exactly():
     schemas AS THE FRAMEWORK GENERATES THEM: `verifiers` calls
     `openai-agents`' `function_schema`, which parses our docstrings with
     `griffelib` and emits the schema through `pydantic`/`pydantic-core`. A
-    minor bump in any of those can move the digest with no change of ours
-    (Codex T48 §8, T47 answer 7).
+    minor bump in any of those can move the digest with no change of ours.
 
-    Codex asked for pins AND for the strict digest. The pins are in
+    The reviewer asked for pins AND for the strict digest. The pins are in
     `pyproject.toml`, the same set is `PINNED_LIBRARIES`, every rollout
     carries `state["piv_library_versions"]` as provenance, and this test is
     what makes an upgrade fail the battery instead of drifting through it. The
@@ -3042,7 +3041,7 @@ def test_the_rollout_id_is_an_attempt_identity():
     `piv_rollout_id` here, and the measurement client — which receives the
     same dict as `state` — can bind every provider request it makes to the
     attempt that made it rather than inferring an attempt boundary from the
-    shape of the prompt (Codex T48 §10). Nothing model-facing carries it.
+    shape of the prompt. Nothing model-facing carries it.
     """
     problems = []
     env = load_environment()

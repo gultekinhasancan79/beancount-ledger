@@ -1,16 +1,16 @@
 """Choose the structural CI sentinel set, and print the matrix that justifies it.
 
-Codex T43 §7, Q10: "one fixed selector per profile is enough only for exploit
-families that are genuinely topology-independent. It is not enough for
-matching, duplicate occurrence, timing, reference or stale-state attacks. Use
-a small structural sentinel set in fast CI." This script picks that set and
-shows its coverage, so the choice is a derivation rather than a taste.
+One fixed selector per profile is enough only for exploit families that are
+genuinely topology-independent. It is not enough for matching, duplicate
+occurrence, timing, reference or stale-state attacks; fast CI needs a small
+structural sentinel set instead. This script picks that set and shows its
+coverage, so the choice is a derivation rather than a taste.
 
     python tests/select_sentinels.py [--pool N] [--json PATH]
 
 Every selector in the pool is minted under the evaluator secret and described
-by a set of STRUCTURAL FEATURES — the properties Codex names, one per
-requirement, each read off the minted world or off `identify.structure()`:
+by a set of STRUCTURAL FEATURES — one property per requirement, each
+read off the minted world or off `identify.structure()`:
 
     profile:*                   standard and hard
     kind:*                      omit / alter / duplicate, individually

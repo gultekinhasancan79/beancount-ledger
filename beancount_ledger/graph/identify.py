@@ -57,10 +57,9 @@ version 2 it is a MATCHING problem rather than a scan:
     NEITHER matching cardinality nor "fewest alterations" is allowed to
     settle it. Both were parsimony priors no public text promises, and both
     used to erase the competing history "the row is missing and this entry is
-    a surplus copy of its twin" before anyone could compare it (Codex T42 §5,
-    Q4).
+    a surplus copy of its twin" before anyone could compare it.
 
-Reference dominance is CONDITIONAL and ROLE-AWARE (Codex T41 §3, T43 §4).
+Reference dominance is CONDITIONAL and ROLE-AWARE.
 Every reference-shaped token is classified by `reference_role` — instrument,
 document, memo, unknown — and only an INSTRUMENT (a cheque number, a bank
 trace id) may decide a pairing, because only an instrument names one cash
@@ -152,7 +151,7 @@ from decimal import Decimal, InvalidOperation
 
 # 7: `## Payments to suppliers` is the public rule for a money-out row and
 #    precedent corroborates it; references carry a ROLE and only an instrument
-#    may dominate or found an alteration (Codex T43 §4)
+#    may dominate or found an alteration
 # 5: settlements are forced by the declared convention and every OTHER reading
 #    that explains the whole month competes on equal terms — cardinality and
 #    "fewest alterations" no longer erase one; time direction; bank-initiated
@@ -343,7 +342,7 @@ def _posting_key(postings) -> tuple | str:
 
 def repair_key(repair: Repair) -> tuple:
     """THE projection of a repair, used everywhere a checker repair is
-    compared with a planted item (Codex T42 §3, Q1).
+    compared with a planted item.
 
         (kind, date, postings, counterparty, booked bank amount, copies)
 
@@ -372,7 +371,7 @@ def repair_key(repair: Repair) -> tuple:
                   except a duplicate the reader thinks should stay doubled).
 
     CURRENCY is deliberately absent from `postings`, and the reason is an
-    ENFORCED INVARIANT rather than an oversight (Codex T43 §2, Q2). The parse
+    ENFORCED INVARIANT rather than an oversight. The parse
     boundary refuses a second currency and every cost, price and lot
     annotation before a submission can be scored: `mapping.POSTING_FIELDS`
     classifies `cost` and `price` as `rejected`, so a posting carrying either
@@ -461,7 +460,7 @@ def _mentions(haystack: str, token: str) -> bool:
 
 
 # --------------------------------------------------------------------------
-# the reference ontology (Codex T43 §4, Q4)
+# the reference ontology
 # --------------------------------------------------------------------------
 # `SI-1247` is an invoice number, not a payment identifier. Two partial
 # receipts, a refund and a deposit in transit may all quote one, so treating
@@ -528,7 +527,7 @@ def _instrument_tokens(text: str) -> set:
     a statement row that shows it has presented it. Invoice-shaped codes
     (`SI-1044`, `PI-2178`) are NOT instruments — they name the receivable or
     payable an amount applies to, and several receipts, a refund or a
-    deposit in transit may all quote one (Codex T43 §4)."""
+    deposit in transit may all quote one."""
     return {t for t in (_norm_ref(n) for n in re.findall(r"(?:check|cheque)\s*#?\s*(\d{2,8})", text or "", re.IGNORECASE)) if t}
 
 
@@ -827,7 +826,7 @@ def _precedents(movements, parties) -> dict:
     where a payment to that supplier lands: the invoice was booked when the
     goods arrived, so the cheque settles `Liabilities:AP`. Reading the master
     file as if it named the payment account posted the same money to stock
-    twice, and the full repair key (Codex T42 §3) is what made that visible;
+    twice, and the full repair key is what made that visible;
     the old `(kind, signed bank amount)` comparison could not see it.
 
     So the counter account is read the way a bookkeeper reads it: how does
@@ -847,7 +846,7 @@ def _supplier_payment_account(counterparty, row, *, parties, chart, payables_acc
     supplier lands on, and the sentence that says so — or `(None, "")`.
 
     The section is a PUBLIC RULE and is read first, ahead of what this month's
-    entries happen to do (Codex T43 §4; the verifier's follow-up B). It fixes
+    entries happen to do (the verifier's follow-up B). It fixes
     the answer from three published facts and no inference: the row moves money
     out, `vendors.csv` gives the supplier a `default_account`, and
     `accounts.csv` types that account. An asset means the goods were taken into
@@ -886,8 +885,8 @@ def _row_facts(row, *, parties, chart, fee_account, documents, ledger, precedent
     # Only an INSTRUMENT may dominate: a cheque number or a bank trace id names
     # one cash movement, so a globally unique one decides a pairing outright.
     # An invoice or order id names the DOCUMENT a payment applies to and several
-    # receipts may quote one, so it is supporting evidence and never dominant
-    # (Codex T43 §4). See `reference_role` for the whole ontology.
+    # receipts may quote one, so it is supporting evidence and never dominant.
+    # See `reference_role` for the whole ontology.
     decisive = (ref_role == REF_INSTRUMENT and documents.get(ref, 0) <= 1 and ledger.get(ref, 0) <= 1)
     fee = not ref and not named and bool(_FEE_WORDING.search(row.description))
     counterparty = named[0] if len(named) == 1 else None
@@ -1023,7 +1022,7 @@ def _build_edges(rows, movements, facts_by_row, *, parties, fee_account, tie_bre
             quoted = bool(facts.ref) and _mentions(movement.text, facts.ref)
             # A CONFLICT: this row names a reference and the entry names some
             # other document or instrument instead. What the conflict is worth
-            # depends on the roles (Codex T43 §4):
+            # depends on the roles:
             #
             #   the ROW naming an INSTRUMENT is a claim about which cash
             #   movement this is, so an entry naming some other document or
@@ -1193,7 +1192,7 @@ def _optimal_readings(comp_rows, edges_by_row, describe, *, rank=False) -> tuple
     UNEXPLAINED — so two matchings that differ only in which of two
     indistinguishable entries was consumed collapse to one key.
 
-    Two constraints select the readings, and only two (Codex T42 §5, Q4):
+    Two constraints select the readings, and only two:
 
     **Settlements are forced.** `## Matching the statement to the ledger`
     declares that a row and an entry of the same amount and counterparty
@@ -1489,7 +1488,7 @@ def structure(public: dict, *, bank_account: str, period_start: str, period_end:
     """The SHAPE of the reconciliation problem, for coverage reporting.
 
     A distribution-wide differential that only counts violations cannot say
-    what it covered (Codex T42 §4): "every wrong-variant family was built
+    what it covered: "every wrong-variant family was built
     somewhere" is weaker than "this world had a five-row component with two
     cheapest matchings and both were compared". This reports the structure
     the verdict was computed over — component sizes, admissible edges by
@@ -1554,7 +1553,7 @@ def check_identifiable(public: dict, *, bank_account: str, period_start: str,
     and nothing else to separate them. `tie_break=True` re-applies the old
     parsimony ordering (fewest alterations, then the day-and-wording
     agreement between an altered entry and its row) as a DECLARED
-    RECONCILIATION PRIOR (Codex T42 §5): a sensible ranking for a human
+    RECONCILIATION PRIOR: a sensible ranking for a human
     assistant, not a proof, because no public text promises either that the
     books make as few mistakes as possible or that a mis-keyed entry keeps
     its date and description. It is used only to rank the readings of a
@@ -1658,7 +1657,7 @@ def check_identifiable(public: dict, *, bank_account: str, period_start: str,
     if ambiguities:
         if not tie_break:
             # The declared reconciliation prior, reported as a ranking of an
-            # ambiguous world — never as the verdict (Codex T42 §5).
+            # ambiguous world — never as the verdict.
             ranked = check_identifiable(public, bank_account=bank_account, period_start=period_start,
                                         period_end=period_end, tie_break=True)
             if ranked.unique:

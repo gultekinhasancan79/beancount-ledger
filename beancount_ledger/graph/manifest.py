@@ -1,5 +1,5 @@
 """The release manifest: which generated tasks may be served, proven under the
-evaluator's OWN secret (Codex T43 §5).
+evaluator's OWN secret.
 
 HMAC-keyed seeds make `(secret, profile, selector)` determine the world, so
 every sweep, differential and exploit run performed under the test-suite
@@ -54,7 +54,7 @@ MANIFEST_SCHEMA = 2
 _SIGNING_DOMAIN = b"piv:manifest-signing-key:v1\0"
 ROTATION_ID_BYTES = 16
 # The gates a preflighted selector must pass, and a serving contract rather
-# than preflight metadata (Codex T47 §3).
+# than preflight metadata.
 #
 # It used to be the other way round: `admit` read a record's own `passed` flag
 # and `versions()`, neither of which mentioned the gate list, so a record
@@ -99,7 +99,7 @@ def versions() -> dict:
 
     WHAT IS DELIBERATELY NOT HERE: the EPISODE contract — the system prompt,
     the tool schemas, the observation modes, the stop conditions and above all
-    the per-episode output ceiling (Codex T48 §6, Q8). Those were bound here
+    the per-episode output ceiling. Those were bound here
     once, and the binding was not sound: `load_environment` calls `admit()`
     BEFORE constructing the environment, and then accepts
     `max_episode_output_tokens` and `set_max_total_completion_tokens`, so a
@@ -107,8 +107,9 @@ def versions() -> dict:
     an 8,000-token one with no second check. The manifest was asserting a
     contract it had not preflighted.
 
-    Of the two repairs Codex offered — bind the ceiling strictly, or separate
-    the two identities — he preferred separation, and so do we: golden
+    Of the two repairs the reviewer offered — bind the ceiling strictly, or
+    separate the two identities — the reviewer preferred separation, and so
+    do we: golden
     bookkeeping validity does not depend on whether the model was given 8K or
     40K completion tokens. EXPERIMENT COMPARABILITY does, and that is where
     the episode contract is bound instead, on every rollout and every row:
@@ -132,8 +133,8 @@ def versions() -> dict:
 
 
 def rotation_id() -> str | None:
-    """The opaque rotation label provisioned BESIDE the secret (Codex T44
-    §6, Q8): PIV_KEY_ID, or ~/.piv/key_id — never derived from the secret,
+    """The opaque rotation label provisioned BESIDE the secret:
+    PIV_KEY_ID, or ~/.piv/key_id — never derived from the secret,
     so it is not a verification token for guesses at the key. A manifest
     names the rotation it was preflighted under; the HMAC signature under
     the secret is the real binding. None when nothing is provisioned."""
@@ -173,8 +174,8 @@ _DEVELOPMENT_CAPABILITY: str | None = None
 
 
 def enable_development(reason: str) -> None:
-    """Grant this process the development capability EXPLICITLY (Codex T45
-    §4, Q3): an interactive probe or an embedding without a main file must
+    """Grant this process the development capability EXPLICITLY: an
+    interactive probe or an embedding without a main file must
     say so in code, in the process, with a reason; an environment variable
     alone never does, and neither does the absence of `__main__.__file__`
     — a production service launched through `python -c`, stdin or an
@@ -192,8 +193,8 @@ def development_entrypoint() -> bool:
     the repository's tests/ directory), or when the process called
     `enable_development(reason)` itself. A serving process — the verifiers
     CLI, a trainer, a server importing `load_environment`, a `python -c`
-    launcher — is never one, whatever its environment says (Codex T44 Q7,
-    T45 §4: the override is structural or explicit, never inferred)."""
+    launcher — is never one, whatever its environment says (the override is
+    structural or explicit, never inferred)."""
     import sys
     if _DEVELOPMENT_CAPABILITY:
         return True
@@ -345,7 +346,7 @@ def admit(secret: bytes, namespace: str, index: int, profile_name: str, public_i
     # record's own summary. `passed` is the preflight's historical aggregate:
     # true of the gates that existed when it was signed, and silent about the
     # ones added since. A record must carry exactly today's gate names, each
-    # one True, or it does not attest today's release contract (Codex T47 §3).
+    # one True, or it does not attest today's release contract.
     gates = rec.get("gates")
     if not isinstance(gates, dict) or set(gates) != set(GATES):
         return (False, f"manifest record was preflighted against another gate set "

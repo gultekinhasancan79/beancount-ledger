@@ -89,8 +89,8 @@ from repair_keys import master_names, planted_key  # noqa: E402
 
 PROFILES = {"standard": GEN.DEFAULT_PROFILE, "hard": GEN.HARD_PROFILE}
 
-# Alpine's cast, quoted from Codex T40's "generated worlds must avoid
-# Alpine's exact names": the calibrated world's parties and its title.
+# Alpine's cast, the names "generated worlds must avoid Alpine's exact
+# names" refers to: the calibrated world's parties and its title.
 ALPINE_NAMES = ("Harbor Freight Ltd", "Summit Wholesale", "Ridgeline Retail", "Northwind Supplies",
                 "Cedar Property Group", "Office Depot", "Cascade Bank")
 
@@ -653,7 +653,7 @@ def test_the_planted_repairs_are_inferable_from_the_public_bytes():
     """The checker reads the mounted bytes back — no graph, no ids — and
     must find exactly the planted repairs. `unique` alone proves nothing: a
     checker that certifies every world returns it too. What is asserted is
-    the correspondence under the FULL shared repair key (Codex T42 §3) —
+    the correspondence under the FULL shared repair key —
     kind, date, posting multiset, counterparty, booked amount and copies —
     not the (category, signed bank amount) proxy the distinct amounts used
     to make look strong."""
@@ -699,7 +699,7 @@ def test_the_golden_books_are_the_expected_balances():
     """Beancount, through the same boundary a submission crosses, must book
     the golden text to exactly `expected_balances`; the original must not,
     on at least one scored account; and the scored accounts must be the
-    residual support and nothing wider (Codex T40 refused "every account a
+    residual support and nothing wider (the reviewer refused "every account a
     recognition touches")."""
     problems, fully_moved = [], 0
     for i in range(30):
@@ -740,7 +740,7 @@ def test_the_golden_books_are_the_expected_balances():
 # --------------------------------------------------------------------------
 
 def test_no_generated_world_borrows_alpine():
-    """Codex T40: generated worlds must avoid Alpine's exact names and its
+    """Generated worlds must avoid Alpine's exact names and its
     title. Checked over the world objects AND the mounted bytes, because a
     name can reach a statement description without being a party."""
     problems = []
@@ -768,7 +768,7 @@ def test_no_generated_world_borrows_alpine():
 # --------------------------------------------------------------------------
 
 def test_realism_metrics_are_reported():
-    """Reported, not asserted beyond the profile: the numbers Codex T40
+    """Reported, not asserted beyond the profile: the numbers the reviewer
     asked to see, so a regression in the amount policy or the name pools is
     visible in the log rather than inferred from a passing suite."""
     amounts, names, companies, banks = [], set(), set(), set()
@@ -802,9 +802,8 @@ CONTENT_DIGESTS = {6: "56f50db08301d1d75747a99173f32791a5261206e0ee02eb6b6d1b1d8
 
 def test_the_content_library_is_pinned_to_the_generator_version():
     """Every pool in content.py enters every seed's draws, so a change to
-    any of them must come with a GENERATOR_VERSION bump (Codex T40; gpt-oss
-    review). The digest is pinned per version; a mismatch is the bump that
-    was forgotten."""
+    any of them must come with a GENERATOR_VERSION bump. The digest is pinned
+    per version; a mismatch is the bump that was forgotten."""
     from beancount_ledger.graph import content as C
     from beancount_ledger.graph.mint import GENERATOR_VERSION as V
     pinned = CONTENT_DIGESTS.get(V)
@@ -814,7 +813,7 @@ def test_the_content_library_is_pinned_to_the_generator_version():
 
 
 def test_the_seed_cannot_be_recovered_by_enumeration():
-    """Codex T41: an attacker holding the generator, the public bundle, the
+    """An attacker holding the generator, the public bundle, the
     public id, the namespaces and a plausible index range — but not the
     evaluator secret. Under the UNKEYED construction the public id is an
     equality oracle and the selector (hence the clean graph and the golden
@@ -869,7 +868,7 @@ def test_the_seed_cannot_be_recovered_by_enumeration():
 
 
 def test_bounded_layout_attempts_are_deterministic_and_finite():
-    """Codex T41: a draw that cannot carry the profile's minimum is not a
+    """A draw that cannot carry the profile's minimum is not a
     refusal any more — the selector is retried under the next attempt
     substream, deterministically, at most MAX_LAYOUT_ATTEMPTS times. The
     sweep sees ~0.7% of selectors land on attempt 1. Witness: (a) some
@@ -934,7 +933,7 @@ def test_bounded_layout_attempts_are_deterministic_and_finite():
 
 
 # --------------------------------------------------------------------------
-# private history is observationally irrelevant (Codex T44 §1, Q1)
+# private history is observationally irrelevant
 # --------------------------------------------------------------------------
 
 # The two receipt fields that are NOT reward-relevant and are expected to
@@ -995,7 +994,7 @@ def _score_golden(m, selector: str) -> dict:
 
 
 def test_the_private_recognition_date_is_observationally_irrelevant():
-    """Codex T44 §1: after contract change B, the clean graph still carries
+    """After contract change B, the clean graph still carries
     the pre-bank recognition date of an omitted item. This is the permanent
     negative-dependency test that it reaches nothing.
 

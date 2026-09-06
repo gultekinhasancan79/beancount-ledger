@@ -1,4 +1,4 @@
-"""The STARTUP WITNESS (Codex T49 §14 item 12, Q2): everything a sealed
+"""The STARTUP WITNESS: everything a sealed
 schedule claims, re-checked against this checkout and this evaluator BEFORE
 request 1 — and again at the start of every resumed session.
 
@@ -38,14 +38,14 @@ def _check(results: list[dict], field: str, expected, actual, note: str = "") ->
 
 
 def identity_checks(schedule: dict, *, root: Path | None = None, check_tree: bool = True) -> list[dict]:
-    """THE GIT-PATH CONTRACT (Codex T50 §1, his option 3).
+    """THE GIT-PATH CONTRACT.
 
     v2 compared `git rev-parse HEAD` to the sealed `instrument_commit` for
     exact equality. That rule cannot be satisfied by its own storage
     workflow — the sealed schedule is committed into the repository, which
-    moves HEAD — and Codex T50 §1 showed the command in the turn failing its
-    own witness for exactly that reason, with a diff confined to `DURUM.md`,
-    `GECE.md`, `design_chat/` and the schedule file.
+    moves HEAD — and a real seal showed the run failing its own witness for
+    exactly that reason, with a diff confined to root notes files, a private
+    notes directory and the schedule file.
 
     The replacement is not "ancestor instead of equal": a descendant may
     change Python. And it is not git alone either — the adversarial review of
@@ -71,7 +71,7 @@ def identity_checks(schedule: dict, *, root: Path | None = None, check_tree: boo
                                     ones this instrument still declares
       `runtime_environment_digest`  the BYTES of every installed distribution,
                                     every file no RECORD references, and the
-                                    interpreter (Codex T51 §1) — PRIMARY
+                                    interpreter — PRIMARY
       `runtime_environment_*_count` the file and no-RECORD-reference counts,
                                     sealed beside it — PRIMARY
       `runtime_environment_uncovered_sys_path`
@@ -91,7 +91,7 @@ def identity_checks(schedule: dict, *, root: Path | None = None, check_tree: boo
                                     SECONDARY
       `clean_execution_tree`        `git status` is clean over those paths; a
                                     dirty evidence file (reviews/,
-                                    design_chat/, a root *.md) does NOT fail —
+                                    notes/, a root *.md) does NOT fail —
                                     SECONDARY
 
     The git rows are kept because they say something the walk cannot — which
@@ -138,7 +138,7 @@ def identity_checks(schedule: dict, *, root: Path | None = None, check_tree: boo
            SA.INSTRUMENT_IDENTITY_VERSION,
            "the ALGORITHM that computes the identity is part of the identity")
 
-    # THE RUNTIME ENVIRONMENT, AS BYTES (Codex T51 §1). The execution tree
+    # THE RUNTIME ENVIRONMENT, AS BYTES. The execution tree
     # stops at `.venv/**`; this is what makes "the same package versions" into
     # "the same executable instrument". Walked from the RUNNING interpreter's
     # own site-package roots (`sysconfig`/`sys.prefix`), never from a path
@@ -176,8 +176,8 @@ def identity_checks(schedule: dict, *, root: Path | None = None, check_tree: boo
            contract.get("runtime_environment_stdlib_file_count"), environment["stdlib_file_count"],
            "the STANDARD LIBRARY's own files: json, ssl, http, subprocess, asyncio all shape a "
            "provider request, and hashing pythonXY.dll does not cover their source")
-    # THE IMPORT ENVIRONMENT (C1(b), the adversarial review of the T51
-    # closures). `PYTHONPATH` is not a file under any walked root: a directory
+    # THE IMPORT ENVIRONMENT (C1(b), the adversarial review).
+    # `PYTHONPATH` is not a file under any walked root: a directory
     # named there is PREPENDED to `sys.path` and shadows any sealed module
     # while every hashed byte stays identical. The digest below now carries the
     # survey, so this row is not the only guard — but it is the one that NAMES
@@ -218,8 +218,8 @@ def witness(schedule: dict, *, root: Path | None = None, check_task_ids: bool = 
     witness and returns an empty list — the checks exist to enforce a sealed
     contract, not to invent one for a pilot.
 
-    `journal_path` and `window_ledger` add the two PRE-REQUEST probes Codex
-    T50 asks for (§6, §5): the execution journal must accept and read back an
+    `journal_path` and `window_ledger` add the two PRE-REQUEST probes the
+    executor requires: the execution journal must accept and read back an
     entry, and the shared window ledger must be healthy, both before request
     1. `run_arms.startup_results` always passes them; a caller that does not
     simply gets no such row, and never a false `ok`.
@@ -237,8 +237,8 @@ def witness(schedule: dict, *, root: Path | None = None, check_task_ids: bool = 
     # 1. The INSTRUMENT IDENTITY — the git-path contract, not commit equality.
     results += identity_checks(schedule, root=root, check_tree=check_tree)
 
-    # 1b. The execution journal must work BEFORE any provider request (Codex
-    #     T50 §6): create, append, read back. A journal that fails open is a
+    # 1b. The execution journal must work BEFORE any provider request:
+    #     create, append, read back. A journal that fails open is a
     #     schedule whose every recording claim is conditional on nothing
     #     having gone wrong.
     if journal_path is not None:
@@ -246,7 +246,7 @@ def witness(schedule: dict, *, root: Path | None = None, check_task_ids: bool = 
         ok, detail = RA_mod.journal_probe(Path(journal_path))
         _check(results, "execution_journal", True, bool(ok), detail)
 
-    # 1c. The shared provider-window ledger must be HEALTHY (Codex T50 §5):
+    # 1c. The shared provider-window ledger must be HEALTHY:
     #     malformed evidence refuses the session rather than being skipped
     #     line by line at read time.
     if window_ledger is not None:
@@ -358,7 +358,7 @@ def main() -> int:
         print(f"{Path(args.schedule).name} is not a sealed confirmatory schedule (no experiment contract): "
               f"there is nothing to witness. Seal it with tests/schedule_arms.py --seal.")
         return 1
-    # The same two pre-request probes the executor runs (Codex T50 §5, §6):
+    # The same two pre-request probes the executor runs:
     # the journal must accept and read back an entry, and the shared window
     # ledger must be healthy. Both are addressed exactly as `run_arms` will
     # address them, so this command witnesses the real paths.

@@ -1,6 +1,6 @@
 """Live, opt-in, ~1 minute. NOT run by tests/run_all.py.
 
-Answers Codex Turn 47 §8/Q11 directly, with the raw `openai` client (the
+Answers one question directly, with the raw `openai` client (the
 same pattern `live_replay_probe.py` uses): does the NVIDIA endpoint actually
 HONOUR `seed`, or does it merely accept the parameter and return HTTP 200
 while still sampling non-deterministically? A 200 response alone does not

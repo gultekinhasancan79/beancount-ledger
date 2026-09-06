@@ -75,7 +75,7 @@ WORLD_DIR = HERE / "world"
 TASK_DIR = HERE / "tasks"
 
 #: The distributions the MODEL-FACING contract is generated from, pinned
-#: exactly in `pyproject.toml` (Codex T48 §8, T47 answer 7).
+#: exactly in `pyproject.toml`.
 #:
 #: `episode_contract_digest()` binds the tool schemas, and we do not write
 #: them: `verifiers` calls `openai-agents`' `function_schema`, which parses the
@@ -134,7 +134,7 @@ MAX_GREP_PATTERN = 128
 MAX_GREP_HITS = 200
 
 # --------------------------------------------------------------------------
-# THE INPUT SIDE OF THE BUDGET (Codex T48 §7, Q9)
+# THE INPUT SIDE OF THE BUDGET
 #
 # The episode's output ceiling prices what the model EMITS. Nothing priced
 # what it is SENT, and the ledger is agent-controlled, so the two doors that
@@ -156,9 +156,9 @@ MAX_GREP_HITS = 200
 MAX_TOOL_OUTPUT_BYTES = 16_000
 
 # MAX_EPISODE_OBSERVATION_BYTES bounds the AGGREGATE. A per-reply cap alone
-# still leaves `calls per turn x turns` copies, so the two closures Codex
-# offered are both taken: the idempotent full read (one ledger per revision)
-# and an aggregate observation budget with a public, digest-bound refusal.
+# still leaves `calls per turn x turns` copies, so two closures are taken
+# together: the idempotent full read (one ledger per revision) and an
+# aggregate observation budget with a public, digest-bound refusal.
 # Once `state["piv_observation_bytes"]` reaches this, every OBSERVING tool
 # (list_files, read_file, grep, run_beancount) is answered
 # OBSERVATION_BUDGET_SPENT and no file is read; `write_ledger` and `submit`
@@ -173,7 +173,7 @@ MAX_TOOL_OUTPUT_BYTES = 16_000
 # maximum is this plus the one reply that crosses it.
 MAX_EPISODE_OBSERVATION_BYTES = 16 * 48_000
 
-# The ledger is observed WHOLE, in one call (Codex T46 §4), so the envelope
+# The ledger is observed WHOLE, in one call, so the envelope
 # that makes that safe is a property of the world rather than a hope about
 # the generator. Measured over 221 minted worlds under the test secret (the
 # 4 CI sentinels plus train:0-99 standard, train:0-59 hard, eval:0-59
@@ -190,7 +190,7 @@ MAX_EPISODE_OBSERVATION_BYTES = 16 * 48_000
 # before the episode (a breach there is an evaluator failure, never a partial
 # view); `write_ledger`, which refuses an over-envelope candidate publicly and
 # stores nothing; and `_whole_ledger_reply`, which refuses to SEND an
-# over-envelope stored ledger (Codex T48 §6, Q9). The last two are public
+# over-envelope stored ledger. The last two are public
 # refusals rather than raises — a tool argument must never become our failure
 # — and because both use the same predicate over the same bytes, the read
 # refusal is unreachable through anything the agent was allowed to write.
@@ -261,9 +261,9 @@ def episode_phase(state) -> EpisodePhase:
 # the episode's terminal budgets
 #
 # Declared here, above `SYSTEM_PROMPT`, because the prompt DISCLOSES them and
-# is built from them: Codex T47 §6 asked for the ceiling and the no-tool limit
-# to be public, and a prompt that repeats a number instead of deriving it is
-# one edit away from lying to the agent about its own contract.
+# is built from them: the ceiling and the no-tool limit are public, and a
+# prompt that repeats a number instead of deriving it is one edit away from
+# lying to the agent about its own contract.
 # --------------------------------------------------------------------------
 
 #: The turn budget (PLAN §6). The framework checks stop conditions at the top
@@ -276,7 +276,7 @@ MAX_TURNS = 25
 # "the model has stopped calling tools"; the turn cap (25) would end it anyway,
 # so this only bounds how much of the budget the nudge itself may consume.
 MAX_CONSECUTIVE_NO_TOOL_TURNS = 3
-# The truncation bound (Codex T44 §9 item 4). A turn cut off at the completion
+# The truncation bound. A turn cut off at the completion
 # cap is a no-tool turn, so this K rides the SAME run of consecutive no-tool
 # turns and is deliberately equal to it: a larger K could not fire (the no-tool
 # limit would end the episode first) and a smaller one would be the effective
@@ -287,7 +287,7 @@ MAX_CONSECUTIVE_NO_TOOL_TURNS = 3
 # ends under `piv_no_tool_call_limit` ("stopped calling tools"). Same budget,
 # two distinguishable diagnoses.
 MAX_CONSECUTIVE_TRUNCATED_TURNS = MAX_CONSECUTIVE_NO_TOOL_TURNS
-# The per-episode output ceiling (Codex T46 §6), in completion tokens summed
+# The per-episode output ceiling, in completion tokens summed
 # over every turn. The M2 measurement arms differ in their PER-TURN cap
 # (8K vs 16K) and must be compared at EQUAL total output, or the comparison
 # measures the budget rather than the policy. The framework's own
@@ -346,7 +346,7 @@ def _token_cap(field: str, value) -> int | None:
     become a bigger budget, so it is a `TypeError` at the first request of the
     batch: loud, immediate, and impossible to mistake for a policy result.
 
-    EVERY float is malformed, integral or not (Codex T48 §9, Q7). `8000.0` used
+    EVERY float is malformed, integral or not. `8000.0` used
     to be accepted as "a cap a JSON round-trip produced", which is a guess
     about the caller's intent made at the one place where guessing costs money;
     a client that means 8,000 tokens can type an int. `True` is malformed too,
@@ -399,7 +399,7 @@ def caller_token_caps(sampling_args) -> list:
 
     EVERY spelling is read and EVERY one is validated, so one valid and one
     malformed field REJECTS the request rather than quietly using the valid
-    one (Codex T48 §9): an operator who typed `max_completion_tokens="8000"`
+    one: an operator who typed `max_completion_tokens="8000"`
     beside a good `max_tokens` asked for something we cannot honour, and
     honouring half of it is the silent-budget-inflation defect one field over.
 
@@ -413,7 +413,7 @@ def caller_token_caps(sampling_args) -> list:
 
 
 # --------------------------------------------------------------------------
-# the budget-accounting vocabulary (Codex T47 §4, Q3)
+# the budget-accounting vocabulary
 #
 # A CLOSED set of codes, not prose. `state["piv_budget_accounting_invalid"]`
 # is one of these and nothing else, so a histogram over it has as many
@@ -434,7 +434,7 @@ BUDGET_ACCOUNTING_CODES = (
 )
 
 # --------------------------------------------------------------------------
-# SUSPICIOUS is not INVALID (Codex T48 §3, Q2)
+# SUSPICIOUS is not INVALID
 #
 # Every code above is a THEOREM about the provider's arithmetic: no usage
 # object, a count that is not a non-negative integer, a count above the cap the
@@ -442,7 +442,7 @@ BUDGET_ACCOUNTING_CODES = (
 # that demonstrably spoke. None of them depends on a guess about tokenizers.
 #
 # The characters-per-token floor is not of that kind. It is an empirical
-# heuristic over an unknown tokenizer, and Codex refused it as a hard validity
+# heuristic over an unknown tokenizer, and it is not a hard validity
 # gate: long whitespace, repeated symbols, non-Latin scripts and serialized
 # tool arguments all tokenize at ratios a universal constant cannot bound, and
 # a replay ARM changes the shape of the emitted text — so a heuristic
@@ -467,7 +467,7 @@ BUDGET_SUSPICIOUS_CODES = (BUDGET_USAGE_IMPLAUSIBLE,)
 #: well under BPE. The denominator counts visible content, reasoning content
 #: AND the tool-call payload (`tool_call_chars`): a tool-only turn carrying a
 #: 48,000-character `write_ledger` argument used to have a denominator of zero
-#: and passed at one reported token (Codex T48 §3.1, Q3).
+#: and passed at one reported token.
 CHARS_PER_TOKEN_FLOOR = 8
 
 
@@ -487,7 +487,7 @@ def system_prompt(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) ->
     the ceiling sentences are dropped rather than stated as zero; the turn
     budget is unconditional.
     """
-    # THE DELIVERY RULE, in the agent's words (Codex T48 §11, Q10). The old
+    # THE DELIVERY RULE, in the agent's words. The old
     # wording — "submit by turn 24" — reads as a precondition for delivery,
     # and it is not one: every non-protocol ending scores the last committed
     # revision, so a model that wrote a good ledger and ran out of turns is
@@ -555,8 +555,8 @@ def _clip_bytes(text: str, limit: int = MAX_TOOL_OUTPUT_BYTES) -> str:
     """`text` cut to at most `limit` UTF-8 bytes, with a public marker.
 
     A LINE cap is not a byte cap, and the agent writes the ledger: 119 lines
-    of 400 bytes fits every line limit and returns more than a whole read
-    (Codex T48 §7, Q9). Cut on the encoded bytes and decode with `ignore`, so
+    of 400 bytes fits every line limit and returns more than a whole read.
+    Cut on the encoded bytes and decode with `ignore`, so
     a multibyte character straddling the limit is dropped rather than split
     into an invalid sequence the provider would have to repair.
     """
@@ -636,10 +636,10 @@ def _whole_ledger_reply(raw: bytes) -> str:
     header, nothing the agent would have to strip before writing it back. The
     task is "replace the COMPLETE file and preserve every original entry", and
     a live rollout that rebuilt the ledger from 200-line slices dropped most
-    of them (Codex T46 §4).
+    of them.
 
-    A RECEIPT, when the same revision has already been sent (Codex T48 §7,
-    Q9). The envelope bounds ONE observation; it does not bound repetition,
+    A RECEIPT, when the same revision has already been sent. The envelope
+    bounds ONE observation; it does not bound repetition,
     and a single assistant turn may carry many `read_file(ledger)` calls. At
     48,000 bytes each, twenty of them in one call list put a megabyte into the
     next request for one turn's completion tokens — input the episode's output
@@ -680,8 +680,8 @@ def _whole_ledger_reply(raw: bytes) -> str:
     (`READ_OVER_ENVELOPE`). Unreachable in normal operation — the mounted
     world is verified at `_workspace` and `write_ledger` refuses anything
     larger — so this is defence in depth against state corruption, a
-    migration or a future bypass restoring the amplification (Codex T48 §6,
-    Q9). It is a BOUNDED PUBLIC message and never the content: making it an
+    migration or a future bypass restoring the amplification. It is a
+    BOUNDED PUBLIC message and never the content: making it an
     evaluator failure would hand the agent a quarantine button, and returning
     the content would defeat the envelope.
 
@@ -920,7 +920,7 @@ def write_ledger(content: str, workspace: str = "") -> str:
     #
     # Through the tool door this branch is now unreachable: `call_tool` refuses
     # every call after an accepted submit with TURN_AFTER_SUBMIT before any
-    # body runs (Codex T47 §5). It stays as the direct-call safety net — the
+    # body runs. It stays as the direct-call safety net — the
     # tool is importable, and "the ledger cannot move after submit" should not
     # depend on which door was used.
     state = _PIV_STATE.get()
@@ -938,8 +938,8 @@ def write_ledger(content: str, workspace: str = "") -> str:
     if ledger_envelope_breach(raw_in) is not None:
         # Never stored, and judged in UTF-8 BYTES (and logical lines) —
         # `raw_in`, not `len(content)`: a Python character count would let
-        # 48,000 three-byte characters through as a 144,000-byte file (Codex
-        # T48 §6, Q9). The cap IS the observation envelope, the very predicate
+        # 48,000 three-byte characters through as a 144,000-byte file. The
+        # cap IS the observation envelope, the very predicate
         # `_verify_public_world`, `load_environment` and the read door use, so
         # the read-side refusal cannot fire on anything the agent was allowed
         # to write. `read_file` returns the ledger whole on every later turn,
@@ -1035,7 +1035,7 @@ def submit(workspace: str = "") -> str:
         # The binding below happens once, so a repeated call can neither
         # rebind a later candidate nor name a different one.
         #
-        # Unreachable through the tool door since Codex T47 §5: a second
+        # Unreachable through the tool door: a second
         # `submit` in the same call list is refused by `call_tool` with
         # TURN_AFTER_SUBMIT, because a receipt would assert an acceptance that
         # did not happen. Kept for the direct-call door, where idempotence is
@@ -1186,7 +1186,7 @@ def parse_attestation(content) -> dict | None:
 
 
 # --------------------------------------------------------------------------
-# the episode contract's own identity (Codex T47 §2, Q5)
+# the episode contract's own identity
 # --------------------------------------------------------------------------
 
 #: The observation and termination contract's version. Bumped whenever
@@ -1195,10 +1195,10 @@ def parse_attestation(content) -> dict | None:
 #: budget, or a public nudge/refusal message. NOT `GENERATOR_VERSION`: the
 #: generated accounting world is untouched by any of those, and conflating the
 #: two would invalidate every world for a wording change.
-#: 2: every model-facing reply template hoisted into the view (Codex T48 §4),
-#: the idempotent whole-read rule and its receipt (§7), the read-side envelope
-#: refusal (§6), and the submit-is-not-required delivery sentence in the
-#: prompt (§11). 1: the original observation-and-termination contract.
+#: 2: every model-facing reply template hoisted into the view, the
+#: idempotent whole-read rule and its receipt, the read-side envelope
+#: refusal, and the submit-is-not-required delivery sentence in the
+#: prompt. 1: the original observation-and-termination contract.
 EPISODE_CONTRACT_VERSION = 2
 #: /2: the view gained the hoisted reply templates, the repeated-read and
 #: observation-budget semantics and the envelope units — a reader of /1 would
@@ -1314,7 +1314,7 @@ def episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS)
     from what is shown — so the view carries no world, no task and no secret,
     and two evaluators running the same code produce the same bytes.
 
-    What it binds, and why each is here (Codex T47 §2): the exact system
+    What it binds, and why each is here: the exact system
     prompt; the tool names, descriptions and JSON argument schemas the
     framework generates; how each public file is observed, including the
     whole-ledger logical-text rule and the envelope that makes it affordable;
@@ -1323,7 +1323,7 @@ def episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS)
     pending-call rule; and the public nudge and refusal messages HELD AS NAMED
     CONSTANTS, because a changed refusal changes the next model request.
 
-    EVERY model-facing reply is in here now (Codex T48 §4). The earlier
+    EVERY model-facing reply is in here now. The earlier
     version bound the fixed refusals and nudges only and said so: the strings
     `read_file`, `grep` and `_public_report` built — "no such file", the
     numbered-slice format, the continuation tail, the hit line, the
@@ -1501,7 +1501,7 @@ def tool_call_chars(message) -> int:
     argument, up to `MAX_WRITE_BYTES`. The plausibility floor used to ignore
     it entirely, so a tool-only turn carrying 48,000 characters of argument
     had a denominator of zero and passed at one reported completion token
-    (Codex T48 §3.1, Q3) — "omitting the body is not fail-closed".
+    — omitting the body is not fail-closed.
 
     CONSERVATIVE BY CONSTRUCTION. Only the three fields are counted: no JSON
     wrapper, no separators, no quoting or escaping, no `type`/`function`
@@ -1594,8 +1594,8 @@ def episode_contract_digest(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_
     ceiling THAT rollout ran under), in a batch's metadata, and on every
     measurement row.
 
-    DELIBERATELY NOT in the release manifest's `versions()` (Codex T48 §6,
-    Q8). It was, and that binding could not hold: `load_environment` admits
+    DELIBERATELY NOT in the release manifest's `versions()`. It was, and
+    that binding could not hold: `load_environment` admits
     BEFORE it constructs the environment and then accepts
     `max_episode_output_tokens`, so a world admitted under the default digest
     could be served under another one with no second check — the manifest
@@ -1616,8 +1616,8 @@ def episode_contract_digest(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_
 class BeancountLedgerEnv(vf.StatefulToolEnv):
     """Gives each rollout its own scratch copy of the world.
 
-    THE EPISODE STATE MACHINE (PLAN §6, Codex T44 §9)
-    ------------------------------------------------
+    THE EPISODE STATE MACHINE (PLAN §6)
+    -----------------------------------
     One value, `state["piv_phase"]`, an `EpisodePhase`. Two tools move it and
     nothing else does; every other handler reads it. Three of the four phases
     are ACTIVE (`ACTIVE_PHASES`); the fourth is terminal and irreversible.
@@ -1645,7 +1645,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
     TERMINAL is terminal at the instant submit is accepted, not merely from
     the next turn: `call_tool` refuses every later call occurrence — the rest
     of submit's own call list included — before any tool body runs, so a
-    `submit -> read_file` list reads nothing (Codex T47 §5). The direct-call
+    `submit -> read_file` list reads nothing. The direct-call
     refusals `WRITE_AFTER_SUBMIT` and the idempotent receipt survive as safety
     nets on the importable functions.
 
@@ -1710,7 +1710,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             rollout and re-raises `ToolCallError from marker`. The marker is
             in the chain; the partition sees it.
 
-        TERMINALITY AT THE PRECISE INSTANT (Codex T47 §5, Q8). `env_response`
+        TERMINALITY AT THE PRECISE INSTANT. `env_response`
         refuses a whole post-submit TURN, and `write_ledger` checked the phase
         itself — but `read_file`, `grep`, `list_files` and `run_beancount` did
         not, so a same-turn list `submit -> read_file` executed the read after
@@ -1756,7 +1756,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         tool = self.tool_map.get(tool_name)
         if tool is None:
             return answer(PUBLIC_TOOL_ERROR)
-        # THE AGGREGATE OBSERVATION BUDGET (Codex T48 §7, Q9). Asked here,
+        # THE AGGREGATE OBSERVATION BUDGET. Asked here,
         # per call, against the running total — not once a turn — because a
         # single call list may hold twenty reads. Only the OBSERVING tools are
         # refused: `write_ledger` and `submit` must keep working, or an agent
@@ -1802,7 +1802,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
     def set_max_total_completion_tokens(self, max_total_completion_tokens: int) -> None:
         """Change the output ceiling — and RESTATE the prompt that discloses it.
 
-        The prompt now names the ceiling (Codex T47 §6), and the ceiling is not
+        The prompt now names the ceiling, and the ceiling is not
         a constant: `load_environment(max_episode_output_tokens=…)` sets it
         through this door and `tests/measure_budget.py` calls this door
         directly for each arm. Leaving the prompt alone would tell an
@@ -1860,7 +1860,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
 
         The digest answers "under which observation and termination rules did
         this rollout run?" and a measurement row that cannot answer it is not
-        a comparable condition (Codex T47 §2). Set here rather than only in
+        a comparable condition. Set here rather than only in
         `_workspace` because a rollout that never calls a tool never builds a
         workspace and would otherwise carry no contract identity at all.
         """
@@ -1876,7 +1876,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         neither recomputes what the other set.
 
         `piv_library_versions` is here rather than in the contract digest on
-        purpose (Codex T48 §8): the model-facing tool schemas are GENERATED by
+        purpose: the model-facing tool schemas are GENERATED by
         `openai-agents`/`griffelib`/`pydantic`, so a dependency bump can move
         the digest without a line of ours changing. Binding the versions INTO
         the digest would instead move the digest on every bump whether or not
@@ -1927,7 +1927,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             # reused, canonicalised, and outlive rollouts. The UUID is what
             # failure records and diagnostics are keyed by.
             #
-            # PER ATTEMPT, not per rollout (Codex T48 §10). The framework
+            # PER ATTEMPT, not per rollout. The framework
             # builds a FRESH state dict for each attempt of a rollout — a
             # retry does not resume the old one — so `workspace` is absent
             # again and a new id is minted here. The measurement client
@@ -1954,7 +1954,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         an arm with a 16K per-turn cap can finish 16K past a 40K ceiling and
         an 8K arm 8K past it, so two arms nominally given "the same budget"
         are measured at different totals — the one thing the M2 comparison
-        cannot afford (Codex T46 §6). Clamping the REQUEST makes the ceiling
+        cannot afford. Clamping the REQUEST makes the ceiling
         exact: each turn asks for `min(per-turn cap, ceiling - used)`, so the
         provider itself cannot return more than the remainder, and every arm
         stops at exactly the ceiling.
@@ -1966,7 +1966,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         none), shared across every turn and every rollout of the batch, and
         mutating it would ratchet the cap down for all of them.
 
-        THE TWO SPELLINGS ARE ONE FIELD ON THE WIRE (Codex T47 §4, Q1). The
+        THE TWO SPELLINGS ARE ONE FIELD ON THE WIRE. The
         first version clamped whichever key it FOUND —
         `max_completion_tokens` if present, else `max_tokens` — and a caller
         passing both left the other untouched. Measured in the legacy client:
@@ -1987,7 +1987,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         no clamp to protect — and the caller's args go through untouched;
         only the validation below still runs.
 
-        A MALFORMED CAP IS NOT AN ABSENT CAP (Codex T48 §9, Q7). `None` is
+        A MALFORMED CAP IS NOT AN ABSENT CAP. `None` is
         absent and the remainder applies; a positive non-boolean int is a cap;
         `0`, a negative, a bool, ANY float and any string raise before a
         provider is called. Both spellings are validated even when only one is
@@ -2062,7 +2062,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
 
     @staticmethod
     def _flag_budget_suspicious(state, code: str, detail: str) -> None:
-        """The SOFT channel (Codex T48 §3, Q2): a heuristic anomaly, recorded
+        """The SOFT channel: a heuristic anomaly, recorded
         under its own key so it never decides validity.
 
         Same shape as the hard one — a code from `BUDGET_SUSPICIOUS_CODES`, its
@@ -2082,7 +2082,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         The ceiling is metered from `response.usage.completion_tokens`. FIVE
         ways that meter can be untrustworthy as a matter of arithmetic, each
         recorded as ONE code from `BUDGET_ACCOUNTING_CODES` with the numbers
-        in a separate detail key (Codex T47 §4, Q3):
+        in a separate detail key:
 
           usage_absent
             No usage object. The tracker adds nothing, so "output tokens
@@ -2105,7 +2105,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
           cumulative_decreased
             The accumulator went backwards.
 
-        AND ONE SUSPICION, which is NOT one of them (Codex T48 §3, Q2):
+        AND ONE SUSPICION, which is NOT one of them:
 
           usage_implausible
             Fewer than one token per `CHARS_PER_TOKEN_FLOOR` characters of
@@ -2452,7 +2452,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             is frozen from that instant.
 
         Two counters ride every turn, for the input side of the budget the
-        output ceiling does not price (Codex T48 §7, Q9): `piv_turn`, so the
+        output ceiling does not price: `piv_turn`, so the
         whole-read receipt can name the turn the content was sent on, and
         `piv_observation_bytes`, the running total of everything this
         environment has handed back.
@@ -2785,8 +2785,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         metadata["piv_protocol_failures"] = len(scored) - metadata["piv_training_eligible"]
         metadata["piv_status_semantics"] = STATUS_SEMANTICS
         # Which observation and termination rules this batch ran under: two
-        # batches sharing a task id but not this pair are not one condition
-        # (Codex T47 §2).
+        # batches sharing a task id but not this pair are not one condition.
         metadata["piv_episode_contract"] = {
             "version": EPISODE_CONTRACT_VERSION,
             "digest": self.episode_contract_digest(),
@@ -3760,7 +3759,7 @@ def _projection_seam():
 
 
 # --------------------------------------------------------------------------
-# EVERY MODEL-FACING REPLY, AS A NAMED CONSTANT (Codex T48 §4)
+# EVERY MODEL-FACING REPLY, AS A NAMED CONSTANT
 #
 # The episode contract digest used to bind only the fixed refusals and nudges,
 # and its own docstring admitted the rest: the strings `read_file`, `grep` and
@@ -3822,7 +3821,7 @@ REPORT_FINDING = "{code}: {message}"
 MAX_REPORTED_FINDINGS = 10
 #: The accepted-submit receipt, built from SUBMIT_ACCEPTED and the bound hash.
 SUBMIT_DELIVERING = "{accepted}; delivering logical text {digest}"
-#: The idempotent full-read receipt (Codex T48 §7, Q9). Sent INSTEAD of the
+#: The idempotent full-read receipt. Sent INSTEAD of the
 #: ledger when the agent asks for a complete read of a revision it has already
 #: been given: it carries no ledger content, names the turn and revision the
 #: content was sent on, and points at the two ways forward — use what you have,
@@ -3831,7 +3830,7 @@ SUBMIT_DELIVERING = "{accepted}; delivering logical text {digest}"
 LEDGER_UNCHANGED_RECEIPT = (
     "ledger.beancount is unchanged since your complete read on turn {turn} (revision {revision}); "
     "it is not re-sent — use the content you already have, or write_ledger to change it")
-#: The read-side envelope refusal (Codex T48 §6, Q9): the stored ledger is
+#: The read-side envelope refusal: the stored ledger is
 #: outside the envelope a single whole read is sized for. Unreachable in
 #: normal operation — the mounted world is verified before the episode and
 #: `write_ledger` refuses anything larger — so this is defence in depth
@@ -3863,7 +3862,7 @@ TURN_AFTER_SUBMIT = "turn rejected: submit already ended the episode; nothing wa
 WRITE_AFTER_SUBMIT = "write rejected: submit already ended the episode; nothing was written"
 WRITE_NOT_TEXT = "write rejected: content is not valid Unicode text; nothing was written"
 # What the agent may write, and it is the OBSERVATION envelope, not the
-# parser's (Codex T47 follow-up). `read_file` returns the ledger whole, so
+# parser's. `read_file` returns the ledger whole, so
 # whatever is on disk is re-read in full on every later turn — and the input
 # side of that is not bounded by the output ceiling. With the old cap of
 # 2 x MAX_BYTES (1 MiB) an agent could write a megabyte once and then spend
@@ -3877,7 +3876,7 @@ WRITE_NOT_TEXT = "write rejected: content is not valid Unicode text; nothing was
 # above it is a PUBLIC tool refusal, counted as the agent's outcome, so the
 # rule that a tool argument must never become our failure still holds.
 #
-# ONE PREDICATE ON BOTH DOORS (Codex T48 §6, Q9). `write_ledger` refuses
+# ONE PREDICATE ON BOTH DOORS. `write_ledger` refuses
 # exactly `ledger_envelope_breach(content.encode("utf-8"))` — UTF-8 BYTES and
 # logical LINES, the same call `_verify_public_world` and `load_environment`
 # make — and `read_file` refuses a stored ledger that breaches it. The read
@@ -3935,7 +3934,7 @@ def load_environment(task_id: str = "bank_recon_001", **kwargs) -> vf.Environmen
             # indices below MAX_SELECTOR_INDEX. `str.isdigit()` alone admits
             # Arabic-Indic and fullwidth digits that `int()` maps onto the
             # same world, so the selector-to-world map would not be
-            # injective (Codex T42 §2, Q6; the tool-surface review).
+            # injective.
             if (len(parts) not in (2, 3) or parts[0] not in NAMESPACES or not parts[1]
                     or not parts[1].isascii() or not parts[1].isdigit() or len(parts[1]) > 6
                     or int(parts[1]) >= MAX_SELECTOR_INDEX):
@@ -3954,7 +3953,7 @@ def load_environment(task_id: str = "bank_recon_001", **kwargs) -> vf.Environmen
             leaks = literal_provenance_leaks(minted)
             if leaks:
                 raise InitializationFailure(["private provenance reached a public surface: " + "; ".join(leaks)])
-            # The release manifest (Codex T43 §5): only a selector preflighted
+            # The release manifest: only a selector preflighted
             # under THIS evaluator key, at these component versions, with this
             # public id, is served. Development under a test secret says so
             # explicitly with PIV_DEV_UNMANIFESTED=1.
@@ -3972,8 +3971,8 @@ def environment_from_minted(minted, **kwargs) -> vf.Environment:
     """EVALUATOR-SIDE ONLY. An environment over an already-minted world, with
     no manifest consulted and no selector parsed.
 
-    The release preflight needs this and nothing else needs it (Codex T48 §7,
-    answer 6). A preflight PRECEDES its own manifest by definition, so gating
+    The release preflight needs this and nothing else needs it. A preflight
+    PRECEDES its own manifest by definition, so gating
     `golden_scores_one` through `load_environment` had a chicken-and-egg to
     solve, and the old solution was to point the workers at a manifest path
     that does not exist so `admit` took the development route. That works and
@@ -4213,7 +4212,7 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
         """Zero-weight: 1.0 when a heuristic said this rollout's usage looks
         implausibly cheap for the characters it emitted.
 
-        Deliberately NOT `budget_accounting_invalid` (Codex T48 §3, Q2). The
+        Deliberately NOT `budget_accounting_invalid`. The
         characters-per-token floor is an empirical rule over an unknown
         tokenizer, and a replay arm changes the shape of the emitted text, so
         letting it decide validity would exclude one arm more often than
@@ -4232,7 +4231,7 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
         idempotent full-read rule bounds what COMPLETE READS deliver in an
         episode at `LEDGER_ENVELOPE_BYTES x (stored revisions + 1)`; the
         sliced and grep replies are bounded per call instead. This is the
-        measured total over all of them (Codex T48 §7, Q9)."""
+        measured total over all of them."""
         return float(state.get("piv_observation_bytes", 0))
 
     observation_bytes.__name__ = METRIC_OBSERVATION_BYTES

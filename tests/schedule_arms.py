@@ -1,4 +1,4 @@
-"""The IMMUTABLE arm schedule (Codex T48a §2/Q1, T48b §4/Q5) — written
+"""The IMMUTABLE arm schedule — written
 BEFORE any rollout, executed by `tests/run_arms.py`, read by
 `tests/arm_table.py`.
 
@@ -139,7 +139,7 @@ def build_cells(roster: list[dict], selectors: list[str], arms: list[str], repli
     replicate-major over the fixed roster, then selector, then the three arms
     of that block in their dealt order.
 
-    Replicate-major (Codex T48a §2 item 2) is what makes the ordinals stable
+    Replicate-major is what makes the ordinals stable
     under staged replication: every cell of replicate 1 keeps its ordinal no
     matter how many replicates the schedule was cut for.
     """
@@ -175,7 +175,7 @@ def build_cells(roster: list[dict], selectors: list[str], arms: list[str], repli
 
 
 # ---------------------------------------------------------------------------
-# The sequence / position / adjacency census (Codex T48b §4/Q5). Computed
+# The sequence / position / adjacency census. Computed
 # FROM the dealt cells (or, in `arm_table.py`, from the rows actually run) —
 # never assumed from the construction. `arm_table.py` imports these.
 # ---------------------------------------------------------------------------
@@ -279,7 +279,7 @@ def schedule_digest(content: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# THE EXPERIMENT CONTRACT (schedule v2, Codex T49 §2). Version 1's
+# THE EXPERIMENT CONTRACT (schedule v2). Version 1's
 # `schedule_id` hashed the roster, the selectors, the arm LABELS and the
 # order. It did not hash what those labels MEAN. `run_arms.cell_command`
 # passes `--arm A`; `measure_budget.ARM_PRESETS` supplies `(8000, replay on)`
@@ -298,7 +298,7 @@ def schedule_digest(content: dict) -> str:
 #   package_lock                      the pinned library versions (a READING aid)
 #   runtime_environment_digest        the BYTES of every installed distribution,
 #                                     of every file no RECORD references, and of
-#                                     the interpreter itself (Codex T51 §1)
+#                                     the interpreter itself
 #   failure_map_digest                the blind bucket map + quota table + window rule
 #   manifest_rotation_id / manifest_content_digest
 #   expected_public_task_id_by_selector   minted once, through the serving door
@@ -312,16 +312,16 @@ def schedule_digest(content: dict) -> str:
 SEALED_SCHEDULE_VERSION = 2
 
 # ---------------------------------------------------------------------------
-# THE INSTRUMENT IDENTITY (Codex T50 §1, his option 3: the GIT-PATH CONTRACT).
+# THE INSTRUMENT IDENTITY (the GIT-PATH CONTRACT).
 #
 # v2 bound `instrument_commit` and the startup witness compared it to
 # `git rev-parse HEAD` for EXACT equality. That rule is incompatible with its
 # own storage workflow: the sealed schedule is written into the repository, so
 # committing it MOVES HEAD, and the witness then refuses the very run it was
-# sealed for. Codex T50 §1 showed exactly that — `cf613c1…` sealed, HEAD at
-# `5d03346…`, diff confined to `DURUM.md`, `GECE.md`, `design_chat/` and the
-# schedule file itself, and the command in the turn could not have passed its
-# own witness.
+# sealed for. A real seal showed exactly that — `cf613c1…` sealed, HEAD at
+# `5d03346…`, diff confined to root notes files, a private notes directory
+# and the schedule file itself, and the run could not have passed its own
+# witness.
 #
 # Relaxing equality to "ancestor" is NOT the fix: a descendant commit may
 # change Python. The security property is the PATH/DIGEST constraint, so the
@@ -338,7 +338,7 @@ SEALED_SCHEDULE_VERSION = 2
 #   1. the sealed commit is an ANCESTOR of the runtime HEAD (or is it);
 #   2. `git diff <instrument>..HEAD` is EMPTY over the execution paths;
 #   3. the working tree is clean over the execution paths (a dirty
-#      `reviews/…`, `design_chat/…` or root `*.md` does NOT fail — those are
+#      `reviews/…`, a notes directory or root `*.md` does NOT fail — those are
 #      evidence, and an experiment that cannot write its own log while it runs
 #      is not an experiment);
 #   4. the recomputed execution-tree digest equals the sealed one.
@@ -349,8 +349,8 @@ SEALED_SCHEDULE_VERSION = 2
 # ---------------------------------------------------------------------------
 
 #: The CLOSED set of repository paths whose content is the instrument — now the
-#: WHOLE package directory, minus a named exclusion list (adversarial review of
-#: the T50 fix, attack 1(h)). The previous set named three subtrees, and
+#: WHOLE package directory, minus a named exclusion list (adversarial review,
+#: attack 1(h)). The previous set named three subtrees, and
 #: `sys.path` is wider than any of them: `measure_budget.py` inserts the
 #: package ROOT at position 0 and `tests/` right behind it, so ANY new
 #: `environments/beancount_ledger/<name>.py` — outside the three sealed paths
@@ -362,7 +362,7 @@ SEALED_SCHEDULE_VERSION = 2
 #:
 #: THE NAME IS RESOLVED, NEVER HARDCODED. The package directory is VENDORED
 #: inside a larger repository during development (`environments/beancount_ledger`
-#: beside `design_chat/` and the other environments) and IS the repository top
+#: beside private notes and the other environments) and IS the repository top
 #: level in a standalone checkout of the published repository. Both layouts
 #: name exactly the same bytes, but a hardcoded relative name that does not
 #: exist makes the walk descend nothing: `execution_tree_digest()` then returns
@@ -415,7 +415,7 @@ INSTRUMENT_IDENTITY_VERSION = 3
 #: Paths outside `EXECUTION_PATHS` that the contract explicitly recognises as
 #: EVIDENCE. Documentation only — the rule is "not in the execution set" — but
 #: naming them keeps the witness's error messages honest about what it allows.
-EVIDENCE_PATH_HINTS = ("environments/beancount_ledger/reviews/", "design_chat/", "*.md at the repository root")
+EVIDENCE_PATH_HINTS = ("environments/beancount_ledger/reviews/", "notes/", "*.md at the repository root")
 
 
 def _pathspecs(paths=None, root: Path | None = None) -> list[str]:
@@ -505,7 +505,7 @@ def execution_root_for(root: Path | None = None) -> str:
 
       `environments/beancount_ledger`  the development monorepo, where the
                                        package is vendored beside
-                                       `design_chat/` and the other
+                                       a private notes directory and the other
                                        environments and `.git/` sits ABOVE it;
       `.`                              a standalone checkout of the published
                                        repository, where the package IS the
@@ -602,7 +602,7 @@ def git_diff_execution_paths(base: str | None, head: str | None, root: Path | No
 def git_execution_tree_status(root: Path | None = None, paths=None) -> tuple[bool, str]:
     """`(clean, detail)` for the WORKING TREE over the execution paths only.
 
-    A dirty evidence file — `reviews/arms_*.log`, `design_chat/`, a root
+    A dirty evidence file — `reviews/arms_*.log`, a notes directory, a root
     `*.md` — is not a reason to refuse a run: those files are written BY the
     run. A dirty `tests/` or `beancount_ledger/` file is: the sealed digest
     then describes bytes that are not the bytes about to execute."""
@@ -620,7 +620,7 @@ def execution_tree_manifest(root: Path | None = None, execution_root: str | None
     """Every file ON DISK under the execution root, with the sha256 of its
     ACTUAL BYTES: `{"files": [(relative_posix_path, sha256), ...], ...}`.
 
-    WHY THE DISK AND NOT GIT (adversarial review of the T50 fix, attack 1(h)).
+    WHY THE DISK AND NOT GIT (adversarial review, attack 1(h)).
     Version 1 of this identity asked git three questions — `git status`,
     `git diff`, `git ls-tree` — and all three answer about the INDEX, not about
     the bytes the interpreter will import. Three working defeats, each leaving
@@ -715,12 +715,12 @@ def manifest_digest(manifest: dict) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# THE RUNTIME ENVIRONMENT IDENTITY (Codex T51 §1)
+# THE RUNTIME ENVIRONMENT IDENTITY
 #
 # The execution-tree digest stops at the repository boundary: `.venv/**` is
 # excluded from it, and the replacement binding was version STRINGS —
 # `importlib.metadata.version("openai")`, `version("verifiers")`, the Python
-# version. Codex T51 §1: an in-place edit to a file under
+# version. But an in-place edit to a file under
 # `.venv/Lib/site-packages/openai/` changes request construction, retries,
 # response interpretation or token accounting while `METADATA` still reports
 # the sealed version. It is the site-packages analogue of the module-shadow
@@ -756,7 +756,7 @@ def manifest_digest(manifest: dict) -> str | None:
 # absolute path, and so the digest does not move when the same environment is
 # reached from a worktree.
 #
-# AND (identity version 2, the adversarial review of the T51 closures):
+# AND (identity version 2, the adversarial review):
 #
 #   5. THE IMPORT ENVIRONMENT (C1). `PYTHONPATH` was not in the walk. A
 #      directory named there is PREPENDED to `sys.path` and shadows any sealed
@@ -1012,10 +1012,10 @@ def environment_roots() -> list[Path]:
     for a venv is `base_prefix/Lib` — the real `json/encoder.py`, `ssl.py`,
     `subprocess.py`, `asyncio/` the client imports on every request — and an
     edit there changes provider behaviour exactly as an edit under
-    `site-packages/openai/` does. Codex T51 §1's closure names "the interpreter
-    and relevant runtime library identity"; the stdlib IS that library.
+    `site-packages/openai/` does. The closure names "the interpreter and
+    relevant runtime library identity"; the stdlib IS that library.
 
-    THE C3 CLOSURE (adversarial review of the T51 closures). `sysconfig`'s
+    THE C3 CLOSURE (adversarial review). `sysconfig`'s
     `purelib`/`stdlib` are not all of `sys.path`. Four real entries sat
     outside the walk:
 
@@ -1211,7 +1211,7 @@ def interpreter_files() -> list[tuple[str, Path]]:
 def runtime_environment_manifest(use_cache: bool = True) -> dict:
     """Every installed distribution's RECORD, every file under the site-package
     roots, every file no RECORD references, and the interpreter — all by the
-    sha256 of their ACTUAL BYTES (Codex T51 §1).
+    sha256 of their ACTUAL BYTES.
 
     `use_cache` is TRUE for the startup witness and for row provenance (one
     walk per process) and FALSE for the per-cell verification, which must
@@ -1523,8 +1523,8 @@ def runtime_environment_digest(use_cache: bool = True) -> str | None:
 
 
 def instrument_identity(root: Path | None = None, use_cache: bool = True) -> dict:
-    """What the RUNTIME is, recorded separately from what was sealed (Codex
-    T50 §1, T51 §1): the HEAD that is executing, the on-disk execution-tree
+    """What the RUNTIME is, recorded separately from what was sealed: the
+    HEAD that is executing, the on-disk execution-tree
     digest, and the runtime-environment digest. Stamped on every archived row
     and every execution-journal entry."""
     environment = runtime_environment_manifest(use_cache)
@@ -1543,7 +1543,7 @@ def journal_path_for(reviews_dir: Path, schedule: dict) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# EXECUTION-JOURNAL HEALTH (Codex T51 §4). Defined HERE, beside
+# EXECUTION-JOURNAL HEALTH. Defined HERE, beside
 # `journal_path_for`, because the executor (which must fail CLOSED before every
 # append) and the table (which must refuse confirmatory estimands while the
 # journal is unhealthy) have to mean the same thing by "healthy". The window
@@ -1567,7 +1567,7 @@ def journal_scan(path) -> dict:
     A malformed or non-object line is OUTSTANDING until a recovery record
     acknowledges it by line number. An unterminated final line is a process
     killed mid-append: appending after it concatenates two records into one
-    malformed line and loses both, which is exactly how T51 §4's malformed TAIL
+    malformed line and loses both, which is exactly how a malformed TAIL
     becomes a malformed MIDDLE."""
     empty = {"events": [], "malformed": [], "unterminated_final_line": False,
              "acknowledged_through_line": 0, "recoveries": [], "line_count": 0,
@@ -1631,7 +1631,7 @@ def journal_health(path) -> dict:
 
 def exclusion_record_path_for(schedule_path: Path) -> Path:
     """The configuration-exclusion record file that lives BESIDE the sealed
-    schedule (Codex T50 §8/Q9). Append-only, one immutable content-bound
+    schedule. Append-only, one immutable content-bound
     record per excluded (provider, model)."""
     return Path(str(schedule_path) + ".exclusions.jsonl")
 
@@ -1719,7 +1719,7 @@ def failure_map_digest() -> str:
         "window_seconds": AT.RATE_LIMIT_WINDOW_SECONDS,
         "window_rule_version": AT.WINDOW_RULE_VERSION,
         "majority_share": AT.ARM_INDUCED_MAJORITY_SHARE,
-        # Codex T50 §2: the FALLBACK behaviour must be bound too, not only the
+        # The FALLBACK behaviour must be bound too, not only the
         # tuple constants. The free-text path is where a bare `"429"` needle
         # survived the "no digit in any map needle" witness, so the needles it
         # uses AND the version of the algorithm that consults them are hashed.
@@ -1759,7 +1759,7 @@ def build_experiment_contract(arms: list[str], selectors: list[str], ceiling: in
     return {
         "experiment_contract_version": SEALED_SCHEDULE_VERSION,
         "instrument_commit": git_head(root),
-        # Codex T50 §1 (his option 3): the commit alone is not the identity.
+        # The commit alone is not the identity.
         # The CLOSED execution-path set and the content digest over it are
         # what the startup witness re-checks; later commits are permitted
         # exactly while they change nothing under those paths.
@@ -1772,7 +1772,7 @@ def build_experiment_contract(arms: list[str], selectors: list[str], ceiling: in
         # only as an opaque digest mismatch. Module shadowing (attack 1(h)(B))
         # and a gitignore-hidden file (1(h)(C)) both ADD a file.
         "execution_tree_file_count": len(tree["files"]),
-        # THE RUNTIME ENVIRONMENT, AS BYTES (Codex T51 §1). `package_lock`
+        # THE RUNTIME ENVIRONMENT, AS BYTES. `package_lock`
         # below stays — it is what a reader can compare at a glance — but it is
         # no longer the binding: a version string cannot distinguish an edited
         # `openai/_client.py` from the wheel that was installed.
@@ -1812,7 +1812,7 @@ def provider_quota_table() -> dict:
     quota table is only interpretable if the table is pinned to the run."""
     import arm_table as AT
     return {"source": AT.QUOTA_SOURCE,
-            # Codex T50 §3/Q3: Mistral publishes the LIMITS but does not
+            # Mistral publishes the LIMITS but does not
             # document whether a request it rejects with a 429 consumes token
             # or request quota. That ignorance is itself part of the sealed
             # analysis — it is what forbids adding a rejected request's
@@ -1864,7 +1864,7 @@ def build_schedule(label: str, roster: list[dict], selectors: list[str], arms: l
 
 
 # ---------------------------------------------------------------------------
-# EXACT CELL IDENTITY (Codex T49 §3). Defined here, once, because BOTH the
+# EXACT CELL IDENTITY. Defined here, once, because BOTH the
 # executor and the table must mean the same thing by "the row for this cell":
 # `run_arms` decides whether to run it, `arm_table` decides whether to count
 # it, and a disagreement between those two is exactly how a panel loses a cell
@@ -1878,12 +1878,12 @@ CELL_IDENTITY_FIELDS = ("schedule_id", "tag", "provider", "model", "selector", "
 def contract_expectations(schedule: dict, cell: dict) -> dict:
     """What a row for this cell must ALSO carry, beyond its own identity: the
     world it served, the two contracts it ran under, the treatment behind its
-    arm label, the libraries the replay projection was bound to, and — since
-    Codex T51 §2 — the INSTRUMENT that produced it.
+    arm label, the libraries the replay projection was bound to, and the
+    INSTRUMENT that produced it.
 
     All from the SEALED contract, never from the row. The three instrument
     fields make the digests part of EXACT row admission rather than of a
-    reporting paragraph: T51 §2's concrete bad execution is a session that
+    reporting paragraph: the concrete bad execution is a session that
     passes startup, changes an executable file before a later cell, and lets
     that fresh subprocess write a row bearing the changed digest. The old
     `render_instrument_identity` printed "DIFFERENT from the sealed instrument
@@ -1898,7 +1898,7 @@ def contract_expectations(schedule: dict, cell: dict) -> dict:
         "per_turn_cap": arm_spec.get("per_turn_max_tokens"),
         "reasoning_replay": arm_spec.get("reasoning_replay"),
         "library_versions": (contract.get("package_lock") or {}).get("replay_libraries"),
-        # THE INSTRUMENT (Codex T51 §2 item 1). A row whose own digests differ
+        # THE INSTRUMENT. A row whose own digests differ
         # from the seal — or that carries none at all, which is what a row
         # written by an older instrument looks like — is not this cell's row.
         "instrument_identity_version": contract.get("instrument_identity_version"),
@@ -1933,8 +1933,8 @@ def cell_key(cell: dict) -> tuple:
 
 def is_confirmatory(schedule: dict) -> bool:
     """A schedule is CONFIRMATORY exactly when it carries an experiment
-    contract. Every refusal in `run_arms` and `arm_table` that Codex T49 asks
-    for is gated on this one predicate, so a pilot schedule keeps the
+    contract. Every confirmatory refusal in `run_arms` and `arm_table`
+    is gated on this one predicate, so a pilot schedule keeps the
     permissive paths and a sealed one cannot reach them."""
     return bool(isinstance(schedule, dict) and schedule.get("experiment_contract"))
 
@@ -1953,7 +1953,7 @@ def load_schedule(path: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# CONFIGURATION-LEVEL EXCLUSION RECORDS (Codex T50 §8, his Q9)
+# CONFIGURATION-LEVEL EXCLUSION RECORDS
 #
 # "If a resumed configuration has earlier rows and a later probe becomes
 # conclusively incompatible, the table must consume an immutable
@@ -2089,7 +2089,7 @@ def main() -> int:
     parser.add_argument("--force", action="store_true",
                         help="overwrite an existing schedule file. REFUSED for a SEALED (confirmatory) "
                              "schedule: an observed experiment's contract may not be replaced on an "
-                             "operator's promise; cut a new label instead (Codex T49 §4)")
+                             "operator's promise; cut a new label instead")
     parser.add_argument("--seal", action="store_true",
                         help="SEAL this schedule as CONFIRMATORY (v2): compute the experiment contract "
                              "(instrument commit, analysis-plan sha256, arm contract, episode/replay "
@@ -2122,8 +2122,8 @@ def main() -> int:
 
     contract = None
     if args.seal:
-        # Codex T50 §1: the gate is the EXECUTION PATHS, not the whole tree. A
-        # dirty `reviews/` or `design_chat/` file is evidence being written and
+        # The gate is the EXECUTION PATHS, not the whole tree. A
+        # dirty `reviews/` or private-notes file is evidence being written and
         # must not block a seal — that requirement is precisely what made the
         # previous identity rule impossible to satisfy, since the schedule
         # itself is evidence stored in the repository. A dirty `tests/` or
@@ -2139,7 +2139,7 @@ def main() -> int:
         whole_clean, whole_detail = git_tree_status()
         if not whole_clean:
             print("note: the working tree is dirty OUTSIDE the sealed execution paths (evidence files: "
-                  "reviews/, design_chat/, root *.md). That is permitted by the git-path contract and is "
+                  "reviews/, notes/, root *.md). That is permitted by the git-path contract and is "
                   "recorded here, not hidden:\n  " + whole_detail.replace("\n", "\n  "))
         plan = Path(args.analysis_plan) if args.analysis_plan else ANALYSIS_PLAN
         if not plan.is_file():
@@ -2154,7 +2154,7 @@ def main() -> int:
             raise SystemExit(f"REFUSED to seal: the execution root {EXECUTION_ROOT} contains no files "
                              f"after the exclusions {list(EXECUTION_EXCLUDES)}. An empty execution set "
                              f"binds nothing and would witness itself green.")
-        # The same rule for the interpreter (Codex T51 §1): an environment
+        # The same rule for the interpreter: an environment
         # whose site-packages could not be read binds nothing either.
         if not contract["runtime_environment_digest"] or not contract["runtime_environment_file_count"]:
             raise SystemExit(f"REFUSED to seal: the running interpreter's importable roots "
@@ -2186,7 +2186,7 @@ def main() -> int:
     path = reviews_dir / f"schedule_{args.label}.json"
     if path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
-        # Codex T49 §4: `--force` is an operator promise. A SEALED schedule's
+        # `--force` is an operator promise. A SEALED schedule's
         # contract may not be replaced by one, whatever the promise says —
         # the replacement would silently redefine the treatment of rows
         # already observed under the old id.

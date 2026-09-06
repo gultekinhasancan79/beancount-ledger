@@ -10,7 +10,7 @@ from .beancount_ledger import (
 #   tool_call_chars(message)   characters of the canonical serialization of an
 #                              assistant message's tool calls (name, id,
 #                              arguments — no wrapper), the tool-call half of
-#                              the plausibility denominator (Codex T48 §3.1).
+#                              the plausibility denominator.
 #                              `tests/measure_budget.py` keeps its OWN counter
 #                              on purpose — it reads archived rows and handles
 #                              call shapes this one does not (nested

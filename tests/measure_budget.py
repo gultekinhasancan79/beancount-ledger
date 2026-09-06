@@ -17,29 +17,29 @@ side of a tool loop grows with every turn because the whole conversation is
 re-sent, so the number that matters is the SUM over turns, which is what the
 framework's `Usage` carries.
 
-ARMS (Codex T46 §5, §6): `--arm {A,B1,B2,B3}` sets a preset (per-turn
+ARMS: `--arm {A,B1,B2,B3}` sets a preset (per-turn
 max_tokens, reasoning replay) — A=8000/on, B1=16000/on, B2=8000/off,
 B3=16000/off — that `--max-tokens`/`--no-reasoning-replay` still override.
-Reasoning replay is a client-side history-serialization policy (Codex T46
-§2): the ORIGINAL trajectory kept in rollout state always carries every
+Reasoning replay is a client-side history-serialization policy: the
+ORIGINAL trajectory kept in rollout state always carries every
 model's `reasoning_content` (audit evidence, untouched); only the PROJECTION
 sent to the provider on later turns can omit it (`make_client_cls`'s
 `to_native_prompt`).
 
-ARTIFACT BINDING (Codex T46 §7): the delivered ledger is bound from THIS
+ARTIFACT BINDING: the delivered ledger is bound from THIS
 rollout's own state — `out["workspace"]`, `out["piv_phase"]` and the
 `delivery.json` the scorer published inside that same workspace — never by
 scanning `%TEMP%` for the newest `beancount_env_*` directory. See
 `bind_artifact()`.
 
-CODEX T48 (§3, §4, Q2/Q4/Q5/Q7), the measurement side:
+THE MEASUREMENT SIDE:
 
   - `tool_call_chars()` — the plausibility floor now counts the SERIALIZED
     TOOL-CALL ARGUMENTS, not only visible content and reasoning. A tool-only
     turn carrying a 48,000-character `write_ledger` argument and reporting
     one completion token used to pass; it is `INVALID/usage_implausible`
-    now (§3.1).
-  - EXACT wire cardinality (§3.2): `len(wire_caps) == len(per_turn) ==
+    now.
+  - EXACT wire cardinality: `len(wire_caps) == len(per_turn) ==
     len(request_caps)` for the SURVIVING attempt. A LONGER wire sequence is
     `INVALID/extra_wire_request` — potentially unaccounted spend, not
     harmless surplus evidence. And `ClientConfig(..., max_retries=0)`: the
@@ -50,11 +50,11 @@ CODEX T48 (§3, §4, Q2/Q4/Q5/Q7), the measurement side:
     discards is billed by the provider and invisible to every layer above
     it. `PacedClient` additionally records EVERY attempt of its own 429
     pacing loop in `row["requests"]`.
-  - `validate_row()` (§3.3/Q5) — ONE pure validator that re-derives every
+  - `validate_row()` — ONE pure validator that re-derives every
     predicate from an ARCHIVED row's own fields. `one_rollout` runs it on
     the row it just wrote; `tests/arm_table.py` runs it on every row it
     reads and never trusts a stored `budget_accounting` string.
-CODEX T49 (§6, §7), the evidence side:
+THE EVIDENCE SIDE:
 
   - the shared PROVIDER-WINDOW LEDGER (`--window-ledger`): every HTTP attempt
     is appended to one file per schedule, the 6-second pacing interval is
@@ -69,14 +69,14 @@ CODEX T49 (§6, §7), the evidence side:
     attempt, plus `estimated_request_tokens` (chars/4 over the exact native
     payload) — the only size evidence a rejected request has, since a 429
     bills nothing.
-  - `capability_probe` / `probe_configuration` (§7): one two-turn tool-call
+  - `capability_probe` / `probe_configuration`: one two-turn tool-call
     exchange per replay policy, whose SECOND request replays the assistant
     tool call — the payload shape that produces Mistral's 422
     `extra_forbidden` and Gemini 3.x's missing `thought_signature`. Run
     before a schedule starts, so an incompatible configuration is refused
     whole rather than discovered as an arm-shaped hole in the panel.
 
-  - `replay_contract_digest()` (§4/Q7) — the provider-bound REPLAY policy
+  - `replay_contract_digest()` — the provider-bound REPLAY policy
     (retained/dropped assistant fields, the None-as-absent rule, continuation
     fields, tool-call ordering, reasoning replay on/off, the provider
     projection, the concrete client/library versions) has its own identity,
@@ -144,7 +144,7 @@ def configure_provider(name: str | None = None, base_url: str | None = None,
 BUDGET_TOKENS = 50_000
 BUDGET_TURNS = 25
 
-# Arm presets (Codex T46 §5/§6): (per-turn max_tokens, reasoning replay).
+# Arm presets: (per-turn max_tokens, reasoning replay).
 ARM_PRESETS = {
     "A": (8000, True),
     "B1": (16000, True),
@@ -166,9 +166,9 @@ ARM_PRESETS = {
 # scorer already publishes inside `out["workspace"]` — the same file
 # `bind_artifact()` uses instead of scanning temp directories.
 #
-# `piv_request_max_tokens` is MANDATORY now (Codex T47 §4/§11/Q4 — the
-# transitional "optional column" fallback this file used to carry for it is
-# gone). It already exists in the package (Codex T46 §6, committed before
+# `piv_request_max_tokens` is MANDATORY now (the transitional "optional
+# column" fallback this file used to carry for it is gone). It already
+# exists in the package (committed before
 # this rewrite), so no fallback is needed for it: a rollout whose state
 # somehow lacks the sequence, or whose sequence does not cover every turn,
 # is not silently archived as an otherwise-valid row with `None` — it gets
@@ -183,8 +183,8 @@ BASE_STATE_COLUMNS = [
     "piv_request_max_tokens",
     "trajectory",
 ]
-# Owned by the OTHER builder's concurrent edit to beancount_ledger.py (Codex
-# T47 §2 last paragraph / §11 item 3: `piv_budget_accounting_invalid`,
+# Owned by the OTHER builder's concurrent edit to beancount_ledger.py
+# (`piv_budget_accounting_invalid`,
 # `piv_episode_contract_digest`, `episode_contract_digest()`,
 # `EPISODE_CONTRACT_VERSION`). Requested best-effort: `state_to_output` only
 # raises `ValueError` when a requested column EXISTS in state but is not yet
@@ -198,10 +198,10 @@ BASE_STATE_COLUMNS = [
 # The T48 additions are owned by the package side too and are requested the
 # same way, read with `.get()` and recorded as `None` until they land:
 # `piv_budget_accounting_suspicious` (the env's own SUSPICION code, the
-# counterpart of Codex T48b §3's split between a hard-invalid theorem and an
+# counterpart of the split between a hard-invalid theorem and an
 # anomaly band), `piv_complete_reads` and `piv_observation_bytes` (the
-# repeated-whole-read and aggregate-observation counters Codex T48a §7/Q9
-# asks for -- the measurement side can only bound them from the archive, the
+# repeated-whole-read and aggregate-observation counters the reviewer
+# asked for -- the measurement side can only bound them from the archive, the
 # package can count them exactly), and `piv_library_versions` (the serving
 # host's own view of the packages the replay contract is bound to; recorded
 # beside this process's `library_versions()` so a mismatch between the two is
@@ -211,7 +211,7 @@ OPTIONAL_STATE_COLUMNS = ["piv_budget_accounting_invalid", "piv_budget_accountin
                           "piv_complete_reads", "piv_observation_bytes", "piv_library_versions"]
 
 # The CLOSED set of `budget_accounting` status codes (adversarial-review
-# follow-up to Codex T47): `compute_budget_accounting` returns "VALID" or
+# follow-up): `compute_budget_accounting` returns "VALID" or
 # "INVALID/<code>" where <code> is one of these OUR-OWN structural/usage
 # codes, or `env_<code>` where <code> is one of ENV_BUDGET_ACCOUNTING_CODES
 # verbatim from the OTHER builder's `state["piv_budget_accounting_invalid"]`
@@ -226,7 +226,7 @@ BUDGET_ACCOUNTING_CODES = (
     "wire_caps_incomplete", "extra_wire_request", "wire_cap_mismatch",
     "request_count_mismatch",
 )
-# SUSPICIOUS is not INVALID (Codex T48b §3/Q2). A generic characters-per-
+# SUSPICIOUS is not INVALID. A generic characters-per-
 # token heuristic is not a validity theorem: character/token ratios depend
 # on the tokenizer, the language, Unicode, code, serialized tool calls and
 # repetition, and a REPLAY ARM changes the shape of emitted content — so a
@@ -268,7 +268,7 @@ ALL_BUDGET_SUSPICION_CODES = (
 CHARS_PER_TOKEN_FLOOR = 8
 
 # The instrument's own attempt nonce, stamped into the rollout state by
-# `PacedClient` (Codex T48b §10). NOT model-facing: it is never a requested
+# `PacedClient`. NOT model-facing: it is never a requested
 # state column, never rendered into a prompt, and never leaves the row's
 # `requests` log. `Environment.run_rollout` builds a FRESH state dict per
 # framework attempt, so one nonce == one attempt, by construction.
@@ -341,7 +341,7 @@ def write_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
 
 
 # ---------------------------------------------------------------------------
-# THE PROVIDER WINDOW LEDGER (Codex T49 §6). One file, shared by every cell of
+# THE PROVIDER WINDOW LEDGER. One file, shared by every cell of
 # a schedule, recording every HTTP attempt this experiment makes against a
 # provider: when it was made, how large the request was, and what the provider
 # billed. Two things depend on it, and neither can be answered from inside one
@@ -386,7 +386,7 @@ def runtime_identity() -> dict:
     """`{runtime_head, execution_tree_digest, instrument_identity_version,
     runtime_environment_digest, runtime_environment_identity_version}` for the
     checkout AND the interpreter that are EXECUTING, stamped on every archived
-    row (Codex T50 §1, T51 §1/§2). The sealed `instrument_commit` says what was
+    row. The sealed `instrument_commit` says what was
     registered; this says what ran, and the two are deliberately separate
     fields — under the git-path contract a run may legitimately happen at a
     later commit, as long as nothing under the execution paths changed.
@@ -409,7 +409,7 @@ def runtime_identity() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# PER-CELL AND PER-REQUEST INSTRUMENT VERIFICATION (Codex T51 §2)
+# PER-CELL AND PER-REQUEST INSTRUMENT VERIFICATION
 #
 # "The startup witness authenticates the tree before the session. It does not
 # freeze the tree. The schedule lock serializes executors; it does not prevent
@@ -462,7 +462,7 @@ _SEALED_INSTRUMENT: dict = {}
 
 
 class InstrumentDrift(BaseException):
-    """The executing instrument is not the sealed one (Codex T51 §2).
+    """The executing instrument is not the sealed one.
 
     A `BaseException`, deliberately: it is raised immediately before a provider
     request, and the framework's own `except Exception` handlers — including
@@ -559,7 +559,7 @@ def estimate_request_tokens(prompt, tools=None, sampling_args=None) -> int:
     return len(blob) // CHARS_PER_ESTIMATED_TOKEN
 
 
-#: Codex T50 §3/Q3 — whether a request the provider REFUSES consumes token or
+#: Whether a request the provider REFUSES consumes token or
 #: request quota is not documented by Mistral, and neither is the admission
 #: estimate it would be judged against. Sealed as an explicit unknown, and
 #: read by `arm_table` (which re-exports it) so one string governs both the
@@ -639,7 +639,7 @@ class _LedgerLock:
 
 
 class WindowLedgerUnhealthy(WindowLedgerUnavailable):
-    """The shared ledger contains evidence that cannot be read (Codex T50 §5).
+    """The shared ledger contains evidence that cannot be read.
 
     `window_ledger_read` used to skip every JSON parse failure in silence. A
     killed process leaves a TRUNCATED final line; the next append concatenates
@@ -728,7 +728,7 @@ def window_ledger_health(path) -> dict:
 
 def window_ledger_recover(path, *, reason: str, session_id: str | None = None,
                           operator: str | None = None) -> dict:
-    """The EXPLICIT operator recovery (Codex T50 §5). Appends a segment
+    """The EXPLICIT operator recovery. Appends a segment
     boundary that ACKNOWLEDGES the damaged lines by number; it never rewrites
     or removes a byte of them.
 
@@ -785,7 +785,7 @@ def window_ledger_append(path, entry: dict) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with _LedgerLock(path):
-            # Codex T50 §5: never append ONTO damaged evidence. A file whose
+            # Never append ONTO damaged evidence. A file whose
             # final line has no newline is a process killed mid-write;
             # appending here is what turns one truncated record into a
             # malformed middle line and loses the next record as well.
@@ -834,7 +834,7 @@ def window_ledger_precheck(path) -> None:
         raise WindowLedgerUnavailable(
             f"the window-ledger directory {path.parent} is not writable: "
             f"{type(exc).__name__}: {exc}") from exc
-    # Codex T50 §5: the HEALTH of the evidence is checked BEFORE the request,
+    # The HEALTH of the evidence is checked BEFORE the request,
     # not after it. A malformed line means the trailing window this request
     # would be paced and classified against cannot be reconstructed, and a
     # request made on evidence that is already known to be incomplete cannot
@@ -853,7 +853,7 @@ def window_ledger_precheck(path) -> None:
 def window_ledger_read(path, strict: bool = True) -> list[dict]:
     """Every entry in the ledger, oldest first.
 
-    STRICT by default (Codex T50 §5): a malformed or non-dict line RAISES
+    STRICT by default: a malformed or non-dict line RAISES
     `WindowLedgerUnhealthy` rather than being skipped. The previous version
     dropped every parse failure in silence, so a truncated record — and the
     record an append then concatenated onto it — simply vanished from the
@@ -889,7 +889,7 @@ def window_snapshot(entries: list[dict], now: float, provider: str, model: str,
                     kind: str = WINDOW_KIND_PRE_REQUEST) -> dict:
     """What the experiment actually sent to `(provider, model)` in the
     `seconds` before `now`, with BILLED USAGE, REJECTED-ATTEMPT ESTIMATES and
-    THE CURRENT REQUEST kept strictly apart (Codex T50 §3).
+    THE CURRENT REQUEST kept strictly apart.
 
     The retired version folded them into one number:
 
@@ -986,7 +986,7 @@ def window_snapshot(entries: list[dict], now: float, provider: str, model: str,
             "rejected_requests_total": rejected, "rejected_requests_this_cell": mine_rejected,
             "rate_limited_requests_total": rate_limited, "failed_requests_total": failed,
             "requests_total": accepted + rejected, "requests_this_cell": mine_accepted + mine_rejected,
-            # Codex T50 §3 + adversarial review (INFO): whether there IS a
+            # Adversarial review (INFO): whether there IS a
             # current request is its OWN fact, not something to infer from the
             # presence of a token estimate. The request dimension needs the
             # boolean (a request counts as one request whatever its size), and
@@ -1000,7 +1000,7 @@ def window_snapshot(entries: list[dict], now: float, provider: str, model: str,
 
 def prospective_window(pre: dict, estimate: int | None, this_cell: bool = True) -> dict:
     """The SAME trailing minute, INCLUDING the request the provider is
-    refusing right now (Codex T50 §3, his Q4).
+    refusing right now.
 
     Both windows are archived on the fatal attempt and both are labelled. The
     current request enters as what it is — a rejected attempt whose size is an
@@ -1025,7 +1025,7 @@ def prospective_window(pre: dict, estimate: int | None, this_cell: bool = True) 
 
 
 # ---------------------------------------------------------------------------
-# Structured provider-error capture (Codex T49 §6/Q6). The blind failure map
+# Structured provider-error capture. The blind failure map
 # must be fed STATUS, not prose: `openai.APIStatusError` carries the HTTP
 # status, the provider's own error code/type, and (on the raw response) the
 # rate-limit headers. All of it is redacted before it is archived.
@@ -1084,7 +1084,7 @@ class ScheduledRowOverwrite(SystemExit):
 
 
 def refuse_scheduled_overwrite(path: Path, rows: list[dict]) -> None:
-    """The WRITER's own immutability check (Codex T49 §4, adversarial-review
+    """The WRITER's own immutability check (adversarial-review
     finding F2).
 
     `tests/run_arms.py` refuses `--force` for a sealed schedule — but nothing
@@ -1140,7 +1140,7 @@ def _client_version() -> str:
 
 
 # The CONCRETE client/library versions the replay contract is bound to
-# (Codex T48 §4/Q7: "client/library versions that implement it"). A bump in
+# (the client/library versions that implement it). A bump in
 # either package can change the provider-native projection without a single
 # line of this repository changing, so it is part of the replay identity and
 # a bumped host makes a NEW experimental condition rather than drifting
@@ -1160,7 +1160,7 @@ def library_versions(names=REPLAY_LIBRARIES) -> dict:
 
 def tool_call_chars(message) -> int:
     """The CANONICAL serialized size, in characters, of one assistant
-    message's tool calls (Codex T48 §3.1) — `json.dumps(sort_keys=True)` of
+    message's tool calls — `json.dumps(sort_keys=True)` of
     `[{"id", "name", "arguments"}, ...]` in call order, measured in UTF-8
     CHARACTERS (`ensure_ascii=False`, so a non-ASCII character counts once,
     not as its six-character `\\uXXXX` escape).
@@ -1226,7 +1226,7 @@ def tool_call_chars(message) -> int:
 
 
 # ---------------------------------------------------------------------------
-# The REPLAY contract (Codex T48 §4, Q7) — the provider-bound transcript
+# The REPLAY contract — the provider-bound transcript
 # policy, with its own version and digest, separate from the world/episode
 # contract. Two rows may share an `episode_contract_digest` (same prompt,
 # same tools, same ceiling) and still not be comparable, because the CLIENT
@@ -1239,12 +1239,12 @@ REPLAY_CONTRACT_VERSION = 1
 # opaque `thought_signature` with a tool call and rejects turn 2 with
 # 400 "Function call is missing a thought_signature in functionCall parts"
 # when it is not replayed; the legacy chat-completions client has no field
-# for it under ANY replay policy. Codex T48 §8 answer 1: such a family is
+# for it under ANY replay policy. Such a family is
 # `arm_induced/incompatible` — a provider/client incompatibility — and is
 # NEVER recorded as a model failure.
 UNSUPPORTED_CONTINUATION_FIELDS = ("thought_signature",)
 
-# Codex T48 §8 answer 2: `None` means ABSENT for THIS field and only this
+# `None` means ABSENT for THIS field and only this
 # field. The legacy client writes `reasoning_content` into every replayed
 # assistant message even when the model returned none, and Mistral rejects
 # the bare key (422 `extra_forbidden`). Do NOT generalise to "drop every
@@ -1367,11 +1367,11 @@ def per_turn_rows(trajectory, reasoning_replay: bool, request_caps, wire_caps=No
     per-turn/cumulative token counts the budget is measured against.
 
     `reasoning_chars_sent` is `reasoning_chars_in_history` under full replay
-    and 0 under the no-reasoning-content projection (Codex T46 §2/§3): what
+    and 0 under the no-reasoning-content projection: what
     the CLIENT actually put on the wire this turn, as opposed to what the
     ORIGINAL trajectory (kept for audit either way) carries.
 
-    `wire_caps` (Codex T47 §4/Q2), when given, is the client's OWN
+    `wire_caps`, when given, is the client's OWN
     `PacedClient.wire_caps` list (`make_client_cls`): the `max_tokens`/
     `max_completion_tokens` fields the legacy client's `normalize_sampling_
     args` actually put in the request body for that turn, AFTER its own
@@ -1420,7 +1420,7 @@ def per_turn_rows(trajectory, reasoning_replay: bool, request_caps, wire_caps=No
         # characters than roughly 8x its reported completion_tokens.
         assistant_content_chars = _content_chars(_field(message, "content")) if message is not None else 0
         assistant_reasoning_chars = len(str(_field(message, "reasoning_content") or "")) if message is not None else 0
-        # Codex T48 §3.1: the tool-call ARGUMENTS this turn generated. The
+        # The tool-call ARGUMENTS this turn generated. The
         # largest completion payload in this task (a whole `write_ledger`
         # body, up to the 48,000-character envelope) lives here and nowhere
         # else -- omitting it from the plausibility denominator made a
@@ -1463,14 +1463,14 @@ def _valid_nonneg_int(value) -> bool:
 
 def compute_budget_suspicion(per_turn: list[dict], env_suspicious_code=None,
                              window_ledger_gap: bool = False) -> str | None:
-    """The SUSPICION bucket (Codex T48b §3/Q2) — a named diagnostic, never a
+    """The SUSPICION bucket — a named diagnostic, never a
     validity gate. Returns a code from `ALL_BUDGET_SUSPICION_CODES` or
     `None`.
 
     `usage_implausible`: some turn produced more than
     `CHARS_PER_TOKEN_FLOOR` (8) characters per reported completion token,
     counting visible content, replayed reasoning AND the canonical
-    serialized tool-call arguments (`tool_call_chars`, Codex T48a §3.1 —
+    serialized tool-call arguments (`tool_call_chars` —
     omitting the tool-call body let a 48,000-character `write_ledger`
     argument reporting one completion token look fine). A turn whose row
     predates `tool_call_chars` contributes only the two character fields it
@@ -1563,7 +1563,7 @@ def compute_budget_accounting(request_caps, per_turn: list[dict], wire_caps, env
                                  slots — a gap the per-turn wire check below
                                  cannot reliably interpret.
       12. extra_wire_request      `wire_caps` is LONGER than `per_turn`
-                                 (Codex T48a §3.2): the client made
+                                 — the client made
                                  provider requests the trajectory's usage
                                  never accounts for. The previous code
                                  examined only the first `len(per_turn)`
@@ -1603,13 +1603,13 @@ def compute_budget_accounting(request_caps, per_turn: list[dict], wire_caps, env
                                  never inside this status string).
 
     `framework_retry` (check 4) is now decided by ATTEMPT IDENTITY, not only
-    by the prompt-shape heuristic (Codex T48b §10): `attempts` counts the
+    by the prompt-shape heuristic: `attempts` counts the
     distinct attempt nonces the client bound each provider request to, and
     `requests`/`rollout_id`, when given, additionally require every billed
     request to belong to the surviving attempt's own rollout id. The
     prompt-shape detector remains as an alarm on the row.
 
-    The characters-per-token heuristic is NOT here any more (Codex T48b §3):
+    The characters-per-token heuristic is NOT here any more:
     see `compute_budget_suspicion`.
 
     Never raises on a short/ragged `per_turn`, on non-integer usage, or on a
@@ -1627,7 +1627,7 @@ def compute_budget_accounting(request_caps, per_turn: list[dict], wire_caps, env
         return "INVALID/no_turns"
     if attempts is not None and attempts > 1:
         return "INVALID/framework_retry"
-    # Attempt identity (Codex T48b §10): every BILLED request must belong to
+    # Attempt identity: every BILLED request must belong to
     # the attempt whose trajectory this row carries. A request bound to a
     # different rollout id is a discarded attempt's spend.
     if requests is not None and rollout_id is not None:
@@ -1655,7 +1655,7 @@ def compute_budget_accounting(request_caps, per_turn: list[dict], wire_caps, env
     if max_total_completion_tokens is not None and max_total_completion_tokens > 0 \
             and cumulative_completion > max_total_completion_tokens:
         return "INVALID/ceiling_exceeded"
-    # Codex T48a §3.3 last paragraph: `int(...)` TRUNCATED a non-integral
+    # `int(...)` TRUNCATED a non-integral
     # float, so a reported total of 150.9 compared equal to a true sum of
     # 150. Accept integers and EXACTLY integral numeric representations
     # only; reject bools (`isinstance(True, int)` is `True`) and strings.
@@ -1699,7 +1699,7 @@ def compute_budget_accounting(request_caps, per_turn: list[dict], wire_caps, env
 
 
 # ---------------------------------------------------------------------------
-# ONE pure archived-row validator (Codex T48a §3.3/Q5). The writer runs it on
+# ONE pure archived-row validator. The writer runs it on
 # the row it just produced; `tests/arm_table.py` runs it on every row it
 # reads and NEVER trusts a stored `budget_accounting` string. A malformed or
 # tampered archive row that merely CLAIMS "VALID" while carrying present-but-
@@ -1723,8 +1723,7 @@ ROW_VALIDATION_EXTRA_CODES = (
 
 # Why a row can only be VALID/**derived**: a predicate this row carries no
 # evidence for. Diagnostic rows may carry these; a CONFIRMATORY table may not
-# (Codex T48b §12: primary estimates require the corrected native cap/usage
-# capture).
+# (primary estimates require the corrected native cap/usage capture).
 ROW_DERIVATION_GAPS = (
     "no_recorded_status",      # written before `budget_accounting` existed
     "no_wire_caps",            # no provider-bound cap capture to compare against
@@ -1746,12 +1745,12 @@ def _derivation_gaps(row: dict) -> list[str]:
     if row.get("requests") is None:
         gaps.append("no_requests")
     if per_turn and any("tool_call_chars" not in t for t in per_turn):
-        # Post-run correction, 2026-09-01 (Codex T51 §12: reclassify under
+        # Post-run correction, 2026-09-01 (reclassify under
         # corrected rules rather than re-spend provider calls). The confirm1v4
         # writer COMPUTED the tool-call character count but omitted the key
         # from the per-turn dict — a writer bug found at analysis, symmetric
         # across arms and outcome-independent. The field feeds the
-        # PLAUSIBILITY floor (suspicion, never validity — Codex T48b §3), so
+        # PLAUSIBILITY floor (suspicion, never validity), so
         # its absence cannot demote a row that carries every VALIDITY
         # evidence: on such a row the floor simply counts fewer characters,
         # which only makes suspicion LESS likely to fire (conservative for
@@ -1765,7 +1764,7 @@ def _derivation_gaps(row: dict) -> list[str]:
 
 def validate_row(row: dict) -> tuple[str, list[str]]:
     """`(status, reasons)` — re-derives EVERY validity predicate from the
-    archived row's OWN fields (Codex T48a §3.3/Q5). `status` is one of
+    archived row's OWN fields. `status` is one of
     `ROW_VALIDATION_STATUSES`; `reasons` is a list of codes (accounting codes
     from `BUDGET_ACCOUNTING_CODES`, plus `ROW_VALIDATION_EXTRA_CODES`) for an
     INVALID row, or the `ROW_DERIVATION_GAPS` that forced `VALID/derived`.
@@ -1781,8 +1780,8 @@ def validate_row(row: dict) -> tuple[str, list[str]]:
       - request/turn cardinality and single-attempt identity;
       - artifact/digest consistency where the fields are present.
 
-    Character-per-token plausibility is NOT a validity predicate (Codex T48b
-    §3): `compute_budget_suspicion` reports it separately and `arm_table`
+    Character-per-token plausibility is NOT a validity predicate:
+    `compute_budget_suspicion` reports it separately and `arm_table`
     shows every table with and without suspicious rows.
 
     A row whose LIVE status was `INVALID/...` stays INVALID even when the
@@ -1860,8 +1859,7 @@ SDK_MAX_RETRIES = 0
 
 
 def client_config(key_var: str, base_url: str, timeout: float, connect_timeout: float = 15.0):
-    """THE client configuration this instrument uses — `max_retries=0`
-    (Codex T48a §3.2/Q2).
+    """THE client configuration this instrument uses — `max_retries=0`.
 
     `ClientConfig.max_retries` defaults to **10**, and
     `verifiers.legacy.utils.client_utils.setup_openai_client` passes it
@@ -1886,8 +1884,8 @@ def compute_prompt_schema_digest(env_mod) -> str:
     definitions the client would actually send — `env.tool_defs` (the
     framework's own provider-agnostic `vf.Tool` list `StatefulToolEnv.
     add_tool` built) run through `to_native_tool`, the SAME door the real
-    client uses to build the wire tool schema (Codex T47 §2 last
-    paragraph/Q5). This is an INDEPENDENT stand-in for `episode_contract_
+    client uses to build the wire tool schema. This is an INDEPENDENT
+    stand-in for `episode_contract_
     digest()` — a literal hash of the exact system prompt and native tool
     schema THIS checkout serves — computed at load time from THIS package,
     not from state, so it exists even before `piv_episode_contract_digest`
@@ -1917,7 +1915,7 @@ def compute_prompt_schema_digest(env_mod) -> str:
 
 def bind_artifact(out: dict, env_mod) -> dict:
     """Bind THIS rollout's delivered artifact from its own state — never by
-    scanning the temp directory (Codex T46 §7: `newest_workspace()` is gone).
+    scanning the temp directory (`newest_workspace()` is gone).
 
     `out` must come from `evaluate(..., state_columns=BASE_STATE_COLUMNS)`
     (or a superset). The workspace, the phase and the delivery receipt are
@@ -2006,7 +2004,7 @@ def breakdown(selector: str, delivered: str) -> dict:
     # `complete` (`state["piv_result"].complete`, via `score_payload.
     # run_payload`/`assess`) is the scorer's own semantic-completeness flag —
     # distinct from `reward`/`verdict` — and is the third conjunct of
-    # `CORRECT_DELIVERY` in `arm_table.py` (Codex T47 §9/Q10): `artifact ==
+    # `CORRECT_DELIVERY` in `arm_table.py`: `artifact ==
     # "BOUND"` and `reward == 1.0` and `breakdown["complete"] is True`.
     return {k: out.get(k) for k in ("total", "verdict", "outcome", "renderable", "components", "penalties",
                                     "protocol_reason", "protocol_detail", "gated", "same_books_as_golden",
@@ -2019,9 +2017,9 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
     """A `Client` subclass factory: provider pacing/retry plus the reasoning-
     replay projection, both bound to this run's settings rather than closed
     over `argparse` `Namespace` — so a fake client under test can inject the
-    same class shape without a live `args` object (Codex T46 §2/§7).
+    same class shape without a live `args` object.
 
-    `window_ledger` (Codex T49 §6) is the path of the SHARED provider-window
+    `window_ledger` is the path of the SHARED provider-window
     ledger. When it is given, every HTTP attempt is appended to it and the
     pacing interval is enforced against the LEDGER's last entry for this
     provider rather than against this process's own `_last` — a scheduled
@@ -2065,7 +2063,7 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
             # One entry per successful `get_native_response` call, in call
             # order, spanning EVERY framework attempt (not just the last) —
             # so `wire_caps[i]` lines up with trajectory step `i` WITHIN one
-            # attempt (Codex T47 §4/Q2): the `max_tokens`/`max_completion_
+            # attempt: the `max_tokens`/`max_completion_
             # tokens` field(s) the legacy client's OWN `normalize_sampling_
             # args` (inside `get_native_response`, this module's nested
             # function — not `Client.get_response`, which passes
@@ -2105,7 +2103,7 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
             self._last_prompt_len: int | None = None
             self.billed_input_tokens_all_attempts: int = 0
             self.billed_output_tokens_all_attempts: int = 0
-            # ATTEMPT IDENTITY (Codex T48b §10). The prompt-shape detector
+            # ATTEMPT IDENTITY. The prompt-shape detector
             # above is a heuristic alarm; the authoritative boundary is an
             # explicit identity bound to every provider request. The
             # framework passes the rollout `state` down to
@@ -2191,7 +2189,7 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                          "seconds": round(seconds, 3), "attempt_id": attempt_id,
                          "rollout_id": rollout_id,
                          "billed_input_tokens": billed_in, "billed_output_tokens": billed_out,
-                         # Codex T49 §6a: absolute AND monotonic time on every
+                         # Absolute AND monotonic time on every
                          # attempt. The absolute clock is what lines two cells'
                          # requests up in one provider window; the monotonic one
                          # is what measures a duration across a clock change.
@@ -2203,11 +2201,11 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                     # The observed rolling window AS IT WAS when the provider
                     # refused: computed at the moment of the failure, archived
                     # on the row, and never recomputed later from a file that
-                    # has since grown (Codex T49 §6c).
+                    # has since grown.
                     entry["provider_window"] = window
                 if prospective is not None:
                     # ... and the same window INCLUDING the request being
-                    # refused, labelled (Codex T50 §3/Q4). Two archived
+                    # refused, labelled. Two archived
                     # windows, neither standing in for the other.
                     entry["provider_window_prospective"] = prospective
                 if ledger_unhealthy is not None:
@@ -2260,7 +2258,7 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                 _oai_client_mod.post_chat_completion_with_routed_experts_sidecar = _capturing_post
                 try:
                     # EVERY attempt of this pacing loop is recorded in
-                    # `self.requests` (Codex T48a §3.2): a 429 that we then
+                    # `self.requests`: a 429 that we then
                     # backed off from is a real provider request, and the
                     # row must be able to say so. A 429 carries no billed
                     # tokens (`billed_*` stay None); only a request that
@@ -2288,7 +2286,7 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                                 wait = max(wait, last + min_interval - time.time())
                         if wait > 0:
                             await asyncio.sleep(wait)
-                        # THE LAST THING BEFORE THE REQUEST (Codex T51 §2.3).
+                        # THE LAST THING BEFORE THE REQUEST.
                         # After the pacing sleep, not before it: the sleep can
                         # be a minute long, and the check must describe the
                         # instrument at the instant the request leaves. It
@@ -2391,7 +2389,7 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
 
 
 # ---------------------------------------------------------------------------
-# THE CONFIGURATION-WIDE CAPABILITY PROBE (Codex T49 §7). A provider/model
+# THE CONFIGURATION-WIDE CAPABILITY PROBE. A provider/model
 # family that cannot carry the payload one replay policy produces is a
 # CONFIGURATION property, not a row property: it must be established BEFORE
 # the schedule runs and exclude the whole configuration, never discovered
@@ -2519,7 +2517,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
     env = env_mod.load_environment(selector)
     # The SERVED public task id, read from the serving door's own dataset
     # BEFORE the rollout runs, so it is on the row even when the provider
-    # fails and the row is quarantined (Codex T49 §3: the exact-cell check
+    # fails and the row is quarantined (the exact-cell check
     # compares the served id against the schedule's expectation, and a
     # quarantined cell that served a DIFFERENT world than the schedule
     # registered must be visible as such, not invisible because it failed).
@@ -2527,7 +2525,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
     # The episode contract THIS process pinned, computed from the package at
     # the ceiling this cell will run under. `state["piv_episode_contract_
     # digest"]` is the authority for a rollout that completed; a QUARANTINED
-    # cell never produces one, and the exact-cell check (Codex T49 §3) must
+    # cell never produces one, and the exact-cell check must
     # still be able to say which episode contract that cell ran under.
     try:
         declared_episode_digest = env_mod.episode_contract_digest(max_total_completion_tokens)
@@ -2550,7 +2548,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
     client = client_cls(config)
     started = time.monotonic()
     started_at = datetime.now().isoformat()
-    # Sampling pins (Codex T47 §8/Q11): temperature and top_p are ALWAYS
+    # Sampling pins: temperature and top_p are ALWAYS
     # sent explicitly (default 0.0/1.0 rather than left to the provider's
     # own default) so every row states what it actually asked for; `seed`
     # is only sent when the caller passed one — `tests/seed_probe.py`
@@ -2570,7 +2568,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "temperature": temperature, "top_p": top_p, "seed": seed,
         "prompt_schema_digest": prompt_schema_digest,
         "episode_contract_version": getattr(env_mod, "EPISODE_CONTRACT_VERSION", None),
-        # The REPLAY contract this row ran under (Codex T48a §4/Q7) — its own
+        # The REPLAY contract this row ran under — its own
         # identity, separate from the episode contract: two rows can share a
         # prompt, a tool schema and a ceiling and still not be comparable
         # because the client replayed the conversation differently.
@@ -2578,7 +2576,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "replay_contract_version": REPLAY_CONTRACT_VERSION,
         "replay_contract_digest": replay_contract_digest(reasoning_replay),
         "library_versions": library_versions(),
-        # SCHEDULE provenance (Codex T48a §2/Q1). The schedule file is written
+        # SCHEDULE provenance. The schedule file is written
         # BEFORE any rollout and owns the order; these fields let a row prove
         # which schedule row it executed and when it actually ran, so an
         # interruption can never pretend the planned temporal order held.
@@ -2594,11 +2592,11 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "episode_contract_digest": declared_episode_digest,
         "episode_contract_digest_declared": declared_episode_digest,
         # THE RUNTIME IDENTITY, recorded SEPARATELY from the sealed
-        # `instrument_commit` (Codex T50 §1). The git-path contract permits a
+        # `instrument_commit`. The git-path contract permits a
         # run at a later commit precisely while nothing under the execution
         # paths changed, so the report must be able to state both: what was
         # sealed, and what actually executed this row.
-        # ... and, since Codex T51 §2, the two digests are part of EXACT row
+        # ... and the two digests are part of EXACT row
         # ADMISSION (`schedule_arms.contract_expectations`), not of a reporting
         # paragraph: a row whose instrument differs from the seal is not this
         # cell's row and enters no estimand.
@@ -2616,8 +2614,8 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
             max_retries=retries, save_results=False)
     except env_mod.PIVEvaluationBatchInvalid as exc:
         # A quarantined (provider-failed) cell still SPENT: the requests it
-        # made before failing were billed. Codex T48b §5 wants those tokens
-        # and that wall time in the OPERATIONAL cost of the arm whose own
+        # made before failing were billed. Those tokens and that wall time
+        # belong in the OPERATIONAL cost of the arm whose own
         # request size or replay payload caused the failure, so they are
         # archived here rather than lost with the exception.
         return {**common, "quarantined": True, "status": str(exc.status),
@@ -2639,7 +2637,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
     # `compute_budget_accounting`, not silently treated as `None` here.
     request_caps = out.get("piv_request_max_tokens")
     # `wire_caps` (per-call, all attempts) vs `last_segment_wire_caps`
-    # (Codex T47 §4/Q2 + adversarial-review follow-up, item 1): the REAL
+    # (adversarial-review follow-up, item 1): the REAL
     # `PacedClient` always exposes `last_segment_wire_caps`, aligned to the
     # LAST (surviving) framework attempt -- what `per_turn` must be zipped
     # against, since `out["trajectory"]` only ever reflects that attempt. A
@@ -2684,7 +2682,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
                               if surviving is None or r.get("attempt_id") == surviving]
     env_code = out.get("piv_budget_accounting_invalid")
     # Owned by the package (read with `.get()`, `None` until it lands): the
-    # environment's own SUSPICION signal, the counterpart of Codex T48b §3's
+    # environment's own SUSPICION signal, the counterpart of the
     # split between a hard-invalid theorem and an anomaly band.
     env_suspicious_code = out.get("piv_budget_accounting_suspicious")
     budget_accounting = compute_budget_accounting(
@@ -2702,7 +2700,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "turns": metrics.get("num_turns", len(trajectory)),
         "tools": tools,
         "wrote_ledger": "write_ledger" in tools,
-        # Codex T47 §4/§11/Q3/Q4: fail-closed budget accounting. "VALID" or
+        # Fail-closed budget accounting. "VALID" or
         # "INVALID/<reason>" — see `compute_budget_accounting`'s docstring
         # for the exact predicate. `wire_caps` is the client's own per-turn
         # capture (`None` for a scripted test client), archived verbatim
@@ -2716,26 +2714,26 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # whole verdict from the row alone rather than believing a string.
         "budget_accounting_env_code": env_code,
         "budget_accounting_suspicious_env_code": env_suspicious_code,
-        # SUSPICIOUS is not INVALID (Codex T48b §3): a named diagnostic that
+        # SUSPICIOUS is not INVALID: a named diagnostic that
         # `arm_table.py` shows every table with AND without.
         "budget_accounting_suspicious": budget_accounting_suspicious,
         "wire_caps": wire_caps,                        # aligned to the LAST framework attempt -- matches per_turn
         "wire_caps_all_attempts": wire_caps_all_attempts,   # every attempt, unaligned, for audit
         # Every provider request this rollout made, including the 429s the
         # pacing loop backed off from (which carry no billed tokens) and the
-        # requests of any discarded framework attempt (Codex T48a §3.2).
+        # requests of any discarded framework attempt.
         "requests": requests,
         "attempts": attempts,
         "attempts_prompt_shape": getattr(client, "attempts_prompt_shape", None),
         "billed_input_tokens_all_attempts": billed_input_all,
         "billed_output_tokens_all_attempts": billed_output_all,
-        # Codex T47 §2 last paragraph/Q5: `None` until the other builder's
+        # `None` until the other builder's
         # `state["piv_episode_contract_digest"]` lands (`got_optional` is
         # only False on the transitional not-yet-serializable case; a
         # column that simply does not exist yet is already `None` via
         # `.get()` regardless of `got_optional`).
         "episode_contract_digest": out.get("piv_episode_contract_digest") or declared_episode_digest,
-        # Package-side counters (Codex T48a §7/Q9), `None` until they land:
+        # Package-side counters, `None` until they land:
         # how many COMPLETE ledger reads this episode issued and how many
         # observation bytes those replies carried. The archive can only
         # BOUND both (see tests/pilot_facts.py); the package counts them.
@@ -2787,7 +2785,7 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
             row["breakdown"] = breakdown(selector, delivered)
         except Exception as exc:                # noqa: BLE001 — the instrument must not hide a rollout
             row["breakdown"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
-    # ONE validator, both ends (Codex T48a §3.3/Q5): the writer runs the same
+    # ONE validator, both ends: the writer runs the same
     # pure archived-row check `tests/arm_table.py` will run when it reads the
     # file back, so a row that the table would refuse is refused HERE, at
     # the moment it is written, with its reasons recorded beside it.
@@ -2838,7 +2836,7 @@ def format_per_turn_line(t: dict) -> str:
 def abandon_cell_on_drift(detail: str, row_path: Path, markdown_path: Path,
                           row_file_existed: bool) -> int:
     """Withdraw whatever this process wrote for a cell whose instrument
-    drifted, and exit `INSTRUMENT_DRIFT_EXIT` (Codex T51 §2).
+    drifted, and exit `INSTRUMENT_DRIFT_EXIT`.
 
     A row produced under an unsealed instrument must not survive: leaving it
     would make the cell look `done` to `run_arms.cell_status` and — before the
@@ -2920,7 +2918,7 @@ def main() -> int:
                         help="the YYYY-MM-DD part of the output filename; defaults to TODAY. "
                              "tests/run_arms.py passes the SCHEDULE's own date so that resuming a schedule "
                              "on a later day finds the cells it already ran instead of re-running them")
-    # Schedule provenance (Codex T48a §2/Q1) -- set by tests/run_arms.py from
+    # Schedule provenance -- set by tests/run_arms.py from
     # the immutable schedule file; provenance only, no effect on THIS
     # process's own single cell.
     parser.add_argument("--schedule-id", default=None, help="the schedule file's own content digest")
@@ -2937,13 +2935,13 @@ def main() -> int:
     parser.add_argument("--arm-position", type=int, default=None,
                         help="this arm's position within its block's arm order, recorded on the row")
     parser.add_argument("--window-ledger", default=None,
-                        help="path of the SHARED provider-window ledger (Codex T49 §6): every HTTP attempt "
+                        help="path of the SHARED provider-window ledger: every HTTP attempt "
                              "is appended to it, the pacing interval is enforced against ITS last entry for "
                              "this provider rather than against this process's memory (each scheduled cell "
                              "is a fresh subprocess, so that memory is always empty at the boundary that "
                              "matters), and a 429 archives the observed trailing-60 s window it was refused "
                              "in. tests/run_arms.py passes one per schedule")
-    # THE SEALED INSTRUMENT (Codex T51 §2). Passed down by tests/run_arms.py
+    # THE SEALED INSTRUMENT. Passed down by tests/run_arms.py
     # from the sealed experiment contract, so that this process — the one that
     # actually spends the provider call — can refuse to make it.
     parser.add_argument("--sealed-execution-tree-digest", default=None,
@@ -2986,7 +2984,7 @@ def main() -> int:
                                  window_ledger=args.window_ledger, provider=PROVIDER,
                                  cell=args.tag or None, session_id=args.session_id)
     # A literal hash of the exact system prompt and native tool schema THIS
-    # checkout serves (Codex T47 §2 last paragraph), computed once, up
+    # checkout serves, computed once, up
     # front, from the package under `sys.path[0]` — recorded on every row of
     # this run even before `piv_episode_contract_digest` lands.
     prompt_schema_digest = compute_prompt_schema_digest(env_mod)
@@ -3058,7 +3056,7 @@ def main() -> int:
         # Raised immediately before a provider request, so the request was
         # never made. Anything this process had already written for the cell is
         # withdrawn: a partially observed cell under a drifted instrument is
-        # not an observation (Codex T51 §2).
+        # not an observation.
         return abandon_cell_on_drift(str(exc), row_path, markdown_path, row_file_existed)
 
     # `budget_accounting` gates every summary statistic (adversarial-review
@@ -3152,7 +3150,7 @@ def main() -> int:
                                f"{dict(sorted(by_budget_accounting.items(), key=lambda kv: -kv[1]))}")
         suspicious = [r for r in rows if not r.get("quarantined") and r.get("budget_accounting_suspicious")]
         summary_bullets.append(
-            f"- SUSPICIOUS (a diagnostic, NOT invalid — Codex T48b §3): {len(suspicious)}/"
+            f"- SUSPICIOUS (a diagnostic, NOT invalid): {len(suspicious)}/"
             f"{sum(1 for r in rows if not r.get('quarantined'))} rows, "
             f"{dict(Counter(r['budget_accounting_suspicious'] for r in suspicious))}"
             if suspicious else "- SUSPICIOUS: none")
@@ -3170,7 +3168,7 @@ def main() -> int:
 
     write_atomic(markdown_path, "\n".join(lines) + "\n")
 
-    # THE CLOSING CHECK (Codex T51 §2.3): after the LAST write, before this
+    # THE CLOSING CHECK: after the LAST write, before this
     # cell is allowed to be complete. It is what bounds the residual race the
     # per-cell environment interval leaves open — a site-packages edit that
     # landed while this cell was running is caught HERE, the cell's own bytes

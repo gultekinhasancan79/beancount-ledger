@@ -1,4 +1,4 @@
-"""The private half of the shared repair key (Codex T42 §3, Q1).
+"""The private half of the shared repair key.
 
 `identify.repair_key(repair)` projects what the PUBLIC-ONLY checker believes
 a repair is. `planted_key(spec)` here projects what the GRAPH planted, into
@@ -62,8 +62,8 @@ def master_names(public: dict) -> frozenset:
 
 def planted_key(spec, master_names: frozenset = frozenset(), *, bank_account: str = "") -> tuple:
     """The truth side, from `graph.derive.planted_key` — implemented there
-    independently of `identify.repair_key` (Codex T43 §2, Q3: no shared
-    serializer), and used by the mint gate as well as by every test."""
+    independently of `identify.repair_key` (no shared serializer), and used
+    by the mint gate as well as by every test."""
     if not bank_account:
         raise ValueError("planted_key needs the bank account name")
     return _planted_key(spec, master_names, bank_account=bank_account)

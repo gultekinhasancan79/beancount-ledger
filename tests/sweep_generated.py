@@ -96,14 +96,14 @@ def one(job):
     pub = {n: d.decode("utf-8") for n, d in m.inputs.public_files}
     out["rows"] = pub["bank_statement.csv"].count("\n") - 1
     try:
-        # tie_break is a diagnostic prior (Codex T42 §5); production and the
+        # tie_break is a diagnostic prior; production and the
         # mint-time gate run without it, so the default sweep does too.
         v = ID.check_identifiable(pub, bank_account=m.world.bank_account, period_start=m.task.period.start,
                                   period_end=m.task.period.end, tie_break=tie_break)
         out["unique"] = bool(v.unique)
         out["readings"] = getattr(v, "readings", None)
         out["ambiguities"] = [a[:200] for a in v.ambiguities][:3]
-        # The FULL shared repair key (Codex T42 §3), not (kind, amount):
+        # The FULL shared repair key, not (kind, amount):
         # date, posting multiset, counterparty, booked amount and copies all
         # enter, so a checker that found the right kind for the right money
         # on the wrong day or against the wrong account is a mismatch here.

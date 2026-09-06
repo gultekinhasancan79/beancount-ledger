@@ -2,8 +2,8 @@
 
 `check_identifiable` claims something about the WORLD: the public evidence
 leaves a reader exactly one defensible repair. The scorer claims something
-about a SUBMISSION: this ledger closes the month or it does not. Codex T41 §3
-asks for the two to be pinned against each other, because each can be wrong
+about a SUBMISSION: this ledger closes the month or it does not. The two
+have to be pinned against each other, because each can be wrong
 in a way its own test suite cannot see — a checker that certifies an
 ambiguous world looks identical to a checker that is right, and a scorer that
 accepts two unlike repairs looks identical to a scorer that accepts one.
@@ -333,7 +333,7 @@ def test_checker_uniqueness_matches_the_scorer_solution_classes():
             problems.append(f"{name}: the one solution class is {next(iter(classes.values()))}, which does not "
                             f"contain the golden repair")
         if verdict.unique:
-            # The full shared repair key (Codex T42 §3), the same projection
+            # The full shared repair key, the same projection
             # the sweep and the generator's property 7 use.
             names = master_names(public)
             want = collections.Counter(planted_key(p, names, bank_account=BANK) for p in minted.inputs.planted)

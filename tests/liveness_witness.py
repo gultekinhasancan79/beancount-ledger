@@ -1,4 +1,4 @@
-"""The DETERMINISTIC LIVENESS WITNESS (Codex T49 §13.6, Q14).
+"""The DETERMINISTIC LIVENESS WITNESS.
 
     python tests/liveness_witness.py                       # the six confirm1 panel selectors
     python tests/liveness_witness.py --sentinels           # + the pinned structural sentinel set

@@ -1,9 +1,9 @@
 """Occurrence-state conformance: every scorer state answered by a public
-reading, or by an argument (Codex T44 §4, Q5).
+reading, or by an argument.
 
 Two modules classify one month and neither may import the other.
 `candidate.committed` classifies a SUBMISSION; `graph.identify` classifies
-the PUBLIC EVIDENCE an agent is mounted. Codex's Q5 asks whether the second
+the PUBLIC EVIDENCE an agent is mounted. The question is whether the second
 grammar is exhaustive over the first, and the honest answer used to be that
 nobody could tell: the scorer's states were bare string literals written at
 four sites, so "what can a candidate occurrence be?" had no enumerable

@@ -147,8 +147,8 @@ NARRATIONS = {
     "bank_fee": ("Monthly account service charge", "Account maintenance charge",
                  "Monthly service fee", "Business account service charge"),
     # Only fees a domestic trader with no returned items would actually see
-    # (minimax, v3 review: a "foreign transaction fee" with no FX activity and
-    # a "returned item fee" with no returned deposit read as fabricated).
+    # (a "foreign transaction fee" with no FX activity and a "returned item
+    # fee" with no returned deposit read as fabricated).
     "bank_fee_extra": ("Wire transfer fee", "Cash handling fee", "Paper statement fee",
                        "Check printing fee", "ACH origination fee"),
 }
@@ -297,7 +297,7 @@ def content_digest() -> str:
     """The identity of the content library: every module-level table, in
     canonical bytes. A change to any pool changes the draws of every seed,
     so a change here REQUIRES a GENERATOR_VERSION bump — the property suite
-    pins this digest per version (gpt-oss review; Codex T40)."""
+    pins this digest per version."""
     from ..candidate.canonical import canonical_bytes, domain_digest
 
     tables = {}

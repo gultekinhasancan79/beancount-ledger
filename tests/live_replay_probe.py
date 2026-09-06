@@ -1,7 +1,6 @@
 """Live, opt-in, ~1 minute. NOT run by tests/run_all.py.
 
-Answers two of Codex Turn 46's open questions (`design_chat/from_codex.md`
-§2, §7, "Questions" 2 and 4) about the NVIDIA endpoint directly, with the raw
+Answers two open questions about the NVIDIA endpoint directly, with the raw
 `openai` client rather than through the framework:
 
   Q4: does the endpoint accept a multi-turn tool-call conversation when the

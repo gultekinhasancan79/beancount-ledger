@@ -1,4 +1,4 @@
-"""Backfills `prompt_schema_digest` (Codex T47 §2 last paragraph/Q5), and
+"""Backfills `prompt_schema_digest`, and
 optionally `budget_accounting` (adversarial-review finding 3, `--backfill-
 accounting`), into ALREADY-ARCHIVED `reviews/budget_*.json` row files that
 predate one or both fields — in particular the running batch this
@@ -129,7 +129,7 @@ def main() -> int:
                         help="also derive budget_accounting (arm_table.derive_budget_accounting) into any row "
                              "that lacks the field entirely, marking budget_accounting_stamped: true on it")
     parser.add_argument("--allow-scheduled-rows", action="store_true",
-                        help="stamp rows that carry a schedule_id. REFUSED by default (Codex T49 §4): a "
+                        help="stamp rows that carry a schedule_id. REFUSED by default: a "
                              "scheduled row is an observation of a registered experiment cell, and this "
                              "script edits archived files in place — a stamp would change the bytes the "
                              "exact-cell check reads and could not be told from the original observation")

@@ -7,7 +7,7 @@ license = {text = "Apache-2.0"}
 readme = "README.md"
 authors = [{name = "Hasancan Gültekin", email = "gultekinhasancan79@gmail.com"}]
 requires-python = ">=3.11,<3.14"          # verifiers 0.3.1 admits 3.11-3.13
-# PINNED EXACTLY, on purpose (Codex T48 §8, T47 answer 7).
+# PINNED EXACTLY, on purpose.
 #
 # `episode_contract_digest()` binds the tool schemas the MODEL is shown, and we
 # do not write them: `verifiers` calls `openai-agents`' `function_schema`,
@@ -49,8 +49,8 @@ build-backend = "hatchling.build"
 # no longer exists at the root) built an EMPTY wheel. Ship the package with its
 # runtime data (world/, tasks/) and nothing else: no tests/, no reviews/, no
 # caches — the Hub artefact carries no goldens, no provenance records and no
-# secrets (Codex T52 §6.4; serving security rests on the evaluator secret and
-# the signed manifest, never on code secrecy).
+# secrets (serving security rests on the evaluator secret and the signed
+# manifest, never on code secrecy).
 [tool.hatch.build.targets.wheel]
 packages = ["beancount_ledger"]
 exclude = ["**/__pycache__", "**/*.pyc"]
@@ -60,7 +60,7 @@ include = ["beancount_ledger/**", "pyproject.toml", "README.md", "LICENSE"]
 # `README.md` as an include pattern matches at ANY depth in hatchling, which
 # pulled reviews/README.md into the sdist (caught by the artefact audit).
 # Exclude the evidence and test trees outright: the Hub artefact carries no
-# reviews, no tests, no goldens (Codex T52 §6.4).
+# reviews, no tests, no goldens.
 exclude = ["**/__pycache__", "**/*.pyc", "reviews/**", "tests/**", ".venv/**"]
 
 [tool.verifiers.eval]

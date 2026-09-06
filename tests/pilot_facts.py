@@ -1,4 +1,4 @@
-"""Facts about the RUNNING pilot, read-only (Codex T48a Q3 and Q9).
+"""Facts about the RUNNING pilot, read-only.
 
     python tests/pilot_facts.py
     python tests/pilot_facts.py --reviews-dir C:\\...\\prime\\environments\\beancount_ledger\\reviews
@@ -160,7 +160,7 @@ def main() -> int:
         print(f"- Largest write turn: {biggest[1]['non_content_added']:,} non-content characters against "
               f"{biggest[2]:,} visible, reporting {biggest[1]['output_tokens']} completion tokens "
               f"({biggest[0].get('model')}, arm {biggest[0].get('arm')}, {biggest[0].get('selector')}).")
-    print(f"- The pre-T48 plausibility floor summed `assistant_content_chars + assistant_reasoning_chars` "
+    print(f"- The previous plausibility floor summed `assistant_content_chars + assistant_reasoning_chars` "
           f"only, so on a TOOL-ONLY turn its denominator was ZERO and no reported completion token count, "
           f"however small, could fail it. At the 48,000-character write envelope that is the largest "
           f"completion payload in the task passing unchecked.")

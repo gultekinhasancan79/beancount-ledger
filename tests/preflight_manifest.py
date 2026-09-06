@@ -1,5 +1,5 @@
 """Preflight the release population under the evaluator's OWN secret and write
-the signed manifest that `load_environment` serves from (Codex T43 §5).
+the signed manifest that `load_environment` serves from.
 
     python tests/preflight_manifest.py --train 2000 --eval 500 --hard 500 [--out ~/.piv/manifest.json]
 
@@ -7,8 +7,8 @@ Runs in the evaluator process, under the active secret (PIV_EVAL_SECRET or
 ~/.piv/eval_secret) — NOT the test-suite secret: a test-secret sweep validates
 a different population.
 
-TWO PHASES, TWO CLAIMS (Codex T48 §7, answer 6)
------------------------------------------------
+TWO PHASES, TWO CLAIMS
+----------------------
 The two things a release has to prove are different things, and a preflight
 that mixes them proves neither cleanly:
 
@@ -126,7 +126,7 @@ def gate_one(job):
     out["gates"]["ledger_within_envelope"] = breach is None
     if breach is not None:
         out["notes"].append(f"ledger envelope: {breach}")
-    # The census, not just the gate (Codex T47 §1): the envelope is comfortably
+    # The census, not just the gate: the envelope is comfortably
     # above the measured population TODAY, and a generator change that quietly
     # consumes the headroom would still pass every gate. Reporting the measured
     # maximum beside the envelope is what makes that visible in the release
@@ -230,7 +230,7 @@ def ledger_census(results: list) -> dict:
     """The measured ledger population beside the envelope it has to fit.
 
     A gate answers "does every world fit?"; the census answers "by how much,
-    and how close is the generator getting?" (Codex T47 §1). Without it a
+    and how close is the generator getting?". Without it a
     generator change could consume the whole headroom silently — every gate
     still green, one read suddenly ten times more expensive — and the first
     place anyone would notice is a live rollout's token bill.

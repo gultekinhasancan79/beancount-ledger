@@ -1,5 +1,5 @@
 """The state conformance contract: every scorer state answered by a public
-reading class, or by a written exclusion (Codex T44 §4, Q5).
+reading class, or by a written exclusion.
 
 Two modules classify the same month and neither may import the other.
 
@@ -14,7 +14,7 @@ Two modules classify the same month and neither may import the other.
     `PUBLIC_READINGS` below: the classes a bank reconciliation can put an
     ORIGINAL ledger entry or statement row into.
 
-The question this module exists to answer is Codex's Q5, asked of the
+The question this module exists to answer is the reviewer's, asked of the
 scorer instead of the checker: *for every state the scorer can reach, what
 is the corresponding public reading, and where there is none, why?* Left
 unanswered, the two grammars drift — an entry the scorer can price is a

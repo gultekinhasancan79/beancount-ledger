@@ -63,7 +63,7 @@ PUBLIC_KIND = {"omit": "missing_entry", "alter": "wrong_amount", "duplicate": "d
 
 
 def planted_key(spec, master_names, *, bank_account: str) -> tuple:
-    """The TRUTH side of the shared repair key (Codex T43 §2, Q3): the same
+    """The TRUTH side of the shared repair key: the same
     tuple type `identify.repair_key` builds from a checker repair —
 
         (kind, date, postings, counterparty, booked bank amount, copies)
@@ -234,7 +234,7 @@ def derive_contract(world: World, task: TaskSpec) -> tuple[Bundle, ContractInput
     # The complete retained-field identity of every recognition in the
     # expected period (date, payee, narration, sorted legs): key collisions
     # between a planted item and anything unrelated are UnsupportedTopology
-    # at derivation, never resolved by allocation order (Codex T40).
+    # at derivation, never resolved by allocation order.
     def full_key(r):
         # The date is the EFFECTIVE date — the one the expected ledger prints
         # — so an omitted item restated onto the bank's date is audited for

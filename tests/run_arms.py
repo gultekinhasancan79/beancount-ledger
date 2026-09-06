@@ -1,4 +1,4 @@
-"""Executes an IMMUTABLE arm schedule (Codex T48a §2/Q1, T49 §3–§7).
+"""Executes an IMMUTABLE arm schedule.
 
     python tests/schedule_arms.py --seal --label confirm1v2 ...   # once, before anything runs
     python tests/run_arms.py --schedule reviews/schedule_confirm1v2.json --provider mistral
@@ -10,7 +10,7 @@ schedule's own order, and records on every row both what was PLANNED
 (`schedule_id`, `planned_ordinal`) and what actually happened
 (`actual_ordinal`, `session_id`, `started_at`, `finished_at`).
 
-CONFIRMATORY MODE is the whole of Codex T49's enforcement, and it is entered
+CONFIRMATORY MODE is the whole of the sealed-schedule enforcement, entered
 by exactly one predicate: the schedule carries an experiment contract
 (`schedule_arms.is_confirmatory`). A v1 (pilot/diagnostic) schedule keeps
 every permissive path this file has always had; a SEALED one cannot reach any
@@ -34,7 +34,7 @@ of them.
      carrying session id, NONCE, pid and start time. NO automatic stale
      takeover: a stale lock is reported with instructions, and
      `--take-over-lock` is an explicit operator act that is written into the
-     log. Since Codex T51 §3 that act is itself an ATOMIC COMPETITION — a
+     log. That act is itself an ATOMIC COMPETITION — a
      separate `O_EXCL` takeover guard, revalidation of the stale lock's exact
      bytes under it, an archive of those bytes, then acquisition through the
      same `O_EXCL` path a clean startup uses and a proof that the nonce on disk
@@ -45,7 +45,7 @@ of them.
      different experiment from the one the Williams order registered, and the
      executor records when that happens.
 
-  T51 §2 PER-CELL INSTRUMENT VERIFICATION. Every cell subprocess is handed the
+  PER-CELL INSTRUMENT VERIFICATION. Every cell subprocess is handed the
      sealed execution-tree and runtime-environment digests and re-verifies
      them: both before request 1 of the cell, the tree before EVERY provider
      request, and both again after the last write. A mismatch makes no
@@ -54,7 +54,7 @@ of them.
      fail-closed and STOPS the session, because a drifted instrument
      invalidates everything after it.
 
-  T51 §4 FAIL-CLOSED JOURNAL. The whole journal is parsed under the lock before
+  FAIL-CLOSED JOURNAL. The whole journal is parsed under the lock before
      every append and before the probe. A malformed or non-object line that no
      recovery record acknowledges aborts the action; `--recover-execution-
      journal` is the explicit segment recovery, refused before the first real
@@ -107,7 +107,7 @@ PYTHON = sys.executable
 sys.path.insert(0, str(ROOT / "tests"))
 
 # ---------------------------------------------------------------------------
-# THE BYTECODE CACHE (C2, the adversarial review of the T51 closures)
+# THE BYTECODE CACHE (C2, the adversarial review)
 #
 # The runtime-environment manifest excludes `__pycache__/` and `*.pyc` by name,
 # and it has to: bytecode is written by the very act of importing, so a strict
@@ -263,7 +263,7 @@ def cell_is_done(out_path: Path, schedule: dict, cell: dict) -> tuple[bool, str]
 
 
 # ---------------------------------------------------------------------------
-# The schedule-level executor lock (Codex T49 §5)
+# The schedule-level executor lock
 # ---------------------------------------------------------------------------
 
 def lock_path_for(schedule_path: Path) -> Path:
@@ -271,8 +271,8 @@ def lock_path_for(schedule_path: Path) -> Path:
 
 
 def takeover_guard_path_for(schedule_path: Path) -> Path:
-    """The separate `O_EXCL` guard that makes a takeover an ATOMIC COMPETITION
-    (Codex T51 §3). It is not the schedule lock: it is the right to CONTEND for
+    """The separate `O_EXCL` guard that makes a takeover an ATOMIC COMPETITION.
+    It is not the schedule lock: it is the right to CONTEND for
     the schedule lock, held only for the few milliseconds of revalidate →
     archive → unlink → re-acquire."""
     return Path(str(lock_path_for(schedule_path)) + ".takeover")
@@ -311,7 +311,7 @@ def acquire_schedule_lock(schedule_path: Path, session_id: str, take_over: bool 
     with the instruction to verify the holder is dead and pass
     `--take-over-lock`, which is written into the log as an operator act.
 
-    THE TAKEOVER IS ITSELF ATOMIC (Codex T51 §3). The previous implementation
+    THE TAKEOVER IS ITSELF ATOMIC. The previous implementation
     was `path.write_text(...)` — no exclusion at all, so two recovery operators
     could both observe the same stale lock, both overwrite it, and both return
     as owners, then execute different cells concurrently. The replacement is a
@@ -467,9 +467,9 @@ def acquire_schedule_lock(schedule_path: Path, session_id: str, take_over: bool 
 
 
 def prove_lock_ownership(schedule_path: Path, ours: dict | None) -> tuple[bool, str]:
-    """Re-read the lock and prove the session id AND the nonce are ours (Codex
-    T51 §3: "after acquisition reread the lock and prove that its nonce/owner
-    token is still ours before any execution begins").
+    """Re-read the lock and prove the session id AND the nonce are ours: after
+    acquisition, reread the lock and prove that its nonce/owner token is still
+    ours before any execution begins.
 
     The nonce is what makes this a proof rather than a coincidence: two
     sessions could in principle be given the same short session id, but not the
@@ -519,8 +519,8 @@ def release_schedule_lock(schedule_path: Path, session_id: str, ours: dict | Non
     owned by someone unknown, so it survives too (only `--take-over-lock`
     clears one, deliberately).
 
-    When the acquisition record is supplied, the NONCE is checked too (Codex
-    T51 §3): a later session that happened to draw the same 12-hex session id
+    When the acquisition record is supplied, the NONCE is checked too: a later
+    session that happened to draw the same 12-hex session id
     must not have its lock deleted by this process's exit."""
     path = lock_path_for(schedule_path)
     held, state = lock_holder(path)
@@ -541,7 +541,7 @@ def claim_cell(out_path: Path, session_id: str, cell: dict, ttl_seconds: float) 
     even two executors that somehow bypassed the schedule lock cannot both pay
     the provider for one cell.
 
-    NO automatic stale takeover here either (Codex T49 §5): the previous
+    NO automatic stale takeover here either: the previous
     version's takeover was a read-then-`os.replace`, which two contenders can
     both complete believing they won. A stale claim is reported; the schedule
     lock is the mechanism that makes one exist in the first place, and
@@ -576,7 +576,7 @@ def claim_cell(out_path: Path, session_id: str, cell: dict, ttl_seconds: float) 
 
 
 def release_cell(out_path: Path, session_id: str | None = None) -> None:
-    """Drop the claim — but only when we still hold it (Codex T49 §5). The
+    """Drop the claim — but only when we still hold it. The
     previous version unlinked whatever claim it found, so a late old owner
     could delete a NEW owner's claim and let a third process in. Called
     whether the cell succeeded or failed: a claim outlives its process only
@@ -612,8 +612,8 @@ def block_order(cells: list[dict]) -> list[str]:
 
 
 def limit_to_whole_blocks(pending: list, limit: int | None) -> tuple[list, int]:
-    """Take the first `limit` whole three-arm BLOCKS from `pending` (Codex
-    T49 §5). Never an arbitrary cell count: a block whose arms run in two
+    """Take the first `limit` whole three-arm BLOCKS from `pending`. Never an
+    arbitrary cell count: a block whose arms run in two
     different sessions, minutes or hours apart, is not the block the Williams
     order registered, and a `--limit` that cuts one in half produces exactly
     that without saying so.
@@ -630,7 +630,7 @@ journal_path_for = SA.journal_path_for
 
 
 class JournalUnavailable(RuntimeError):
-    """The execution journal could not be written (Codex T50 §6).
+    """The execution journal could not be written.
 
     In CONFIRMATORY mode this is fatal to the action the entry authorizes. The
     previous implementation was `except OSError: pass`, while the schedule
@@ -643,10 +643,9 @@ class JournalUnavailable(RuntimeError):
 
 
 class JournalCorrupt(JournalUnavailable):
-    """The execution journal already contains a line that cannot be read
-    (Codex T51 §4).
+    """The execution journal already contains a line that cannot be read.
 
-    T50 closed the WRITE side and left the CONTENT side open: `journal()`
+    The WRITE side was closed first, leaving the CONTENT side open: `journal()`
     appended under the lock without validating the existing records, and
     `journal_probe()` only checked that its OWN token came back. A process
     killed mid-append leaves a truncated final line; the next append
@@ -673,11 +672,11 @@ def journal(path: Path, event: dict, *, required: bool = False, root: Path | Non
     Locked (the same `O_EXCL` lock the window ledger uses, so two writers
     cannot interleave a line), flushed, and fsync'd where the platform
     supports it. Every entry carries the RUNTIME HEAD and both instrument
-    digests (Codex T50 §1, T51 §1), so the journal states which checkout AND
+    digests, so the journal states which checkout AND
     which installed environment produced it rather than leaving that to the
     schedule's sealed contract.
 
-    THE WHOLE FILE IS PARSED FIRST, under the same lock (Codex T51 §4). A
+    THE WHOLE FILE IS PARSED FIRST, under the same lock. A
     malformed or non-object line that no recovery record acknowledges raises
     `JournalCorrupt` and NOTHING is appended: the action the entry authorizes
     must be aborted. The scan is INSIDE the lock for the reason the window
@@ -724,8 +723,8 @@ def journal(path: Path, event: dict, *, required: bool = False, root: Path | Non
 
 def journal_recover(path: Path, *, reason: str, session_id: str | None = None,
                     operator: str | None = None) -> dict:
-    """The EXPLICIT operator recovery of a damaged execution journal (Codex
-    T51 §4, his Q4 answer for the AFTER-rows case). It mirrors the window
+    """The EXPLICIT operator recovery of a damaged execution journal, for the
+    AFTER-rows case. It mirrors the window
     ledger's segment recovery exactly: an immutable boundary record that
     ACKNOWLEDGES the damaged lines by number and never rewrites or removes a
     byte of them.
@@ -774,7 +773,7 @@ def journal_recover(path: Path, *, reason: str, session_id: str | None = None,
 
 def journal_probe(path: Path) -> tuple[bool, str]:
     """Create / append / READ BACK one probe entry, before any provider
-    request (Codex T50 §6) — and, since T51 §4, PARSE THE WHOLE FILE first.
+    request — and PARSE THE WHOLE FILE first.
 
     The old probe appended a token and checked that its own token came back,
     which an already-truncated line does not disturb: the probe passed, the
@@ -810,7 +809,7 @@ def run_capability_probes(schedule: dict, providers_models: list[tuple], probe_f
                           timeout: float = 60.0, min_interval: float = 6.0,
                           window_ledger=None) -> dict:
     """`{(provider, model): result}` — one probe per configuration, covering
-    EVERY replay policy the schedule's arms use (Codex T49 §7). Live, and
+    EVERY replay policy the schedule's arms use. Live, and
     tiny: two requests per policy, roughly six per configuration.
 
     `probe_fn` is injected by the tests; the default is
@@ -826,7 +825,7 @@ def run_capability_probes(schedule: dict, providers_models: list[tuple], probe_f
     return results
 
 
-#: The FOUR distinct probe outcomes (Codex T50 §7). The retired loop wrote
+#: The FOUR distinct probe outcomes. The retired loop wrote
 #: `capability_incompatible` for every non-admitted result, including one that
 #: established nothing at all: unknown is not incompatible, and a journal that
 #: says otherwise is evidence for a claim nobody made.
@@ -851,7 +850,7 @@ def probe_event(result: dict, accept_inconclusive: bool = False) -> str:
 def probe_conclusively_failed(result: dict) -> bool:
     """Only a CONCLUSIVE failure excludes a configuration and writes an
     exclusion record. An inconclusive probe leaves the configuration unrun and
-    UNKNOWN — never recorded as incompatible (Codex T50 §7/§8)."""
+    UNKNOWN — never recorded as incompatible."""
     return probe_event(result) == "capability_failed"
 
 
@@ -875,8 +874,8 @@ def startup_results(schedule: dict, reviews_dir: Path, root: Path | None = None,
     """The startup witness AS THE EXECUTOR RUNS IT — with the execution
     journal and the shared window ledger it is about to use.
 
-    A separate function so the fail-closed journal probe (Codex T50 §6) and
-    the ledger-health check (§5) are witnessed on the executor's own path,
+    A separate function so the fail-closed journal probe and
+    the ledger-health check are witnessed on the executor's own path,
     not only on a hand-built call in a test.
 
     `skip_journal_probe` is for the one pass that PRECEDES an explicit
@@ -953,7 +952,7 @@ def cell_command(schedule: dict, cell: dict, session_id: str, actual_ordinal: in
            "--max-total-completion-tokens", str(roster["max_total_completion_tokens"]),
            "--timeout", str(roster["timeout"]), "--retries", str(roster["framework_retries"]),
            "--min-interval", str(roster["min_interval"])]
-    # THE SEALED INSTRUMENT, PASSED DOWN (Codex T51 §2). The cell subprocess is
+    # THE SEALED INSTRUMENT, PASSED DOWN. The cell subprocess is
     # the process that spends the provider call, so it is the process that must
     # be able to refuse to: it re-verifies the execution tree before EVERY
     # request and both digests at the cell's opening and closing checks, and
@@ -976,7 +975,7 @@ def cell_command(schedule: dict, cell: dict, session_id: str, actual_ordinal: in
 
 def main() -> int:
     """`_main`, with the fail-closed execution journal turned into an exit
-    code (Codex T50 §6). A confirmatory action that could not be recorded does
+    code. A confirmatory action that could not be recorded does
     not happen: the run stops where the append failed, and the operator sees
     exit 5 rather than a run that quietly lost its own audit trail."""
     try:
@@ -986,8 +985,8 @@ def main() -> int:
         return 5
     except mb.InstrumentDrift as exc:
         # Raised by this process's OWN pre-request check — the capability probe
-        # is a provider call made here, not in a cell subprocess (Codex T51
-        # §2.3). `_main`'s `finally` has already released the schedule lock.
+        # is a provider call made here, not in a cell subprocess. `_main`'s
+        # `finally` has already released the schedule lock.
         print(f"REFUSED (INSTRUMENT DRIFT in the executor's own provider call): {exc}", file=sys.stderr)
         return mb.INSTRUMENT_DRIFT_EXIT
 
@@ -1006,7 +1005,7 @@ def _main() -> int:
                              "a block split across sessions is not the block the Williams order registered")
     parser.add_argument("--force", action="store_true",
                         help="re-run a cell that already has a complete row (overwrites it). REFUSED for a "
-                             "sealed confirmatory schedule (Codex T49 §4): an observed result may not be "
+                             "sealed confirmatory schedule: an observed result may not be "
                              "replaced, because the decision to replace it would be made after seeing it")
     parser.add_argument("--claim-ttl", type=float, default=DEFAULT_CLAIM_TTL_SECONDS,
                         help="seconds after which another executor's per-cell claim is REPORTED as stale "
@@ -1025,13 +1024,13 @@ def _main() -> int:
                              "is recorded in the execution journal as an operator act")
     parser.add_argument("--recover-window-ledger", action="store_true",
                         help="EXPLICIT operator recovery of a window ledger that carries malformed "
-                             "evidence (Codex T50 §5). The damaged bytes are preserved; a segment "
+                             "evidence. The damaged bytes are preserved; a segment "
                              "boundary is appended, the act is journalled, and every rate-limit "
                              "classification whose window spans the boundary becomes ambiguous. Refused "
                              "when the ledger is healthy — this is not a routine flag")
     parser.add_argument("--recover-execution-journal", action="store_true",
                         help="EXPLICIT operator recovery of an execution journal that carries a "
-                             "malformed line (Codex T51 §4, his Q4). REFUSED before the first real row "
+                             "malformed line. REFUSED before the first real row "
                              "exists — there is no recovery path there, the answer is to abort and "
                              "RESEAL. After rows exist it mirrors the window ledger's segment recovery: "
                              "the damaged bytes are preserved, an immutable boundary with a provenance "
@@ -1055,12 +1054,12 @@ def _main() -> int:
 
     if confirmatory and args.force:
         print("REFUSED: --force on a SEALED confirmatory schedule. An observed cell may not be re-run or "
-              "overwritten — the decision to replace it would be made after seeing its outcome (Codex T49 "
-              "§4). An instrument defect is repaired by a NEW schedule or a predeclared replacement record "
+              "overwritten — the decision to replace it would be made after seeing its outcome. "
+              "An instrument defect is repaired by a NEW schedule or a predeclared replacement record "
               "that preserves the original row and its reason.", file=sys.stderr)
         return 2
 
-    # Codex T50 §7: the capability probe is a PRE-RUN, CONFIGURATION-WIDE fact
+    # The capability probe is a PRE-RUN, CONFIGURATION-WIDE fact
     # in the sealed analysis plan. An operator flag that turns it off does not
     # change `schedule_id`, so rows created through that path would satisfy the
     # same exact cell identity and enter the confirmatory table as though the
@@ -1070,7 +1069,7 @@ def _main() -> int:
         print("REFUSED: --no-probe-capabilities on a SEALED confirmatory schedule. The analysis plan "
               "registers the capability probe as pre-run and configuration-wide; skipping it would admit "
               "an untested configuration whose rows are indistinguishable from probed ones, without "
-              "changing schedule_id (Codex T50 §7). Run the probe, or admit an INCONCLUSIVE one "
+              "changing schedule_id. Run the probe, or admit an INCONCLUSIVE one "
               "deliberately with --accept-inconclusive-probe, which is journalled fail-closed.",
               file=sys.stderr)
         return 2
@@ -1098,7 +1097,7 @@ def _main() -> int:
             return 3
         print(f"  all {len(results)} sealed fields match this checkout, these libraries and the active "
               f"release manifest")
-        # ARM THIS PROCESS TOO (Codex T51 §2.3). The capability probe is a real
+        # ARM THIS PROCESS TOO. The capability probe is a real
         # provider call, made HERE rather than in a cell subprocess, and it
         # happens seconds to minutes after the witness. Arming the executor
         # puts the probe's requests behind the same per-request tree check that
@@ -1110,7 +1109,7 @@ def _main() -> int:
             (schedule["experiment_contract"] or {}).get("instrument_identity_version"),
             (schedule["experiment_contract"] or {}).get("runtime_environment_identity_version"))
 
-    # -- the operator recovery of a damaged EXECUTION JOURNAL (Codex T51 §4) --
+    # -- the operator recovery of a damaged EXECUTION JOURNAL -----------------
     #    AFTER the witness is green, for the same reason the ledger recovery is
     #    (adversarial review, C3): a recovery written from a checkout the
     #    witness would refuse is a mutation nobody authorised.
@@ -1122,7 +1121,7 @@ def _main() -> int:
                   f"({health['line_count']} line(s), no malformed evidence). Recovery starts a new "
                   f"audit segment; it is not a routine flag.", file=sys.stderr)
             return 2
-        # HIS Q4 ANSWER, ENCODED. Before the first real row exists there is no
+        # ENCODED HERE: before the first real row exists there is no
         # recovery path at all: nothing has been observed, so nothing is lost
         # by cutting a new schedule, and a journal whose first segment is
         # already damaged has no audit trail to preserve.
@@ -1136,7 +1135,7 @@ def _main() -> int:
                   f"no recovery path: nothing has been observed, so ABORT AND RESEAL — cut a new label "
                   f"with tests/schedule_arms.py --seal and leave this journal's bytes as evidence. "
                   f"Segment recovery exists only to preserve an audit trail that already has "
-                  f"observations in it (Codex T51 Q4).", file=sys.stderr)
+                  f"observations in it.", file=sys.stderr)
             return 2
         record = journal_recover(journal_file, reason=health["detail"], session_id=session_id,
                                  operator="run_arms --recover-execution-journal")
@@ -1159,7 +1158,7 @@ def _main() -> int:
               f"{len(observed)} observed cell(s) preceded it, and every audit claim that spans the "
               f"boundary reads as spanning it.")
 
-    # -- the operator recovery of a damaged window ledger (Codex T50 §5) ----
+    # -- the operator recovery of a damaged window ledger -------------------
     #    AFTER the witness is green (adversarial review, C3).
     if args.recover_window_ledger:
         health = mb.window_ledger_health(window_ledger)
@@ -1263,7 +1262,7 @@ def _main() -> int:
     if not acquired:
         print(f"REFUSED: {lock_note}", file=sys.stderr)
         return 4
-    # AFTER ACQUISITION, BEFORE ANY EXECUTION (Codex T51 §3): re-read the lock
+    # AFTER ACQUISITION, BEFORE ANY EXECUTION: re-read the lock
     # and prove its nonce is ours. The takeover path already did this inside
     # the guard; doing it here as well covers the clean path and costs a read.
     proved, proof = prove_lock_ownership(schedule_path, ours)
@@ -1282,7 +1281,7 @@ def _main() -> int:
         confirmatory, pycache_prefix=fresh_bytecode_cache_prefix())
     #: Set when a cell subprocess reports INSTRUMENT DRIFT. A drifted
     #: instrument invalidates everything after it, so the session stops where
-    #: it happened and says so in its exit code (Codex T51 §2).
+    #: it happened and says so in its exit code.
     drift_stop: str | None = None
     try:
         # WHAT THE CELLS WILL RUN UNDER, journalled BEFORE the first of them
@@ -1308,7 +1307,7 @@ def _main() -> int:
             # cell: a takeover that is only journalled at the end is missing
             # from exactly the run that crashed after it. The displaced
             # session is named, so the actual-order census can see the seam.
-            # FAIL-CLOSED in confirmatory mode (Codex T50 §6): a takeover that
+            # FAIL-CLOSED in confirmatory mode: a takeover that
             # could not be recorded is a takeover that did not happen — the
             # raise reaches `main`, the `finally` below releases the lock, and
             # nothing runs.
@@ -1317,7 +1316,7 @@ def _main() -> int:
                      "displaced_session": (held or {}).get("session_id"),
                      "displaced_pid": (held or {}).get("pid"),
                      # The displaced lock's exact bytes are preserved beside
-                     # the schedule and named here (Codex T51 §3), so the
+                     # the schedule and named here, so the
                      # takeover is reconstructable rather than merely asserted.
                      "displaced_archive":
                          takeover_archive_path_for(schedule_path, session_id).name,
@@ -1338,7 +1337,7 @@ def _main() -> int:
             failed_configurations: set = set()
             for key, result in sorted(probe_results.items(), key=str):
                 admitted, inconclusive = probe_admits(result, args.accept_inconclusive_probe)
-                # FOUR DISTINCT OUTCOMES (Codex T50 §7). "Unknown" is not
+                # FOUR DISTINCT OUTCOMES. "Unknown" is not
                 # "incompatible": the retired loop wrote `capability_
                 # incompatible` for every non-admitted result, so an
                 # unreachable endpoint became evidence of a capability
@@ -1363,8 +1362,8 @@ def _main() -> int:
                 if probe_conclusively_failed(result):
                     failed_configurations.add(key)
                     if confirmatory:
-                        # THE IMMUTABLE, CONTENT-BOUND EXCLUSION RECORD (his
-                        # Q9). `arm_table` cannot infer a configuration-level
+                        # THE IMMUTABLE, CONTENT-BOUND EXCLUSION RECORD.
+                        # `arm_table` cannot infer a configuration-level
                         # exclusion from row-level failures, because the cells
                         # this blocks have no rows at all. Written beside the
                         # schedule, fail-closed: an exclusion that was decided
@@ -1486,7 +1485,7 @@ def _main() -> int:
                                        "finished_at": datetime.now(timezone.utc).isoformat(),
                                        "seconds": round(took, 1), "exit_code": proc.returncode},
                         required=confirmatory)
-                # INSTRUMENT DRIFT (Codex T51 §2). The cell verified both
+                # INSTRUMENT DRIFT. The cell verified both
                 # digests before request 1 and the execution tree before every
                 # request; it exited without making a call and without leaving
                 # a row. A drifted instrument invalidates everything after it,
@@ -1518,7 +1517,7 @@ def _main() -> int:
                     fh.flush()
                     break
                 # A NEW capability incompatibility appearing mid-run stops the
-                # CONFIGURATION (Codex T49 §7). It is read from the archived
+                # CONFIGURATION. It is read from the archived
                 # row's own blind classification, never from the arm.
                 if confirmatory and _row_is_capability_incompatible(out_path, cell):
                     stopped_configurations.add(configuration)
@@ -1528,8 +1527,8 @@ def _main() -> int:
                     print(note, flush=True)
                     fh.write(note + "\n")
                     # The cells this blocks have NO rows, so the table cannot
-                    # learn about the exclusion from row-level failures (Codex
-                    # T50 §8/Q9). The record is what carries it.
+                    # learn about the exclusion from row-level failures. The
+                    # record is what carries it.
                     try:
                         SA.write_configuration_exclusion(
                             schedule_path, schedule, configuration[0], configuration[1],

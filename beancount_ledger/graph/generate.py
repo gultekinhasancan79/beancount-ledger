@@ -139,7 +139,7 @@ def _rng(seed: int, purpose: str) -> random.Random:
     over (generator version, private seed, purpose) — never Python's salted
     `hash()` and never the raw seed string — so a new purpose does not
     reshuffle the existing ones and the draw is identical across processes
-    and PYTHONHASHSEED values (Codex T40)."""
+    and PYTHONHASHSEED values."""
     from .mint import sub_seed
     return random.Random(sub_seed(seed, purpose))
 
@@ -823,7 +823,7 @@ def _plan(seed: int, profile: Profile, world: World, period: Period) -> Mutation
     printed = Counter(abs(m.amount) for m in movements.values()
                       if prior.start <= m.cleared_on <= period.end)
     # A reference decides a pairing only when it is unique across all
-    # public evidence (Codex T41): a planted item whose row reference an
+    # public evidence: a planted item whose row reference an
     # invoice paid in two receipts also carries is not decidable by it.
     ref_count = Counter(m.reference for m in movements.values() if m.reference)
     candidates = []
@@ -970,11 +970,11 @@ def _alter_choice(rng: random.Random, world: World, event, printed: Counter):
     """A typed bookkeeping error for this recognition: (strategy, parameter,
     wrong amount), or None when no plausible error is available. The wrong
     figure is what `project.derive_mutant` makes of the truth — the
-    generator never authors a vector (Codex T40) — and it must not be a
+    generator never authors a vector — and it must not be a
     figure any statement row carries. Transposition is preferred 6:4 over a
     dropped digit; a decimal shift is the rare third, and never on a bank
     fee — a ten-fold error on a $85 charge reads as fabricated, not as a
-    clerk's slip (minimax, v3 review)."""
+    clerk's slip."""
     from .project import ProjectionError, derive_mutant
     recognition = recognitions_of(world, Roles(**dict(world.roles)), event)[0]
     true_legs = tuple((leg.account, leg.amount) for leg in recognition.legs)

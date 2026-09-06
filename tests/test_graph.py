@@ -453,7 +453,7 @@ def test_the_named_inverse_returns_the_clean_fingerprint():
 
 
 def test_derived_answers_are_unrepresentable_in_the_authored_layer():
-    """Codex T39 (rewrite) §7/§10: overrides are impossible by type — an
+    """Overrides are impossible by type — an
     alias field on any authored node is a construction error — and no
     derived number (a closing balance, the opening bank balance, the equity
     plug, the statement close) appears as a literal in the world module."""

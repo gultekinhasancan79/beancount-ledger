@@ -1,7 +1,7 @@
 """Minting generated tasks: private seeds, domain-separated substreams,
 public ids from public bytes, disjoint namespaces.
 
-Codex T40 refused a public or reversible generation seed: in a white-box
+A public or reversible generation seed is refused: in a white-box
 environment an agent that sees `gen-<seed>` regenerates the clean graph
 and the golden answer without reconciling anything. So:
 
@@ -67,8 +67,8 @@ def private_seed(namespace: str, index: int, secret: bytes) -> int:
     over the canonically framed (version, namespace, index). A SHA-256 of
     (version, namespace, index) alone has the entropy of the selector, not
     of its width: with the generator code and the public id as an equality
-    oracle, an agent enumerates the index range and regenerates the answer
-    (Codex T41). The secret is MANDATORY here; the unkeyed derivation lives
+    oracle, an agent enumerates the index range and regenerates the answer.
+    The secret is MANDATORY here; the unkeyed derivation lives
     in `unkeyed_seed`, test-only."""
     if namespace not in NAMESPACES:
         raise ValueError(f"unknown namespace {namespace!r}")
@@ -105,7 +105,7 @@ def public_task_id(inputs: ContractInputs) -> str:
     or the environment digest (each of which a generator could be run
     against)."""
     files = {name: data.decode("utf-8") for name, data in inputs.public_files}
-    # The prompt is a public surface too (gpt-oss review): the id binds
+    # The prompt is a public surface too: the id binds
     # everything the model is shown, files and instruction alike.
     return "task-" + domain_digest(PUBLIC_ID_DOMAIN, canonical_bytes({"files": files, "prompt": inputs.prompt}))[:24]
 
@@ -136,7 +136,7 @@ def _mint_from_seed(namespace: str, index: int, seed: int, profile, keyed: bool)
     from .generate import DEFAULT_PROFILE, GenerationError, generate   # the generator is the only consumer of the seed
 
     profile = DEFAULT_PROFILE if profile is None else profile
-    # Bounded deterministic layout attempts (Codex T41): a draw that cannot
+    # Bounded deterministic layout attempts: a draw that cannot
     # carry the profile's minimum is retried under the next attempt
     # substream; the same selector always chooses the same attempt.
     # Exhaustion is a generator/profile defect and fails loudly.
@@ -144,7 +144,7 @@ def _mint_from_seed(namespace: str, index: int, seed: int, profile, keyed: bool)
     # different worlds by construction, not by the luck of the draw (the v4
     # sweep found 3 of 300 indices where the two profiles drew one world).
     # A world whose PUBLIC evidence admits more than one cheapest reading is
-    # refused here too (Codex T42 §5) — `_finish` runs the public-only
+    # refused here too — `_finish` runs the public-only
     # checker with no prior — and the next attempt is drawn instead. Unique
     # therefore means unique under public constraints for every minted
     # world, not "the most plausible hidden mutation".

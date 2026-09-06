@@ -460,7 +460,7 @@ def test_duplicate_ids_are_a_counted_terminal_protocol_failure():
     version then scored the last committed ledger — 1.0 after a correct
     write — which rewarded a malformed, non-replayable final action with the
     maximum score: an agent could terminate through invalid protocol after
-    enough work and lose nothing (Codex, turn 30). Now it is the agent's
+    enough work and lose nothing. Now it is the agent's
     terminal protocol violation: counted, never quarantined, scored at the
     task contract's terminal protocol score (0.0) regardless of what is on
     disk, and projected as `piv/protocol_failed` so replay can drop it. The

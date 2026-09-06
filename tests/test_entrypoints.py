@@ -488,7 +488,7 @@ def test_the_ledger_is_observed_whole_and_the_others_in_slices():
     punish a dropped original, so an observation the agent cannot round-trip
     is a trap: measured on a live rollout (nemotron-3-ultra, train:30) that
     rebuilt the ledger from 200-line slices and lost most of its entries
-    (Codex T46 §4). The contract is therefore exact — no line numbers, no
+    The contract is therefore exact — no line numbers, no
     "more lines" tail, no header — and it is pinned by DIGEST rather than by
     a substring, so a decorated variant fails here:
 
@@ -621,7 +621,7 @@ def test_the_ledger_is_observed_whole_and_the_others_in_slices():
             problems.append(f"SYSTEM_PROMPT does not say {needle!r}")
     # "exactly as stored" was true only of an LF-only ledger; `logical_text`
     # maps CRLF and CR to LF, so the claim is now the scorer-logical one
-    # (Codex T47 §1, Q7) — and the same sentence appears in the tool docstring
+    # — and the same sentence appears in the tool docstring
     for stale in ("exactly as stored",):
         if stale in env.SYSTEM_PROMPT or stale in description:
             problems.append(f"the {stale!r} claim survives in the prompt or the tool description")
@@ -915,7 +915,7 @@ VERIFIERS_CHECKED_AGAINST = "0.3.1"
 def bound_rewards(env):
     """(func, weight) for every leaf the environment's rubric will execute.
 
-    Both inventories Codex asked for come from this: the *effective scoring*
+    Both requested inventories come from this: the *effective scoring*
     leaves are those with non-zero weight; the *executable* leaves are all of
     them, since a zero-weight monitor still runs on the submission.
     """
@@ -1634,7 +1634,7 @@ def test_what_logical_means_is_pinned_for_every_ledger_variant():
 
     `read_file(LEDGER)` returns `logical_text(raw)`, which maps CRLF and CR to
     LF. "Exactly as stored" was therefore true only of an LF-only ledger
-    (Codex T47 §1, Q7). Every ledger the projector builds today IS LF-only —
+    Every ledger the projector builds today IS LF-only —
     the views are assembled with `"\\n".join(...)` and measured LF-only over
     the shipped world and 81 minted ones — but nothing ASSERTS it, and the
     wording must be true of what the tool does rather than of what the

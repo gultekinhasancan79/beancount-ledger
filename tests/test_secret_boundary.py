@@ -1,4 +1,4 @@
-"""The evaluator boundary, as the attacker meets it (Codex T42 §1, Q5, Q6).
+"""The evaluator boundary, as the attacker meets it.
 
 The keyed seed only helps if the evaluator's secret is out of the model's
 reach. "No public surface contains it" was checked by grepping files; this
@@ -293,7 +293,7 @@ def test_the_selector_space_is_finite_and_injective():
 
 
 # --------------------------------------------------------------------------
-# 6. containment probes the name gate must refuse (Codex T43 §6)
+# 6. containment probes the name gate must refuse
 # --------------------------------------------------------------------------
 
 def test_containment_probes_are_refused_by_name():
@@ -329,7 +329,7 @@ def test_containment_probes_are_refused_by_name():
 
 
 # --------------------------------------------------------------------------
-# 7. the release manifest decides what is served (Codex T43 §5)
+# 7. the release manifest decides what is served
 # --------------------------------------------------------------------------
 
 def test_serving_is_gated_by_the_signed_release_manifest():
@@ -410,7 +410,7 @@ def test_serving_is_gated_by_the_signed_release_manifest():
         if MF.rotation_id() not in text or "key_id" in text:
             problems.append("the manifest does not name its rotation id (or still carries a secret-derived key id)")
         # the development override is STRUCTURAL: with the flag set but the running program not one of this
-        # package's tests/ scripts, serving without a manifest is refused (Codex T44 Q7)
+        # package's tests/ scripts, serving without a manifest is refused
         if path.exists():
             path.unlink()
         os.environ["PIV_DEV_UNMANIFESTED"] = "1"
@@ -433,7 +433,7 @@ def test_serving_is_gated_by_the_signed_release_manifest():
             else:
                 main.__file__ = saved_file
         # a launcher with NO main file (python -c, stdin, an embedding) is not interactive by inference:
-        # the flag alone is refused; only the explicit in-process capability admits (Codex T45 §4, Q3)
+        # the flag alone is refused; only the explicit in-process capability admits
         os.environ["PIV_DEV_UNMANIFESTED"] = "1"
         saved_file2 = getattr(main, "__file__", None)
         try:
@@ -471,7 +471,7 @@ def test_serving_is_gated_by_the_signed_release_manifest():
 
 
 def test_the_manifest_fails_closed_on_the_gate_set():
-    """A record must carry exactly TODAY's gates, all True (Codex T47 §3).
+    """A record must carry exactly TODAY's gates, all True.
 
     `admit` used to read the record's own `passed` aggregate: true of the
     gates that existed when the preflight signed it, silent about every gate
@@ -612,7 +612,7 @@ def test_the_manifest_fails_closed_on_the_gate_set():
         versions = MF.versions()
         if versions.get("gate_set") != MF.gate_set_digest() or not versions.get("preflight_contract"):
             problems.append(f"versions() does not carry the gate set: {versions}")
-        # ...and it carries WORLD semantics only (Codex T48 §6, Q8). The
+        # ...and it carries WORLD semantics only. The
         # episode contract left this dict because the manifest cannot
         # preflight a ceiling it does not choose: `load_environment` admits
         # BEFORE it builds the environment and then accepts
@@ -666,7 +666,7 @@ def test_the_release_preflight_is_two_phase():
     manifest it writes — by pointing the workers at a `PIV_MANIFEST` path that
     does not exist, so `admit` took the development route and the
     `golden_scores_one` gate judged the world rather than the file. It worked,
-    and Codex refused it as a shape (T48 §7, answer 6): it gates a release
+    and the reviewer refused it as a shape: it gates a release
     through a bypass production must never honour, and it says nothing about
     whether the SIGNED manifest admits those worlds through the door
     production uses.

@@ -1,8 +1,8 @@
 """The structural CI sentinel set: pinned, re-checked, and differentiated.
 
-Codex T43 §7 and Q10 asked for a small fixed set of worlds that together
-reach every structural branch a topology-dependent regression could hide in,
-so that fast CI is not "one selector per profile plus hope".
+A small fixed set of worlds that together reach every structural branch a
+topology-dependent regression could hide in is what fast CI needs, so that it
+is not "one selector per profile plus hope".
 `tests/select_sentinels.py` derives that set — it describes 270 minted worlds
 by structural feature and takes a deterministic greedy cover — and prints it.
 This file PINS the answer and re-earns it on every run:
@@ -72,9 +72,8 @@ SENTINELS = [
     "eval:11",
 ]
 
-# Every feature the set was chosen to cover. Grouped as Codex names the
-# requirements, so a reader can check the list against the ask rather than
-# against the script.
+# Every feature the set was chosen to cover. Grouped by requirement, so a
+# reader can check the list against the ask rather than against the script.
 REQUIRED = {
     "each plant kind": ("kind:omit", "kind:alter", "kind:duplicate"),
     "every kind mix in the population": (

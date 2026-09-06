@@ -14,7 +14,7 @@ observation bytes/write payload inside the package's own declared constants,
 identically across two runs. It makes no provider call. A stochastic model
 rollout cannot answer the liveness question: a run of zeros is equally
 consistent with a broken episode contract and with models that cannot do
-bookkeeping (Codex T49 §13.6).
+bookkeeping.
 
 - **`confirmatory_design.md`** — the PRE-REGISTRATION of the `confirm1v4` replay-arm
   experiment, written before any confirmatory cell ran: the fixed-panel estimand,
@@ -40,8 +40,7 @@ bookkeeping (Codex T49 §13.6).
   window-rule constants), the active manifest rotation and content digest, and
   each selector's expected public task id. `schedule_id` therefore names the
   treatment, the world, the code, the INTERPRETER and the analysis plan rather
-  than merely the order in which three mutable labels are invoked (Codex T49 §2,
-  T50 §1–§4, T51 §1–§4).
+  than merely the order in which three mutable labels are invoked.
   `tests/run_arms.py --schedule` re-checks every one of those fields through
   `tests/startup_witness.py` before the first provider call of every session,
   refuses a file that no longer hashes to its own id, refuses `--force`, refuses
@@ -50,7 +49,7 @@ bookkeeping (Codex T49 §13.6).
   and executes only whole three-arm blocks.
   **Record the printed `schedule_id` here when it is sealed.**
 
-  **The `.venv` and the interpreter are sealed AS BYTES** (Codex T51 §1). The
+  **The `.venv` and the interpreter are sealed AS BYTES**. The
   execution-tree walk stops at `.venv/**`, and the replacement binding used to
   be version STRINGS: an in-place edit to `.venv/Lib/site-packages/openai/…`
   changes request construction, retries or token accounting while `METADATA`
@@ -90,18 +89,18 @@ bookkeeping (Codex T49 §13.6).
   threat model it belongs to: tamper-evidence and provenance, not a defence
   against a privileged local attacker.
 
-  **Both digests are re-verified per CELL and the tree per REQUEST** (Codex T51
-  §2), inside the cell subprocess that actually spends the call: a mismatch
+  **Both digests are re-verified per CELL and the tree per REQUEST**, inside
+  the cell subprocess that actually spends the call: a mismatch
   makes no provider call, writes no row, exits 6, is journalled
   `execution_integrity / instrument_drift` fail-closed and STOPS the session.
   The digests are part of EXACT row admission, so a row from a foreign — or
   unidentified — instrument enters no estimand and makes `arm_table` exit 4.
 
   **The identity rule is the BYTES ON DISK, not commit equality and not git's
-  index** (Codex T50 §1, hardened by the adversarial review of that fix). The
+  index** (hardened by the adversarial review of that fix). The
   sealed schedule is itself a file in this repository, so committing it moves
   HEAD; a witness demanding `HEAD == instrument_commit` could never pass for the
-  run it was sealed for, and Turn 50 found exactly that. But asking git instead
+  run it was sealed for, and review found exactly that. But asking git instead
   is no better: `--assume-unchanged` plus an edit, a shadowing module beside the
   package (`sys.path[0]` for every cell process), and a file hidden by a
   `.gitignore` line committed on an EVIDENCE path all left an all-git witness
@@ -114,15 +113,15 @@ bookkeeping (Codex T49 §13.6).
   digest. The git checks (ancestry, an empty `git diff <instrument>..HEAD` over
   those paths, a clean working tree over them) are kept as SECONDARY evidence. A
   dirty or newly committed EVIDENCE file — anything in `reviews/`,
-  `design_chat/` or a root `*.md` — does not refuse the run. The RUNTIME head
+  a notes directory or a root `*.md` — does not refuse the run. The RUNTIME head
   and execution-tree digest are recorded separately on every row and every
   journal entry, and the table prints both identities side by side.
 - **`schedule_confirm1v3.json`** — SUPERSEDED and **PERMANENTLY UNEXECUTED** (v2,
   `schedule_id`
   `27afb98dbca34122cdb6fad64a19439afc7aa75afac61f1b6857f115356b36e0`, 144 cells,
-  date stamp 2026-08-30). It closed Turn 50's seven defects and hardened the
-  instrument identity to the bytes on disk, and Codex independently reproduced
-  its zero-output state — but Turn 51 held it for four more, all of them
+  date stamp 2026-08-30). It closed v2's seven defects and hardened the
+  instrument identity to the bytes on disk, and review independently reproduced
+  its zero-output state — but review then held it for four more, all of them
   integrity rather than analysis: the `.venv` implementation bytes were still
   identified by version strings; the execution-tree seal was checked once at
   startup while the experiment lasts 6–7 hours, and a changed digest was
@@ -132,11 +131,11 @@ bookkeeping (Codex T49 §13.6).
   Closing them changed execution code and added sealed identity fields, so the
   repair is a new instrument commit and a new `schedule_id`. **Zero provider
   cells ran against it, and none ever will.** Kept untouched as the evidence of
-  what was refused (Codex T51, his Q5); the next authorisation target is
+  what was refused; the next authorisation target is
   `confirm1v4`.
 - **`schedule_confirm1v2.json`** — SUPERSEDED and never executed (v2, `schedule_id`
   `4ab76f9a62e96f20ec9817ee4a001b0d6cddf557fa93cc6925f36b6bf1232dc1`, 144 cells,
-  date stamp 2026-08-30). Codex Turn 50 put it on HOLD: its startup witness
+  date stamp 2026-08-30). Review put it on HOLD: its startup witness
   demanded `HEAD == instrument_commit` while the schedule's own commit had moved
   HEAD, so the shown command could not run at all; and four measurement defects
   needed instrument changes (the free-text numeric rate-limit needle, the
@@ -148,12 +147,12 @@ bookkeeping (Codex T49 §13.6).
   files. Kept untouched as provenance; nothing may be run against it.
 - **`schedule_confirm1.json`** — SUPERSEDED and never executed (v1, `schedule_id`
   `7c88995fd24d45d1aa8791ade8bf709f258de138c20a44748dcabaa1f9e857f0`, 144 cells,
-  date stamp 2026-08-30). Codex Turn 49 refused to authorise it: its id bound the
+  date stamp 2026-08-30). Review refused to authorise it: its id bound the
   roster and the order but not the treatment, the world, the code or the analysis
   plan. Zero provider cells ran against it. Kept as the record of what was
   refused; nothing may be run against it.
 - **`schedule_<label>.json.window.jsonl`** — the shared PROVIDER-WINDOW LEDGER
-  for a schedule (Codex T49 §6): one appended line per HTTP attempt, carrying
+  for a schedule: one appended line per HTTP attempt, carrying
   epoch and monotonic timestamps, the model, the cell tag, the status and the
   estimated/billed tokens. Two things depend on it and neither can be answered
   inside one cell's process: the 6-second pacing interval is enforced against
@@ -163,7 +162,7 @@ bookkeeping (Codex T49 §13.6).
   this cell's own contribution and the carry-over from the cell before. It
   carries no prompt content and no secret.
 
-  Since Codex T50 §5 the ledger also **fails loud on damaged evidence**: any
+  The ledger also **fails loud on damaged evidence**: any
   malformed or non-dict line, and any file that ends mid-record (a killed
   process), makes it UNHEALTHY, and an unhealthy ledger refuses the next
   provider request rather than being read past line by line. The bytes are
@@ -173,7 +172,7 @@ bookkeeping (Codex T49 §13.6).
   is journalled fail-closed, and makes every rate-limit classification whose
   window spans the boundary `ambiguous`.
 - **`schedule_<label>.json.exclusions.jsonl`** — the immutable,
-  content-bound CONFIGURATION-EXCLUSION records (Codex T50 §8): one per
+  content-bound CONFIGURATION-EXCLUSION records: one per
   (provider, model) whose capability probe conclusively failed or which was
   stopped mid-run. Each carries the schedule id, the reason, the session, the
   sealed instrument commit, the runtime HEAD and a `record_digest` over its own
@@ -185,7 +184,7 @@ bookkeeping (Codex T49 §13.6).
   capability-probe results, execution-integrity quarantines, and every cell's
   start, finish, session id and actual ordinal — including cells whose
   subprocess crashed without writing a row, which the actual-order census would
-  otherwise never see. Since Codex T50 §6 it **fails CLOSED in confirmatory
+  otherwise never see. It **fails CLOSED in confirmatory
   mode**: the append is locked, flushed and fsync'd, its success is checked, and
   a failure aborts the action the entry authorizes (`run_arms.py` exits 5). The
   startup witness runs a create/append/read-back probe on it before request 1,
@@ -195,12 +194,12 @@ bookkeeping (Codex T49 §13.6).
   `inconclusive_accepted` — because an inconclusive probe establishes nothing
   and must never be recorded as an incompatibility (§7).
 
-  Since Codex T51 §4 it also fails closed on **corruption**, in every mode: the
+  It also fails closed on **corruption**, in every mode: the
   WHOLE file is parsed under the append lock before every append and before the
   probe, and any malformed or non-object line — a crash's truncated tail, or the
   malformed middle the old probe manufactured by appending after one — aborts
   the action the entry authorizes. The bytes are never repaired or deleted.
-  Recovery follows the window ledger's shape and Codex's own Q4 policy:
+  Recovery follows the window ledger's shape and the reviewer's own policy:
   **before the first real row exists there is no recovery path** —
   `--recover-execution-journal` refuses and says abort and reseal — and after a
   cell has a real row it appends an immutable `execution_journal_recovery`
@@ -211,7 +210,7 @@ bookkeeping (Codex T49 §13.6).
 - **`schedule_<label>.json.lock`, `.lock.takeover`, `.lock.displaced.<session>.json`**
   — the schedule-level executor lock (session id, nonce, pid, host, start), the
   `O_EXCL` guard that makes `--take-over-lock` an atomic competition, and the
-  exact preserved bytes of a lock a takeover displaced (Codex T51 §3). Exactly
+  exact preserved bytes of a lock a takeover displaced. Exactly
   one contender may take a stale lock over; a lock younger than five minutes is
   a live executor and is refused; after acquisition the executor re-reads the
   lock and proves the nonce is its own before anything runs.
@@ -228,7 +227,7 @@ bookkeeping (Codex T49 §13.6).
   the generated worlds and their realism, dated by the run that produced them.
 - **`budget_*_2026-08-30_armA_*.{md,json}`** — arm A (`armA_*`, per-selector
   tags like `armA_train1`, `armA_super_train1`, commit `1c8b264`) is
-  **PRE-correction**: it ran BEFORE Codex T46's contract fixes (whole-
+  **PRE-correction**: it ran BEFORE the contract fixes (whole-
   ledger read, the exact 40,000-output-token ceiling, rollout-local
   artifact binding) landed a few commits later (`e84ce38` onward). It is
   the historical record of the OLD, uncorrected observation/budget
@@ -239,7 +238,7 @@ bookkeeping (Codex T49 §13.6).
   is the CORRECTED diagnostic set — the first (and, as of this writing,
   only) run under the corrected episode contract (2 cells completed, then
   stopped) — and is a **hidden-output-budget, unpinned-sampling
-  DIAGNOSTIC** (Codex T47 §8/§11, Q12) — it answers "did the corrected
+  DIAGNOSTIC** — it answers "did the corrected
   machinery run, deliver artifacts and record the intended fields", never
   "which arm wins". Three concrete reasons it cannot be read as an
   arm-effect estimate:
@@ -266,7 +265,7 @@ bookkeeping (Codex T49 §13.6).
        --backfill-accounting` can write the SAME derived verdict into the
        archived files, marked `budget_accounting_stamped: true`, so a
        reader of the raw JSON does not have to re-derive it by hand.
-  **Never merge this arm set with the confirmatory one.** Since Codex T48 the
+  **Never merge this arm set with the confirmatory one.** The
   refusal is mechanical rather than a convention: these rows carry no
   `replay_contract_digest`, no attempt identity and no `schedule_id`, so
   `tests/arm_table.py` re-derives them as `VALID/derived` (admissible only
@@ -280,7 +279,7 @@ bookkeeping (Codex T49 §13.6).
   reviews/schedule_confirm1v4.json`. In confirmatory mode the table needs no
   `--tag-prefix`: it derives the exact 144 expected file paths from the
   schedule, refuses duplicate rows for one cell and refuses any file carrying
-  the schedule's label that is not one of them (Codex T49 §3). There is no
+  the schedule's label that is not one of them. There is no
   `--schedule-complete` either — completion is DERIVED from that exact cell map,
   because an operator who can declare a run finished after seeing the results is
   choosing the denominator with the outcome in view. Its pre-registration is
@@ -291,7 +290,7 @@ bookkeeping (Codex T49 §13.6).
   may be called practical, acceptable or affordable. The exact sentence M2 may
   close with is quoted verbatim in `confirmatory_design.md` §11, together with
   the six things that must be green before it is written.
-  The table closes with an **execution-evidence section** (Codex T50 §9) — the
+  The table closes with an **execution-evidence section** — the
   runtime HEAD and verified tree identity of every row, the probe outcome per
   configuration with inconclusive distinguished from incompatible, journal
   health with any takeover or ledger-recovery event, the per-429 billed /
@@ -303,3 +302,7 @@ bookkeeping (Codex T49 §13.6).
 - `audit_receipt_v9.json` — one record per world (1,400 generated v9 + 91 hand-authored): gates, serving door, public-evidence hash, scorer facts, lattice counts, exploit coverage
 - `oracle_budget_v9.json` — scripted strategies that know the answer, through the real door: turns and output tokens against the caps per (profile, k)
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
+
+## A note on citations inside the dated documents
+
+The sealed or dated documents in this directory (`confirmatory_design.md`, `arms_confirm1v4.md`, `arms_pilot_2026-08-30.md`, the model reviews and the attestation) cite an internal design-review log as "Codex T<n> §<k>" (turn and section numbers). That log is not published, and the documents are kept exactly as written because their hashes are attested. Everywhere else in the repository — code comments, docstrings, this index — those citations were rewritten on 2026-09-06 so that every point stands on its own.

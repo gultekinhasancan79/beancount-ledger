@@ -1,10 +1,10 @@
 """The differential, distribution-wide, with a structural coverage matrix.
 
 `tests/test_identify_differential.py` runs the checker-versus-scorer property
-over ten worlds so that CI stays under a minute. Codex T42 §4 asks for the
-same property over the whole released hard population plus a rotating shard
-of the standard one, and for coverage to be reported STRUCTURALLY rather than
-as a count of green seeds: a run that never met a five-row component with two
+over ten worlds so that CI stays under a minute. This script runs the same
+property over the whole released hard population plus a rotating shard of
+the standard one, and reports coverage STRUCTURALLY rather than as a count
+of green seeds: a run that never met a five-row component with two
 cheapest matchings has not exercised the ambiguity logic, however many worlds
 it passed.
 

@@ -1,4 +1,4 @@
-"""The decision table (Codex T48a §3.3/§4/§5, T48b §3/§4/§5/§12) — reads
+"""The decision table — reads
 archived `reviews/budget_*_*.json` rows and reports, per stratum, TWO
 pre-registered delivery estimands, a four-bucket failure classification, and
 cost both conditional and operational.
@@ -8,7 +8,7 @@ cost both conditional and operational.
 
 WHAT CHANGED AND WHY
 
-1. **No stored string is trusted** (Codex T48a §3.3/Q5). `is_actually_valid`
+1. **No stored string is trusted**. `is_actually_valid`
    used to check that the status string said VALID and that a few fields
    were present. Every row now goes through ONE pure validator,
    `measure_budget.validate_row`, which re-derives every predicate — integer
@@ -17,17 +17,17 @@ WHAT CHANGED AND WHY
    consistency — from the row's own archived fields. The writer runs the
    same function on the row it produces.
 
-2. **`VALID/derived` is diagnostic only** (Codex T48b §12). A row missing
+2. **`VALID/derived` is diagnostic only**. A row missing
    the corrected native cap/usage capture enters a `--pilot` table and never
    a confirmatory one.
 
-3. **Contracts are refused, not warned about** (Codex T48a §4). Rows with
+3. **Contracts are refused, not warned about**. Rows with
    different `replay_contract_digest` or different `episode_contract_digest`
    inside one condition are an ERROR: the table is not produced. Two rows
    can share a world, a prompt and a ceiling and still not be comparable
    because the client replayed the conversation differently.
 
-4. **Two estimands** (Codex T48a §5, T48b §5), never one:
+4. **Two estimands**, never one:
      - CONDITIONAL model-delivery rate: correct deliveries among accounting-
        valid, provider-completed attempts. Answers "when the configuration
        ran to completion, did the model deliver?"
@@ -37,31 +37,31 @@ WHAT CHANGED AND WHY
        question an arm that fails more often would otherwise win by, since
        excluding its failures makes it look both cheaper and better.
 
-5. **Four failure buckets, applied blind** (Codex T48b §5). `classify_error`
+5. **Four failure buckets, applied blind**. `classify_error`
    sees only the recorded error text and the observed request size — never
    the arm, never the reward — so a classification cannot be steered by the
    outcome it is about to explain.
 
-6. **Suspicious is not invalid** (Codex T48b §3). The characters-per-token
+6. **Suspicious is not invalid**. The characters-per-token
    heuristic can fire differently across arms (a replay arm changes the
    shape of emitted content), so it never invalidates a row. Every table is
    printed twice, with and without suspicious rows.
 
-7. **Tokens are never pooled across providers** (Codex T48a §5 last
-   paragraph). One provider's token is not another's. Ratios are computed
+7. **Tokens are never pooled across providers**. One provider's token is
+   not another's. Ratios are computed
    WITHIN (provider, model); the cross-model section reports wall time,
    request counts and provider-specific tokens side by side and computes no
    pooled ratio at all.
 
-CODEX T49 changed four more things, all of them refusals:
+Four more things changed later, all of them refusals:
 
-8. **The confirmatory dataset is the schedule's exact cell map** (§3). No
+8. **The confirmatory dataset is the schedule's exact cell map**. No
    tag-substring globbing, exactly one exactly-matching row per cell, and a
    hard refusal for a duplicate, a partial identity or an unregistered file
    carrying the schedule's label. Every denominator comes from that map.
-   Completion is DERIVED from it; `--schedule-complete` is refused (§4).
+   Completion is DERIVED from it; `--schedule-complete` is refused.
 
-9. **The 429 rule is an observation, not a thought experiment** (§6). The
+9. **The 429 rule is an observation, not a thought experiment**. The
    retired rule asked whether one request, repeated every `min_interval`
    seconds, WOULD saturate the provider's minute. The rule now reads the
    trailing-60-second window `measure_budget` archived on the rejected
@@ -70,13 +70,13 @@ CODEX T49 changed four more things, all of them refusals:
    express. Structured HTTP status and provider error codes feed the blind
    map ahead of any free text.
 
-10. **Capability incompatibility excludes a CONFIGURATION** (§7), whole and
+10. **Capability incompatibility excludes a CONFIGURATION**, whole and
     by name, never the individual blocks that happened to fail.
 
-11. **The primary contrast is printed TWICE** (§8) — all eligible rows and
+11. **The primary contrast is printed TWICE** — all eligible rows and
     excluding suspicious rows, whole triplets dropped after each filter —
     with the blocks lost and any sign/ranking change stated; and the
-    effective-cost ratio carries bootstrapped uncertainty (§9): P(zero
+    effective-cost ratio carries bootstrapped uncertainty: P(zero
     correct) per arm, P(dominance), and a labelled CONDITIONAL interval,
     never an unconditional one built by silently dropping the undefined
     resamples.
@@ -104,7 +104,7 @@ import schedule_arms as SA  # noqa: E402 -- the schedule and the balance census
 FILENAME_RE = re.compile(r"^budget_(?P<slug>.+)_(?P<date>\d{4}-\d{2}-\d{2})(?:_(?P<tag>.+))?\.json$")
 
 # ---------------------------------------------------------------------------
-# Failure classification (Codex T48b §5, hardened after the T49 adversarial
+# Failure classification (hardened after an adversarial
 # verification). A FIXED map to four buckets plus an explicit ambiguous set,
 # applied BLIND: nothing here ever sees the arm, the reward or the delivery
 # outcome.
@@ -185,7 +185,7 @@ ERROR_CLASS_RULES = CAPABILITY_RULES + (
       "remote end closed")),
 )
 
-# THE OBSERVED ROLLING-WINDOW RULE (Codex T49 §6). What it replaced, and
+# THE OBSERVED ROLLING-WINDOW RULE. What it replaced, and
 # why:
 #
 #   the retired rule:  S >= TPM * I / 60
@@ -214,12 +214,12 @@ ERROR_CLASS_RULES = CAPABILITY_RULES + (
 #   saturated dimensions DISAGREE                  -> ambiguous/rate_limit_dimensions_disagree
 #   only rejected/current requests could cross it  -> ambiguous/rate_limit_current_request_uncertain_*
 #
-# The carry-over line is the case the pre-T49 rule could not express at all:
+# The carry-over line is the case the retired rule could not express at all:
 # the window was genuinely exhausted, but mostly by the arm that ran BEFORE
 # this one, so charging the failure to this arm would be an attribution the
 # evidence does not support.
 #
-# TWO CORRECTIONS FROM CODEX T50 (§3, §4), both decision-bearing:
+# TWO LATER CORRECTIONS, both decision-bearing:
 #
 #   (a) BILLED USAGE, REJECTED ESTIMATES AND THE CURRENT REQUEST ARE THREE
 #       DIFFERENT CLAIMS. `window_snapshot` used to fold a rejected request's
@@ -252,7 +252,7 @@ WINDOW_RULE_VERSION = 3
 ARM_INDUCED_MAJORITY_SHARE = 0.5
 
 #: The version of the CLASSIFICATION ALGORITHM itself — not of the tuples it
-#: reads. Codex T50 §2: the free-text fallback lived outside every hashed
+#: reads. The free-text fallback lived outside every hashed
 #: constant, so a change to it (such as the bare three-digit rate-limit needle
 #: this version removes) moved no digest and invalidated no schedule.
 #: `failure_map_digest`
@@ -270,7 +270,7 @@ CLASSIFIER_ALGORITHM_VERSION = "T50.3-window-bounds-two-dimensions"
 RATE_LIMIT_TEXT_NEEDLES = ("ratelimiterror", "ratelimit", "rate limit", "rate_limit",
                            "too many requests")
 
-#: Codex T50 §3/Q3. Mistral's console publishes the LIMITS; it does not
+#: Mistral's console publishes the LIMITS; it does not
 #: document whether a request the gateway rejects with a 429 consumes token or
 #: request quota, nor whether admission is decided on a tokenizer estimate of
 #: the request about to be sent. That is sealed as an explicit UNKNOWN, and it
@@ -278,7 +278,7 @@ RATE_LIMIT_TEXT_NEEDLES = ("ratelimiterror", "ratelimit", "rate limit", "rate_li
 ADMISSION_SEMANTICS = "undocumented"
 
 #: The separated evidence a window snapshot must carry before any attribution
-#: may be read from it (Codex T50 §3). A snapshot that carries only the old
+#: may be read from it. A snapshot that carries only the old
 #: conflated `window_tokens_total` cannot support a causal claim and is
 #: classified `ambiguous/rate_limit_window_evidence_unseparated`.
 WINDOW_EVIDENCE_FIELDS = ("billed_tokens_total", "billed_tokens_this_cell",
@@ -289,7 +289,7 @@ WINDOW_EVIDENCE_FIELDS = ("billed_tokens_total", "billed_tokens_this_cell",
 #: The snapshot taken BEFORE the rejected request was appended to the ledger,
 #: and the one that includes it — archived together on the fatal attempt and
 #: labelled, so the report can show both without either standing in for the
-#: other (Codex T50 §3, his Q4).
+#: other.
 WINDOW_KIND_PRE_REQUEST = "pre_request"
 WINDOW_KIND_PROSPECTIVE = "prospective_including_current_request"
 
@@ -319,9 +319,9 @@ def tpm_limit(provider, model):
 
 
 def rpm_limit(provider, model):
-    """Requests per minute — `rps × 60` from the console table (Codex T49
-    §6d: a 429 is classified against BOTH the token and the request window,
-    because either can produce it). `None` when unestablished."""
+    """Requests per minute — `rps × 60` from the console table (a 429 is
+    classified against BOTH the token and the request window, because
+    either can produce it). `None` when unestablished."""
     quota = MODEL_QUOTAS.get((provider, model))
     if not quota or not quota.get("rps"):
         return None
@@ -334,7 +334,7 @@ def _number(value, default=None):
 
 def dimension_verdict(window: dict, dimension: str, quota) -> dict:
     """What ONE quota dimension (tokens or requests) establishes about this
-    429, as BOUNDS rather than as a single number (Codex T50 §3).
+    429, as BOUNDS rather than as a single number.
 
     Two different claims used to be added together: what the provider BILLED
     for requests it accepted, and an estimate of the size of requests it
@@ -415,8 +415,8 @@ def dimension_verdict(window: dict, dimension: str, quota) -> dict:
 
 
 def combine_dimension_verdicts(dimensions: list[dict]) -> tuple[str, str]:
-    """The CONSERVATIVE combination of the per-dimension verdicts (Codex T50
-    §4). The retired rule looked at tokens first and, if tokens saturated,
+    """The CONSERVATIVE combination of the per-dimension verdicts. The
+    retired rule looked at tokens first and, if tokens saturated,
     never looked at requests at all — so a token window this cell was a
     minority of could hide a request window it was the majority of, and the
     reverse.
@@ -459,8 +459,8 @@ def window_dimension_verdicts(window: dict | None, tpm=None, rpm=None) -> dict:
         return out
     out["window_kind"] = window.get("window_kind")
     if window.get("evidence_incomplete"):
-        # The shared ledger was recovered after malformed evidence (Codex T50
-        # §5): entries are missing from this window by construction, so no
+        # The shared ledger was recovered after malformed evidence: entries
+        # are missing from this window by construction, so no
         # attribution may be read from it at all.
         out["combined"] = ("ambiguous", "rate_limit_evidence_incomplete")
         out["evidence"] = ("the window ledger was recovered inside this window, so its evidence is "
@@ -528,7 +528,7 @@ def classify_error(text: str, request_tokens=None, tpm=None, min_interval=None,
         if any(needle in blob for needle in needles):
             return bucket, rule
     if any(needle in blob for needle in RATE_LIMIT_TEXT_NEEDLES):
-        # NONNUMERIC TYPED EVIDENCE ONLY (Codex T50 §2). The retired form of
+        # NONNUMERIC TYPED EVIDENCE ONLY. The retired form of
         # this line tested the bare rate-limit status digits as a substring of
         # the blob. That test sat outside `ERROR_CLASS_RULES` and therefore
         # outside the "no digit in any map needle" witness, so a row with no
@@ -587,7 +587,7 @@ def rate_limit_window(row: dict):
 
 def rate_limit_window_prospective(row: dict):
     """The PROSPECTIVE window archived beside the pre-request one on the fatal
-    attempt (Codex T50 §3, his Q4): the same trailing minute INCLUDING the
+    attempt: the same trailing minute INCLUDING the
     request the provider is refusing right now, labelled as such so it can be
     shown without ever being read as billed usage."""
     fatal = fatal_attempt(row)
@@ -647,9 +647,9 @@ def rate_limit_header_keys(row: dict) -> list[str]:
 
 
 def structured_error_text(row: dict) -> str:
-    """The FATAL attempt's own structured message (Codex T49 §6: "do not
-    infer a causal arm label from a free-text substring when structured
-    status is available"). One attempt, no headers, no values."""
+    """The FATAL attempt's own structured message — a causal arm label is
+    never inferred from a free-text substring when structured status is
+    available. One attempt, no headers, no values."""
     return attempt_message(fatal_attempt(row))
 
 
@@ -697,7 +697,7 @@ def classify_row(row: dict) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 
 def correct_delivery(row: dict) -> bool:
-    """THE correct-delivery predicate (Codex T47 §9/Q10) — defined ONCE,
+    """THE correct-delivery predicate — defined ONCE,
     here, and used EVERYWHERE a "correct delivery" is counted in this file.
 
     All three must hold: `artifact == "BOUND"` (this rollout's own workspace
@@ -709,8 +709,8 @@ def correct_delivery(row: dict) -> bool:
 
     `submitted` is deliberately NOT a conjunct: under the episode contract an
     unsubmitted last committed revision that scores 1.0 and complete IS a
-    delivery. The accepted-submit rate is reported as its own column. Codex
-    T48b §11 asks that the prompt and the table describe the same contract;
+    delivery. The accepted-submit rate is reported as its own column. The
+    prompt and the table should describe the same contract;
     the prompt is the package's, and the open question is recorded in
     `reviews/confirmatory_design.md` rather than silently resolved here.
     """
@@ -729,7 +729,7 @@ def row_status(row: dict) -> tuple[str, list]:
 
 
 def is_suspicious(row: dict) -> bool:
-    """Re-derived, never read off the stored field (Codex T48b §3)."""
+    """Re-derived, never read off the stored field."""
     return mb.row_suspicion(row) is not None
 
 
@@ -757,14 +757,14 @@ def contract_identity(row: dict) -> tuple:
 
 
 class PoolingRefused(Exception):
-    """Raised, never warned (Codex T48a §4): a condition containing rows from
+    """Raised, never warned: a condition containing rows from
     two different contracts is not a condition."""
 
 
 class CensusInvariantViolation(Exception):
-    """Raised, never warned (Codex T52 §2): the header's derived census and a
+    """Raised, never warned: the header's derived census and a
     detail section's own recount of the same panel disagree. This is the
-    exact defect Codex found — the header said "143 of 144 ... 1 unrun"
+    exact defect the reviewer found — the header said "143 of 144 ... 1 unrun"
     while the old `### Scheduled but not run` section, which recomputed
     membership from a tag string that is NOT unique across models sharing
     one (arm, selector, replicate) triple, said "0 of 144". A renderer that
@@ -802,7 +802,7 @@ def billed_tokens(row: dict) -> int:
 
 def effective_cost(rows: list[dict], token_fn=lambda r: r.get("total_tokens") or 0) -> float:
     """Tokens spent per CORRECT DELIVERY over the rows handed in — `inf` when
-    there are none (Codex T48a §5/T48b §4: a zero-correct arm is DOMINATED,
+    there are none (a zero-correct arm is DOMINATED,
     reported as `inf`, never stabilised by an undeclared pseudocount)."""
     n_correct = sum(1 for r in rows if correct_delivery(r))
     if n_correct == 0:
@@ -846,7 +846,7 @@ def load_rows(reviews_dir: Path, tag_prefixes: list[str]) -> tuple[list[dict], l
 
 
 # ---------------------------------------------------------------------------
-# CONFIRMATORY loading: the exact schedule-derived file set (Codex T49 §3)
+# CONFIRMATORY loading: the exact schedule-derived file set
 # ---------------------------------------------------------------------------
 
 def expected_cell_paths(reviews_dir: Path, schedule: dict) -> dict:
@@ -886,7 +886,7 @@ def load_scheduled_rows(reviews_dir: Path, schedule: dict) -> dict:
     integrity: list[str] = []
     files: list[Path] = []
     # Every dict row found in an expected cell file, exact or not. The
-    # instrument refusal (Codex T51 §2.2) reads THIS: a panel whose rows are
+    # instrument refusal reads THIS: a panel whose rows are
     # ALL drifted admits none of them, and "no rows to read" is not the reason
     # a caller gating on the exit code needs to be told.
     file_rows: list[dict] = []
@@ -944,8 +944,8 @@ def load_scheduled_rows(reviews_dir: Path, schedule: dict) -> dict:
 
 
 def derive_run_closure(loaded: dict) -> dict:
-    """Whether the panel is COMPLETE, derived from the exact cell map (Codex
-    T49 §4). There is no operator toggle: `--schedule-complete` let a run be
+    """Whether the panel is COMPLETE, derived from the exact cell map.
+    There is no operator toggle: `--schedule-complete` let a run be
     declared finished after its results were visible, which is precisely the
     decision a pre-registration exists to remove."""
     total = len(loaded["cell_rows"])
@@ -961,7 +961,7 @@ def derive_run_closure(loaded: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# THE CENSUS INVARIANTS (Codex T52 §2). The renderer used to print two
+# THE CENSUS INVARIANTS. The renderer used to print two
 # numbers for "how many scheduled cells have no row" that were computed two
 # different ways and were allowed to disagree — the header's `Run closure`
 # line (derived from the exact per-file cell map) said "1 unrun", and the
@@ -972,7 +972,7 @@ def derive_run_closure(loaded: dict) -> dict:
 # different model's row satisfied the tag half of the old section's AND
 # check and hid the truly unrun cell.
 #
-# `census_breakdown` computes BOTH identities Codex asked for — twice each,
+# `census_breakdown` computes BOTH identities — twice each,
 # from independent code paths — and returns the agreed numbers only when
 # every path agrees. Any disagreement is a `CensusInvariantViolation`,
 # raised before a single line of the report is written: a renderer that CAN
@@ -1050,8 +1050,8 @@ def census_breakdown(scheduled: list[dict], loaded: dict, rows: list[dict]) -> d
 
 
 def render_unrun_section(scheduled: list[dict], loaded: dict | None, rows: list[dict]) -> list[str]:
-    """The exact tuple of every scheduled cell with no exactly-matched row
-    (Codex T52 §2): provider, model, selector, arm, replicate, planned
+    """The exact tuple of every scheduled cell with no exactly-matched row:
+    provider, model, selector, arm, replicate, planned
     ordinal and block id.
 
     When `loaded` is available (the confirmatory path) the ONLY authority
@@ -1091,13 +1091,13 @@ def render_unrun_section(scheduled: list[dict], loaded: dict | None, rows: list[
 
 
 def render_correction_audit(schedule: dict | None, rows: list[dict], census: dict) -> list[str]:
-    """The T51 §12 / T52 §1 post-run-correction audit block: strict
+    """The post-run-correction audit block: strict
     pre-correction vs corrected classification, the code/test commit, the
     analysis-plan sha256, and the suspicion statement — naming the
     REDUNDANT environment-side witness explicitly rather than leaving "0
     suspicious" resting on the measurement-side field alone.
 
-    `strict pre-correction`: before the writer fix (Codex T51 §12), every
+    `strict pre-correction`: before the writer fix, every
     live confirm1v4 row was missing per-turn `tool_call_chars`, and the
     pre-correction validator treated ANY missing validity-bearing field —
     including that one — as a demotion to `VALID/derived`; a row admitted to
@@ -1115,7 +1115,7 @@ def render_correction_audit(schedule: dict | None, rows: list[dict], census: dic
     re_derived_suspicious = sum(1 for r in valid_rows if is_suspicious(r))
     contract = (schedule or {}).get("experiment_contract") or {}
     analysis_plan_sha256 = contract.get("analysis_plan_sha256")
-    return ["**Post-run correction audit** (Codex T51 §12 / T52 §1, dated 2026-09-01):", "",
+    return ["**Post-run correction audit** (dated 2026-09-01):", "",
             f"- strict pre-correction classification: all {census['valid']} live rows -> `VALID/derived` "
             f"(the writer omitted per-turn `tool_call_chars`; the pre-correction validator demotes a row "
             f"on ANY missing validity-bearing field, including that one); confirmatory estimands empty.",
@@ -1138,12 +1138,12 @@ def render_correction_audit(schedule: dict | None, rows: list[dict], census: dic
 
 
 # ---------------------------------------------------------------------------
-# Configuration-wide capability exclusion (Codex T49 §7)
+# Configuration-wide capability exclusion
 # ---------------------------------------------------------------------------
 
 def load_execution_journal(path) -> dict:
-    """The execution journal, read for the evidence table (Codex T50 §9.3) and
-    for the confirmatory REFUSAL (Codex T51 §4.2).
+    """The execution journal, read for the evidence table and
+    for the confirmatory REFUSAL.
 
     `{"events", "malformed", "outstanding", "recoveries",
     "acknowledged_through_line", "unterminated_final_line", "line_count",
@@ -1168,9 +1168,9 @@ def load_execution_journal(path) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# INSTRUMENT ADMISSION (Codex T51 §2.2). "Make `arm_table` hard-refuse
-# confirmatory estimands if any decision-bearing row has a different or missing
-# instrument/environment digest. A warning paragraph is not sufficient."
+# INSTRUMENT ADMISSION. `arm_table` hard-refuses confirmatory estimands if
+# any decision-bearing row has a different or missing instrument/environment
+# digest; a warning paragraph is not sufficient.
 #
 # The digests are already part of exact row admission
 # (`schedule_arms.contract_expectations`), so a drifted row never reaches
@@ -1210,7 +1210,7 @@ def instrument_drift_rows(rows: list[dict], schedule: dict | None) -> list[str]:
 
 def configuration_exclusions(schedule_path, schedule: dict | None = None) -> dict:
     """The immutable, content-bound configuration exclusions written beside
-    the schedule (Codex T50 §8, his Q9). `arm_table` cannot infer a
+    the schedule. `arm_table` cannot infer a
     configuration-level exclusion from row-level failures alone, because the
     cells a mid-run exclusion blocks HAVE NO ROWS."""
     if not schedule_path:
@@ -1238,7 +1238,7 @@ def capability_incompatible_configurations(rows: list[dict], exclusion_records=(
                 f"{row.get('arm')}/{row.get('selector')}: {rule}")
     # ... and the exclusions that NO row can express: a configuration whose
     # pre-run probe conclusively failed, or one stopped mid-run, whose blocked
-    # cells were never executed at all (Codex T50 §8/Q9).
+    # cells were never executed at all.
     for record in exclusion_records or ():
         key = (record.get("provider"), record.get("model"))
         offending.setdefault(key, []).append(
@@ -1327,9 +1327,9 @@ def build_stratum(rows_for_stratum: list[dict], scheduled_cells: list[dict], pil
     operational_rows = [r for r in admitted
                         if bucket_of.get(id(r)) not in ("exogenous", "capability_incompatible", "ambiguous")]
     # Rows in the operational COST: the same set MINUS `instrument_invalid`,
-    # whose token accounting cannot be trusted (Codex T48b §5: "exclude from
-    # cost estimates but still report delivery outcome when independently
-    # known").
+    # whose token accounting cannot be trusted (excluded from cost estimates
+    # but still reporting the delivery outcome when it is independently
+    # known).
     operational_cost_rows = [r for r in operational_rows
                              if bucket_of.get(id(r)) != "instrument_invalid"]
     n_correct_operational = sum(1 for r in operational_rows if correct_delivery(r))
@@ -1392,7 +1392,7 @@ def check_pooling(rows: list[dict], key_fields: tuple) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# The fixed-panel bootstrap (Codex T48b §4/Q6)
+# The fixed-panel bootstrap
 # ---------------------------------------------------------------------------
 
 BOOTSTRAP_SEED = 20260830
@@ -1458,7 +1458,7 @@ def arm_blocks(rows: list[dict], arms: tuple, pilot: bool = False) -> tuple[list
                 continue
             if r.get("arm") in by_arm:
                 # `setdefault` used to let the FIRST eligible duplicate win
-                # silently (Codex T49 §3). Two eligible rows for one arm of
+                # silently. Two eligible rows for one arm of
                 # one block are two observations of a cell that has exactly
                 # one; which of them enters the contrast is not a choice this
                 # code may make, so the block is dropped and said so.
@@ -1497,7 +1497,7 @@ def arm_totals(blocks: list[dict], arm: str) -> dict:
     """The raw material behind a cost ratio: how many correct deliveries this
     arm produced over these blocks and how many tokens the provider billed
     for them. Printed beside every ratio so the nonlinear statistic is
-    auditable (Codex T49 §9)."""
+    auditable."""
     rows = [b[arm] for b in blocks if arm in b]
     correct = sum(1 for r in rows if correct_delivery(r))
     billed = sum(billed_tokens(r) for r in rows)
@@ -1508,7 +1508,7 @@ def arm_totals(blocks: list[dict], arm: str) -> dict:
 def cost_ratio_uncertainty(blocks: list[dict], arm: str, base: str,
                            resamples: int = None) -> dict:
     """Uncertainty for an EFFECTIVE-COST RATIO, bootstrapped over whole
-    triplets exactly as the delivery contrast is (Codex T49 §9).
+    triplets exactly as the delivery contrast is.
 
     A cost ratio is `(billed_arm / correct_arm) / (billed_base / correct_base)`
     and is UNDEFINED whenever either arm produced no correct delivery in a
@@ -1572,8 +1572,8 @@ def cost_ratio_uncertainty(blocks: list[dict], arm: str, base: str,
 def bootstrap_interval(blocks: list[dict], statistic, cluster_fn=None) -> tuple:
     """A percentile interval over whole arm triplets, with a fixed seed so
     the same archive always yields the same interval. `cluster_fn`, when
-    given, resamples CLUSTERS (selectors) instead of blocks — the sensitivity
-    analysis Codex T48b §4 asks for, whose few clusters make the interval
+    given, resamples CLUSTERS (selectors) instead of blocks — a sensitivity
+    analysis whose few clusters make the interval
     very wide and purely descriptive."""
     if not blocks:
         return (None, None)
@@ -1607,7 +1607,7 @@ def bootstrap_interval(blocks: list[dict], statistic, cluster_fn=None) -> tuple:
 
 def discordant_counts(blocks: list[dict], arm: str, base: str) -> tuple[int, int]:
     """`(b, c)` — the discordant pairs an exact paired sign/McNemar test
-    reads (Codex T52 §3): `b` = base failed and arm delivered, `c` = base
+    reads: `b` = base failed and arm delivered, `c` = base
     delivered and arm failed. Reported BESIDE the preregistered bootstrap,
     never in place of it — at panel sizes this small an exact test can be
     far less decisive than a bootstrap interval that already excludes zero,
@@ -1701,7 +1701,7 @@ def render_strata(rows: list[dict], scheduled: list[dict], pilot: bool, schedule
                   title: str) -> list[str]:
     lines = [f"## {title}", "",
              "The delivery rates below are a **capability-sensitive, non-degenerate reward signal on the "
-             "fixed panel** (Codex T52 §4): stronger models deliver substantially more, smaller models "
+             "fixed panel**: stronger models deliver substantially more, smaller models "
              "mostly do not, and partial reward occupies the middle. That is evidence the panel's reward "
              "is neither trivially always-1 nor always-0 for this roster — it is NOT evidence that "
              "reinforcement learning can learn the gradient (no policy was trained against this reward "
@@ -1770,7 +1770,7 @@ def _sign(value) -> str:
 
 def compare_ratio_stats(all_stats: dict, clean_stats: dict, arms: tuple, base_arm: str) -> list[str]:
     """What the suspicious-row sensitivity did to the DECISION-BEARING
-    numbers (Codex T49 §8): how many blocks each configuration lost, and
+    numbers: how many blocks each configuration lost, and
     whether any sign or ranking changed. A conclusion that holds in only one
     of the two sensitivities is reported as sensitive to the heuristic —
     which requires actually comparing them, not printing them next to each
@@ -1829,7 +1829,7 @@ def render_ratios(rows: list[dict], arms: tuple, base_arm: str, pilot: bool = Fa
                "WHOLE — contrasting the two arms that survived would reintroduce the censoring the filter "
                "just removed. `arm_induced` failures STAY: a delivery that failed because of the arm's own "
                "request size or replay payload is that arm's outcome.", "",
-             "**How to read the intervals below** (Codex T52 §3): the correct statement for a 95% block "
+             "**How to read the intervals below**: the correct statement for a 95% block "
              "interval that does not contain zero is \"the preregistered whole-block bootstrap interval "
              "excludes zero on this fixed panel\" — never \"statistically clean\" or \"significant\" "
              "unqualified. The matching statement for the cost-ratio table further down is \"the "
@@ -1856,7 +1856,7 @@ def render_ratios(rows: list[dict], arms: tuple, base_arm: str, pilot: bool = Fa
             f"{'—' if lo is None else f'[{lo:+.2f}, {hi:+.2f}]'} | "
             f"{'—' if clo is None else f'[{clo:+.2f}, {chi:+.2f}]'} | "
             f"{'undefined (both arms zero-correct)' if ratio != ratio else f'{ratio:.2f}'} |")
-        # THE EXACT PAIRED SIGN TEST, beside the bootstrap (Codex T52 §3) —
+        # THE EXACT PAIRED SIGN TEST, beside the bootstrap —
         # informational only, never a replacement for the preregistered
         # bootstrap analysis above.
         blocks = stats["_blocks"].get((provider, model), [])
@@ -1895,7 +1895,7 @@ def render_ratios(rows: list[dict], arms: tuple, base_arm: str, pilot: bool = Fa
               "The whole-block bootstrap above is the preregistered analysis. The exact two-sided "
               "sign/McNemar test below is reported beside it, never in place of it, so a reader can see "
               "how decisive an exact test is at this panel size — a percentile bootstrap can exclude "
-              "zero at eleven blocks while the exact paired test cannot reject at 5% (Codex T52 §3).", ""]
+              "zero at eleven blocks while the exact paired test cannot reject at 5%.", ""]
     lines += sign_test_rows or ["- no complete block for any contrast."]
     lines.append("")
     lines += ["### Cost-ratio uncertainty (bootstrapped over whole triplets, "
@@ -1933,7 +1933,7 @@ def render_cross_model(rows: list[dict],
     """Wall time, request counts and PROVIDER-SPECIFIC tokens, side by side.
     No pooled token statistic appears here: one provider's token is not
     another's, and a cross-model mean of them would be a number with no
-    unit (Codex T48a §5)."""
+    unit."""
     lines = [f"## {title}", "",
              "| provider | model | rows | wall-clock minutes | provider requests | billed input tokens | "
              "billed output tokens |", "|---|---|---|---|---|---|---|"]
@@ -1976,20 +1976,20 @@ def render_failures(rows: list[dict]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# THE EXECUTION-EVIDENCE RENDERINGS (Codex T50 §9). No new outcome metric and
+# THE EXECUTION-EVIDENCE RENDERINGS. No new outcome metric and
 # no new decision threshold — the estimands are final. These are the AUDIT
 # EVIDENCE for the estimands already pre-registered, and every one of them
-# exists because a T50 defect made the corresponding fact unreadable from the
-# archive.
+# exists because a review-found defect made the corresponding fact unreadable
+# from the archive.
 # ---------------------------------------------------------------------------
 
 def render_instrument_identity(rows: list[dict], schedule: dict | None) -> list[str]:
-    """§9.1 — the runtime HEAD and the runtime ENVIRONMENT beside the sealed
+    """The runtime HEAD and the runtime ENVIRONMENT beside the sealed
     instrument identity.
 
     Under the git-path contract the executing commit may legitimately differ
     from the sealed one, so the report must say BOTH. What it may NOT do any
-    more (Codex T51 §2) is report a difference and compute the estimands
+    more is report a difference and compute the estimands
     anyway: a row whose digests differ from the seal is refused from exact
     admission, and `main()` exits 4 naming it. This section is the evidence for
     that refusal, not a substitute for it."""
@@ -2043,7 +2043,7 @@ def render_instrument_identity(rows: list[dict], schedule: dict | None) -> list[
 
 
 def render_probe_outcomes(journal: dict, exclusions: dict) -> list[str]:
-    """§9.2 — the capability-probe outcome per configuration, with
+    """The capability-probe outcome per configuration, with
     INCONCLUSIVE distinguished from INCOMPATIBLE. Unknown is not incompatible,
     and the table must never present it as though it were."""
     lines = ["## Capability-probe outcome per configuration", "",
@@ -2081,7 +2081,7 @@ def render_probe_outcomes(journal: dict, exclusions: dict) -> list[str]:
 
 
 def render_journal_health(journal: dict) -> list[str]:
-    """§9.3 — journal health plus every takeover / recovery / integrity event.
+    """Journal health plus every takeover / recovery / integrity event.
     The journal is fail-closed on the write side, so a gap here is a finding
     about the run, not about the file."""
     lines = ["## Execution-journal health", ""]
@@ -2096,7 +2096,7 @@ def render_journal_health(journal: dict) -> list[str]:
     if journal.get("healthy") and not recoveries:
         state = "no malformed lines."
     elif journal.get("healthy"):
-        # CLEAN WITH A NOTE (Codex T51 §4.2): damaged bytes that an explicit,
+        # CLEAN WITH A NOTE: damaged bytes that an explicit,
         # provenance-carrying segment boundary acknowledges do not refuse the
         # table — they are read as a boundary the audit trail spans.
         state = (f"CLEAN WITH A NOTE: {len(journal.get('malformed') or [])} malformed line(s) are "
@@ -2140,11 +2140,11 @@ def render_journal_health(journal: dict) -> list[str]:
 
 
 def render_rate_limit_evidence(rows: list[dict]) -> list[str]:
-    """§9.4 — for EVERY 429: the billed window, the rejected-attempt
+    """For EVERY 429: the billed window, the rejected-attempt
     estimates, the current request's estimate, the TPM and RPM verdicts
     SEPARATELY, and the conservative combined bucket.
 
-    This is the table that makes the T50 §3/§4 defects unrepeatable in
+    This is the table that makes the two window-rule defects unrepeatable in
     reading: a reader can see that a "saturated" window was billed fact and
     not a pile of estimates, and can see the dimension that was previously
     discarded by the fixed priority."""
@@ -2198,7 +2198,7 @@ def render_rate_limit_evidence(rows: list[dict]) -> list[str]:
 
 
 def render_ledger_status(rows: list[dict], ledger_health: dict | None) -> list[str]:
-    """§9.5 — the window-ledger gap/health status: rows whose own attempt
+    """The window-ledger gap/health status: rows whose own attempt
     recorded a lost ledger line, and the health of the shared file itself."""
     lines = ["## Provider-window ledger status", ""]
     if ledger_health is None:
@@ -2228,10 +2228,10 @@ def render_ledger_status(rows: list[dict], ledger_health: dict | None) -> list[s
 
 
 def render_execution_evidence(rows: list[dict], schedule: dict | None, evidence: dict | None) -> list[str]:
-    """Everything Codex T50 §9 asks to be RENDERED, in his order. Audit
+    """The execution evidence, RENDERED in a fixed order. Audit
     evidence for the existing estimands — never a new outcome."""
     evidence = evidence or {}
-    lines = ["---", "", "# Execution evidence (Codex T50 §9)", "",
+    lines = ["---", "", "# Execution evidence", "",
              "No new outcome metric and no new decision threshold: the two estimands, the suspicious-row "
              "sensitivity, the whole-triplet contrasts and the cost-ratio uncertainty are as "
              "pre-registered. What follows is the evidence a reader needs to believe the rows above "
@@ -2246,7 +2246,7 @@ def render_execution_evidence(rows: list[dict], schedule: dict | None, evidence:
 
 def executed_cells(rows: list[dict]) -> list[dict]:
     """The ACTUAL temporal design, reconstructed from the rows' own execution
-    record (Codex T49 §5): each block's arms re-ordered by when they really
+    record: each block's arms re-ordered by when they really
     ran, with `arm_position` re-derived from that order rather than copied
     from the schedule.
 
@@ -2314,7 +2314,7 @@ def order_integrity(rows: list[dict]) -> list[str]:
 
 
 def render_census(cells: list[dict], source: str) -> list[str]:
-    """The sequence / position / adjacency census (Codex T48b §4/Q5), at the
+    """The sequence / position / adjacency census, at the
     (provider, model), selector and (provider, model, selector) levels, with
     exact vs approximate stated per stratum rather than claimed once."""
     lines = [f"## Order balance census ({source})", ""]
@@ -2333,14 +2333,14 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
     confirmatory = bool(schedule) and SA.is_confirmatory(schedule)
     lines: list[str] = [f"# Arm table — {label}", ""]
     if pilot:
-        lines += ["**INSTRUMENT SMOKE TEST / FIXED-PANEL PILOT (Codex T48b §12)** — this table answers \"did "
+        lines += ["**INSTRUMENT SMOKE TEST / FIXED-PANEL PILOT** — this table answers \"did "
                   "the corrected machinery run, deliver artifacts and record the intended fields, and what "
                   "does it cost\", NOT \"which arm wins\". `VALID/derived` rows are admitted here and ONLY "
                   "here; they are excluded from every confirmatory estimate, and these rows are never pooled "
                   "with a confirmatory schedule's.", ""]
     else:
         lines += ["**CONFIRMATORY, FIXED PANEL** — the estimand is the average arm contrast over these exact "
-                  "(provider, model, selector) strata (Codex T48b §4). It is not an estimate for models in "
+                  "(provider, model, selector) strata. It is not an estimate for models in "
                   "general or for generated bookkeeping tasks in general: the roster and the selector panel are "
                   "FIXED factors, not a random sample. `VALID/derived` rows are refused.", ""]
 
@@ -2355,7 +2355,7 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
         lines.append(f"Unrun scheduled cells are treated as {unrun_rule}.")
     if confirmatory:
         contract = schedule["experiment_contract"]
-        lines += ["", "**Sealed experiment contract** (schedule v2, Codex T49 §2). `schedule_id` hashes the "
+        lines += ["", "**Sealed experiment contract** (schedule v2). `schedule_id` hashes the "
                       "treatment, the world, the code and the analysis plan, not merely the order:", "",
                   f"- instrument commit `{contract.get('instrument_commit')}`",
                   f"- analysis plan `{contract.get('analysis_plan')}` sha256 "
@@ -2377,12 +2377,12 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
                       f"{closure['n_unrun']} unrun, {closure['n_integrity']} quarantined for execution "
                       f"integrity. Panel "
                       f"{'COMPLETE' if closure['complete'] else 'INCOMPLETE'}.", ""]
-            # THE CENSUS INVARIANTS (Codex T52 §2), computed and ASSERTED
+            # THE CENSUS INVARIANTS, computed and ASSERTED
             # here — raises `CensusInvariantViolation` (fails the whole
             # render, never merely prints) the instant this and the
             # `### Scheduled but not run` section below could disagree.
             census = census_breakdown(scheduled, loaded, rows)
-            lines += [f"**Census invariants, asserted** (Codex T52 §2): {census['scheduled']} scheduled "
+            lines += [f"**Census invariants, asserted**: {census['scheduled']} scheduled "
                       f"= {census['exactly_matched']} exactly-matched + {census['unrun']} unrun + "
                       f"{census['integrity']} execution-integrity; {census['exactly_matched']} "
                       f"exactly-matched = {census['valid']} valid + {census['provider_failed']} "
@@ -2401,7 +2401,7 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
                           "substring match is how an unregistered row joins a registered experiment):", ""]
                 lines += [f"- `{name}`" for name in loaded["unexpected"]]
                 lines.append("")
-        # THE INSTRUMENT REFUSAL, IN THE ARTEFACT (Codex T51 §2.2). It is a
+        # THE INSTRUMENT REFUSAL, IN THE ARTEFACT. It is a
         # refusal, not an annotation: the exit code says 4 and no confirmatory
         # estimand below may be read.
         drift = instrument_drift_rows(rows, schedule)
@@ -2432,12 +2432,12 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
                       not in ran_keys_header)
         if missing:
             lines.append(f"**INCOMPLETE PANEL**: {missing} of {len(scheduled)} scheduled cells have no row. "
-                         f"An incomplete panel is reported as incomplete (Codex T48b §4) — it is never "
+                         f"An incomplete panel is reported as incomplete — it is never "
                          f"completed by dropping a model. The full roster panel is incomplete, so no "
                          f"pooled all-model arm decision is made; within-model contrasts use only "
                          f"complete eligible blocks and are reported as preregistered fixed-panel "
-                         f"evidence, not as recommendations beyond those named model/task strata "
-                         f"(Codex T53 §3). The unrun cells are listed at the end of this table.")
+                         f"evidence, not as recommendations beyond those named model/task strata. "
+                         f"The unrun cells are listed at the end of this table.")
         else:
             lines.append(f"Panel COMPLETE: all {len(scheduled)} scheduled cells have a row.")
 
@@ -2448,8 +2448,8 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
                  f"(every predicate recomputed by `measure_budget.validate_row` from the archived fields; "
                  f"no stored `budget_accounting` string is trusted).")
     n_suspicious = sum(1 for r in counted if is_suspicious(r))
-    lines.append(f"SUSPICIOUS rows (characters-per-token heuristic, a diagnostic and NOT an invalidation — "
-                 f"Codex T48b §3): {n_suspicious} of {len(counted)}. Every table below is printed twice, with "
+    lines.append(f"SUSPICIOUS rows (characters-per-token heuristic, a diagnostic and NOT an invalidation): "
+                 f"{n_suspicious} of {len(counted)}. Every table below is printed twice, with "
                  f"and without them.")
 
     digests = {contract_identity(r) for r in counted}
@@ -2460,7 +2460,7 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
         lines.append("  **WARNING**: more than one sampling configuration is present.")
     lines.append("")
 
-    # CONFIGURATION-WIDE capability exclusion (Codex T49 §7), applied BEFORE
+    # CONFIGURATION-WIDE capability exclusion, applied BEFORE
     # any comparison: a provider/model that cannot carry one arm's replayed
     # payload cannot support a contrast among the three arms at all.
     incompatible = capability_incompatible_configurations(
@@ -2492,7 +2492,7 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
     clean = [r for r in comparison_rows if not is_suspicious(r)]
     lines += render_strata(clean, scheduled, pilot, schedule_complete,
                            f"Excluding {len(comparison_rows) - len(clean)} SUSPICIOUS row(s)")
-    # THE PRIMARY CONTRAST, TWICE (Codex T49 §8). The decision-bearing table
+    # THE PRIMARY CONTRAST, TWICE. The decision-bearing table
     # used to receive the sensitivity treatment only in the two stratum
     # sections; the paired delivery contrast and the effective-cost ratio —
     # the numbers an arm decision is read off — were computed once, over all
@@ -2548,7 +2548,7 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
     lines.append("")
 
     if schedule:
-        # ONE authority for "unrun" (Codex T52 §2) — `loaded["cell_rows"]`,
+        # ONE authority for "unrun" — `loaded["cell_rows"]`,
         # the exact per-file map `census_breakdown` and the header's own "Run
         # closure" line already read, never a second recomputation from a
         # `tag` string that is not unique across models.
@@ -2570,7 +2570,7 @@ def main() -> int:
     parser.add_argument("--schedule-complete", action="store_true",
                         help="PILOT ONLY: declare the schedule finished, so unrun cells count as "
                              "NON-DELIVERY. REFUSED for a sealed confirmatory schedule, where completion is "
-                             "DERIVED from the exact cell map (Codex T49 §4) — an operator must not be able "
+                             "DERIVED from the exact cell map — an operator must not be able "
                              "to declare a run finished after seeing its results")
     parser.add_argument("--pilot", action="store_true",
                         help="a pilot / instrument smoke-test table: VALID/derived rows are admitted and the "
@@ -2586,7 +2586,7 @@ def main() -> int:
     confirmatory = bool(schedule) and SA.is_confirmatory(schedule)
     loaded = None
     schedule_complete = args.schedule_complete
-    # The execution evidence (Codex T50 §9), all of it addressed exactly as
+    # The execution evidence, all of it addressed exactly as
     # the executor addresses it: the journal beside the reviews directory, the
     # exclusion records and the shared window ledger beside the schedule.
     evidence = None
@@ -2600,7 +2600,7 @@ def main() -> int:
     if confirmatory:
         if args.schedule_complete:
             print("REFUSED: --schedule-complete on a SEALED confirmatory schedule. Completion is DERIVED "
-                  "from the exact cell map (Codex T49 §4): an operator who can toggle it after seeing the "
+                  "from the exact cell map: an operator who can toggle it after seeing the "
                   "results decides the denominator with the outcome in view.", file=sys.stderr)
             return 2
         # The exact schedule-derived file set: no tag-substring globbing, no
@@ -2635,8 +2635,8 @@ def main() -> int:
               f"An exclusion whose content digest does not recompute is not an exclusion.", file=sys.stderr)
         return 2
 
-    # THE INSTRUMENT REFUSAL, BEFORE the zero-row early return (Codex T51
-    # §2.2). A drifted row never reaches `loaded["rows"]` — the digests are
+    # THE INSTRUMENT REFUSAL, BEFORE the zero-row early return. A drifted
+    # row never reaches `loaded["rows"]` — the digests are
     # part of exact admission — so a panel whose rows are ALL drifted would
     # otherwise report "no rows to read" and exit 1, which tells a caller
     # gating on the exit code nothing about why.
@@ -2663,7 +2663,7 @@ def main() -> int:
                   f"Two schedules' rows are not one experiment — narrow --tag-prefix.", file=sys.stderr)
             return 2
 
-    # Codex T48a §4: REFUSE, do not warn.
+    # REFUSE, do not warn.
     offences = (check_pooling(rows, ("provider", "model", "selector", "arm"))
                 + check_pooling(rows, ("provider", "model", "arm")))
     if offences:
@@ -2674,14 +2674,14 @@ def main() -> int:
             print(f"  {offence}", file=sys.stderr)
         return 2
 
-    # THE CENSUS INVARIANTS (Codex T52 §2): a violation FAILS the render —
+    # THE CENSUS INVARIANTS: a violation FAILS the render —
     # nothing is written, never a self-contradictory census printed instead.
     try:
         text = render_table(rows, args.label, files, schedule, args.pilot, schedule_complete,
                             tuple(args.arms), args.base_arm, loaded, evidence)
     except CensusInvariantViolation as exc:
         print(f"REFUSED (exit 5): the census invariant does not hold — {exc}. The renderer will not "
-              f"print a self-contradictory census (Codex T52 §2); the table is NOT written.",
+              f"print a self-contradictory census; the table is NOT written.",
               file=sys.stderr)
         return 5
     out_path = reviews_dir / f"arms_{args.label}.md"
@@ -2689,7 +2689,7 @@ def main() -> int:
     print(text)
     print(f"wrote {out_path}")
 
-    # THE TWO HARD REFUSALS Codex T51 asks for (§2.2, §4.2). The table is still
+    # THE TWO HARD REFUSALS. The table is still
     # WRITTEN — suppressing the artefact would hide the very findings these
     # refusals are about — but the exit code must not say "fine", and a caller
     # that gates on it must not be able to read a confirmatory estimate off a

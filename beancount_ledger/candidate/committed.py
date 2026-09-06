@@ -401,7 +401,7 @@ class Allocation:
 
 
 # --------------------------------------------------------------------------
-# the closed state universe (Codex T44 §4, Q5)
+# the closed state universe
 # --------------------------------------------------------------------------
 
 # Every classification this scorer can reach is a member of ONE enumerable
@@ -480,7 +480,7 @@ class ScorerState(str):
         return (str, (str(self),))
 
 
-# item states (Codex T40): meaning is named, not derived from optional
+# item states: meaning is named, not derived from optional
 # counters. Only RESOLVED credits `errors_resolved`.
 STATE_MISSING = ScorerState(
     "MISSING", scope=ITEM_SCOPE, kinds=("omit",),
@@ -1260,7 +1260,7 @@ def score_committed(committed: CommittedSubmission) -> ScoreOutcome:
     renderable = not blocked
     # Completion is separate from renderability: a renderable file with an
     # unresolved item or a wrong balance is INCOMPLETE — partial reward and
-    # a canonical file, never success (Codex T40).
+    # a canonical file, never success.
     complete = renderable and not allocation.unmatched_planted and not target_misses and not collateral and not undocumented
     capped = False
     if not renderable and total > NON_RENDERABLE_CAP:

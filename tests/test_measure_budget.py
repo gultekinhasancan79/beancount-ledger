@@ -1,12 +1,10 @@
 """The measurement instrument itself, witnessed with scripted clients only.
 
 No live model call, no NVIDIA key, no network. Everything here runs through
-the real `env.evaluate()` door with a fake client (Codex T46 §7's own
-recommendation) — the same `TurnScript` machinery `test_episode_contract.py`
-uses, imported rather than duplicated.
+the real `env.evaluate()` door with a fake client — the same `TurnScript`
+machinery `test_episode_contract.py` uses, imported rather than duplicated.
 
-`measure_budget.py` had four defects (Codex Turn 46, `design_chat/from_codex.md`
-§2, §3, §6, §7), fixed in this rewrite and witnessed here:
+`measure_budget.py` had four defects, fixed in this rewrite and witnessed here:
 
   1. `newest_workspace()` — finding "the" workspace by scanning `%TEMP%` for
      the newest `beancount_env_*` directory — is GONE. Every artifact is now
@@ -38,7 +36,7 @@ Two framework-semantics findings are PINNED here rather than assumed:
     prompt. This is exactly why the archived arm-A rows showed
     `final_output_tokens == completion_tokens` (both are the same sum) while
     `final_input_tokens` (26,257) was nowhere near `prompt_tokens` (592,577)
-    — Codex T46 §7's own observation. `measure_budget.py` no longer presents
+    — the reviewer's own observation. `measure_budget.py` no longer presents
     those two fields as "final"/"last turn": `row["token_usage"]` carries
     them verbatim under their OWN framework names for audit, and
     `row["last_turn_input_tokens"]` / `["last_turn_output_tokens"]` are
@@ -187,7 +185,7 @@ class UsageScript(vf.Client):
     empty turn with no usage, matching `TurnScript`'s own padding.
 
     `wire_caps`, when given, is set as `self.wire_caps` — the same shape
-    `PacedClient.wire_caps` carries (Codex T47 §4/Q2) — so a test can inject
+    `PacedClient.wire_caps` carries — so a test can inject
     a deliberately WRONG per-turn wire cap and witness `one_rollout` wiring
     it, end to end, into `budget_accounting = "INVALID/wire_cap_mismatch"`.
     Left unset (the default) `getattr(client, "wire_caps", None)` reads back
@@ -243,7 +241,7 @@ def one(turns, selector="test:0", *, env_shim=None, archive=None, arm="A", max_t
 
 # --------------------------------------------------------------------------
 # 1. artifact binding — the delivered ledger comes from THIS rollout's own
-#    state, never from scanning the temp directory (Codex T46 §7)
+#    state, never from scanning the temp directory
 # --------------------------------------------------------------------------
 
 def test_no_write_is_no_artifact_no_write():
@@ -544,10 +542,9 @@ def test_reasoning_replay_projection_diffs_only_reasoning_content_and_does_not_m
     native dict list `super().to_native_prompt` just built (see
     `make_client_cls`'s docstring), never the rollout state's own trajectory
     — so a client running under the no-replay policy still leaves full
-    reasoning in the recorded trajectory for audit (Codex T46 §2's
-    requirement).
+    reasoning in the recorded trajectory for audit.
 
-    Codex T47 §8 asks the "only difference" assertion to cover the COMPLETE
+    The "only difference" assertion must cover the COMPLETE
     native request material, not just the prompt-message list. Extended
     here to also prove, between the SAME two `replay_on`/`replay_off`
     instances:
@@ -618,7 +615,7 @@ def test_reasoning_replay_projection_diffs_only_reasoning_content_and_does_not_m
             if m.reasoning_content is None:
                 problems.append("an original assistant message lost its reasoning_content")
 
-    # Codex T47 §8: extend the "only difference" assertion to the `extra`
+    # Extend the "only difference" assertion to the `extra`
     # dict, the native tool schema, and the actual wire body.
     if extra_on != extra_off:
         problems.append(f"to_native_prompt's `extra` dict differs: {extra_on!r} vs {extra_off!r}")
@@ -668,12 +665,12 @@ def test_reasoning_replay_projection_diffs_only_reasoning_content_and_does_not_m
 
 
 # --------------------------------------------------------------------------
-# 5. budget accounting: fail closed (Codex T47 §4/§11, Q3/Q4)
+# 5. budget accounting: fail closed
 # --------------------------------------------------------------------------
 
 def test_compute_budget_accounting_reasons_pure():
     """`compute_budget_accounting` (the pure function, adversarial-review
-    follow-up to Codex T47) over hand-built inputs — EVERY code in the
+    follow-up) over hand-built inputs — EVERY code in the
     CLOSED set (`BUDGET_ACCOUNTING_CODES`, `ENV_BUDGET_ACCOUNTING_CODES`
     verbatim, the `env_unrecognized` fallback), checked exactly, in the
     documented check order (a priority case proves our own checks win over
@@ -756,7 +753,7 @@ def test_compute_budget_accounting_reasons_pure():
     expect("wire caps has a gap", [100, 50], [turn(100, 50), turn(50, 50)],
           [{"max_completion_tokens": 100}, None], None, 100, 0, None, "INVALID/wire_caps_incomplete")
 
-    # 12. extra_wire_request -- Codex T48a §3.2: one SURPLUS provider request
+    # 12. extra_wire_request -- one SURPLUS provider request
     # the trajectory's usage never accounts for. The previous code examined
     # only the first len(per_turn) entries and returned VALID here.
     expect("one surplus wire request", [100], [turn(100, 50)],
@@ -786,7 +783,7 @@ def test_compute_budget_accounting_reasons_pure():
           requests=[{**ok_request, "status": "rate_limited"}, ok_request], rollout_id="r")
     expect("two ok requests, one turn", [100], [turn(100, 50)], None, None, 50, 0, None,
           "INVALID/request_count_mismatch", requests=[ok_request, {**ok_request, "turn": 2}], rollout_id="r")
-    # Attempt identity (Codex T48b §10): a billed request bound to ANOTHER
+    # Attempt identity: a billed request bound to ANOTHER
     # rollout id, or to a second attempt nonce, is a discarded attempt's spend.
     expect("a request from another rollout id", [100], [turn(100, 50)], None, None, 50, 0, None,
           "INVALID/framework_retry", requests=[ok_request, {**ok_request, "rollout_id": "other"}],
@@ -794,7 +791,7 @@ def test_compute_budget_accounting_reasons_pure():
     expect("two attempt nonces", [100], [turn(100, 50)], None, None, 50, 0, None, "INVALID/framework_retry",
           requests=[ok_request, {**ok_request, "attempt_id": "b"}], rollout_id="r")
 
-    # usage_implausible is NOT an accounting code any more (Codex T48b §3): a
+    # usage_implausible is NOT an accounting code any more: a
     # generic characters-per-token heuristic is a SUSPICION, not a validity
     # theorem -- it can fire differently across arms (a replay arm changes
     # the shape of emitted content) and would bias the comparison it guards.
@@ -823,7 +820,7 @@ def test_compute_budget_accounting_reasons_pure():
 
 
 def test_no_request_caps_end_to_end_when_ceiling_disabled():
-    """The REAL end-to-end path (Codex T47 §4/Q4's headline change): when
+    """The REAL end-to-end path: when
     the episode-output ceiling is 0 (disabled), the clamp in
     `get_model_response` never runs (`if ceiling > 0:`), so
     `state["piv_request_max_tokens"]` is never populated at all -- exactly
@@ -918,7 +915,7 @@ def test_valid_completion_exceeds_cap_and_wire_cap_mismatch_end_to_end():
 
 
 # --------------------------------------------------------------------------
-# 6. arm_table.py's three quantities (Codex T47 §9): correct-delivery rate,
+# 6. arm_table.py's three quantities: correct-delivery rate,
 #    conditional cost, effective cost per correct delivery
 # --------------------------------------------------------------------------
 
@@ -983,7 +980,7 @@ def _window(*, billed=0, billed_mine=0, accepted=0, accepted_mine=0,
             rejected_estimate=0, rejected_estimate_mine=0,
             rejected_requests=0, rejected_requests_mine=0,
             current=None, kind=None, **extra) -> dict:
-    """A provider-window snapshot in the SEPARATED shape Codex T50 §3
+    """A provider-window snapshot in the SEPARATED shape the classifier
     requires: `billed_*` is the provider's own number for requests it SERVED,
     `rejected_estimate_*` is a chars/4 estimate for attempts it refused, and
     `current_request_estimate_tokens` is the request being refused right now.
@@ -1025,7 +1022,7 @@ def test_correct_delivery_predicate():
 
 
 def test_arm_table_three_quantities_survivorship_example():
-    """Codex T47 §9's own worked example, pinned exactly: one correct
+    """The reviewer's own worked example, pinned exactly: one correct
     delivery at 40,000 total tokens, and nine failures at 39,000 total
     tokens each (all VALID, non-correct attempts in the same stratum).
 
@@ -1035,7 +1032,7 @@ def test_arm_table_three_quantities_survivorship_example():
         though the raw statistic is exactly 40,000.
       - effective cost per correct delivery: `(40000 + 9*39000) / 1 ==
         391000` — what it actually cost to land the one correct delivery,
-        the quantity Q10's economic decision is supposed to use.
+        the quantity the economic decision is supposed to use.
     """
     rows = [_row(total_tokens=40_000, completion_tokens=8_000, reward=1.0, complete=True, submitted=True,
                 stop="piv_submitted")]
@@ -1074,7 +1071,7 @@ def test_arm_table_three_quantities_survivorship_example():
         problems.append(f"an UNDECLARED schedule must leave unrun cells out of the denominator, got "
                         f"{incomplete['operational_denominator']}, expected 10")
 
-    return check("the survivorship example (Codex T47 §9): conditional cost 40K, effective cost 391K per correct "
+    return check("the survivorship example: conditional cost 40K, effective cost 391K per correct "
                  "delivery — the SAME ten attempts read two different, both-correct ways",
                  not problems, "\n".join(problems))
 
@@ -1388,7 +1385,7 @@ def test_schedule_balance_is_exact_within_provider_model_and_claimed_no_higher()
 
 
 def test_schedule_ordinals_do_not_depend_on_the_replicate_count():
-    """The defect Codex T48a §2 named: `build_blocks` indexed blocks by
+    """The defect the reviewer named: `build_blocks` indexed blocks by
     looping `selector -> replicate 1..N -> model`, so the index a cell
     received DEPENDED ON THE MAXIMUM N passed today — staged
     `--replicate 1`, then `2`, then `3` silently produced a different design
@@ -1460,7 +1457,7 @@ def test_schedule_id_is_content_bound_and_an_edited_schedule_is_refused(tmp=None
 # --------------------------------------------------------------------------
 
 def test_arms_and_signature_are_stable():
-    """`--arm` presets (Codex T46 §5/§6) and `one_rollout`'s signature,
+    """`--arm` presets and `one_rollout`'s signature,
     pinned so a refactor that quietly drops the fake-client injection seam
     fails here rather than only showing up as an untestable live script."""
     import inspect
@@ -1475,7 +1472,7 @@ def test_arms_and_signature_are_stable():
                "permutation_index", "arm_position", "window_ledger"]
     if params != expected:
         problems.append(f"one_rollout signature: {params}")
-    # The schedule owns replicates and arm order now (Codex T48a §2): the
+    # The schedule owns replicates and arm order now: the
     # flags that used to let a caller invent a design on the fly are gone.
     run_arms_flags = Path(RA.__file__).read_text(encoding="utf-8")
     for gone in ('add_argument("--replicate"', 'add_argument("--order-seed"'):
@@ -1493,19 +1490,19 @@ def test_arms_and_signature_are_stable():
 
 
 # --------------------------------------------------------------------------
-# 8. Codex Turn 48: tool-call arguments, exact wire cardinality, the one row
+# 8. tool-call arguments, exact wire cardinality, the one row
 #    validator, replay-contract identity, failure classification
 # --------------------------------------------------------------------------
 
 def test_tool_call_arguments_enter_the_plausibility_floor():
-    """Codex T48a §3.1's own example, end to end: a tool-only turn carrying
+    """The reviewer's own example, end to end: a tool-only turn carrying
     a 48,000-character `write_ledger` argument and reporting ONE completion
     token.
 
     Before, `_response_chars` counted `content + reasoning_content` only, so
     the denominator was ZERO on a tool-only turn and no completion count,
     however absurd, could fail. Now the canonical serialized tool call is
-    counted — and, per Codex T48b §3, it lands on the SUSPICIOUS flag rather
+    counted — and it lands on the SUSPICIOUS flag rather
     than on INVALID, because a characters-per-token heuristic can fire
     differently across replay arms and must not decide a confirmatory
     denominator."""
@@ -1532,7 +1529,7 @@ def test_tool_call_arguments_enter_the_plausibility_floor():
     # which is exactly the hole.
     blind = dict(turn, tool_call_chars=0)
     if mb.compute_budget_suspicion([blind]) is not None:
-        problems.append("the pre-T48 denominator (content+reasoning only) should NOT flag this turn — if it "
+        problems.append("the old denominator (content+reasoning only) should NOT flag this turn — if it "
                         "does, this witness is no longer demonstrating the hole it was written for")
     if mb.compute_budget_suspicion([dict(turn, output_tokens=12_000)]) is not None:
         problems.append("a plausible ratio (48K characters at 12K completion tokens) must not be flagged")
@@ -1549,7 +1546,7 @@ def test_tool_call_arguments_enter_the_plausibility_floor():
 
 
 def test_surplus_wire_request_is_invalid_end_to_end():
-    """Codex T48a §3.2, through `one_rollout`: a client that made ONE more
+    """Through `one_rollout`: a client that made ONE more
     provider request than the trajectory has turns. The old code compared
     only the first `len(per_turn)` entries and returned VALID, so a
     client/SDK retry could bill a request no layer above it ever saw."""
@@ -1590,7 +1587,7 @@ def test_surplus_wire_request_is_invalid_end_to_end():
 
 
 def test_validate_row_rederives_every_predicate_from_literal_adversarial_rows():
-    """ONE pure archived-row validator (Codex T48a §3.3/Q5). Each row below
+    """ONE pure archived-row validator. Each row below
     CLAIMS `budget_accounting == "VALID"` and carries exactly one
     present-but-impossible fact; the validator must refuse each on its own
     re-derivation, never on the claim."""
@@ -1650,7 +1647,7 @@ def test_validate_row_rederives_every_predicate_from_literal_adversarial_rows():
            stored, "INVALID", "stored_status_invalid")
     expect("a quarantined row", _row(quarantined=True, status="s"), "INVALID", "quarantined")
     expect("an old-instrument row", _old_row(), "VALID/derived", "no_wire_caps")
-    # Post-run correction (2026-09-01, Codex T51 §12): the confirm1v4 writer
+    # Post-run correction (2026-09-01): the confirm1v4 writer
     # computed but omitted per-turn `tool_call_chars`. The field feeds the
     # plausibility floor (suspicion, never validity), so its absence ALONE —
     # on a row carrying every validity evidence — must NOT demote to derived;
@@ -1700,7 +1697,7 @@ def test_validate_row_rederives_every_predicate_from_literal_adversarial_rows():
 
 
 def test_replay_contract_digest_moves_with_every_declared_clause():
-    """The replay policy has its own identity (Codex T48a §4/Q7, T48b §1):
+    """The replay policy has its own identity:
     the two arms' digests differ, the declared clauses are all present, and
     the concrete client/library versions are inside the digest so a
     dependency bump becomes a NEW condition rather than invisible drift."""
@@ -1737,7 +1734,7 @@ def test_replay_contract_digest_moves_with_every_declared_clause():
 
 
 def test_arm_table_refuses_to_pool_across_contracts_and_schedules():
-    """Codex T48a §4: rows with different replay or episode digests inside
+    """Rows with different replay or episode digests inside
     ONE condition are an error, not a warning — they can share a world, a
     prompt and a ceiling and still not be comparable."""
     problems = []
@@ -1763,7 +1760,7 @@ def test_arm_table_refuses_to_pool_across_contracts_and_schedules():
 
 
 def test_failure_classification_is_a_fixed_map_applied_blind():
-    """Four buckets (Codex T48b §5), decided from the error text and the
+    """Four buckets, decided from the error text and the
     observed request size only — never from the arm or the outcome. The
     size-dependent cases (429, timeout) go to AMBIGUOUS when the provider's
     tokens-per-minute limit or the request size is unknown, so they land in
@@ -1772,13 +1769,13 @@ def test_failure_classification_is_a_fixed_map_applied_blind():
 
     def saturated(mine, total=1_000_000, requests=(60, 60)):
         """BILLED tokens and ACCEPTED requests — the established quantities.
-        Never a rejected attempt's estimate (Codex T50 §3)."""
+        Never a rejected attempt's estimate."""
         return _window(billed=total, billed_mine=mine,
                        accepted=requests[0], accepted_mine=requests[1])
 
     # (text, window, expected bucket). The 429 cases use the OBSERVED
     # trailing-window evidence, never a hypothetical repetition of one
-    # request's size (Codex T49 §6).
+    # request's size.
     cases = [
         ("400 Function call is missing a thought_signature in functionCall parts", None,
          "capability_incompatible"),
@@ -1813,7 +1810,7 @@ def test_failure_classification_is_a_fixed_map_applied_blind():
             problems.append(f"{text[:32]!r} produced a bucket outside the closed set: {bucket}")
     # A quota nobody established keeps a saturating-looking window ambiguous.
     # The evidence is a TYPED name, not the digits "429": free text carries no
-    # numeric needle at all any more (Codex T50 §2).
+    # numeric needle at all any more.
     if AT.classify_error("RateLimitError", None, None, None, window=saturated(900_000), rpm=None)[1] != \
             "rate_limit_quota_unknown":
         problems.append("a 429 with no established TPM/RPM must be ambiguous/rate_limit_quota_unknown")
@@ -1839,7 +1836,7 @@ def test_failure_classification_is_a_fixed_map_applied_blind():
 
 
 def test_none_as_absent_is_narrow_and_falsey_values_survive():
-    """Codex T48b §2: `None` means absent for `reasoning_content`, and for
+    """`None` means absent for `reasoning_content`, and for
     nothing else. `0`, `False`, `""`, an empty tool-arguments object and a
     real reasoning payload must all survive the projection byte for byte,
     under BOTH replay policies."""
@@ -1886,7 +1883,7 @@ def test_none_as_absent_is_narrow_and_falsey_values_survive():
 
 
 def test_attempt_identity_binds_every_request_to_one_attempt():
-    """Codex T48b §10: the prompt-shape detector is an alarm; the
+    """The prompt-shape detector is an alarm; the
     authoritative attempt boundary is an explicit identity bound to every
     provider request. `run_rollout` builds a FRESH state dict per attempt,
     so a nonce stamped into the state is unique to that attempt — including
@@ -1949,7 +1946,7 @@ def test_attempt_identity_binds_every_request_to_one_attempt():
 
 
 def test_requests_log_records_every_attempt_including_rate_limited_ones():
-    """Codex T48a §3.2: `PacedClient`'s own 429 pacing loop records EVERY
+    """`PacedClient`'s own 429 pacing loop records EVERY
     attempt in `row["requests"]`, and a 429 carries no billed tokens."""
     import openai
     import verifiers.legacy.clients.openai_chat_completions_client as oai_mod
@@ -2208,7 +2205,7 @@ def test_two_executors_on_one_cell_and_exactly_one_runs():
     create, atomic at the filesystem, so exactly one of any number of racing
     processes wins.
 
-    Codex T49 §5 removed the automatic stale TAKEOVER that used to sit here:
+    The automatic stale TAKEOVER that used to sit here is gone:
     a read-then-`os.replace` is not atomic, so two contenders could both
     complete it and both believe they had won. A stale claim is now
     REPORTED, with instructions; and `release_cell` verifies ownership before
@@ -2242,7 +2239,7 @@ def test_two_executors_on_one_cell_and_exactly_one_runs():
         # A STALE claim (ttl 0) is REPORTED, never taken over automatically.
         ok, note = RA.claim_cell(out_path, "session-late", cell, 0.0)
         if ok:
-            problems.append("a stale claim must NOT be taken over automatically (Codex T49 §5)")
+            problems.append("a stale claim must NOT be taken over automatically")
         if "STALE" not in note or "deliberately" not in note:
             problems.append(f"a stale claim must be reported with instructions: {note!r}")
         if json.loads(claim_path.read_text(encoding="utf-8")).get("session_id") != "session-0":
@@ -2268,7 +2265,7 @@ def test_two_executors_on_one_cell_and_exactly_one_runs():
 
 
 def test_rate_limit_classification_uses_the_observed_rolling_window():
-    """Codex T49 §6 — the RETIRED rule asked whether the largest request,
+    """The RETIRED rule asked whether the largest request,
     hypothetically repeated every `I` seconds for a minute, would reach the
     provider's TPM (`S >= TPM * I / 60`). That is a thought experiment: a
     single 120K request does not consume a 356K minute, and a small request
@@ -2305,7 +2302,7 @@ def test_rate_limit_classification_uses_the_observed_rolling_window():
         # the REQUEST window can saturate on its own, tokens or not
         ("requests", window(1_000, 1_000, 40, 39), ("arm_induced", "rate_limit_window_saturated_requests")),
         ("no evidence", None, ("ambiguous", "rate_limit_window_unknown")),
-        # the PRE-T50 conflated shape establishes nothing at all
+        # the OLD conflated shape establishes nothing at all
         ("legacy conflated snapshot",
          {"window_tokens_total": 360_000, "window_tokens_this_cell": 300_000,
           "window_requests_total": 5, "window_requests_this_cell": 2},
@@ -2334,7 +2331,7 @@ def test_rate_limit_classification_uses_the_observed_rolling_window():
 
 
 # --------------------------------------------------------------------------
-# Codex T49: the pre-start checklist
+# The pre-start checklist
 # --------------------------------------------------------------------------
 
 def _sealed_schedule(label="sealed", selectors=None, contract=None, replicates=1):
@@ -2353,7 +2350,7 @@ def _sealed_schedule(label="sealed", selectors=None, contract=None, replicates=1
         "execution_excludes": list(SA.EXECUTION_EXCLUDES),
         "execution_tree_digest": "e" * 64,
         "execution_tree_file_count": 7,
-        # Codex T51 §1: the interpreter's own bytes, sealed beside the
+        # The interpreter's own bytes, sealed beside the
         # repository's. Fixture values here — the REAL builder is witnessed in
         # `test_schedule_v2_seals_the_experiment_contract` and the real walk in
         # `test_the_runtime_environment_is_sealed_as_bytes_not_versions`.
@@ -2402,7 +2399,7 @@ def _cell_row(schedule, cell, **overrides):
         "replay_contract_digest": contract["expected_replay_contract_digest_by_arm"][cell["arm"]],
         "per_turn_cap": arm["per_turn_max_tokens"], "reasoning_replay": arm["reasoning_replay"],
         "library_versions": contract["package_lock"]["replay_libraries"],
-        # THE INSTRUMENT (Codex T51 §2): part of exact admission, so a row that
+        # THE INSTRUMENT: part of exact admission, so a row that
         # IS this cell carries the sealed digests. A row that does not is what
         # `test_a_row_from_a_foreign_instrument_is_refused_from_every_estimand`
         # builds deliberately.
@@ -2415,7 +2412,7 @@ def _cell_row(schedule, cell, **overrides):
 
 
 def test_schedule_v2_seals_the_experiment_contract():
-    """Codex T49 §2/Q2 — v1's `schedule_id` hashed the roster, the selectors,
+    """v1's `schedule_id` hashed the roster, the selectors,
     the arm LABELS and the order, but not what those labels MEAN:
     `run_arms` passes `--arm A` and `measure_budget.ARM_PRESETS` supplies the
     treatment at execution time, so `A` could become 16,000 tokens with the
@@ -2479,7 +2476,7 @@ def test_schedule_v2_seals_the_experiment_contract():
 
 
 def test_exact_cell_identity_refuses_partials_duplicates_and_missing_schedule_ids():
-    """Codex T49 §3/Q3 — `cell_is_done` accepted `schedule_id is None`, a tag
+    """`cell_is_done` accepted `schedule_id is None`, a tag
     match OR a partial identity match, and ANY matching row in a list even
     when the file held duplicates or conflicting rows. For a confirmatory
     cell "done" means EXACTLY ONE row with every identity field and every
@@ -2542,7 +2539,7 @@ def test_exact_cell_identity_refuses_partials_duplicates_and_missing_schedule_id
 
 
 def test_force_and_manual_completion_are_refused_for_a_sealed_schedule():
-    """Codex T49 §4/Q4 — `--force` re-runs and overwrites an observed cell,
+    """`--force` re-runs and overwrites an observed cell,
     which is outcome-dependent replacement of a bad draw; `--schedule-complete`
     let an operator declare the panel finished after seeing the results. Both
     are refused for a sealed schedule, and completion is DERIVED instead."""
@@ -2621,7 +2618,7 @@ def test_force_and_manual_completion_are_refused_for_a_sealed_schedule():
 
 
 def test_one_schedule_level_executor_lock_without_automatic_takeover():
-    """Codex T49 §5/Q5 — two executors invalidate the planned temporal order
+    """Two executors invalidate the planned temporal order
     even when they never duplicate a cell, so the lock is at the SCHEDULE
     level and there is no automatic stale takeover. `--limit` counts whole
     three-arm blocks, never arbitrary cells."""
@@ -2655,7 +2652,7 @@ def test_one_schedule_level_executor_lock_without_automatic_takeover():
             problems.append("a non-owner released the schedule lock")
         # A LIVE lock is not a corpse: --take-over-lock refuses one younger than
         # TAKEOVER_MIN_LOCK_AGE_SECONDS, because the flag's contract is "I have
-        # verified that process is dead" (Codex T51 §3).
+        # verified that process is dead".
         ok, note, _, _ = RA.acquire_schedule_lock(path, "session-C", take_over=True)
         if ok or "younger than" not in note:
             problems.append(f"--take-over-lock must refuse a freshly created lock: {(ok, note)}")
@@ -2671,7 +2668,7 @@ def test_one_schedule_level_executor_lock_without_automatic_takeover():
         proved, proof = RA.prove_lock_ownership(path, ours)
         if not proved:
             problems.append(f"the taker could not prove ownership after acquisition: {proof}")
-        # The displaced bytes are ARCHIVED, exactly (Codex T51 §3).
+        # The displaced bytes are ARCHIVED, exactly.
         archive = RA.takeover_archive_path_for(path, "session-C")
         if not archive.exists() or archive.read_bytes() != displaced_bytes:
             problems.append("the displaced lock's exact bytes were not archived")
@@ -2689,7 +2686,7 @@ def test_one_schedule_level_executor_lock_without_automatic_takeover():
         if lock.exists():
             problems.append("the owner could not release the lock")
 
-    # ---- THE TWO-CONTENDER TAKEOVER WITNESS (Codex T51 §3) ---------------
+    # ---- THE TWO-CONTENDER TAKEOVER WITNESS ------------------------------
     #      Both contenders observe the SAME stale lock and both are told to
     #      take it over. Exactly one may proceed. The old implementation was
     #      `path.write_text(...)`: both would have returned as owners and then
@@ -2751,7 +2748,7 @@ def test_one_schedule_level_executor_lock_without_automatic_takeover():
 
 
 def test_window_ledger_paces_across_cells_and_carries_the_429_evidence():
-    """Codex T49 §6/Q7 — every scheduled cell is a fresh subprocess, so
+    """Every scheduled cell is a fresh subprocess, so
     `PacedClient._last` was always 0 at the one boundary that matters and the
     provider's rolling window was invisible to the classifier. The shared
     ledger fixes both: pacing is measured from the LEDGER's last entry for
@@ -2779,8 +2776,8 @@ def test_window_ledger_paces_across_cells_and_carries_the_429_evidence():
         read_back = mb.window_ledger_read(ledger)
         if len(read_back) != len(entries):
             problems.append(f"the ledger read back {len(read_back)} of {len(entries)} entries")
-        # A truncated final line is now a REFUSAL, not a silent drop (Codex
-        # T50 §5) — its own witness is
+        # A truncated final line is now a REFUSAL, not a silent drop — its
+        # own witness is
         # test_a_malformed_window_ledger_line_is_unhealthy_until_recovery.
         with ledger.open("a", encoding="utf-8") as fh:
             fh.write('{"t": 1, "provider": "mist')                            # a killed process
@@ -2801,7 +2798,7 @@ def test_window_ledger_paces_across_cells_and_carries_the_429_evidence():
                                       current_request_estimate=1_500)
         # BILLED is the provider's own number for requests it SERVED; the
         # rejected attempt's 9,000-token estimate is a SEPARATE field and is
-        # never added to it (Codex T50 §3).
+        # never added to it.
         if snapshot["billed_tokens_total"] != 200_000 + 1_000 + 50_000 + 500:
             problems.append(f"the billed window total is wrong: {snapshot}")
         if snapshot["billed_tokens_this_cell"] != 50_000 + 500:
@@ -2844,7 +2841,7 @@ def test_window_ledger_paces_across_cells_and_carries_the_429_evidence():
 
 
 def test_structured_provider_error_feeds_the_classifier():
-    """Codex T49 §6/Q6 — "do not infer a causal arm label from a free-text
+    """The rule — "do not infer a causal arm label from a free-text
     substring when structured status is available". The request log now
     carries the HTTP status, the provider's own error code/type, the redacted
     message and the rate-limit headers, and `failure_text` puts them FIRST."""
@@ -2889,7 +2886,7 @@ def test_structured_provider_error_feeds_the_classifier():
 
 
 def test_primary_contrasts_are_rendered_twice_with_a_sensitivity_comparison():
-    """Codex T49 §8/Q10 — `render_table` called `render_strata` twice but
+    """`render_table` called `render_strata` twice but
     `render_ratios` ONCE, so the decision-bearing paired contrast and the
     effective-cost ratio never received the promised suspicious-row
     sensitivity. Both are printed twice now, whole triplets are dropped AFTER
@@ -2961,7 +2958,7 @@ def test_primary_contrasts_are_rendered_twice_with_a_sensitivity_comparison():
 
 
 def test_cost_ratio_uncertainty_reports_zero_correct_dominance_and_a_conditional_interval():
-    """Codex T49 §9/Q11 — the effective-cost ratio was a bare point estimate.
+    """The effective-cost ratio was a bare point estimate.
     It is now bootstrapped over whole triplets exactly as delivery is, and
     the undefined resamples (an arm with zero correct deliveries) are never
     silently dropped: the probability of each arm delivering nothing, the
@@ -3019,7 +3016,7 @@ def test_cost_ratio_uncertainty_reports_zero_correct_dominance_and_a_conditional
 
 
 def test_startup_witness_refuses_on_every_mismatched_field():
-    """Codex T49 §14.12 — a sealed contract nobody re-checks is a promise.
+    """A sealed contract nobody re-checks is a promise.
     The witness recomputes every field from this checkout, these libraries,
     the package and the active manifest, and names each disagreement. Each
     field is mutated one at a time: a witness that passed a mutated schedule
@@ -3037,7 +3034,7 @@ def test_startup_witness_refuses_on_every_mismatched_field():
         problems.append(f"the witness checks only {len(clean)} fields")
 
     # Each mutation names the witness FIELD it must surface as. Under the
-    # git-path contract (Codex T50 §1) a wrong `instrument_commit` is no
+    # git-path contract a wrong `instrument_commit` is no
     # longer an equality mismatch — it surfaces as broken ancestry, which is
     # the property that actually matters.
     mutations = {
@@ -3047,13 +3044,13 @@ def test_startup_witness_refuses_on_every_mismatched_field():
         "execution_paths": (["environments/beancount_ledger/tests/**"], "execution_paths"),
         "execution_excludes": (["reviews/**"], "execution_excludes"),
         "instrument_identity_version": (999, "instrument_identity_version"),
-        # Codex T51 §1: the interpreter's bytes are sealed fields too, and the
+        # The interpreter's bytes are sealed fields too, and the
         # witness must name each of them on its own.
         "runtime_environment_digest": ("0" * 64, "runtime_environment_digest"),
         "runtime_environment_file_count": (999_999, "runtime_environment_file_count"),
         "runtime_environment_extra_file_count": (999_999, "runtime_environment_extra_file_count"),
         "runtime_environment_stdlib_file_count": (999_999, "runtime_environment_stdlib_file_count"),
-        # C1(b), the adversarial review of the T51 closures: the import
+        # C1(b), the adversarial review of the START-blocker closures: the import
         # environment is a sealed field of its own, so a sys.path entry that
         # nothing covers is NAMED rather than surfacing as an opaque digest
         # mismatch the operator cannot act on.
@@ -3111,7 +3108,7 @@ def test_startup_witness_refuses_on_every_mismatched_field():
 
 
 def test_capability_incompatibility_excludes_the_whole_configuration():
-    """Codex T49 §7 — the table classified capability rows individually and
+    """The table classified capability rows individually and
     dropped only their triplets, so a client/provider incompatibility became
     an arm-shaped hole in the panel. A configuration that cannot carry one
     arm's replayed payload leaves the comparison WHOLE, before any contrast."""
@@ -3145,7 +3142,7 @@ def test_capability_incompatibility_excludes_the_whole_configuration():
 
 
 def test_executed_order_census_is_reconstructed_and_disagrees_when_it_should():
-    """Codex T49 §5 — `render_census` used the SCHEDULED cells whenever a
+    """`render_census` used the SCHEDULED cells whenever a
     schedule was present, so it never proved the executed order followed the
     plan. The actual temporal census is reconstructed from the rows' own
     timestamps and session ids, and a block run split or out of order is
@@ -3457,7 +3454,7 @@ def test_a_corrupt_lock_or_claim_is_owned_by_someone_unknown():
             if ok or "UNREADABLE" not in note:
                 problems.append(f"{label}: acquire must refuse and say the holder is unknown: {note!r}")
             # Only the deliberate act clears it — and only once the lock is old
-            # enough to be called a corpse (Codex T51 §3).
+            # enough to be called a corpse.
             ok, note, _, _ = RA.acquire_schedule_lock(schedule_path, "s2", take_over=True)
             if ok or "younger than" not in note:
                 problems.append(f"{label}: a fresh unreadable lock must not be taken over: {note!r}")
@@ -3560,7 +3557,7 @@ def test_run_closure_integrity_cells_are_a_third_state_and_the_table_exits_nonze
 def test_an_inconclusive_capability_probe_refuses_the_configuration():
     """F6 — an INCONCLUSIVE probe (endpoint unreachable, or the model would
     not call a tool) established nothing, and the executor admitted the
-    configuration anyway. Starting untested is exactly what §7 forbids: it
+    configuration anyway. Starting untested is exactly what is forbidden: it
     must be re-run, or admitted by an explicit recorded operator act."""
     problems = []
     schedule = _sealed_schedule()
@@ -3611,7 +3608,7 @@ def test_an_inconclusive_capability_probe_refuses_the_configuration():
 
 
 def test_liveness_witness_envelopes_are_the_packages_own_constants():
-    """Codex T49 §13.6/Q14 — the deterministic witness must actually FAIL on
+    """The deterministic witness must actually FAIL on
     each envelope it claims to check, and must compare against the package's
     own constants rather than numbers repeated in the test."""
     problems = []
@@ -3656,7 +3653,7 @@ def test_liveness_witness_envelopes_are_the_packages_own_constants():
 
 
 # --------------------------------------------------------------------------
-# Codex T50 (HOLD): the seven defects, each with its own mutation witness.
+# The HOLD review: the seven defects, each with its own mutation witness.
 # Reverting any one of the fixes must fail the witness that names it.
 # --------------------------------------------------------------------------
 
@@ -3683,15 +3680,15 @@ def _write(path: Path, text: str) -> None:
 
 
 def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
-    """Codex T50 §1 — the DETERMINISTIC BLOCKER — and the adversarial review
+    """The DETERMINISTIC BLOCKER — and the adversarial review
     of the first fix, attack 1(h).
 
-    T50: `startup_witness` compared `git rev-parse HEAD` to the sealed
+    The blocker: `startup_witness` compared `git rev-parse HEAD` to the sealed
     `instrument_commit` for exact equality, while the sealed schedule is itself
     stored in the repository. Committing it MOVES HEAD, so the schedule could
-    never be executed from the commit it names — Codex found exactly that, with
-    the diff confined to `DURUM.md`, `GECE.md`, `design_chat/to_codex.md` and
-    the schedule file.
+    never be executed from the commit it names — the reviewer found exactly
+    that, with the diff confined to root notes files, a private notes directory
+    and the schedule file.
 
     The review then broke the first replacement, which asked git three
     questions (`status`, `diff`, `ls-tree`). All three answer about the INDEX,
@@ -3719,8 +3716,8 @@ def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
         _write(instrument / "beancount_ledger" / "__init__.py", "x = 1\n")
         _write(instrument / "pyproject.toml", "[project]\nname='x'\n")
         _write(instrument / "reviews" / "notes.md", "evidence\n")           # EXCLUDED from the walk
-        _write(root / "design_chat" / "to_codex.md", "turn 50\n")           # outside the execution root
-        _write(root / "DURUM.md", "state\n")                                # outside the execution root
+        _write(root / "notes" / "review.md", "turn 50\n")                  # outside the execution root
+        _write(root / "STATE.md", "state\n")                                # outside the execution root
         _write(root / ".gitignore", "*.pyc\n")                              # an EVIDENCE path
         run("add", "-A")
         run("commit", "-qm", "instrument")
@@ -3735,7 +3732,7 @@ def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
             problems.append("the evidence directory must be excluded from the instrument identity")
 
         # The runtime-environment rows are checked against the REAL interpreter
-        # (Codex T51 §1) — this witness is about the repository half of the
+        # — this witness is about the repository half of the
         # identity, so the environment half is sealed at its true value and
         # must stay green throughout. Its own mutation witness is
         # `test_the_runtime_environment_is_sealed_as_bytes_not_versions`.
@@ -3772,10 +3769,10 @@ def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
         # 1. EVIDENCE COMMITS ONLY after the seal — the exact situation that
         #    made the equality rule unsatisfiable. It must PASS.
         _write(instrument / "reviews" / "schedule_x.json", '{"sealed": true}\n')
-        _write(root / "GECE.md", "night log\n")
+        _write(root / "NIGHT.md", "night log\n")
         run("add", "-A")
         run("commit", "-qm", "evidence: the schedule and the logs")
-        _write(root / "design_chat" / "from_codex.md", "turn 50 as received\n")
+        _write(root / "notes" / "review_reply.md", "turn 50 as received\n")
         run("add", "-A")
         run("commit", "-qm", "evidence: the reviewer's turn")
         after = identity()
@@ -3813,7 +3810,7 @@ def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
 
         # 4. A DIRTY EVIDENCE FILE must PASS.
         _write(instrument / "reviews" / "arms_x.log", "session started\n")
-        _write(root / "DURUM.md", "state, edited mid-run\n")
+        _write(root / "STATE.md", "state, edited mid-run\n")
         if red(identity()):
             problems.append(f"a dirty EVIDENCE file must not refuse the run: {red(identity())}")
 
@@ -3928,7 +3925,7 @@ def test_instrument_identity_is_the_bytes_on_disk_not_gits_index():
 
 
 def test_free_text_429_is_never_a_rate_limit_needle():
-    """Codex T50 §2 — the literal `if "429" in blob` survived the "no digit in
+    """The literal `if "429" in blob` survived the "no digit in
     any map needle" witness because it sat OUTSIDE `ERROR_CLASS_RULES`. A row
     with no structured status whose free text merely CONTAINS 429 — a request
     id, a quota, a header value — could still be classified a rate limit,
@@ -3965,7 +3962,7 @@ def test_free_text_429_is_never_a_rate_limit_needle():
         if banned in source:
             problems.append(f"the retired free-text needle is still in the source: {banned}")
     # THE FALLBACK IS BOUND TO schedule_id. Mutating either the needles or the
-    # algorithm version must move `failure_map_digest` — the T50 §2 complaint
+    # algorithm version must move `failure_map_digest` — the reviewer's complaint
     # that the fallback lived outside every hashed constant.
     before = SA.failure_map_digest()
     saved_needles, saved_version = AT.RATE_LIMIT_TEXT_NEEDLES, AT.CLASSIFIER_ALGORITHM_VERSION
@@ -3988,7 +3985,7 @@ def test_free_text_429_is_never_a_rate_limit_needle():
 
 
 def test_window_evidence_separates_billed_rejected_and_current_request():
-    """Codex T50 §3 — the most important analysis defect. `window_snapshot`
+    """The most important analysis defect. `window_snapshot`
     folded three different claims into one number:
 
         if not billed: billed = estimated_request_tokens
@@ -3999,7 +3996,7 @@ def test_window_evidence_separates_billed_rejected_and_current_request():
     EXCLUDED the request being refused, so a window below quota that the
     current request would have crossed was called `exogenous`.
 
-    Both archived windows are witnessed here (his Q4), and the bounds rule
+    Both archived windows are witnessed here, and the bounds rule
     with them."""
     problems = []
     tpm, rpm = 356_250, 22.8
@@ -4084,14 +4081,14 @@ def test_window_evidence_separates_billed_rejected_and_current_request():
     if AT.dimension_verdict(snap, "tokens", 20_000)["state"] != "saturated":
         problems.append("billed 30,500 against a 20,000 quota IS established saturation")
 
-    # 5. The ADMISSION SEMANTICS are sealed as an explicit unknown (his Q3).
+    # 5. The ADMISSION SEMANTICS are sealed as an explicit unknown.
     if AT.ADMISSION_SEMANTICS != "undocumented":
         problems.append(f"the admission semantics must be sealed as undocumented: {AT.ADMISSION_SEMANTICS}")
     quotas = SA.provider_quota_table()
     if quotas.get("admission_semantics") != "undocumented":
         problems.append("the quota table must seal the admission semantics beside the numbers")
 
-    # 6. BOTH WINDOWS ARE ARCHIVED AND LABELLED (his Q4), through the real
+    # 6. BOTH WINDOWS ARE ARCHIVED AND LABELLED, through the real
     #    client path, with a real shared ledger.
     import tempfile
 
@@ -4153,7 +4150,7 @@ def test_window_evidence_separates_billed_rejected_and_current_request():
                 problems.append(f"the pre-request billed window is wrong: {pre['billed_tokens_total']}")
             if prospective["billed_tokens_total"] != pre["billed_tokens_total"]:
                 problems.append("the prospective window changed BILLED usage — the estimate is being "
-                                "presented as billed, which is exactly the conflation §3 forbids")
+                                "presented as billed, which is exactly the retired conflation")
             if prospective["rejected_estimate_tokens_total"] <= pre["rejected_estimate_tokens_total"]:
                 problems.append("the prospective window must add the current request as a REJECTED "
                                 "estimate")
@@ -4175,10 +4172,10 @@ def test_window_evidence_separates_billed_rejected_and_current_request():
 
 
 def test_tpm_and_rpm_are_evaluated_independently():
-    """Codex T50 §4 — `window_verdict` asked about tokens FIRST and never
+    """`window_verdict` asked about tokens FIRST and never
     looked at requests when tokens saturated, so a token window this cell was
     a minority of could hide a request window it was the majority of, and the
-    reverse. His four cases are pinned here."""
+    reverse. The reviewer's four cases are pinned here."""
     problems = []
     tpm, rpm = 356_250, 22.8
 
@@ -4255,14 +4252,14 @@ def test_tpm_and_rpm_are_evaluated_independently():
 
 
 def test_a_malformed_window_ledger_line_is_unhealthy_until_an_operator_recovers_it():
-    """Codex T50 §5 — `window_ledger_read` silently skipped every JSON parse
+    """`window_ledger_read` silently skipped every JSON parse
     failure. A killed process leaves a truncated final line; the next append
     concatenates onto it, so the damaged record becomes a malformed MIDDLE
     line and takes the following record with it. The reader then undercounts
     the window, paces from an older request, attaches no suspicion, and
     continues as if the evidence were complete.
 
-    The witness Codex asked for: "truncated final line, then resume and
+    The witness the reviewer asked for: "truncated final line, then resume and
     append"."""
     import tempfile
     problems = []
@@ -4316,7 +4313,7 @@ def test_a_malformed_window_ledger_line_is_unhealthy_until_an_operator_recovers_
         if not mb.window_ledger_health(ledger)["healthy"]:
             problems.append("after recovery the ledger must be healthy again")
 
-        # RESUME AND APPEND — the witness Codex named.
+        # RESUME AND APPEND — the witness the reviewer named.
         mb.window_ledger_append(ledger, {"t": now + 1, "provider": "mistral", "model": "m",
                                          "cell": "cellB", "status": "ok",
                                          "billed_input_tokens": 5_000, "billed_output_tokens": 50})
@@ -4399,7 +4396,7 @@ def test_a_malformed_window_ledger_line_is_unhealthy_until_an_operator_recovers_
 
 
 def test_the_execution_journal_fails_closed_in_confirmatory_mode():
-    """Codex T50 §6 — `journal()` was `except OSError: pass`, while the
+    """`journal()` was `except OSError: pass`, while the
     schedule claimed that a takeover is journalled BEFORE the probe, that a
     crashed cell stays visible through `cell_started`, that the actual order
     can be reconstructed and that exclusions and split sessions are recorded.
@@ -4412,7 +4409,7 @@ def test_the_execution_journal_fails_closed_in_confirmatory_mode():
             problems.append("a healthy append did not report success")
         written = json.loads(good.read_text(encoding="utf-8").splitlines()[0])
         if "runtime_head" not in written:
-            problems.append("every journal entry must carry the RUNTIME head (Codex T50 §1)")
+            problems.append("every journal entry must carry the RUNTIME head")
 
         # An unwritable path: a FILE where the directory must be.
         blocker = Path(directory) / "afile"
@@ -4476,14 +4473,14 @@ def test_the_execution_journal_fails_closed_in_confirmatory_mode():
 
 
 def test_a_sealed_schedule_refuses_the_probe_bypass_and_records_four_distinct_outcomes():
-    """Codex T50 §7 and §8/Q9 — `--no-probe-capabilities` was still accepted
+    """`--no-probe-capabilities` was still accepted
     for a sealed schedule, so rows created through it satisfied the same exact
     cell identity and entered the confirmatory table without the
     configuration-wide fact the analysis plan registers; and every non-admitted
     probe was journalled `capability_incompatible`, including an INCONCLUSIVE
     one. Unknown is not incompatible.
 
-    Q9: the table learns about a configuration-level exclusion from an
+    The table learns about a configuration-level exclusion from an
     immutable, content-bound RECORD, because the cells it blocks have no
     rows."""
     import contextlib
@@ -4659,10 +4656,10 @@ def test_a_sealed_schedule_refuses_the_probe_bypass_and_records_four_distinct_ou
 
 
 def test_the_table_renders_the_T50_execution_evidence():
-    """Codex T50 §9 — no new outcome metric and no new decision threshold; the
-    estimands are final. These are the six audit renderings he asks for before
-    resealing, each of which a T50 defect had made unreadable from the
-    archive."""
+    """No new outcome metric and no new decision threshold; the
+    estimands are final. These are the six audit renderings the reviewer asks
+    for before resealing, each of which one of the seven HOLD defects had made
+    unreadable from the archive."""
     import tempfile
     problems = []
     schedule = _sealed_schedule(label="evidw")
@@ -4723,7 +4720,7 @@ def test_the_table_renders_the_T50_execution_evidence():
         problems.append("the combined per-429 bucket is not rendered")
     if "arm_induced" not in text.split("Rate-limit (429) evidence")[1][:2000]:
         problems.append("the 429 evidence table does not carry the combined verdict")
-    # NO NEW OUTCOME (Codex T50 §9 opening): the evidence section adds no
+    # NO NEW OUTCOME: the evidence section adds no
     # estimand, no contrast and no threshold — it says so, and contains none.
     section = text.split("# Execution evidence")[1]
     if "No new outcome metric and no new decision threshold" not in section:
@@ -4740,13 +4737,13 @@ def test_the_table_renders_the_T50_execution_evidence():
 
 
 # --------------------------------------------------------------------------
-# Codex T51 (the second HOLD): the four START blockers, each with its own
+# The second HOLD review: the four START blockers, each with its own
 # mutation witness. Reverting any one of the fixes must fail the witness that
 # names it. NO LIVE PROVIDER CALL is made by any of them.
 # --------------------------------------------------------------------------
 
 def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
-    """Codex T51 §1 — the site-packages analogue of the module-shadow attack.
+    """The site-packages analogue of the module-shadow attack.
 
     `package_lock()` obtained `importlib.metadata.version()` for `openai` and
     `verifiers` plus the Python version; the startup witness recomputed the
@@ -4756,7 +4753,7 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
     reported the sealed version — and the transitive packages were even less
     covered than the two named ones.
 
-    THE MUTATION WITNESS he asks for (§1.4): append one comment byte to a real
+    THE MUTATION WITNESS the reviewer asks for: append one comment byte to a real
     installed `.py`, WITHOUT touching its version metadata, and prove the
     witness goes red while `importlib.metadata.version` still reports the
     sealed version. The file's exact bytes are copied first and restored in a
@@ -4839,7 +4836,7 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
         if "/__pycache__/" in key or key.endswith(".pyc"):
             problems.append(f"an excluded bytecode path entered the manifest: {key}")
 
-    # 3. THE DIGEST IS BOUND EVERYWHERE (§1.3): schedule, startup witness, row
+    # 3. THE DIGEST IS BOUND EVERYWHERE: schedule, startup witness, row
     #    provenance, table admission contract.
     identity = SA.instrument_identity()
     if identity.get("runtime_environment_digest") != sealed:
@@ -4908,7 +4905,7 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
             mutated_digest = SA.environment_manifest_digest(after)
             if mutated_digest == sealed:
                 problems.append("A BYTE EDIT TO AN INSTALLED openai/*.py LEFT THE ENVIRONMENT DIGEST "
-                                "UNCHANGED — this is exactly the T51 §1 attack, and the digest does not "
+                                "UNCHANGED — this is exactly the module-shadow attack, and the digest does not "
                                 "see it")
             if len(after["files"]) != len(manifest["files"]):
                 problems.append("an EDITED file must not change the file COUNT — the two rows say "
@@ -4997,10 +4994,10 @@ def test_the_runtime_environment_is_sealed_as_bytes_not_versions():
 
 
 def test_the_instrument_is_verified_per_cell_and_per_request_and_drift_makes_no_call():
-    """Codex T51 §2 — "the execution-tree seal is checked once, but the
+    """The objection — "the execution-tree seal is checked once, but the
     experiment lasts 6–7 hours".
 
-    His concrete bad execution: pass startup, change an executable file before
+    The reviewer's concrete bad execution: pass startup, change an executable file before
     a later cell, let that fresh subprocess write a row bearing the changed
     digest, and render the table. The old `render_instrument_identity` reported
     "DIFFERENT from the sealed instrument tree" and computed the confirmatory
@@ -5245,7 +5242,7 @@ def test_the_instrument_is_verified_per_cell_and_per_request_and_drift_makes_no_
 
 
 def test_a_corrupt_execution_journal_fails_closed_and_recovers_only_after_rows_exist():
-    """Codex T51 §4 — the execution journal was append-only in INTENT but not
+    """The execution journal was append-only in INTENT but not
     fail-closed on corruption.
 
     `journal()` appended under the lock without validating the existing
@@ -5258,7 +5255,7 @@ def test_a_corrupt_execution_journal_fails_closed_and_recovers_only_after_rows_e
     machine-readable sequence, while the confirmatory table still rendered.
 
     Both damage shapes are witnessed, neither may reach a provider call or an
-    ordinary confirmatory table, and the recovery policy is his own Q4 answer:
+    ordinary confirmatory table, and the recovery policy is the reviewer's own:
     abort-and-reseal BEFORE the first real row, explicit segment recovery only
     after rows exist.
     """
@@ -5356,7 +5353,7 @@ def test_a_corrupt_execution_journal_fails_closed_and_recovers_only_after_rows_e
             if "execution_journal" not in err.getvalue():
                 problems.append(f"{shape}: the refusal does not name the execution journal")
 
-            # 5. RECOVERY IS REFUSED BEFORE THE FIRST REAL ROW (his Q4): there
+            # 5. RECOVERY IS REFUSED BEFORE THE FIRST REAL ROW: there
             #    is no recovery path there — abort and RESEAL.
             err, saved_argv = io.StringIO(), sys.argv
             sys.argv = ["run_arms.py", "--schedule", str(path), "--reviews-dir", str(reviews),
@@ -5510,9 +5507,9 @@ def _environment_contract(manifest, fixture):
 
 
 def test_the_import_environment_and_the_bytecode_cache_are_sealed():
-    """The three perimeter bypasses the adversarial review of the T51 closures
-    found, each with its own witness. All three change what the interpreter
-    EXECUTES without changing one byte the T51 manifest hashed.
+    """The three perimeter bypasses the adversarial review of the START-blocker
+    closures found, each with its own witness. All three change what the
+    interpreter EXECUTES without changing one byte the sealed manifest hashed.
 
     C1  `PYTHONPATH` was not in the walk. A directory named there is prepended
         to `sys.path`, so it shadows any sealed module — `openai/`, `json/`,
@@ -5893,17 +5890,17 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
 
 
 # --------------------------------------------------------------------------
-# Codex T52 — the two report-only corrections before the M3 release
-# artefacts freeze: the census invariant (§2) and the wording softening
-# (§3/§4), plus the T51 §12 audit block (§1).
+# The two report-only corrections before the M3 release
+# artefacts freeze: the census invariant and the wording softening,
+# plus the post-run-correction audit block.
 # --------------------------------------------------------------------------
 
 def test_census_invariant_fails_closed_on_a_crafted_disagreement():
-    """`AT.census_breakdown` (Codex T52 §2) must raise `CensusInvariantViolation`
+    """`AT.census_breakdown` must raise `CensusInvariantViolation`
     — never merely print — the instant the two independently-derived census
     identities disagree, and must NOT raise on a genuinely consistent map.
 
-    The second fixture reproduces the EXACT class of bug Codex found, not a
+    The second fixture reproduces the EXACT class of bug the reviewer found, not a
     contrived one: a row that is non-quarantined (so the header's own
     `is_quarantined` + `row_status` view calls it VALID, since
     `measure_budget.validate_row` never looks at an `error` field) but
@@ -5964,12 +5961,12 @@ def test_census_invariant_fails_closed_on_a_crafted_disagreement():
 
 
 def test_confirm1v4_real_archive_census_unrun_tuple_and_wording():
-    """Against the REAL sealed confirm1v4 archive (Codex T52 §1-§4) — not a
-    fixture: the exact defect he found and the exact corrections he asked
-    for, verified over the 143 rows actually written under
+    """Against the REAL sealed confirm1v4 archive — not a
+    fixture: the exact defect the reviewer found and the exact corrections
+    asked for, verified over the 143 rows actually written under
     `reviews/schedule_confirm1v4.json`.
 
-      §2 census: `census_breakdown` must not raise over the real archive,
+      Census: `census_breakdown` must not raise over the real archive,
       and must report EXACTLY 144 = 143 + 1 unrun + 0 integrity; 143 = 138
       valid + 5 provider_failed + 0 instrument_invalid + 0 other_classified.
       The corrected `### Scheduled but not run` section must list EXACTLY
@@ -5978,14 +5975,14 @@ def test_confirm1v4_real_archive_census_unrun_tuple_and_wording():
       and the old contradiction ("0 of 144 scheduled cells have no row")
       must not reappear.
 
-      §3/§4 wording: `P(arm dominates)` is labelled a bootstrap resample
+      Wording: `P(arm dominates)` is labelled a bootstrap resample
       frequency; the exact "excludes zero"/"excludes one" phrasing is
       present; the devstral B2' paired discordant counts render as the
       real data gives them (4 vs 0, p = 0.125); the reward-spread caption
       says "capability-sensitive, non-degenerate reward signal" and never
       claims a "learnable gradient".
 
-      §1 audit: the post-run-correction block names 138 VALID rows, commit
+      Audit: the post-run-correction block names 138 VALID rows, commit
       `d4ba5f1`, the schedule's own `analysis_plan_sha256`, and the
       redundant environment-side suspicion witness (138/138 present, 0
       flagged) — this run's own archived data, not an assertion.
@@ -6042,7 +6039,7 @@ def test_confirm1v4_real_archive_census_unrun_tuple_and_wording():
 
     return check("the real confirm1v4 archive's census invariants hold, the corrected 'Scheduled but "
                  "not run' section lists the exact missing tuple with no contradiction, the softened "
-                 "bootstrap/discordant-count wording renders with the real numbers, and the T51 §12 "
+                 "bootstrap/discordant-count wording renders with the real numbers, and the post-run "
                  "audit block names the real commit/sha/witness counts",
                  not problems, "\n".join(problems))
 
@@ -6087,7 +6084,7 @@ TESTS = [
     test_a_partial_output_file_is_re_run_and_rows_are_written_atomically,
     test_two_executors_on_one_cell_and_exactly_one_runs,
     test_rate_limit_classification_uses_the_observed_rolling_window,
-    # Codex T49's pre-start checklist
+    # the pre-start checklist
     test_schedule_v2_seals_the_experiment_contract,
     test_exact_cell_identity_refuses_partials_duplicates_and_missing_schedule_ids,
     test_force_and_manual_completion_are_refused_for_a_sealed_schedule,
@@ -6100,14 +6097,14 @@ TESTS = [
     test_capability_incompatibility_excludes_the_whole_configuration,
     test_executed_order_census_is_reconstructed_and_disagrees_when_it_should,
     test_liveness_witness_envelopes_are_the_packages_own_constants,
-    # the T49 adversarial review's own findings
+    # the adversarial review's own findings
     test_a_numeric_class_only_ever_matches_a_status_field_never_a_substring,
     test_the_writer_refuses_to_overwrite_an_observed_scheduled_cell,
     test_the_window_ledger_fails_loud_and_marks_the_row,
     test_a_corrupt_lock_or_claim_is_owned_by_someone_unknown,
     test_run_closure_integrity_cells_are_a_third_state_and_the_table_exits_nonzero,
     test_an_inconclusive_capability_probe_refuses_the_configuration,
-    # Codex T50's seven defects, each with its own mutation witness
+    # the seven HOLD defects, each with its own mutation witness
     test_instrument_identity_is_the_bytes_on_disk_not_gits_index,
     test_free_text_429_is_never_a_rate_limit_needle,
     test_window_evidence_separates_billed_rejected_and_current_request,
@@ -6116,13 +6113,13 @@ TESTS = [
     test_the_execution_journal_fails_closed_in_confirmatory_mode,
     test_a_sealed_schedule_refuses_the_probe_bypass_and_records_four_distinct_outcomes,
     test_the_table_renders_the_T50_execution_evidence,
-    # Codex T51's four START blockers, each with its own mutation witness
+    # the four START blockers, each with its own mutation witness
     test_the_runtime_environment_is_sealed_as_bytes_not_versions,
     test_the_instrument_is_verified_per_cell_and_per_request_and_drift_makes_no_call,
     test_a_corrupt_execution_journal_fails_closed_and_recovers_only_after_rows_exist,
-    # the adversarial review of the T51 closures: the three perimeter bypasses
+    # the adversarial review of the START-blocker closures: the three perimeter bypasses
     test_the_import_environment_and_the_bytecode_cache_are_sealed,
-    # Codex T52's two report-only corrections before the M3 freeze
+    # the two report-only corrections before the M3 freeze
     test_census_invariant_fails_closed_on_a_crafted_disagreement,
     test_confirm1v4_real_archive_census_unrun_tuple_and_wording,
 ]

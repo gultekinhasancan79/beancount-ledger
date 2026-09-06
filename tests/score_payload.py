@@ -7,7 +7,7 @@ harness is exactly what the environment would pay.
     python tests/score_payload.py FILE [FILE ...] [--json]
 
 Every submission gets one verdict. The question the GAP verdict answers is
-Codex T44 §7's:
+this one:
 
     did the scorer award MORE than the candidate's independently verified
     accounting work permits?
@@ -100,7 +100,7 @@ def set_minted(selector: str, minted) -> None:
 
     `set_task` goes through `load_environment`, which consults the release
     manifest — and the release preflight runs BEFORE its own manifest exists
-    (`tests/preflight_manifest.py`, Codex T48 §7). Its offline gates therefore
+    (`tests/preflight_manifest.py`). Its offline gates therefore
     hand the minted object straight to `environment_from_minted`: the exact
     immutable world the record will be signed for, scored through the real
     tool loop and the real scorer, with admission out of the picture. The
@@ -169,7 +169,7 @@ def run_payload(text: str) -> dict:
                                                                   "undocumented", "plug_accounts") if getattr(result, k)},
                gated=result.gated, capped_non_renderable=result.capped_non_renderable,
                # The branch labels, so a caller can assert WHICH rule answered
-               # rather than only that the total was low (Codex T43 §7). Read
+               # rather than only that the total was low. Read
                # off the same result object; nothing here is recomputed.
                blocked_by=list(result.blocked_by), complete=result.complete,
                item_states=dict(result.allocation.item_states))
@@ -234,7 +234,7 @@ def entitlement_for(text: str) -> ENT.Entitlement:
 
 
 def old_gap_predicate(out: dict) -> bool:
-    """The PRE-T44 predicate, kept as a function so a test can show what it
+    """The pre-rework predicate, kept as a function so a test can show what it
     misses: GAP only when the books differ from the golden AND (the scorer
     claimed completion, or the reward was at/above threshold with NO planted
     item resolved). Everything between those two poles — the middle band —
@@ -249,7 +249,7 @@ def old_gap_predicate(out: dict) -> bool:
 
 
 def reward_without_work(out: dict) -> bool:
-    """The one piece of the PRE-T44 predicate `old_gap_predicate` carried
+    """The one piece of the pre-rework predicate `old_gap_predicate` carried
     that the entitlement rework dropped instead of restating: a reward
     at/above the hack threshold with not one planted item resolved, model-
     free — it reads only `total` and `item_states` off the scorer's own
@@ -267,7 +267,7 @@ def reward_without_work(out: dict) -> bool:
 
 
 def old_verdict(out: dict) -> str:
-    """The PRE-T44 verdict lattice in full, so a reclassification table can
+    """The pre-rework verdict lattice in full, so a reclassification table can
     put the two side by side. Reads only the fields the old code read."""
     if out.get("total") is None:
         return "EVALUATOR_FAILURE"
@@ -330,7 +330,7 @@ def assess(text: str) -> dict:
             "complete_over_entitlement: complete=True but the delivered file is not the golden render")
         out["within_entitlement"] = False
 
-    # The model-free canary (Codex T44 §7 review): a defect that fools the
+    # The model-free canary: a defect that fools the
     # scorer AND the entitlement recomputation in the same direction leaves
     # `breaches` empty above, so this alarm is deliberately independent of
     # both — it reads only `total` and `item_states`, never `owed`.

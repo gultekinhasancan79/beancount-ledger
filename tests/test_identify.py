@@ -22,7 +22,7 @@ worth anything.
     the wrong vector, and an entry the books carry twice — are reported as a
     wrong-amount candidate and a duplicate candidate, each uniquely.
 
-Since the matching rewrite (Codex T41 §3) a second block of fixtures carries
+Since the matching rewrite a second block of fixtures carries
 the weight the generator cannot: the generator draws every statement amount
 distinct and every reference once, so 30/30 green seeds would stay green even
 if the checker leaned on those conveniences. The fixtures below take them
@@ -455,7 +455,7 @@ def test_two_receipts_of_one_amount_are_not_decidable_by_amount():
 
 def test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount():
     """The same fixture with the invoice number the bank prints — and under
-    the reference ontology (Codex T43 §4) that is NOT enough.
+    the reference ontology that is NOT enough.
 
     `SI-1052` is quoted once across the statement, the archive and the bank
     movements of the ledger, so it was decisive until IDENTIFY_VERSION 7. It
@@ -470,7 +470,7 @@ def test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount():
 
     This is a deliberate contract change, not a regression: the previous
     expectation was that a globally unique invoice number decides a pairing,
-    which is the class of claim Codex refused.
+    which is the class of claim the reviewer refused.
     """
     verdict = verdict_of(two_receipts_of_one_amount("SI-1052", ", settling SI-1052"))
     stated = "matches 2 different ledger movements" in verdict.reason
@@ -506,7 +506,7 @@ def test_a_cheque_number_does_decide_between_two_receipts_of_one_amount():
 
 
 def two_partial_receipts_on_one_invoice(instrument: bool = False) -> dict:
-    """Codex T43 §4's fixture. One sales invoice, two PART payments of the
+    """One sales invoice, two PART payments of the
     same amount, one of them still in transit, and a bank row for that amount.
 
     The books carry 1,500.00 received on 20 November and 1,500.00 received on
@@ -615,7 +615,7 @@ def test_the_reference_ontology_classifies_every_shape_the_worlds_publish():
 
 
 def test_an_invoice_id_alone_never_founds_an_alteration_edge():
-    """Codex T43 §4's class, at the edge level rather than the verdict level.
+    """The invoice-id class, at the edge level rather than the verdict level.
 
     A row and an entry that quote one invoice, differ in amount, and share
     NOTHING else — no counterparty on the row, no fee class — must not be
@@ -755,7 +755,7 @@ def test_two_altered_fees_are_ambiguous_under_public_constraints():
     or both mis-keyed. Both pairings cost one alteration each and no public
     text promises that a mis-keyed entry keeps its day and wording, so under
     the public constraints alone the verdict is AMBIGUOUS (two readings) —
-    and `mint` refuses such a world (Codex T42 §5). The verdict carries the
+    and `mint` refuses such a world. The verdict carries the
     diagnostic ranking the prior would give, labelled as such."""
     verdict = verdict_of(two_altered_fees(same_wording=False, same_day=False))
     ranked = [a for a in verdict.ambiguities if a.startswith("diagnostic ranking")]
@@ -985,7 +985,7 @@ def duplicated_fee_twin() -> dict:
 
 
 def test_a_duplicated_fee_twin_beside_a_missing_fee_row_is_ambiguous():
-    """The train:184 class, which cardinality used to hide (Codex T42 Q4).
+    """The train:184 class, which cardinality used to hide.
 
     Two readings explain this month completely:
 
@@ -1176,7 +1176,7 @@ def test_the_supplier_payment_key_is_the_planted_key_literally():
 
     Pinned as a value rather than as an equality between two functions: if
     `repair_key` and `planted_key` both drifted the same way, an
-    equality-only test would still pass (Codex T43 Q3).
+    equality-only test would still pass.
     """
     world, base = REGISTRY["bank_recon_001"]
     plan = PJ.MutationPlan((PJ.OmitRecognition("unrecorded_supplier_payment", "rec:pi-2211-payment",
@@ -1281,7 +1281,7 @@ def test_the_policy_section_is_in_every_world_the_environment_ships():
 
 
 # --------------------------------------------------------------------------
-# currency and annotations: refused at the parse boundary (Codex T43 §2, Q2)
+# currency and annotations: refused at the parse boundary
 # --------------------------------------------------------------------------
 
 def test_costs_prices_and_a_second_currency_never_reach_the_scorer():
@@ -1335,7 +1335,7 @@ def test_costs_prices_and_a_second_currency_never_reach_the_scorer():
 
 
 def test_both_key_implementations_match_literal_tuples_per_kind():
-    """Codex T43 Q3: literal pins, one fixture per planted kind.
+    """Literal pins, one fixture per planted kind.
 
     `identify.repair_key` and `derive.planted_key` are separate
     implementations, and this compares each of them to a WRITTEN-OUT tuple

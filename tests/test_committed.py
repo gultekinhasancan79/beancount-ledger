@@ -131,7 +131,7 @@ def test_parser_provenance_never_enters_identity_or_score():
     # The evaluation receipt binds the INPUT receipt (source digests) and
     # must move: same semantics, different provenance, two evaluations. The
     # name promises exactly that, so the reverse use — treating it as a
-    # semantic equivalence key — cannot happen by accident (Codex T39 §2).
+    # semantic equivalence key — cannot happen by accident.
     if a.evaluation_receipt_digest == b.evaluation_receipt_digest:
         problems.append("the evaluation receipt did not move with the source: it is binding semantics only")
     if a.allocation != b.allocation:
@@ -541,7 +541,7 @@ def _loop_env():
 
 
 def test_publication_is_revisioned_and_transactional():
-    """Codex T39 §1: a failed revision must not leave a stale ledger looking
+    """A failed revision must not leave a stale ledger looking
     current; score publication is one transaction with rendering, atomic
     replacement, verified-handle hashing and manifest construction; the
     idempotence key is rollout + revision + input receipt."""
@@ -724,7 +724,7 @@ def test_the_audit_archive_is_contained():
 
 
 def test_reserved_key_scanner_agrees_with_beancounts_lexer():
-    """Codex T39 Q5. The scanner flags a line exactly when Beancount's own
+    """The scanner flags a line exactly when Beancount's own
     lexer produces a KEY token with a reserved name there: spaces before
     the colon, tabs, CRLF, capitals, non-ASCII, underscores, posting-level
     keys, comments, strings, and a key inside a multi-line string."""
@@ -781,7 +781,7 @@ def test_reserved_key_scanner_agrees_with_beancounts_lexer():
 
 
 def test_stale_state_after_an_episode_reset_is_refused():
-    """Codex T39 Q7: state carried across rollouts is refused by rollout id
+    """State carried across rollouts is refused by rollout id
     and revision, not scored."""
     env, s1, write1 = _loop_env()
     write1(GOLDEN)
@@ -815,7 +815,7 @@ def test_stale_state_after_an_episode_reset_is_refused():
 
 
 def test_retained_fields_are_constrained_or_replaced():
-    """Codex T39 (rewrite) §1: every field the renderer prints is exact for a
+    """Every field the renderer prints is exact for a
     pre-existing entry, scored-or-replaced for a planted repair. The
     displacement attack — the stripped prose moved into the repair's
     narration, plus tags, links and a well-formed reference — scores 1.0
@@ -877,7 +877,7 @@ def test_retained_fields_are_constrained_or_replaced():
 
 
 def test_the_recorded_result_is_bound_not_only_the_number():
-    """Codex T39 (rewrite) §2: after a successful delivery, mutating the
+    """After a successful delivery, mutating the
     recorded result in any way makes re-finalisation an evaluator failure."""
     env, state, write = _loop_env()
     write(GOLDEN)
@@ -943,7 +943,7 @@ def test_the_recorded_result_is_bound_not_only_the_number():
 
 
 def test_scoring_reads_the_frozen_policy_snapshot():
-    """Codex T39 (rewrite) §5 — snapshot semantics, chosen and tested: the
+    """Snapshot semantics, chosen and tested: the
     scorer consults the environment's frozen policy, never the live
     registries; a registry mutated after minting — or DURING scoring, from
     another thread — changes nothing; a mutated snapshot is refused."""
@@ -1222,7 +1222,7 @@ def test_alter_and_duplicate_scoring_semantics():
 
 
 def test_the_four_identities_the_reward_key_composes():
-    """Codex T43 §2: each component of item identity, shown separately.
+    """Each component of item identity, shown separately.
 
     The full repair key is `(kind, date, postings, counterparty, booked bank
     amount, copies)`, and the sweep compares whole tuples. That is only

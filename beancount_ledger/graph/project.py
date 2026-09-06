@@ -123,7 +123,7 @@ ALTER_STRATEGIES = ("transpose_digits", "drop_digit", "decimal_shift")
 @dataclass(frozen=True)
 class AlterRecognition:
     """The books carry the entry with a WRONG amount produced by a typed,
-    plausible bookkeeping error — never an authored vector (Codex T40):
+    plausible bookkeeping error — never an authored vector:
 
         transpose_digits(i)   swap the digits at positions i and i+1 of the
                               absolute amount in cents
@@ -204,7 +204,7 @@ def _mutation_canonical(m) -> dict:
 
 
 # Recognitions an alteration or duplicate may target in M1: settlement-derived,
-# two-sided, with a direct bank row (Codex T40). Sale, COGS, purchase and the
+# two-sided, with a direct bank row. Sale, COGS, purchase and the
 # opening entry are not mutable this way — their truth is only indirectly
 # evidenced.
 MUTABLE_RULES = ("customer_receipt", "vendor_payment", "expense_payment", "prepayment", "bank_fee")
@@ -421,7 +421,7 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
                 # generated worlds produced no crossing at all. The branch is
                 # covered by `tests/test_lag.py`'s hand-authored fixture
                 # instead, which also asserts that the generator still cannot
-                # produce one (Codex T43 §1; the verifier's dead-code report).
+                # produce one (the verifier's dead-code report).
                 abs_.append(Absence(name, rec.id, Reason.PLANTED_MUTATION, mutation.mutation_id)
                             if period.contains(restated.get(rec.id, rec.date))
                             else Absence(name, rec.id, Reason.OUTSIDE_PERIOD))
