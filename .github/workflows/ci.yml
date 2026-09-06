@@ -33,7 +33,7 @@ jobs:
 
       - name: Install (exact pins from pyproject)
         run: |
-          uv venv .venv --clear
+          uv venv .venv --clear --python-preference only-managed
           uv pip install -e .
 
       - name: Pins match the package's declared set

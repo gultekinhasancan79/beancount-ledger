@@ -5609,14 +5609,25 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
     nonce = _uuid.uuid4().hex[:12]
     added = [layout["scripts_dir"] / f"_piv_c3_witness_{nonce}{layout['script_suffix']}",
              layout["extension_dir"] / f"_piv_c3_witness_{nonce}{layout['extension_suffix']}"]
-    written = []
+    written, unwritable = [], []
     try:
         for path in added:
             try:
                 path.write_bytes(b"; piv C3 witness, removed by the finally below\n")
                 written.append(path)
+            except PermissionError as exc:                                 # noqa: PERF203
+                # A system-owned interpreter (a distribution's /usr/lib python
+                # on a CI runner) refuses the plant; the directory is still
+                # classified by the walk, it just cannot be witnessed by an
+                # addition there. One witness must land somewhere.
+                unwritable.append(f"{path}: {exc}")
             except OSError as exc:                                         # noqa: BLE001, PERF203
                 problems.append(f"C3: could not write the witness file {path}: {exc}")
+        if unwritable and not written:
+            problems.append("C3: no witness file could be written anywhere: " + "; ".join(unwritable))
+        elif unwritable:
+            print("      · C3: witness not plantable in a system-owned directory (the walk still classifies it): "
+                  + "; ".join(unwritable))
         if written:
             after = SA.runtime_environment_manifest(use_cache=False)
             if SA.environment_manifest_digest(after) == sealed:
