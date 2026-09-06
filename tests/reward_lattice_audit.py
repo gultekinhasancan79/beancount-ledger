@@ -12,8 +12,14 @@ Per world the audit checks:
                    removed/altered, fabricated, merged, undocumented, plug)
   expected states  every subset is delivered (renderable) and scores exactly
                    0.70 * targets_hit + 0.30 * |S|/k, where a target counts as
-                   hit when every planted item touching it is in S; the full
-                   set scores 1.0 and is complete; nothing else is complete
+                   hit when the residuals of the items NOT in S sum to zero on
+                   it (normally: every item touching it is in S); the full set
+                   scores 1.0 and is complete; nothing else is complete
+  cancelling hits  counted separately: a target whose balance is right while
+                   two or more unresolved items still touch it, because their
+                   residuals cancel there (two transpositions of the same
+                   magnitude on the bank leg, in opposite directions) — the
+                   scorer is balance-based, so this is expected, and rare
   marginal jumps   the distribution of R(S + {e}) - R(S) (p50/p90/p95/p99/max),
                    and for every jump above 0.25 whether the bank target is
                    what unlocked it
@@ -212,6 +218,19 @@ def percentile(values, q: float) -> float:
     return s[k]
 
 
+def item_residual(p) -> dict:
+    """Clean vector minus observed vector per account, as derive computes it:
+    an omission leaves the clean legs missing, an alteration the difference
+    to the wrong figure, a duplicate an extra copy."""
+    clean = {a: Decimal(str(v)) for a, v in p.required}
+    if p.kind == "omit":
+        return dict(clean)
+    if p.kind == "alter":
+        wrong = {a: Decimal(str(v)) for a, v in p.replaces}
+        return {a: clean[a] - wrong.get(a, Decimal(0)) for a in clean}
+    return {a: -v for a, v in clean.items()}
+
+
 def audit(selector: str, loop_sample: int) -> dict:
     t0 = time.time()
     try:
@@ -231,11 +250,12 @@ def audit(selector: str, loop_sample: int) -> dict:
     targets = list(contract.scored_accounts)
     bank = next((a for a in targets if a.startswith("Assets:Bank")), targets[0] if targets else "")
     touch = {a: {i for i, p in enumerate(items) if any(x == a for x, _ in p.required)} for a in targets}
+    residual = [item_residual(p) for p in items]
 
     rec = {"selector": selector, "generator_version": GENERATOR_VERSION, "k": k,
            "kinds": [p.kind for p in items], "targets": targets, "n_subsets": 2 ** k,
            "monotonicity_violations": [], "penalty_activations": [], "unexpected_states": [],
-           "big_jumps": [], "loop_mismatches": [], "loop_checked": 0}
+           "cancelling_hits": [], "big_jumps": [], "loop_mismatches": [], "loop_checked": 0}
     scores: dict = {}
     texts: dict = {}
     rev = 0
@@ -251,14 +271,21 @@ def audit(selector: str, loop_sample: int) -> dict:
             scores[subset] = s
             texts[subset] = text
             S = set(subset)
-            hit = sum(1 for a in targets if touch[a] <= S) / len(targets)
-            predicted = round(0.7 * hit + 0.3 * n / k, 6)
+            hit_touch = sum(1 for a in targets if touch[a] <= S) / len(targets)
+            # balance semantics: a target is right when the unresolved residuals sum to zero on it
+            cancelled = [a for a in targets if not touch[a] <= S
+                         and sum((residual[i].get(a, Decimal(0)) for i in range(k) if i not in S), Decimal(0)) == 0]
+            hit_balance = hit_touch + len(cancelled) / len(targets)
+            predicted = round(0.7 * hit_balance + 0.3 * n / k, 6)
             if s["outcome"] != "delivered":
                 rec["unexpected_states"].append({"subset": list(subset), "why": s["outcome"], "detail": s.get("reason") or s.get("detail")})
             elif abs(round(s["reward"], 6) - predicted) > 1e-6:
                 rec["unexpected_states"].append({"subset": list(subset), "why": "reward differs from the contract's arithmetic",
                                                  "reward": s["reward"], "predicted": predicted,
                                                  "targets_hit": s["targets_hit"], "errors_resolved": s["errors_resolved"]})
+            elif cancelled:
+                rec["cancelling_hits"].append({"subset": list(subset), "targets": cancelled,
+                                               "unresolved": [items[i].id for i in range(k) if i not in S]})
             if s.get("penalties"):
                 rec["penalty_activations"].append({"subset": list(subset), "penalties": s["penalties"]})
             if n == k and (s["reward"] != 1.0 or not s.get("complete")):
@@ -357,6 +384,8 @@ def main() -> int:
     pen = sum(len(r["penalty_activations"]) for r in ok)
     unexpected = sum(len(r["unexpected_states"]) for r in ok)
     mismatches = sum(len(r["loop_mismatches"]) for r in ok)
+    cancelling = sum(len(r["cancelling_hits"]) for r in ok)
+    cancelling_worlds = sum(1 for r in ok if r["cancelling_hits"])
     loop_checked = sum(r["loop_checked"] for r in ok)
     subsets = sum(r["n_subsets"] for r in ok)
     all_jumps_p95 = sorted(r["jumps"]["p95"] for r in ok)
@@ -378,6 +407,11 @@ def main() -> int:
           f"{big_bank} of them unlock the bank target ({100.0 * big_bank / big if big else 0:.1f}%)")
     print(f"      ladder rungs per world: min {min(ladder_sizes) if ladder_sizes else 0}, median "
           f"{statistics.median(ladder_sizes) if ladder_sizes else 0}, max {max(ladder_sizes) if ladder_sizes else 0}")
+    print(f"      cancelling hits (a target right while unresolved residuals cancel on it): {cancelling} subsets in "
+          f"{cancelling_worlds} worlds")
+    for r in ok:
+        for v in r["cancelling_hits"][:2]:
+            print(f"   CANCELLING {r['selector']}: {v}")
     for r in refused[:5]:
         print(f"   REFUSED {r['selector']}: {r['refused']}")
     for r in crashed[:5]:
@@ -398,6 +432,7 @@ def main() -> int:
                    "subsets": subsets, "loop_checked": loop_checked, "monotonicity_violations": mono,
                    "penalty_activations": pen, "unexpected_states": unexpected, "loop_mismatches": mismatches,
                    "jumps": n_jumps, "big_jumps": big, "big_jumps_bank": big_bank, "max_jump": max_jump,
+                   "cancelling_hits": cancelling, "cancelling_worlds": cancelling_worlds,
                    "seconds": round(time.time() - t0)}
         args.json.write_text(json.dumps({"summary": summary, "worlds": rows}, indent=1, default=str), encoding="utf-8")
         print(f"written {args.json}")
