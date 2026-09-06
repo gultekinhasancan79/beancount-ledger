@@ -5579,10 +5579,26 @@ def test_the_import_environment_and_the_bytecode_cache_are_sealed():
                         "whether the system site-packages are visible — is not hashed")
     extensions = sorted(k for k in keys if k.startswith(extension_prefix)
                         and k.endswith(layout["extension_suffix"]))
-    if len(extensions) < 10:
+    # Every extension module the interpreter ships on disk must be hashed. How
+    # many that is depends on the build: a distribution python keeps dozens of
+    # .so in lib-dynload, a statically linked build (uv's python-build-standalone)
+    # keeps _ssl, _socket and select inside the binary and only a handful on
+    # disk. The walk is judged against the directory, not against a count.
+    try:
+        on_disk = sorted(p.name for p in Path(layout["extension_dir"]).iterdir()
+                         if p.is_file() and p.name.endswith(layout["extension_suffix"]))
+    except OSError as exc:
+        on_disk = []
+        problems.append(f"C3: {extension_prefix.rstrip('/')} could not be listed: {exc}")
+    hashed_names = {k.rsplit("/", 1)[-1] for k in extensions}
+    missing = [name for name in on_disk if name not in hashed_names]
+    if not on_disk and not problems:
+        problems.append(f"C3: {extension_prefix.rstrip('/')} holds no {layout['extension_suffix']} at all — "
+                        "the layout resolved the wrong directory")
+    if missing:
         problems.append(f"C3: {extension_prefix.rstrip('/')} holds the extension modules every provider "
-                        f"request runs through (_ssl, _socket, select) and only {len(extensions)} "
-                        f"{layout['extension_suffix']} are hashed")
+                        f"request runs through and {len(missing)} of its {len(on_disk)} "
+                        f"{layout['extension_suffix']} are not hashed: {missing[:5]}")
     scripts = sorted(k for k in keys if k.startswith(scripts_prefix))
     if not any(k.rsplit("/", 1)[-1].startswith("activate") for k in scripts):
         problems.append(f"C3: {scripts_prefix.rstrip('/')} is hashed only where a RECORD references it "
