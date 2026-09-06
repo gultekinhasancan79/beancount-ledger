@@ -19,7 +19,7 @@ paid online the month after. Relief staff and the practice manager claim
 mileage and conference travel and are reimbursed by printed check; the
 practice vehicle runs on a fuel card. Software, phone lines, stationery and
 autoclave servicing go on the debit card. A dental radiography set was
-bought for cash in December, and the sister company set up in the autumn,
+bought outright in December, and the sister company set up in the autumn,
 Maple Street Equine Services LLC, was advanced working capital twice.
 
 Every task sees the same statement and the same golden facts; the tasks
@@ -203,6 +203,12 @@ service's `default_account`, reducing the liability. The gross-up journal
 that raises the withholdings for a month is posted from the payroll
 bureau's register in the following month, after the bank reconciliation.
 No payable is raised for payroll or for a remittance.
+A net pay or remittance check the statement shows that the books lack is
+added for the payee and the amount the statement shows, against that
+payee's account in the vendor master, on the date the bank shows. A net
+pay check posted with a mis-keyed amount is re-posted with the amount the
+statement shows, on the date the entry was originally posted; only the
+amount changes.
 
 ## Sales tax
 The clinic collects sales tax from clients on treatment fees and dispensed
@@ -227,6 +233,10 @@ amount of the check, and no payable is raised. Servicing, calibration and
 repair of equipment the clinic already owns is not capitalised; it is card
 spend to `Expenses:Repairs`, the repairer's `default_account`. Depreciation
 is a year-end journal outside the monthly reconciliation.
+An equipment check the statement shows that the books do not carry is
+capitalised to `Assets:Equipment` on the date the bank shows. A repair
+charge the books carry at an amount that differs from the statement's is
+re-posted with the statement's amount on its original date.
 
 ## Intercompany balances
 Maple Street Equine Services LLC is a sister company under common
@@ -297,13 +307,13 @@ PARTIES = (
     Party("party:kilbride", "Kilbride Property Holdings", R.VENDOR, 6, "due on receipt", "Expenses:Rent"),
     Party("party:wattle-creek-bank", "Wattle Creek Bank", R.BANK, 7),
     Party("party:fernleigh", "Fernleigh Laboratory Supplies", R.VENDOR, 8, "net 15", "Assets:Inventory"),
-    Party("party:achterberg", "Rosalind Achterberg", R.VENDOR, 9, "monthly payroll", "Expenses:Salaries"),
+    Party("party:achterberg", "Rosalind Achterman", R.VENDOR, 9, "monthly payroll", "Expenses:Salaries"),
     Party("party:oyelaran", "Marcus Oyelaran", R.VENDOR, 10, "monthly payroll", "Expenses:Salaries"),
     Party("party:tremblay", "Fiona Tremblay", R.VENDOR, 11, "monthly payroll", "Expenses:Salaries"),
     Party("party:federal-revenue", "Federal Revenue Service", R.VENDOR, 12, "monthly remittance", "Liabilities:PayrollTax"),
     Party("party:state-revenue", "State Revenue Department", R.VENDOR, 13, "monthly filing", "Liabilities:SalesTax-Payable"),
     Party("party:broderick", "Hamish Broderick", R.VENDOR, 14, "expense claim", "Expenses:Travel"),
-    Party("party:solvang", "Ingrid Solvang", R.VENDOR, 15, "expense claim", "Expenses:Travel"),
+    Party("party:solvang", "Ingrid Sollund", R.VENDOR, 15, "expense claim", "Expenses:Travel"),
     Party("party:summerlee", "Summerlee Fuel Cards", R.VENDOR, 16, "due on receipt", "Expenses:Vehicle"),
     Party("party:cloudpaw", "Cloudpaw Practice Software", R.VENDOR, 17, "due on receipt", "Expenses:Software"),
     Party("party:orbitline", "Orbitline Telecom", R.VENDOR, 18, "due on receipt", "Expenses:Telecom"),
@@ -663,7 +673,7 @@ EXPENSE_REPORTS_MAPLE = TaskSpec(
     id="expense_reports_maple",
     type="bank_reconciliation",
     prompt=("Two expense claims were approved and paid by printed check in December 2025: Hamish Broderick's "
-            "mileage for his November relief cover and Ingrid Solvang's practice managers conference. The fuel "
+            "mileage for his November relief cover and Ingrid Sollund's practice managers conference. The fuel "
             "card was used twice. The Wattle Creek Bank statement is in and the claims do not agree with it: one "
             "reimbursement check is not in the ledger, the other was entered twice, and one of the fuel card "
             "rows was keyed with the digits transposed. Bring the reimbursements and the fuel card spend into "
@@ -677,7 +687,7 @@ EXPENSE_REPORTS_MAPLE = TaskSpec(
                         "default account, and the employee expense claims section books a reimbursement check to "
                         "that account, on the bank's date when the books do not carry it"),
         DuplicateRecognition("duplicated_conference_reimbursement", "rec:claim-solvang-2025-12",
-                             "the ledger carries the 16 December reimbursement check 6212 to Ingrid Solvang for "
+                             "the ledger carries the 16 December reimbursement check 6212 to Ingrid Sollund for "
                              "736.40 twice and the statement shows one CHECK 6212 INGRID SOLVANG row; one copy is "
                              "removed and the other left as it was"),
         AlterRecognition("transposed_fuel_card_row", "rec:fuel-2025-12-05", "transpose_digits", 1,

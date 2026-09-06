@@ -70,7 +70,7 @@ STATEMENT_FILE = PJ.STATEMENT_VIEW
 ARCHIVE_FILE = PJ.ARCHIVE_VIEW
 
 # `RESERVED_NAMES` is not a draw pool: it is the generator's EXCLUSION list,
-# and it holds exactly the names the hand-authored worlds already use
+# and it holds the names the original Alpine world uses
 # (`generate.py:293,296,318` reject a draw that lands in it). Scanning a
 # hand-authored world against it would flag the world for using its own
 # names, so it is the one uppercase global in `content.py` that is skipped.

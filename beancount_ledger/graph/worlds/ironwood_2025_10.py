@@ -23,7 +23,7 @@ remittances and everything else - which is why the two number series run
 side by side on one statement.
 
 Ten tasks share this one month. Each names two or three recognitions by id
-for its own workflow: one never posted, one keyed wrongly, one posted twice.
+for its own workflow, drawn from never posted, keyed wrongly and posted twice.
 Two timing differences are not mutations at all: the check to the fabric
 supplier issued on 29 October, which the bank cleared on 4 November, and the
 customer check received on 30 October, which the bank credited on

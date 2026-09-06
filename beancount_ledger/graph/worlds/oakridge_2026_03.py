@@ -182,6 +182,8 @@ twice: one copy is removed and the other is left as it was. A card row whose
 vendor is not in the vendor master is queried with the shop manager before it
 is booked; it is never posted to a holding account.
 
+The sales tax filing paid by card is governed by the sales tax remittance
+section, not by this one.
 ## Employee expense claims
 The outside sales engineer and the field service technician travel to
 customers' plants and file expense claims for mileage, lodging and meals.
@@ -418,15 +420,15 @@ PARTIES = (
     Party("party:tolhurst-marine", "Tolhurst Marine Drives", R.CUSTOMER, 9, "net 30", "Assets:AR"),
     Party("party:tarrant-alloys", "Tarrant Alloys Inc", R.VENDOR, 10, "net 30", "Assets:Inventory"),
     Party("party:vellum-cam", "Vellum CAM Software", R.VENDOR, 11, "due on receipt", "Expenses:Software"),
-    Party("party:tessaline-telecom", "Tessaline Telecom", R.VENDOR, 12, "due on receipt", "Expenses:Telecom"),
+    Party("party:tessaline-telecom", "Tessalon Telecom", R.VENDOR, 12, "due on receipt", "Expenses:Telecom"),
     Party("party:pennant-office", "Pennant Office Supply", R.VENDOR, 13, "due on receipt", "Expenses:Office"),
     Party("party:fleetline-fuel", "Fleetline Fuel Card", R.VENDOR, 14, "due on receipt", "Expenses:Vehicle"),
-    Party("party:dana-whitfield", "Dana Whitfield", R.VENDOR, 15, "monthly payroll", "Expenses:Salaries"),
-    Party("party:tomas-reinholt", "Tomas Reinholt", R.VENDOR, 16, "monthly payroll", "Expenses:Salaries"),
+    Party("party:dana-whitfield", "Dana Whitcroft", R.VENDOR, 15, "monthly payroll", "Expenses:Salaries"),
+    Party("party:tomas-reinholt", "Tomas Renholm", R.VENDOR, 16, "monthly payroll", "Expenses:Salaries"),
     Party("party:priyanka-sethuraman", "Priyanka Sethuraman", R.VENDOR, 17, "monthly payroll", "Expenses:Salaries"),
     Party("party:elliot-marchbank", "Elliot Marchbank", R.VENDOR, 18, "expense claim", "Expenses:Travel"),
     Party("party:hana-vosburgh", "Hana Vosburgh", R.VENDOR, 19, "expense claim", "Expenses:Travel"),
-    Party("party:state-payroll-tax", "State Payroll Tax Bureau", R.VENDOR, 20, "monthly remittance", "Liabilities:PayrollTax"),
+    Party("party:state-payroll-tax", "Federal Payroll Tax Bureau", R.VENDOR, 20, "monthly remittance", "Liabilities:PayrollTax"),
     Party("party:state-sales-tax", "State Sales Tax Commission", R.VENDOR, 21, "monthly filing", "Liabilities:SalesTax-Payable"),
     Party("party:oakridge-coatings", "Oakridge Coatings LLC", R.VENDOR, 22, "intercompany", "Assets:Due-From-Coatings-LLC"),
     Party("party:brackenridge-mutual", "Brackenridge Mutual Insurance", R.VENDOR, 23, "due on receipt", "Assets:Prepayments"),
@@ -636,13 +638,13 @@ FIXED_ASSETS_001 = TaskSpec(
     period=Period("2026-03-01", "2026-03-31", "March 2026"),
     plan=MutationPlan((
         OmitRecognition("unrecorded_equipment_check", "rec:grinder-2026-03",
-                        "the statement row CHECK 2104 BRIXWORTH INDUSTRIAL EQUIPMENT of 12,485.00 on 2026-03-10 "
+                        "the statement row CHECK 2104 BRIXWORTH INDUSTRIAL EQUIPMENT of 12485.00 on 2026-03-10 "
                         "answers no ledger entry; vendors.csv maps Brixworth Industrial Equipment to Assets:Equipment "
                         "and policy.md's Equipment section capitalises a missing equipment check to that account on "
                         "the bank's date"),
         AlterRecognition("miskeyed_repair_card", "rec:repairs-2026-03-lathe", "transpose_digits", 2,
-                         "the statement row DEBIT CARD WYVERN SPINDLE SERVICES of 1,384.20 on 2026-03-12 answers the "
-                         "ledger's same-day Wyvern Spindle Services entry of 1,348.20 and no other; vendors.csv maps "
+                         "the statement row DEBIT CARD WYVERN SPINDLE SERVICES of 1384.20 on 2026-03-12 answers the "
+                         "ledger's same-day Wyvern Spindle Services entry of 1348.20 and no other; vendors.csv maps "
                          "Wyvern Spindle Services to Expenses:Repairs and policy.md's Equipment section re-posts a "
                          "mis-keyed repair payment with the statement's amount on its original date"),
         OmitRecognition("unrecorded_bank_fee", "rec:fee-2026-03",
@@ -662,12 +664,12 @@ BANK_RECON_OAKRIDGE = TaskSpec(
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_customer_deposit", "rec:si-2098-receipt",
-                        "the statement row ACH IN CORBETT HYDRAULICS with reference SI-2098 of 9,603.25 on 2026-03-09 "
+                        "the statement row ACH IN CORBETT HYDRAULICS with reference SI-2098 of 9603.25 on 2026-03-09 "
                         "answers no ledger entry; customers.csv maps Corbett Hydraulics to Assets:AR and policy.md's "
                         "Customer receipts section applies a referenced deposit against the invoice on the bank's date"),
         AlterRecognition("miskeyed_supplier_payment", "rec:pi-3321-payment", "transpose_digits", 1,
-                         "the statement row ACH OUT PENROSE METALS with reference PI-3321 of 5,318.40 on 2026-03-04 "
-                         "answers the ledger's same-day Penrose Metals entry of 5,138.40 and no other; vendors.csv maps "
+                         "the statement row ACH OUT PENROSE METALS with reference PI-3321 of 5318.40 on 2026-03-04 "
+                         "answers the ledger's same-day Penrose Metals entry of 5138.40 and no other; vendors.csv maps "
                          "Penrose Metals to Assets:Inventory, so policy.md's Payments to suppliers section lands the "
                          "payment on Liabilities:AP and the Payment runs section re-posts it with the statement's amount "
                          "on its original date"),
@@ -681,7 +683,7 @@ BANK_RECON_OAKRIDGE = TaskSpec(
 AP_PAYMENT_RUN_OAKRIDGE = TaskSpec(
     id="ap_payment_run_oakridge",
     type="bank_reconciliation",
-    prompt=("March's payment run to the stock suppliers went out in two batches: ACH releases against the February "
+    prompt=("March's payment run to the stock suppliers went out in two batches: ACH releases against the January and February "
             "invoices in the first week, and a check to Tarrant Alloys on the 27th. The payables sub-ledger does not "
             "agree with what Sawmill Creek Bank cleared, and the supplier statements are due back next week. Reconcile "
             "the payment run against the March bank statement under the bookkeeping policy, put the payables right, "
@@ -689,16 +691,16 @@ AP_PAYMENT_RUN_OAKRIDGE = TaskSpec(
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_supplier_payment", "rec:pi-3315-payment",
-                        "the statement row ACH OUT TARRANT ALLOYS INC with reference PI-3315 of 3,876.90 on 2026-03-03 "
+                        "the statement row ACH OUT TARRANT ALLOYS INC with reference PI-3315 of 3876.90 on 2026-03-03 "
                         "answers no ledger entry; vendors.csv maps Tarrant Alloys Inc to Assets:Inventory and "
                         "policy.md's Payment runs section adds a missing supplier payment to Liabilities:AP on the "
                         "bank's date"),
         AlterRecognition("miskeyed_supplier_check", "rec:pi-3329-payment", "transpose_digits", 1,
-                         "the statement row CHECK 2107 TARRANT ALLOYS INC of 2,954.30 on 2026-03-30 answers the "
-                         "ledger's check 2107 entry of 2,594.30 dated 2026-03-27 and no other; policy.md's Payment runs "
+                         "the statement row CHECK 2107 TARRANT ALLOYS INC of 2954.30 on 2026-03-30 answers the "
+                         "ledger's check 2107 entry of 2594.30 dated 2026-03-27 and no other; policy.md's Payment runs "
                          "section re-posts a mis-keyed supplier payment with the statement's amount on its original date"),
         DuplicateRecognition("duplicated_supplier_payment", "rec:pi-3321-payment",
-                             "the statement row ACH OUT PENROSE METALS with reference PI-3321 of 5,318.40 on 2026-03-04 "
+                             "the statement row ACH OUT PENROSE METALS with reference PI-3321 of 5318.40 on 2026-03-04 "
                              "answers two identical ledger entries; policy.md's Payment runs section makes each payment "
                              "one entry per invoice, so one copy is removed"),
     )),
@@ -716,16 +718,16 @@ AR_COLLECTIONS_OAKRIDGE = TaskSpec(
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_ach_receipt", "rec:si-2095-receipt",
-                        "the statement row ACH IN STELLAN AERO COMPONENTS with reference SI-2095 of 6,612.60 on "
+                        "the statement row ACH IN STELLAN AERO COMPONENTS with reference SI-2095 of 6612.60 on "
                         "2026-03-17 answers no ledger entry; customers.csv maps Stellan Aero Components to Assets:AR "
                         "and policy.md's Collections section adds a missing deposit on the bank's date"),
         AlterRecognition("miskeyed_check_receipt", "rec:si-2100-receipt", "transpose_digits", 2,
-                         "the statement row CHECK 4471 TOLHURST MARINE DRIVES of 8,137.45 on 2026-03-12 answers the "
-                         "ledger's Tolhurst Marine Drives entry of 8,173.45 dated 2026-03-10 and no other; customers.csv "
+                         "the statement row CHECK 4471 TOLHURST MARINE DRIVES of 8137.45 on 2026-03-12 answers the "
+                         "ledger's Tolhurst Marine Drives entry of 8173.45 dated 2026-03-10 and no other; customers.csv "
                          "maps Tolhurst Marine Drives to Assets:AR and policy.md's Collections section re-posts a "
                          "mis-keyed receipt with the statement's amount on its original date"),
         DuplicateRecognition("duplicated_ach_receipt", "rec:si-2104-receipt",
-                             "the statement row ACH IN STELLAN AERO COMPONENTS with reference SI-2104 of 9,009.40 on "
+                             "the statement row ACH IN STELLAN AERO COMPONENTS with reference SI-2104 of 9009.40 on "
                              "2026-03-24 answers two identical ledger entries; policy.md's Collections section removes "
                              "one copy of a receipt posted twice against a single deposit"),
     )),
@@ -743,7 +745,7 @@ BANK_FEED_CATEGORISATION_OAKRIDGE = TaskSpec(
     plan=MutationPlan((
         OmitRecognition("unrecorded_telecom_card", "rec:telecom-2026-03",
                         "the statement row DEBIT CARD TESSALINE TELECOM of 227.90 on 2026-03-06 answers no ledger "
-                        "entry; vendors.csv maps Tessaline Telecom to Expenses:Telecom and policy.md's Card spend "
+                        "entry; vendors.csv maps Tessalon Telecom to Expenses:Telecom and policy.md's Card spend "
                         "section adds a missing card row to that account on the bank's date"),
         AlterRecognition("miskeyed_office_card", "rec:office-2026-03", "transpose_digits", 1,
                          "the statement row DEBIT CARD PENNANT OFFICE SUPPLY of 143.75 on 2026-03-05 answers the "
@@ -788,24 +790,24 @@ PAYROLL_OAKRIDGE = TaskSpec(
     id="payroll_oakridge",
     type="bank_reconciliation",
     prompt=("March payroll was paid by check on the 25th, three net pay checks on the payroll stock, and February's "
-            "withholdings went to the State Payroll Tax Bureau on check 5050 earlier in the month. The payroll bureau's "
+            "withholdings went to the Federal Payroll Tax Bureau on check 5050 earlier in the month. The payroll bureau's "
             "register does not agree with Expenses:Salaries and Liabilities:PayrollTax as the books stand. Agree the "
             "payroll checks and the remittance to the March statement from Sawmill Creek Bank under the bookkeeping "
             "policy, correct the books, and write the corrected ledger back to ledger.beancount."),
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_net_pay_check", "rec:payroll-whitfield-2026-03",
-                        "the statement row CHECK 5055 DANA WHITFIELD of 3,418.27 on 2026-03-27 answers no ledger entry; "
-                        "vendors.csv carries Dana Whitfield on monthly payroll terms with Expenses:Salaries as the "
+                        "the statement row CHECK 5055 DANA WHITFIELD of 3418.27 on 2026-03-27 answers no ledger entry; "
+                        "vendors.csv carries Dana Whitcroft on monthly payroll terms with Expenses:Salaries as the "
                         "default account and policy.md's Payroll section adds a missing net pay check to that account "
                         "on the bank's date"),
         AlterRecognition("miskeyed_net_pay_check", "rec:payroll-reinholt-2026-03", "transpose_digits", 2,
-                         "the statement row CHECK 5056 TOMAS REINHOLT of 2,976.54 on 2026-03-30 answers the ledger's "
-                         "check 5056 entry of 2,967.54 dated 2026-03-25 and no other; policy.md's Payroll section "
+                         "the statement row CHECK 5056 TOMAS REINHOLT of 2976.54 on 2026-03-30 answers the ledger's "
+                         "check 5056 entry of 2967.54 dated 2026-03-25 and no other; policy.md's Payroll section "
                          "re-posts a mis-keyed net pay check with the statement's amount on its original date"),
         OmitRecognition("unrecorded_payroll_tax_remittance", "rec:payroll-tax-2026-03",
-                        "the statement row CHECK 5050 STATE PAYROLL TAX BUREAU of 2,684.55 on 2026-03-11 answers no "
-                        "ledger entry; vendors.csv carries the State Payroll Tax Bureau on monthly remittance terms with "
+                        "the statement row CHECK 5050 STATE PAYROLL TAX BUREAU of 2684.55 on 2026-03-11 answers no "
+                        "ledger entry; vendors.csv carries the Federal Payroll Tax Bureau on monthly remittance terms with "
                         "Liabilities:PayrollTax as the default account and policy.md's Payroll section settles that "
                         "liability with the remittance check on the bank's date"),
     )),
@@ -822,13 +824,13 @@ SALES_TAX_REMITTANCE_OAKRIDGE = TaskSpec(
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_tax_remittance", "rec:sales-tax-2026-03",
-                        "the statement row DEBIT CARD STATE SALES TAX COMMISSION of 1,060.85 on 2026-03-20 answers no "
+                        "the statement row DEBIT CARD STATE SALES TAX COMMISSION of 1060.85 on 2026-03-20 answers no "
                         "ledger entry; vendors.csv carries the State Sales Tax Commission on monthly filing terms with "
                         "Liabilities:SalesTax-Payable as the default account and policy.md's Sales tax remittance "
                         "section settles that liability on the bank's date"),
         AlterRecognition("miskeyed_customer_receipt", "rec:si-2098-receipt", "transpose_digits", 1,
-                         "the statement row ACH IN CORBETT HYDRAULICS with reference SI-2098 of 9,603.25 on 2026-03-09 "
-                         "answers the ledger's same-day Corbett Hydraulics entry of 9,063.25 and no other; customers.csv "
+                         "the statement row ACH IN CORBETT HYDRAULICS with reference SI-2098 of 9603.25 on 2026-03-09 "
+                         "answers the ledger's same-day Corbett Hydraulics entry of 9063.25 and no other; customers.csv "
                          "maps Corbett Hydraulics to Assets:AR and policy.md's Collections section re-posts a mis-keyed "
                          "receipt with the statement's amount on its original date"),
         DuplicateRecognition("duplicated_service_fee", "rec:fee-2026-03-pospay",
@@ -850,17 +852,17 @@ INTERCOMPANY_TRANSFERS_OAKRIDGE = TaskSpec(
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_intercompany_advance", "rec:coatings-advance-2026-03b",
-                        "the statement row CHECK 5054 OAKRIDGE COATINGS LLC of 4,850.00 on 2026-03-19 answers no ledger "
+                        "the statement row CHECK 5054 OAKRIDGE COATINGS LLC of 4850.00 on 2026-03-19 answers no ledger "
                         "entry; vendors.csv carries Oakridge Coatings LLC on intercompany terms with "
                         "Assets:Due-From-Coatings-LLC as the default account and policy.md's Intercompany balances "
                         "section adds a missing advance to that account on the bank's date"),
         DuplicateRecognition("duplicated_intercompany_advance", "rec:coatings-advance-2026-03a",
-                             "the statement row CHECK 5049 OAKRIDGE COATINGS LLC of 6,500.00 on 2026-03-04 answers two "
+                             "the statement row CHECK 5049 OAKRIDGE COATINGS LLC of 6500.00 on 2026-03-04 answers two "
                              "identical ledger entries dated 2026-03-02; policy.md's Intercompany balances section "
                              "removes one copy of an advance posted twice"),
         AlterRecognition("miskeyed_customer_receipt", "rec:si-2098-receipt", "transpose_digits", 3,
-                         "the statement row ACH IN CORBETT HYDRAULICS with reference SI-2098 of 9,603.25 on 2026-03-09 "
-                         "answers the ledger's same-day Corbett Hydraulics entry of 9,602.35 and no other; customers.csv "
+                         "the statement row ACH IN CORBETT HYDRAULICS with reference SI-2098 of 9603.25 on 2026-03-09 "
+                         "answers the ledger's same-day Corbett Hydraulics entry of 9602.35 and no other; customers.csv "
                          "maps Corbett Hydraulics to Assets:AR and policy.md's Collections section re-posts a mis-keyed "
                          "receipt with the statement's amount on its original date"),
     )),
@@ -877,7 +879,7 @@ MONTH_END_CLOSE_OAKRIDGE = TaskSpec(
     period=MARCH,
     plan=MutationPlan((
         OmitRecognition("unrecorded_prepaid_insurance", "rec:insurance-2026-04-prepaid",
-                        "the statement row CHECK 5052 BRACKENRIDGE MUTUAL INSURANCE of 1,142.60 on 2026-03-16 answers "
+                        "the statement row CHECK 5052 BRACKENRIDGE MUTUAL INSURANCE of 1142.60 on 2026-03-16 answers "
                         "no ledger entry; vendors.csv maps Brackenridge Mutual Insurance to Assets:Prepayments and "
                         "policy.md's Prepayments section books a missing premium check to that account on the bank's "
                         "date"),
@@ -886,7 +888,7 @@ MONTH_END_CLOSE_OAKRIDGE = TaskSpec(
                          "same-day bank fee entry of 23.00 and no other; policy.md's Month-end close checklist re-posts "
                          "a mis-keyed bank charge with the statement's amount on its original date"),
         DuplicateRecognition("duplicated_partial_receipt", "rec:si-2102-partial-receipt",
-                             "the statement row ACH IN TOLHURST MARINE DRIVES with reference SI-2102 of 6,000.00 on "
+                             "the statement row ACH IN TOLHURST MARINE DRIVES with reference SI-2102 of 6000.00 on "
                              "2026-03-25 answers two identical ledger entries; policy.md's Month-end close checklist "
                              "removes one copy of a receipt posted twice"),
     )),

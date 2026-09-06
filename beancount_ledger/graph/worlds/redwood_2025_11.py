@@ -15,7 +15,7 @@ The month itself: three consulting clients invoiced with sales tax and paying
 by ACH, one of them on account and one by a check deposited on the last
 business day; two subcontracted data engineering firms whose invoices go to
 work in progress and are settled through payables by ACH and by check; a
-wholly owned subsidiary, Redwood Analytics Europe Ltd, funded by check from
+wholly owned subsidiary, Redwood Analytics West LLC, funded by check from
 the office check book whenever its own collections fall short (it sits in the
 vendor master with terms `intercompany` and `Assets:Due-From-Subsidiary` as
 its default account, so each advance is a two-legged expense-style payment
@@ -204,7 +204,7 @@ invoice.
 ## Card spend
 The company debit card pays the analytics platform subscription, the office
 phones and internet, office consumables, flights for client visits and the
-fleet fuel card statement. Each card vendor is a supplier whose purchases are
+fleet fuel card statement. Each card vendor other than the tax authority is a supplier whose purchases are
 booked to an expense account, so the card charge is the expense: it is
 recorded to that vendor's own `default_account` (`Expenses:Software`,
 `Expenses:Telecom`, `Expenses:Office`, `Expenses:Travel` or
@@ -220,6 +220,8 @@ statement at every close:
   the statement shows, on the date the entry was originally posted.
 - A card charge posted twice has one copy removed.
 
+The sales tax filing paid by card is governed by the sales tax remittance
+section, not by this one.
 ## Employee expense claims
 Consultants who travel to client sites submit an expense claim at the end of
 each month and are reimbursed by a 7200-series check in the following month.
@@ -376,7 +378,7 @@ ACCOUNTS = (
     Account("Assets:AR", K.ASSET, "Trade receivables from clients", OPENED, 1100),
     Account("Assets:Work-In-Progress", K.ASSET, "Subcontracted consulting work taken in and not yet billed to a client", OPENED, 1200),
     Account("Assets:Prepayments", K.ASSET, "Amounts paid in advance of the period they relate to", OPENED, 1300),
-    Account("Assets:Due-From-Subsidiary", K.ASSET, "Cash advanced to Redwood Analytics Europe Ltd and not yet repaid", OPENED, 1400),
+    Account("Assets:Due-From-Subsidiary", K.ASSET, "Cash advanced to Redwood Analytics West LLC and not yet repaid", OPENED, 1400),
     Account("Assets:Equipment", K.ASSET, "Workstations, servers and office equipment at cost", OPENED, 1500),
     Account("Liabilities:AP", K.LIABILITY, "Trade payables to suppliers", OPENED, 2000),
     Account("Liabilities:SalesTax-Payable", K.LIABILITY, "Sales tax collected from clients and owed to the state", OPENED, 2100),
@@ -399,7 +401,7 @@ PARTIES = (
     Party("party:carrowmore", "Carrowmore Logistics Inc", R.CUSTOMER, 1, "net 30", "Assets:AR"),
     Party("party:ostrander", "Ostrander Medical Group", R.CUSTOMER, 2, "net 30", "Assets:AR"),
     Party("party:fenwick", "Fenwick Retail Holdings", R.CUSTOMER, 3, "net 30", "Assets:AR"),
-    Party("party:redwood-europe", "Redwood Analytics Europe Ltd", R.VENDOR, 4, "intercompany", "Assets:Due-From-Subsidiary"),
+    Party("party:redwood-europe", "Redwood Analytics West LLC", R.VENDOR, 4, "intercompany", "Assets:Due-From-Subsidiary"),
     Party("party:corvallis", "Corvallis Data Engineering LLC", R.VENDOR, 5, "net 30", "Assets:Work-In-Progress"),
     Party("party:cloudspire", "Cloudspire Software", R.VENDOR, 6, "due on receipt", "Expenses:Software"),
     Party("party:talcott", "Talcott Street Properties", R.VENDOR, 7, "due on receipt", "Expenses:Rent"),
@@ -412,7 +414,7 @@ PARTIES = (
     Party("party:ingrid-solberg", "Ingrid Solberg", R.VENDOR, 14, "expense claim", "Expenses:Travel"),
     Party("party:marcus-adeyemi", "Marcus Adeyemi", R.VENDOR, 15, "expense claim", "Expenses:Travel"),
     Party("party:priyanka-raman", "Priyanka Raman", R.VENDOR, 16, "monthly payroll", "Expenses:Salaries"),
-    Party("party:tobias-lindgren", "Tobias Lindgren", R.VENDOR, 17, "monthly payroll", "Expenses:Salaries"),
+    Party("party:tobias-lindgren", "Tobias Lindahl", R.VENDOR, 17, "monthly payroll", "Expenses:Salaries"),
     Party("party:celeste-marchand", "Celeste Marchand", R.VENDOR, 18, "monthly payroll", "Expenses:Salaries"),
     Party("party:federal-payroll-tax", "Federal Payroll Tax Service", R.VENDOR, 19, "monthly remittance", "Liabilities:PayrollTax"),
     Party("party:state-sales-tax", "State Sales Tax Board", R.VENDOR, 20, "monthly filing", "Liabilities:SalesTax-Payable"),
@@ -483,7 +485,7 @@ EVENTS = (
                    card("2025-10-10"), "Analytics platform subscription, October"),
     ExpensePayment("event:ic-3102-advance", "2025-10-14", "party:redwood-europe", D("25000.00"),
                    cheque("doc:chq-3102", "2025-10-17"),
-                   "Advance to Redwood Analytics Europe Ltd, October payroll funding, check 3102"),
+                   "Advance to Redwood Analytics West LLC, October payroll funding, check 3102"),
     ExpensePayment("event:payroll-tax-2025-10", "2025-10-14", "party:federal-payroll-tax", D("3548.15"),
                    cheque("doc:chq-7196", "2025-10-16"), "September payroll withholdings, monthly deposit, check 7196"),
     ExpensePayment("event:office-2025-10", "2025-10-16", "party:ashby", D("208.94"),
@@ -526,7 +528,7 @@ EVENTS = (
                   ach_out("2025-11-06"), "Payment of purchase invoice PI-5118"),
     ExpensePayment("event:ic-3104-advance", "2025-11-06", "party:redwood-europe", D("30000.00"),
                    cheque("doc:chq-3104", "2025-11-10"),
-                   "Advance to Redwood Analytics Europe Ltd, November payroll funding, check 3104"),
+                   "Advance to Redwood Analytics West LLC, November payroll funding, check 3104"),
     Sale("event:si-2084-sale", "2025-11-07", "party:fenwick", "doc:si-2084", D("9850.00"), D("0.06"), D("5120.00"),
          "Invoice SI-2084, store network demand study", "Subcontracted work released from work in progress on SI-2084"),
     ExpensePayment("event:claim-7202-adeyemi", "2025-11-07", "party:marcus-adeyemi", D("418.66"),
@@ -554,7 +556,7 @@ EVENTS = (
          "Invoice SI-2087, fleet routing analytics phase two", "Subcontracted work released from work in progress on SI-2087"),
     ExpensePayment("event:ic-3105-advance", "2025-11-19", "party:redwood-europe", D("18500.00"),
                    cheque("doc:chq-3105", "2025-11-24"),
-                   "Advance to Redwood Analytics Europe Ltd, supplier settlements, check 3105"),
+                   "Advance to Redwood Analytics West LLC, supplier settlements, check 3105"),
     CustomerReceipt("event:si-2089-partial", "2025-11-19", "party:ostrander", "doc:si-2089", D("4150.00"),
                     ach_in("2025-11-19"), "Payment on account against SI-2089"),
     ExpensePayment("event:travel-2025-11", "2025-11-19", "party:coastline-air", D("874.30"),
@@ -592,7 +594,7 @@ WORLD = World(
     parties=PARTIES,
     documents=DOCUMENTS,
     bank_opening=BankOpening("2025-10-01", D("109864.31")),
-    opening=OpeningPosition("2025-11-01", (("Assets:AR", D("42678.25")),
+    opening=OpeningPosition("2025-11-01", (("Assets:Equipment", D("36250.00")), ("Assets:AR", D("42678.25")),
                                            ("Assets:Work-In-Progress", D("19875.00")),
                                            ("Assets:Due-From-Subsidiary", D("112500.00")),
                                            ("Liabilities:AP", D("-9119.50")),
@@ -612,7 +614,7 @@ PERIOD = Period("2025-11-01", "2025-11-30", "November 2025")
 INTERCOMPANY_TRANSFERS_001 = TaskSpec(
     id="intercompany_transfers_001",
     type="bank_reconciliation",
-    prompt=("Redwood Analytics Group funded its European subsidiary twice in November, but the intercompany "
+    prompt=("Redwood Analytics Group funded its western subsidiary twice in November, but the intercompany "
             "balance on Assets:Due-From-Subsidiary does not agree with the Sequoia Coast Bank statement for "
             "November. Reconcile the checking account against the statement, correct the books under the "
             "bookkeeping policy, and write the corrected ledger back to ledger.beancount."),
@@ -680,7 +682,7 @@ AP_PAYMENT_RUN_REDWOOD = TaskSpec(
                         "the statement row of 14 November names the check and the payee (CHECK 7203 PELHAM DATA LABS "
                         "LLC, 2764.50) and no ledger entry matches it; vendors.csv books Pelham's purchases to "
                         "Assets:Work-In-Progress, the ledger already settles Pelham's PI-5118 to Liabilities:AP on "
-                        "6 November and the opening payables carry PI-5113 for that amount, so the payment-runs "
+                        "6 November and the opening payables carry the balance it settles, so the payment-runs "
                         "section posts the settlement to Liabilities:AP on the bank's date"),
         AlterRecognition("miskeyed_ach_settlement", "rec:pi-5107-payment", "transpose_digits", 2,
                          "the ledger carries the 13 November ACH settlement of PI-5107 to Corvallis Data Engineering "
@@ -730,7 +732,7 @@ BANK_FEED_CATEGORISATION_REDWOOD = TaskSpec(
     prompt=("The November 2025 card spend at Redwood Analytics Group needs categorising from the Sequoia Coast Bank "
             "statement: the analytics platform, the office phones, the office supplies, the flights and the fuel "
             "card all went on the company debit card. Take each DEBIT CARD row on the statement, find or add its "
-            "entry in the ledger against the expense account the vendor master gives for that vendor, correct any "
+            "entry in the ledger against the account the vendor master gives for that vendor, correct any "
             "charge that was keyed wrongly, and write the corrected ledger back to ledger.beancount."),
     period=PERIOD,
     plan=MutationPlan((
@@ -782,7 +784,7 @@ PAYROLL_REDWOOD = TaskSpec(
     id="payroll_redwood",
     type="bank_reconciliation",
     prompt=("November payroll at Redwood Analytics Group: net pay checks 7207 to 7209 were written on the 21st to "
-            "Priyanka Raman, Tobias Lindgren and Celeste Marchand, and check 7204 remitted October's withholdings to "
+            "Priyanka Raman, Tobias Lindahl and Celeste Marchand, and check 7204 remitted October's withholdings to "
             "the Federal Payroll Tax Service. The payroll postings do not agree with the Sequoia Coast Bank statement "
             "for November. Tie each payroll check on the statement to the ledger, correct Expenses:Salaries, "
             "Liabilities:PayrollTax and the checking account under the bookkeeping policy, and write the corrected "
@@ -795,7 +797,7 @@ PAYROLL_REDWOOD = TaskSpec(
                         "terms with Expenses:Salaries as her default account, and the payroll section posts the net "
                         "pay there on the bank's date"),
         AlterRecognition("miskeyed_net_pay_check", "rec:pay-2025-11-lindgren", "transpose_digits", 2,
-                         "the ledger carries the 21 November net pay check 7208 to Tobias Lindgren at 3657.90 while "
+                         "the ledger carries the 21 November net pay check 7208 to Tobias Lindahl at 3657.90 while "
                          "the statement row of 24 November (CHECK 7208 TOBIAS LINDGREN) shows 3675.90; the payroll "
                          "section re-posts the entry at the statement's amount on the original date, against "
                          "Expenses:Salaries"),

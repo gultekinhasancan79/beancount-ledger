@@ -9,7 +9,7 @@ statement row appears here; if one of those is wrong, the place to look is
 The month is one small wholesale bakery's December, authored once and read
 ten ways. Five hourly bakery staff are carried in the vendor master as
 payees whose purchases book to `Expenses:Salaries`; each is paid net pay by
-check on the last working day of the month, and the withholdings the payroll
+check in the last week of the month, and the withholdings the payroll
 journal accrued for the previous month are remitted to the revenue service by
 check around the 15th. Around that payroll sit the rest of a bakery's month:
 flour, dairy and packaging suppliers invoiced on terms and settled in a
@@ -166,7 +166,7 @@ second copy removed. Fuel for the delivery van goes on the fuel card and is
 recorded under the card spend section, to `Expenses:Vehicle`.
 
 ## Payroll
-Hawthorn's bakery staff are paid monthly, on the last working day of the
+Hawthorn's bakery staff are paid monthly, in the last week of the
 month, by check drawn on the operating account for each employee's net pay.
 Each employee is carried in the vendor master as a payee on "monthly payroll"
 terms with `Expenses:Salaries` as the default account. A net pay check is
@@ -307,6 +307,25 @@ Hawthorn collects sales tax from its wholesale customers on sales of baked
 goods and owes it to the state. Flour, sugar, dairy and other ingredients
 bought for production are exempt under the resale certificate, so no tax is
 recoverable on the purchase side.
+
+## Month-end close checklist
+The checking account is agreed to the bank statement before the month is
+closed, and each difference has exactly one correction:
+
+- Bank charges are agreed to the statement line by line. A charge on the
+  statement that the ledger does not carry is added to `Expenses:BankFees`
+  for the statement's amount on the statement's date. A bank charge posted
+  with a mis-keyed amount is corrected by re-posting the entry with the
+  amount the statement shows, on the date the entry was originally posted;
+  only the amount changes.
+- Customer receipts are applied to invoices. A receipt that was posted twice
+  is corrected by removing one of the two copies; the copy that remains is
+  left exactly as it was.
+- A payment on the statement that the ledger does not carry is added for the
+  payee and the amount the statement shows, to the account the vendor master
+  and this policy give for that payee, on the date the bank shows.
+- Checks issued before the cut-off that clear after it are listed as
+  outstanding and are not touched.
 
 ## Suspense accounts
 Hawthorn does not operate a suspense or plug account. Every posting is made to
@@ -597,7 +616,7 @@ WORLD = World(
     parties=PARTIES,
     documents=DOCUMENTS,
     bank_opening=BankOpening("2025-11-01", D("61208.47")),
-    opening=OpeningPosition("2025-12-01", (("Assets:AR", D("16712.90")), ("Assets:Inventory", D("6840.00")),
+    opening=OpeningPosition("2025-12-01", (("Assets:Equipment", D("42800.00")), ("Assets:AR", D("16712.90")), ("Assets:Inventory", D("6840.00")),
                                            ("Liabilities:AP", D("-11302.95")),
                                            ("Liabilities:SalesTax-Payable", D("-1001.18")),
                                            ("Liabilities:PayrollTax", D("-5487.62")))),
@@ -643,7 +662,7 @@ BANK_RECON_HAWTHORN = TaskSpec(
     type="bank_reconciliation",
     prompt=("The Sable River Bank statement for December is in and the checking account has to be reconciled "
             "before the year-end figures go to the owners. The differences look routine - a wholesale customer's "
-            "transfer, a settlement to the dairy cooperative and the bank's own charge are among the items that "
+            "transfer, a settlement to the flour mill and the bank's own charge are among the items that "
             "do not agree - but every row has to be accounted for. Compare the statement with the ledger line by "
             "line, correct whatever the books have wrong under the bookkeeping policy, leave the timing "
             "differences as they are, and write the corrected ledger back to ledger.beancount."),

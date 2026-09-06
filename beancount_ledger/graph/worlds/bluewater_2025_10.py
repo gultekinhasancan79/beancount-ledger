@@ -334,6 +334,25 @@ and each has exactly one correction:
 A remittance that is on both the statement and the ledger with the same
 check number and amount is a match and is not touched.
 
+## Month-end close checklist
+The checking account is agreed to the bank statement before the month is
+closed, and each difference has exactly one correction:
+
+- Bank charges are agreed to the statement line by line. A charge on the
+  statement that the ledger does not carry is added to `Expenses:BankFees`
+  for the statement's amount on the statement's date. A bank charge posted
+  with a mis-keyed amount is corrected by re-posting the entry with the
+  amount the statement shows, on the date the entry was originally posted;
+  only the amount changes.
+- Customer receipts are applied to invoices. A receipt that was posted twice
+  is corrected by removing one of the two copies; the copy that remains is
+  left exactly as it was.
+- A payment on the statement that the ledger does not carry is added for the
+  payee and the amount the statement shows, to the account the vendor master
+  and this policy give for that payee, on the date the bank shows.
+- Checks issued before the cut-off that clear after it are listed as
+  outstanding and are not touched.
+
 ## Suspense accounts
 Bluewater does not operate a suspense or plug account. Every posting is made to
 the account that reflects the underlying transaction.
@@ -559,7 +578,7 @@ EVENTS = (
                    cheque("doc:chq-2053", "2025-10-31"), "September payroll withholdings deposit, check 2053"),
     CustomerReceipt("event:si-2216-partial", "2025-10-30", "party:kittiwake", "doc:si-2216", D("3950.00"),
                     ach_in("2025-10-30"), "Partial payment against SI-2216"),
-    # received on the last business day, deposited by the bank in November: the deposit in transit
+    # received at the end of the month, deposited by the bank in November: the deposit in transit
     CustomerReceipt("event:si-2219-receipt", "2025-10-30", "party:osprey-cove", "doc:si-2219", D("2859.84"),
                     cheque("doc:chq-5531", "2025-11-04"), "Customer check 5531 received for SI-2219"),
     BankFee("event:fee-2025-10", "2025-10-31", D("54.00"), "Monthly service charge and check image fees"),
@@ -668,7 +687,7 @@ AP_PAYMENT_RUN_BLUEWATER = TaskSpec(
                         "CORDAGE AND RIGGING) and no ledger entry names check 1145; vendors.csv books Seaforth to "
                         "Assets:Inventory, so under the payments-to-suppliers and payment-runs sections the check "
                         "settles Liabilities:AP, and the dates section puts it on the bank's date; the September "
-                        "archive shows the same pattern (CHECK 1142 SEAFORTH CORDAGE AND RIGGING for PI-7731)"),
+                        "archive shows the same pattern (CHECK 1142 SEAFORTH CORDAGE AND RIGGING)"),
         AlterRecognition("transposed_ach_payment", "rec:pi-7766-payment", "transpose_digits", 2,
                          "the ledger carries the 17 October ACH payment of PI-7766 to Petrel Paint and Coatings "
                          "at 2457.40 while the statement row of the same date, payee and reference (ACH OUT PETREL "
@@ -688,7 +707,7 @@ AR_COLLECTIONS_BLUEWATER = TaskSpec(
     type="bank_reconciliation",
     prompt=("Collections for October 2025 need closing. The three trade customers paid by ACH and by check during "
             "the month, Kittiwake Charters paid part of its October invoice on account, and a check that came in "
-            "on the last business day has not yet reached the bank. Bring the receivables and the checking "
+            "at the end of the month has not yet reached the bank. Bring the receivables and the checking "
             "account into agreement with the Pelican Point Bank statement under the bookkeeping policy, and "
             "write the corrected ledger back to ledger.beancount."),
     period=PERIOD,

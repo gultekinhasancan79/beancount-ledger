@@ -144,7 +144,8 @@ date, everything else unchanged.
 Silverbrook holds a debit card on the checking account for recurring
 services and small purchases: the practice-ordering portal subscription,
 office phones and internet, packing and office consumables, van fuel on the
-fleet card, and service calls on warehouse equipment. Each card vendor is
+fleet card, and service calls on warehouse equipment. Each card vendor
+other than the tax authority is
 carried in the vendor master with the expense account its charges belong to
 as its `default_account`, and every card charge is recorded on the day the
 bank shows it as a debit to that account and a credit to the checking
@@ -158,6 +159,8 @@ the bank shows. A card charge the books carry with an amount that differs
 from the statement's is re-posted with the statement's amount on its
 original date; the vendor, the account and the date stay as they were.
 
+The sales tax filing paid by card is governed by the sales tax remittance
+section, not by this one.
 ## Employee expense claims
 Field representatives submit expense claims for travel, mileage, lodging and
 conference costs and are reimbursed by check drawn on the checking account.
@@ -306,6 +309,25 @@ Silverbrook collects sales tax at 8% from its customers on sales of supplies
 and equipment and owes it to the state. Goods bought for resale are exempt
 under the resale certificate, so no tax is recoverable on the purchase side.
 
+## Month-end close checklist
+The checking account is agreed to the bank statement before the month is
+closed, and each difference has exactly one correction:
+
+- Bank charges are agreed to the statement line by line. A charge on the
+  statement that the ledger does not carry is added to `Expenses:BankFees`
+  for the statement's amount on the statement's date. A bank charge posted
+  with a mis-keyed amount is corrected by re-posting the entry with the
+  amount the statement shows, on the date the entry was originally posted;
+  only the amount changes.
+- Customer receipts are applied to invoices. A receipt that was posted twice
+  is corrected by removing one of the two copies; the copy that remains is
+  left exactly as it was.
+- A payment on the statement that the ledger does not carry is added for the
+  payee and the amount the statement shows, to the account the vendor master
+  and this policy give for that payee, on the date the bank shows.
+- Checks issued before the cut-off that clear after it are listed as
+  outstanding and are not touched.
+
 ## Suspense accounts
 Silverbrook does not operate a suspense or plug account. Every posting is made
 to the account that reflects the underlying transaction.
@@ -355,7 +377,7 @@ PARTIES = (
     Party("party:lindgren", "Tomas Lindgren", R.VENDOR, 14, "expense claim", "Expenses:Travel"),
     Party("party:abernathy", "Renee Abernathy", R.VENDOR, 15, "expense claim", "Expenses:Travel"),
     Party("party:whitfield", "Dana Whitfield", R.VENDOR, 16, "monthly payroll", "Expenses:Salaries"),
-    Party("party:oyelaran", "Marcus Oyelaran", R.VENDOR, 17, "monthly payroll", "Expenses:Salaries"),
+    Party("party:oyelaran", "Marcus Oyewale", R.VENDOR, 17, "monthly payroll", "Expenses:Salaries"),
     Party("party:raghunathan", "Priya Raghunathan", R.VENDOR, 18, "monthly payroll", "Expenses:Salaries"),
     Party("party:payroll-depository", "Federal Payroll Tax Depository", R.VENDOR, 19, "monthly deposit",
           "Liabilities:PayrollTax-Due"),
@@ -510,7 +532,7 @@ WORLD = World(
     documents=DOCUMENTS,
     bank_opening=BankOpening("2025-10-01", D("38472.19")),
     opening=OpeningPosition("2025-11-01", (("Assets:AR", D("8916.40")), ("Assets:Inventory", D("31480.00")),
-                                           ("Assets:Equipment", D("18650.00")),
+                                           ("Assets:Equipment", D("21340.00")),
                                            ("Liabilities:AP", D("-6891.75")),
                                            ("Liabilities:SalesTax-Payable", D("-1174.32")),
                                            ("Liabilities:PayrollTax-Due", D("-2416.80")))),
@@ -676,7 +698,7 @@ PAYROLL_SILVERBROOK = TaskSpec(
                         "Expenses:Salaries, and the payroll section adds a net pay check the books lack against "
                         "Expenses:Salaries on the bank's date"),
         AlterRecognition("transposed_net_pay_check", "rec:payroll-2025-11-oyelaran", "transpose_digits", 1,
-                         "the ledger carries the 24 November net pay check 3062 to Marcus Oyelaran at 2598.40 while "
+                         "the ledger carries the 24 November net pay check 3062 to Marcus Oyewale at 2598.40 while "
                          "the statement's CHECK 3062 MARCUS OYELARAN row of 28 November shows 2958.40; the payroll "
                          "section re-posts the entry with the statement's amount on its original date, against "
                          "Expenses:Salaries"),

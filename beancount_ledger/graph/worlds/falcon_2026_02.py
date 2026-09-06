@@ -148,7 +148,7 @@ following month.
 ## Payroll
 Office and crew staff on salary are carried in the vendor master with terms
 `monthly payroll` and `default_account` `Expenses:Salaries`. Each is paid net
-pay by a system-printed check on the 25th of the month, and the check is
+pay by a system-printed check on or about the 25th of the month, and the check is
 booked to `Expenses:Salaries` on the date it is issued; no payable is raised
 for pay. Net pay varies with hours and overtime, so no two payroll checks in
 a month carry the same figure. The withholdings deducted from a month's pay
@@ -273,9 +273,9 @@ carry is posted to `Liabilities:SalesTax-Payable` on the date the bank shows.
 ## Month-end close checklist
 At each month end the controller ties the operating account to the statement:
 every check issued is either cleared or listed as outstanding, every client
-check banked is either credited or listed as in transit, the two bank charges
-the bank applies in a month (the ACH batch fee mid-month and the service
-charge at month end) are both booked, the insurer's check for next month's
+check banked is either credited or listed as in transit, the bank charges
+the bank applies in a month (an ACH batch fee mid-month and the service
+charge at month end) are all booked, the insurer's check for next month's
 premium sits in `Assets:Prepayments`, and the ledger's bank balance agrees
 with the statement after the timing items. Nothing is posted to close a gap
 that the statement does not explain.
@@ -288,7 +288,7 @@ made to the account that reflects the underlying transaction.
 OPENED = "2024-01-01"
 
 ACCOUNTS = (
-    Account("Assets:Bank:Checking", K.ASSET, "Operating checking account held at Tamarack Valley Bank", OPENED, 1000),
+    Account("Assets:Bank:Checking", K.ASSET, "Operating checking account held at Tamarind Valley Bank", OPENED, 1000),
     Account("Assets:AR", K.ASSET, "Surveying fees receivable from clients", OPENED, 1100),
     Account("Assets:Inventory", K.ASSET, "Field consumables held in stores - hubs, lath, rebar caps, flagging, paint", OPENED, 1200),
     Account("Assets:Prepayments", K.ASSET, "Amounts paid in advance of the period they relate to", OPENED, 1300),
@@ -320,7 +320,7 @@ PARTIES = (
     Party("party:dev-ramaswamy", "Dev Ramaswamy", R.VENDOR, 6, "expense claim", "Expenses:Travel"),
     Party("party:caleb-ostrowski", "Caleb Ostrowski", R.VENDOR, 7, "expense claim", "Expenses:FieldSupplies"),
     Party("party:marisol-fuentes", "Marisol Fuentes", R.VENDOR, 8, "expense claim", "Expenses:FieldSupplies"),
-    Party("party:tamarack-valley-bank", "Tamarack Valley Bank", R.BANK, 9),
+    Party("party:tamarack-valley-bank", "Tamarind Valley Bank", R.BANK, 9),
     Party("party:kestwick-farms", "Kestwick Farms LLC", R.CUSTOMER, 10, "net 30", "Assets:AR"),
     Party("party:stakeline", "Stakeline Survey Supply", R.VENDOR, 11, "net 30", "Assets:Inventory"),
     Party("party:lionel-garvey", "Lionel Garvey", R.VENDOR, 12, "monthly payroll", "Expenses:Salaries"),
@@ -520,7 +520,7 @@ WORLD = World(
     parties=PARTIES,
     documents=DOCUMENTS,
     bank_opening=BankOpening("2026-01-01", D("31842.15")),
-    opening=OpeningPosition("2026-02-01", (("Assets:AR", D("14360.25")), ("Assets:Inventory", D("3275.40")),
+    opening=OpeningPosition("2026-02-01", (("Assets:Equipment", D("58400.00")), ("Assets:AR", D("14360.25")), ("Assets:Inventory", D("3275.40")),
                                            ("Liabilities:AP", D("-2348.20")),
                                            ("Liabilities:SalesTax-Payable", D("-791.50")),
                                            ("Liabilities:PayrollTax", D("-1867.45")))),
@@ -536,7 +536,7 @@ PERIOD = Period("2026-02-01", "2026-02-28", "February 2026")
 EXPENSE_REPORTS_001 = TaskSpec(
     id="expense_reports_001",
     type="bank_reconciliation",
-    prompt=("February's employee expense claims were all reimbursed by check, and the claims register does not agree "
+    prompt=("February's employee expense claims were all reimbursed by check and the fleet fuel card was drawn on the 11th, and neither the claims register nor the vehicle account agrees "
             "with the February statement for the operating checking account. Work through the differences under the "
             "bookkeeping policy, correct the books, and write the corrected ledger back to ledger.beancount."),
     period=Period("2026-02-01", "2026-02-28", "February 2026"),
@@ -561,10 +561,10 @@ EXPENSE_REPORTS_001 = TaskSpec(
 BANK_RECON_FALCON = TaskSpec(
     id="bank_recon_falcon",
     type="bank_reconciliation",
-    prompt=("The February statement for the operating checking account at Tamarack Valley Bank is in and the ledger "
+    prompt=("The February statement for the operating checking account at Tamarind Valley Bank is in and the ledger "
             "does not tie to it. Please do the month-end bank reconciliation: match every statement row to the "
             "ledger, treat check 2048 and the Kestwick check banked on the 27th as timing items, and fix whatever "
-            "the books have missed, mis-keyed or duplicated under the bookkeeping policy. Write the corrected "
+            "the books have missed or mis-keyed under the bookkeeping policy. Write the corrected "
             "ledger back to ledger.beancount."),
     period=PERIOD,
     plan=MutationPlan((
@@ -717,7 +717,7 @@ SALES_TAX_REMITTANCE_FALCON = TaskSpec(
                          "amount on its original date"),
         DuplicateRecognition("service_charge_posted_twice", "rec:fee-2026-02",
                              "the statement carries MONTHLY SERVICE CHARGE AND CHECK PRINTING ORDER of 47.25 once, "
-                             "on 2026-02-27, while the ledger carries that Tamarack Valley Bank charge twice on the "
+                             "on 2026-02-27, while the ledger carries that Tamarind Valley Bank charge twice on the "
                              "same date; policy.md's Bank service charges section removes one copy"),
     )),
 )
@@ -793,7 +793,7 @@ MONTH_END_CLOSE_FALCON = TaskSpec(
                         "bank's date"),
         AlterRecognition("miskeyed_ach_batch_fee", "rec:ach-fee-2026-02", "transpose_digits", 0,
                          "the statement row OUTGOING ACH BATCH FEE of 12.50 on 2026-02-13 answers the ledger's "
-                         "same-day Tamarack Valley Bank fee entry of 21.50 and no other; policy.md's Bank service "
+                         "same-day Tamarind Valley Bank fee entry of 21.50 and no other; policy.md's Bank service "
                          "charges section re-posts a mis-keyed charge with the statement's amount on its original "
                          "date"),
         DuplicateRecognition("client_receipt_posted_twice", "rec:si-0884-receipt",

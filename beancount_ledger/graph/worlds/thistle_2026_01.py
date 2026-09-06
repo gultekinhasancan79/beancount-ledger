@@ -278,6 +278,25 @@ date the check is issued. A remittance check the statement shows that the
 books do not carry is posted to `Liabilities:SalesTax-Payable` on the bank's
 date.
 
+## Month-end close checklist
+The checking account is agreed to the bank statement before the month is
+closed, and each difference has exactly one correction:
+
+- Bank charges are agreed to the statement line by line. A charge on the
+  statement that the ledger does not carry is added to `Expenses:BankFees`
+  for the statement's amount on the statement's date. A bank charge posted
+  with a mis-keyed amount is corrected by re-posting the entry with the
+  amount the statement shows, on the date the entry was originally posted;
+  only the amount changes.
+- Customer receipts are applied to invoices. A receipt that was posted twice
+  is corrected by removing one of the two copies; the copy that remains is
+  left exactly as it was.
+- A payment on the statement that the ledger does not carry is added for the
+  payee and the amount the statement shows, to the account the vendor master
+  and this policy give for that payee, on the date the bank shows.
+- Checks issued before the cut-off that clear after it are listed as
+  outstanding and are not touched.
+
 ## Suspense accounts
 Thistle & Quill does not operate a suspense or plug account. Every posting is
 made to the account that reflects the underlying transaction.
@@ -528,7 +547,7 @@ WORLD = World(
     bank_opening=BankOpening("2025-12-01", D("44800.00")),
     opening=OpeningPosition("2026-01-01", (("Assets:AR", D("13650.00")), ("Assets:Inventory", D("6800.00")),
                                            ("Assets:Prepayments", D("472.50")),
-                                           ("Assets:Equipment", D("18650.00")),
+                                           ("Assets:Equipment", D("14275.00")),
                                            ("Assets:Due-From-TQ-Interiors", D("4000.00")),
                                            ("Liabilities:AP", D("-5320.40")),
                                            ("Liabilities:SalesTax-Payable", D("-712.80")),
