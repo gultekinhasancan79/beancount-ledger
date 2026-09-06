@@ -86,19 +86,11 @@ class TolerantClient(OpenAIChatCompletionsClient):
                 m.pop(key, None)
         return native, extra
 
-    async def to_native_tools(self, tools):
-        # Groq validates tool schemas strictly: a parameterless tool whose
-        # schema carries `required` but no `properties` is refused ("'required'
-        # present but 'properties' is missing"). The environment's schema for
-        # list_files / run_beancount / submit is exactly that after the hidden
-        # workspace argument is filtered out. Sent with an empty `properties`
-        # here; the environment's own contract is untouched (a finding to fix
-        # there under an episode-contract version bump).
-        native = await super().to_native_tools(tools)
-        return self._with_properties(native)
-
     @staticmethod
     def _with_properties(native):
+        # (verifiers 0.3.1's legacy client has no to_native_tools hook: the wire tools
+        # reach get_native_response directly, so that is the only place to shim them;
+        # --tool-schema-fix at the source is what actually carried the Groq runs.)
         for tool in native or []:
             fn = tool.get("function") if isinstance(tool, dict) else getattr(tool, "function", None)
             params = fn.get("parameters") if isinstance(fn, dict) else getattr(fn, "parameters", None)

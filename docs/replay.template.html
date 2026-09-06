@@ -1,0 +1,1566 @@
+<meta charset="utf-8">
+<title>Ledger Replay</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+  /* ---------- tokens: light is the base, dark redefines only tokens ---------- */
+  :root {
+    color-scheme: light;
+    --paper: #f3f5f8;
+    --surface: #ffffff;
+    --surface-2: #e9edf2;
+    --ink: #1a2230;
+    --ink-2: #4b5768;
+    --muted: #5f6b7c;
+    --rule: #d8dde5;
+    --rule-2: #c3cad4;
+    --accent: #2e4a7d;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2e9f5;
+    --sel: #fff3d1;
+    --add-bg: #e6f4ea;
+    --add-ink: #1d5b33;
+    --del-bg: #fbe8e6;
+    --del-ink: #8a2b21;
+    --focus: #2e4a7d;
+    /* chart series (validated categorical slots) and reserved status colors */
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --status-good: #0ca30c;
+    --status-warn: #fab219;
+    --status-crit: #d03b3b;
+    --good-soft: #e2f3e2;
+    --warn-soft: #fdf1d6;
+    --crit-soft: #f9e0e0;
+    --shadow: 0 1px 2px rgba(20, 30, 50, 0.06), 0 8px 24px -16px rgba(20, 30, 50, 0.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #0f141b;
+      --surface: #161d26;
+      --surface-2: #1d2631;
+      --ink: #e5eaf1;
+      --ink-2: #aab5c3;
+      --muted: #8f9aa9;
+      --rule: #2a3440;
+      --rule-2: #3a4653;
+      --accent: #8fb0e8;
+      --accent-ink: #0f141b;
+      --accent-soft: #1f2c40;
+      --sel: #3a3117;
+      --add-bg: #16301f;
+      --add-ink: #8fd6a5;
+      --del-bg: #3a1f1c;
+      --del-ink: #f0a196;
+      --focus: #8fb0e8;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --good-soft: #17301f;
+      --warn-soft: #3a3117;
+      --crit-soft: #3a1f1c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -16px rgba(0, 0, 0, 0.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #0f141b;
+    --surface: #161d26;
+    --surface-2: #1d2631;
+    --ink: #e5eaf1;
+    --ink-2: #aab5c3;
+    --muted: #8f9aa9;
+    --rule: #2a3440;
+    --rule-2: #3a4653;
+    --accent: #8fb0e8;
+    --accent-ink: #0f141b;
+    --accent-soft: #1f2c40;
+    --sel: #3a3117;
+    --add-bg: #16301f;
+    --add-ink: #8fd6a5;
+    --del-bg: #3a1f1c;
+    --del-ink: #f0a196;
+    --focus: #8fb0e8;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --good-soft: #17301f;
+    --warn-soft: #3a3117;
+    --crit-soft: #3a1f1c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -16px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ---------- base ---------- */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 14px/1.5 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { margin: 0; font-weight: 500; text-wrap: balance; }
+  h1 { font-family: "Newsreader", Georgia, "Times New Roman", serif; font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; }
+  h2 { font-family: "Newsreader", Georgia, serif; font-size: 20px; }
+  h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); font-weight: 600; }
+  p { margin: 0; }
+  code, pre, .mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, "Courier New", monospace; font-variant-numeric: tabular-nums; }
+  pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  button, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  #app { max-width: 1480px; margin: 0 auto; padding: 20px clamp(12px, 2.5vw, 32px) 40px; display: grid; gap: 18px; }
+
+  /* ---------- header ---------- */
+  .top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 28px; padding-bottom: 14px; border-bottom: 1px solid var(--rule-2); }
+  .brand .tag { color: var(--ink-2); margin-top: 4px; max-width: 60ch; }
+  .picker { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+  .picker label { display: grid; gap: 4px; }
+  .picker select {
+    min-width: 200px; max-width: 360px; padding: 6px 30px 6px 10px; border: 1px solid var(--rule-2); border-radius: 6px;
+    background: var(--surface); appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+    background-position: calc(100% - 16px) 55%, calc(100% - 11px) 55%; background-size: 5px 5px; background-repeat: no-repeat;
+  }
+  .btn { padding: 7px 12px; border: 1px solid var(--rule-2); border-radius: 6px; background: var(--surface); color: var(--ink); }
+  .btn:hover { border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .drop-hint { font-size: 12px; color: var(--muted); }
+  body.dragging::after {
+    content: "Drop a results.jsonl to add its rollouts"; position: fixed; inset: 0; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--accent) 12%, transparent); border: 3px dashed var(--accent); font-size: 20px; color: var(--accent); z-index: 9;
+    pointer-events: none;
+  }
+
+  /* ---------- summary strip ---------- */
+  .strip { display: grid; gap: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+  .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+  .tile .v { font-size: 22px; line-height: 1.15; font-weight: 500; overflow-wrap: anywhere; }
+  .tile .v.small { font-size: 14px; line-height: 1.35; }
+  .tile.reward { border-color: var(--accent); background: var(--accent-soft); }
+  .tile.reward .v { font-size: 30px; color: var(--accent); }
+  .tile.reward .eyebrow, .tile.reward .sub { color: var(--ink-2); }
+  .tile .sub { font-size: 11px; color: var(--muted); }
+  .scrub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .scrub .track { display: flex; gap: 3px; flex-wrap: wrap; }
+  .scrub .track button {
+    width: 30px; height: 22px; border-radius: 4px; border: 1px solid var(--rule-2); background: var(--surface-2); padding: 0;
+    font-size: 10px; color: var(--ink-2); font-family: "IBM Plex Mono", monospace;
+  }
+  .scrub .track button.k-read { background: var(--surface-2); }
+  .scrub .track button.k-check { background: var(--accent-soft); }
+  .scrub .track button.k-write { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .scrub .track button.k-submit { background: var(--surface); border: 2px double var(--ink); color: var(--ink); font-weight: 600; }
+  .scrub .track button.k-refused { background: var(--crit-soft); border-color: var(--status-crit); }
+  .scrub .track button.k-note { background: var(--surface); border-style: dashed; }
+  .scrub .track button[aria-current="true"] { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+  .scrub .track button:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
+  .scrub .keys { font-size: 12px; color: var(--muted); }
+  .scrub .keys kbd { font-family: inherit; border: 1px solid var(--rule-2); border-radius: 4px; padding: 0 5px; background: var(--surface); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); align-items: center; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; border: 1px solid var(--rule-2); }
+
+  /* ---------- work area ---------- */
+  .work { display: grid; grid-template-columns: minmax(340px, 5fr) minmax(420px, 7fr); gap: 16px; align-items: start; }
+  @media (max-width: 980px) { .work { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); display: grid; grid-template-rows: auto 1fr auto; min-height: 320px; max-height: 78vh; overflow: hidden; }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .panel-body { overflow: auto; }
+  .panel-foot { padding: 8px 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+  /* timeline */
+  .turn { padding: 10px 14px 12px 14px; border-bottom: 1px solid var(--rule); display: grid; gap: 8px; cursor: pointer; border-left: 3px solid transparent; }
+  .turn:hover { background: var(--surface-2); }
+  .turn[aria-current="true"] { background: var(--sel); border-left-color: var(--accent); }
+  .turn-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .tno { font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent); min-width: 28px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+  .chip.write { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .chip.submit { background: var(--surface); border: 2px double var(--ink); color: var(--ink); font-weight: 600; }
+  .chip.refused { background: var(--crit-soft); border-color: var(--status-crit); color: var(--ink); }
+  .chip.unexecuted { border-style: dashed; color: var(--muted); }
+  .turn-meta { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .say { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); max-width: 72ch; font-size: 13px; }
+  details { border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  details > summary { cursor: pointer; padding: 5px 10px; font-size: 12px; color: var(--ink-2); list-style: none; display: flex; gap: 8px; align-items: center; }
+  details > summary::before { content: "▸"; font-size: 10px; color: var(--muted); }
+  details[open] > summary::before { content: "▾"; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > .inner { padding: 6px 10px 10px; border-top: 1px solid var(--rule); display: grid; gap: 8px; }
+  details pre { font-size: 12px; line-height: 1.45; max-height: 320px; overflow: auto; background: var(--surface-2); padding: 8px 10px; border-radius: 4px; }
+  .call { display: grid; gap: 4px; }
+  .call-head { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink); }
+  .call-head .args { color: var(--ink-2); }
+  .markers { display: grid; gap: 4px; }
+  .marker { font-size: 12px; padding: 4px 8px; border-radius: 4px; border-left: 3px solid var(--rule-2); background: var(--surface-2); }
+  .marker.resolved { border-left-color: var(--status-good); background: var(--good-soft); }
+  .marker.warn { border-left-color: var(--status-warn); background: var(--warn-soft); }
+  .marker.crit { border-left-color: var(--status-crit); background: var(--crit-soft); }
+  .marker b { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+
+  /* ledger */
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tab { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--rule-2); background: var(--surface); font-size: 12px; display: inline-flex; gap: 8px; align-items: baseline; }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .tab .sc { font-family: "IBM Plex Mono", monospace; opacity: 0.85; }
+  .seg { display: inline-flex; border: 1px solid var(--rule-2); border-radius: 6px; overflow: hidden; }
+  .seg button { padding: 4px 10px; border: 0; background: var(--surface); font-size: 12px; color: var(--ink-2); }
+  .seg button + button { border-left: 1px solid var(--rule-2); }
+  .seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+  .ctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  table.code { border-collapse: collapse; width: 100%; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
+  table.code td { padding: 0 8px; vertical-align: top; white-space: pre; }
+  table.code td.ln { width: 1%; text-align: right; color: var(--muted); user-select: none; border-right: 1px solid var(--rule); }
+  table.code td.g { width: 1%; text-align: center; color: var(--muted); user-select: none; }
+  table.code td.t { white-space: pre; }
+  table.code tr.add { background: var(--add-bg); }
+  table.code tr.add td.g, table.code tr.add td.t { color: var(--add-ink); }
+  table.code tr.del { background: var(--del-bg); }
+  table.code tr.del td.g, table.code tr.del td.t { color: var(--del-ink); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--del-ink) 50%, transparent); }
+  table.code tr.mark td { white-space: normal; font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 12px; padding: 5px 10px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  table.code tr.mark.planted td { background: var(--good-soft); border-left: 3px solid var(--status-good); }
+  table.code tr.mark.planted.missing td { background: var(--surface-2); border-left: 3px solid var(--rule-2); }
+  table.code tr.mark.trap td { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+  table.code tr.mark.tamper td { background: var(--crit-soft); border-left: 3px solid var(--status-crit); }
+  table.code tr.mark b { font-family: "IBM Plex Mono", monospace; }
+  table.code tr.hl td { box-shadow: inset 3px 0 0 var(--status-good); }
+  .empty { padding: 40px 20px; color: var(--muted); text-align: center; }
+
+  /* ---------- scorer ---------- */
+  .scorer { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); padding: 16px 18px; display: grid; gap: 16px; }
+  .scorer-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; }
+  .score-grid { display: grid; grid-template-columns: minmax(280px, 1.3fr) minmax(260px, 1fr) minmax(260px, 1fr) minmax(220px, 0.9fr); gap: 18px; }
+  @media (max-width: 1180px) { .score-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .score-grid { grid-template-columns: 1fr; } }
+  .score-cell { display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .tbl-wrap { overflow-x: auto; max-width: 100%; }
+  .big { font-family: "IBM Plex Mono", monospace; font-size: 44px; line-height: 1; font-weight: 500; letter-spacing: -0.02em; }
+  .big.zero { color: var(--ink-2); }
+  .flags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--rule-2); background: var(--surface-2); color: var(--ink-2); }
+  .pill.good { background: var(--good-soft); border-color: var(--status-good); color: var(--ink); }
+  .pill.warn { background: var(--warn-soft); border-color: var(--status-warn); color: var(--ink); }
+  .pill.crit { background: var(--crit-soft); border-color: var(--status-crit); color: var(--ink); }
+  .meter { width: 100%; height: auto; display: block; }
+  .meter text { font-family: "IBM Plex Mono", monospace; font-size: 11px; fill: var(--ink-2); }
+  .meter .axis { stroke: var(--rule-2); stroke-width: 1; }
+  .meter .tick { stroke: var(--rule-2); }
+  .meter .seg-1 { fill: var(--series-1); }
+  .meter .seg-2 { fill: var(--series-2); }
+  .meter .seg-pen { fill: var(--status-crit); }
+  .meter .total-line { stroke: var(--ink); stroke-width: 1.5; }
+  .meter .total-lbl { fill: var(--ink); font-weight: 600; }
+  .formula { font-size: 12px; color: var(--ink-2); display: grid; gap: 3px; }
+  .formula .row { display: flex; gap: 8px; align-items: baseline; }
+  .formula .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .formula .k { flex: 1; }
+  .formula .v { font-family: "IBM Plex Mono", monospace; }
+  .items { display: grid; gap: 8px; }
+  .item { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; align-items: start; }
+  .item .state { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+  .item .state.RESOLVED { background: var(--good-soft); color: var(--ink); border: 1px solid var(--status-good); }
+  .item .state.MISSING { background: var(--surface-2); border: 1px solid var(--rule-2); }
+  .item .state.other { background: var(--warn-soft); border: 1px solid var(--status-warn); color: var(--ink); }
+  .item .name { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; }
+  .item .desc { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); }
+  .item .post { grid-column: 1 / -1; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-2); display: grid; gap: 1px; }
+  .item .when { grid-column: 1 / -1; font-size: 12px; }
+  table.acct { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.acct th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--rule-2); }
+  table.acct td { padding: 5px 6px; border-bottom: 1px solid var(--rule); font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.acct td:first-child { white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+  table.acct td.r { text-align: right; }
+  table.acct tr.miss td { background: var(--crit-soft); }
+  table.acct tr.hit td.st { color: var(--status-good); font-weight: 600; }
+  .pen { display: grid; gap: 6px; }
+  .pen .p { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--rule); font-size: 12px; }
+  .pen .p.hit { border-color: var(--status-crit); background: var(--crit-soft); }
+  .pen .p .w { font-family: "IBM Plex Mono", monospace; color: var(--ink-2); }
+  .pen .p .lbls { grid-column: 1 / -1; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .prov { font-size: 12px; color: var(--muted); max-width: 100ch; }
+  .prov code { font-size: 11px; }
+  .note { font-size: 12px; padding: 8px 10px; border-radius: 6px; background: var(--warn-soft); border: 1px solid var(--status-warn); }
+  footer.foot { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; padding-top: 8px; border-top: 1px solid var(--rule); }
+
+  /* ---------- live run panel (only when hosted by tests/replay_desktop.py) ---------- */
+  .live { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); display: grid; gap: 10px; padding: 12px 16px 14px; }
+  .live-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+  .live-head h2 { font-size: 18px; }
+  .live-form { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(200px, 1fr) minmax(200px, 1fr); gap: 10px 12px; align-items: start; }
+  @media (max-width: 1100px) { .live-form { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px) { .live-form { grid-template-columns: 1fr; } }
+  .live-form label { display: grid; gap: 4px; min-width: 0; }
+  .live-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 4px; }
+  .live-form fieldset legend { padding: 0; display: flex; gap: 8px; align-items: baseline; }
+  .task-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2px 10px; max-height: 122px; overflow: auto;
+    padding: 6px 8px; border: 1px solid var(--rule-2); border-radius: 6px; background: var(--paper); font-size: 12.5px; }
+  .task-list label { display: flex; gap: 6px; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .task-list label code { font-size: 11px; color: var(--muted); }
+  .task-list label:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
+  .task-tools { display: flex; gap: 12px; font-size: 12px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+  .task-tools button { border: 0; background: none; color: var(--accent); padding: 0; font-size: 12px; text-decoration: underline; }
+  .task-tools button:disabled { color: var(--muted); text-decoration: none; cursor: not-allowed; }
+  .budget { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: start; }
+  .budget .eyebrow.off { color: var(--status-warn); }
+  .live-queue { font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 6px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--rule); }
+  .live-queue .prog { font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .live-queue .chips { gap: 4px; }
+  .chip.ok { background: var(--good-soft); border-color: var(--status-good); color: var(--ink); }
+  .chip.bad { background: var(--crit-soft); border-color: var(--status-crit); color: var(--ink); }
+  .pill.budget { background: var(--warn-soft); border-color: var(--status-warn); color: var(--ink); }
+
+  /* ---------- results across runs ---------- */
+  .summary { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); padding: 14px 18px 16px; display: grid; gap: 12px; }
+  .summary-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; }
+  table.sum { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.sum th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; padding: 5px 8px; border-bottom: 1px solid var(--rule-2); white-space: nowrap; }
+  table.sum th.num, table.sum td.num { text-align: right; font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.sum td { padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+  table.sum td.name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; overflow-wrap: anywhere; }
+  table.sum td.strict { color: var(--status-good); font-weight: 600; }
+  table.sum td.none { color: var(--muted); text-align: center; }
+  table.sum tr:hover td { background: var(--surface-2); }
+  .summary .drop-hint code { font-size: 11px; }
+  .live-form input[type="text"], .live-form input[type="password"], .live-form input[type="number"] {
+    font: inherit; padding: 7px 10px; border: 1px solid var(--rule-2); border-radius: 6px; background: var(--paper); color: var(--ink); min-width: 0; width: 100%;
+  }
+  .live-form input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .live-form .mono-input { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; }
+  .key-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .key-row > select:only-child, .key-row > select:first-child:has(+ input[hidden]) { grid-column: 1 / -1; max-width: none; }
+  .key-row select { max-width: 280px; min-width: 0; padding: 7px 26px 7px 8px; border: 1px solid var(--rule-2); border-radius: 6px; background: var(--paper); color: var(--ink); appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+    background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%; background-size: 5px 5px; background-repeat: no-repeat; }
+  .key-row select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .live-form input.is-var { color: var(--accent); font-weight: 600; }
+  .live-form input:disabled, .live-form select:disabled, .live-row .opts input:disabled { opacity: 0.55; cursor: not-allowed; }
+  .live-row .opts label:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
+  .live-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .live-row .opts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-2); }
+  .live-row .opts label { display: inline-flex; align-items: center; gap: 6px; }
+  .live-row .actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn-run { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; padding: 8px 18px; }
+  .btn-run:disabled, .btn-stop:disabled { opacity: 0.45; cursor: default; }
+  .btn-stop { border-color: var(--status-crit); color: var(--ink); }
+  .live-status { font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 20px; }
+  .live-status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--rule-2); flex: none; }
+  .live-status.running .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .live-status.done .dot { background: var(--status-good); }
+  .live-status.failed .dot { background: var(--status-crit); }
+  @media (prefers-reduced-motion: no-preference) { .live-status.running .dot { animation: pulse 1.4s ease-in-out infinite; } @keyframes pulse { 50% { box-shadow: 0 0 0 7px transparent; } } }
+  .live-hint { font-size: 12px; color: var(--muted); }
+  .live-hint code { font-size: 11px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Ledger Replay</h1>
+      <p class="tag">One bookkeeping episode, turn by turn. Every revision the agent wrote is scored by the environment's real scorer, so the reward on screen is the reward it would have earned.</p>
+    </div>
+    <div class="picker">
+      <label><span class="eyebrow">Agent</span><select id="sel-agent" aria-label="Agent"></select></label>
+      <label><span class="eyebrow">Rollout</span><select id="sel-rollout" aria-label="Rollout"></select></label>
+      <button class="btn" type="button" id="btn-open">Open results.jsonl…</button>
+      <input type="file" id="file-input" accept=".jsonl,.json,text/plain" hidden>
+    </div>
+  </header>
+
+  <section class="live" id="live" aria-label="Run your own model" hidden>
+    <div class="live-head">
+      <h2>Run your own model, live</h2>
+      <span class="live-hint" id="live-hint">The key stays in this window's process and goes only to the base URL you type. Saved runs land under outputs/evals/.</span>
+    </div>
+    <form class="live-form" id="live-form" autocomplete="off">
+      <label><span class="eyebrow">Base URL</span><input type="text" id="lv-base" class="mono-input" placeholder="http://localhost:11434/v1" spellcheck="false"></label>
+      <label><span class="eyebrow">API key</span>
+        <span class="key-row">
+          <input type="password" id="lv-key" class="mono-input" placeholder="paste a key, or pick one from this PC →" spellcheck="false">
+          <select id="lv-keyvar" class="mono-input" aria-label="Keys set on this PC" title="Environment variables on this PC that look like API keys; the value stays in Python"><option value="">from this PC…</option></select>
+        </span>
+      </label>
+      <label><span class="eyebrow">Model</span>
+        <span class="key-row">
+          <input type="text" id="lv-model" class="mono-input" list="lv-models" placeholder="org/model-name, or pick from the list →" spellcheck="false">
+          <select id="lv-modelsel" class="mono-input" aria-label="Models at this endpoint" title="What GET /models at the base URL returns; pick one to fill the box"><option value="">models at this endpoint…</option></select>
+        </span>
+        <datalist id="lv-models"></datalist>
+      </label>
+      <label><span class="eyebrow">Company · month</span>
+        <select id="lv-worldsel" class="mono-input" aria-label="Company and month"><option value="">loading…</option></select>
+      </label>
+      <fieldset id="lv-taskset">
+        <legend><span class="eyebrow">Tasks</span><span class="drop-hint" id="lv-taskcount"></span></legend>
+        <div class="task-list" id="lv-tasks" role="group" aria-label="Tasks to run, tick one or several"></div>
+        <input type="text" id="lv-task" class="mono-input" aria-label="Other generated selectors" spellcheck="false" placeholder="train:7, train:7:hard" hidden>
+        <div class="task-tools"><span id="lv-tasknote">Tick one task for a single run, several for a queue; ticks are kept when you switch company.</span><button type="button" id="lv-taskclear">clear ticks</button></div>
+      </fieldset>
+      <div class="budget" role="group" aria-label="Budget">
+        <label><span class="eyebrow">Tokens / turn</span><input type="number" id="lv-tokens" class="mono-input" value="8000" min="2000" max="40000" step="500"></label>
+        <label title="Turns per episode. The shipped benchmark budget is 25; any other value builds the environment under a looser or tighter contract and the run is tagged as a non-default budget."><span class="eyebrow" id="lv-turns-lbl">Episode turns</span><input type="number" id="lv-turns" class="mono-input" value="25" min="2" max="200" step="1"></label>
+        <label title="Output-token ceiling per episode, hidden reasoning included. The shipped benchmark budget is 40,000; any other value is recorded as a non-default budget."><span class="eyebrow" id="lv-episode-lbl">Episode tokens</span><input type="number" id="lv-episode" class="mono-input" value="40000" min="1000" step="1000"></label>
+      </div>
+    </form>
+    <div class="live-row">
+      <div class="opts">
+        <label><input type="checkbox" id="lv-save" checked> Save the run under outputs/evals</label>
+        <label><input type="checkbox" id="lv-follow" checked> Follow the latest turn</label>
+        <label title="Send each earlier turn's hidden reasoning back to the provider (the README's 'replayed' arm). Untick for the 'no replay' arm, or when a provider rejects the reasoning_content field."><input type="checkbox" id="lv-replay" checked> Replay hidden reasoning</label>
+        <label title="For providers that validate tool schemas strictly (Groq): parameterless tools get an explicit empty properties object, an empty required list is dropped and strict mode is off. Off by default because it changes the schema the model sees; the run's metadata records it."><input type="checkbox" id="lv-strict"> Strict-schema provider (Groq)</label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-run" type="button" id="lv-run">▶ Run</button>
+        <button class="btn btn-stop" type="button" id="lv-stop" disabled>■ Stop</button>
+      </div>
+    </div>
+    <div class="live-queue" id="lv-queue" hidden aria-live="polite"><span class="eyebrow">Queue</span><span class="prog" id="lv-queue-prog"></span><span class="chips" id="lv-queue-done"></span></div>
+    <div class="live-status" id="lv-status"><span class="dot"></span><span id="lv-status-text">Ready.</span></div>
+  </section>
+
+  <section class="strip" id="strip" aria-label="Episode summary"></section>
+
+  <main class="work">
+    <section class="panel" id="timeline" aria-label="Agent turns"></section>
+    <section class="panel" id="ledger" aria-label="Ledger"></section>
+  </main>
+
+  <section class="scorer" id="scorer" aria-label="Scorer breakdown"></section>
+
+  <section class="summary" id="summary" aria-label="Results across runs">
+    <div class="summary-head">
+      <div><h2>Results across runs</h2><div class="drop-hint" id="sum-note"></div></div>
+      <div class="ctl">
+        <span class="seg" role="group" aria-label="Summary view">
+          <button type="button" id="sum-by-model" aria-pressed="true">By model</button>
+          <button type="button" id="sum-by-task" aria-pressed="false">By task</button>
+        </span>
+        <button class="btn" type="button" id="sum-copy" hidden title="Put the tables on the clipboard as Markdown">Copy as Markdown</button>
+        <button class="btn" type="button" id="sum-export" hidden title="Write the tables and the selected run's turn timeline to outputs/evals/exports/">Export .md + .csv</button>
+      </div>
+    </div>
+    <div class="tbl-wrap" id="sum-body"></div>
+  </section>
+
+  <footer class="foot" id="foot"></footer>
+</div>
+
+<script id="replay-data" type="application/json">__REPLAY_DATA__</script>
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------------ data
+  let DATA;
+  try { DATA = JSON.parse(document.getElementById('replay-data').textContent); }
+  catch (e) { DATA = { runs: [], scores: {}, task: null, original_ledger: '', generated: {} }; }
+  DATA.runs = DATA.runs || [];
+  DATA.scores = DATA.scores || {};
+
+  const WEIGHTS = { targets: 0.70, resolved: 0.30 };
+  const PENALTIES = [
+    { key: 'collateral_damage', label: 'Collateral damage', each: -0.40, why: 'an account the task should not have moved, moved' },
+    { key: 'removed_or_altered', label: 'Tampered records', each: -0.40, why: 'a pre-existing entry, directive or option was deleted or altered' },
+    { key: 'merged_events', label: 'Merged events', each: -0.40, why: 'one entry combined two separate events' },
+    { key: 'fabricated', label: 'Fabricated entries', each: -0.40, why: 'an entry the task never called for was invented' },
+    { key: 'undocumented', label: 'Undocumented repairs', each: -0.20, why: 'a resolving entry names no accepted counterparty' },
+    { key: 'plug_accounts', label: 'Plug accounts', each: -1.00, once: true, why: 'a suspense or plug account was invented (charged once)' },
+  ];
+
+  // ------------------------------------------------------------------ helpers
+  function h(tag, props, ...children) {
+    const el = document.createElement(tag);
+    if (props) {
+      for (const [k, v] of Object.entries(props)) {
+        if (v === null || v === undefined || v === false) continue;
+        if (k === 'class') el.className = v;
+        else if (k === 'text') el.textContent = v;
+        else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+        else if (k === 'dataset') Object.assign(el.dataset, v);
+        else el.setAttribute(k, v === true ? '' : v);
+      }
+    }
+    for (const c of children.flat(Infinity)) {
+      if (c === null || c === undefined || c === false) continue;
+      el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return el;
+  }
+  function svg(tag, attrs, ...children) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+    for (const c of children.flat(Infinity)) if (c) el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    return el;
+  }
+  const fmt = {
+    int: (n) => (n === null || n === undefined || isNaN(n)) ? '–' : Math.round(n).toLocaleString('en-US'),
+    score: (n) => (n === null || n === undefined || isNaN(n)) ? '–' : Number(n).toFixed(3),
+    secs: (s) => (s === null || s === undefined || isNaN(s)) ? '–' : (s >= 100 ? Math.round(s) + ' s' : s.toFixed(1) + ' s'),
+    money: (v) => { if (v === null || v === undefined || v === '') return '–'; const n = Number(v); return isNaN(n) ? String(v) : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+  };
+  function shortModel(m) { return (m || '').split('/').pop(); }
+  function firstLine(s) { return (s || '').split('\n')[0]; }
+
+  function parseAttestation(result) {
+    if (typeof result !== 'string') return null;
+    const head = result.split('\n')[0];
+    try { const j = JSON.parse(head); return (j && typeof j === 'object' && 'committed' in j) ? j : null; } catch (e) { return null; }
+  }
+  function decodeCall(tc) {
+    let c = tc;
+    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = { id: '?', name: 'unparseable', arguments: c }; } }
+    if (c && c.function) c = { id: c.id, name: c.function.name, arguments: c.function.arguments };
+    let args = {};
+    if (typeof c.arguments === 'string') { try { args = JSON.parse(c.arguments); } catch (e) { args = { _raw: c.arguments }; } }
+    else if (c.arguments && typeof c.arguments === 'object') args = c.arguments;
+    return { id: c.id, name: c.name || '?', args };
+  }
+
+  // Task facts for a rollout: a live run carries its own (generated tasks too); saved rows use the embedded task when ids match.
+  function taskFor(run, taskId) {
+    if (run && run.task && (!taskId || run.task.id === taskId)) return run.task;
+    if (DATA.task && taskId === DATA.task.id) return DATA.task;
+    return null;
+  }
+
+  // Normalise one vf-eval row into turns and ledger revisions.
+  function normalizeRow(row, runId, rowIdx, run) {
+    const comp = Array.isArray(row.completion) ? row.completion : [];
+    const turns = [];
+    const revisions = [{ index: 0, turn: 0, text: null, label: 'Original', report: null, digest: null }];
+    let rev = 0, i = 0, turnNo = 0;
+    while (i < comp.length) {
+      const m = comp[i];
+      if (m.role !== 'assistant') {
+        turnNo++;
+        turns.push({ no: turnNo, kind: 'note', role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content), reasoning: '', calls: [] });
+        i++; continue;
+      }
+      turnNo++;
+      const calls = (m.tool_calls || []).map(decodeCall);
+      i++;
+      const results = {};
+      while (i < comp.length && comp[i].role === 'tool') { results[comp[i].tool_call_id] = comp[i].content; i++; }
+      for (const c of calls) {
+        c.result = Object.prototype.hasOwnProperty.call(results, c.id) ? results[c.id] : null;
+        if (c.result === null) c.unexecuted = true; // emitted on the final turn, never run
+        if (c.name === 'write_ledger') {
+          const att = parseAttestation(c.result);
+          if (att && att.committed) {
+            rev++;
+            const lines = (c.result || '').split('\n');
+            revisions.push({ index: rev, turn: turnNo, text: typeof c.args.content === 'string' ? c.args.content : '', report: lines.slice(1).join('\n'), digest: att.logical_text_digest || null });
+            c.revision = rev;
+          } else if (typeof c.result === 'string') {
+            c.refused = true;
+          }
+        }
+        if (c.name === 'submit' && typeof c.result === 'string') {
+          c.submitted = /^submitted/i.test(c.result);
+          if (!c.submitted) c.refused = true;
+        }
+      }
+      turns.push({ no: turnNo, kind: 'turn', content: typeof m.content === 'string' ? m.content : '', reasoning: typeof m.reasoning_content === 'string' ? m.reasoning_content : '', calls });
+    }
+    // per-turn latency from timing spans, when present
+    const spans = row.timing && row.timing.model && Array.isArray(row.timing.model.spans) ? row.timing.model.spans : [];
+    let si = 0;
+    for (const t of turns) if (t.kind === 'turn') { t.secs = spans[si] ? spans[si].duration : null; si++; }
+    // original ledger: the task's, else the first complete ledger read in the transcript
+    let original = null;
+    const taskId = (row.info && row.info.task_id) || row.answer || null;
+    if (run && run.original_ledger) original = run.original_ledger;
+    else if (DATA.task && taskId === DATA.task.id && DATA.original_ledger) original = DATA.original_ledger;
+    if (original === null) {
+      for (const t of turns) for (const c of t.calls) {
+        if (c.name === 'read_file' && c.args && c.args.path === 'ledger.beancount' && typeof c.result === 'string' && /^option\s/.test(c.result)) { original = c.result; break; }
+      }
+    }
+    revisions[0].text = original || '';
+    return {
+      runId, rowIdx, taskId, turns, revisions, task: taskFor(run, taskId),
+      reward: typeof row.reward === 'number' ? row.reward : null,
+      stop: row.stop_condition || null,
+      metrics: row.metrics || {},
+      tokens: row.token_usage || {},
+      timing: row.timing || {},
+      truncated: !!row.is_truncated,
+      error: row.error || null,
+    };
+  }
+
+  // ------------------------------------------------------------------ diff (LCS on lines)
+  function diffLines(aText, bText) {
+    const a = aText === '' ? [] : aText.split('\n'), b = bText === '' ? [] : bText.split('\n');
+    if (a.length && a[a.length - 1] === '' && aText.endsWith('\n')) a.pop();
+    if (b.length && b[b.length - 1] === '' && bText.endsWith('\n')) b.pop();
+    const n = a.length, m = b.length;
+    // trim common prefix/suffix for speed
+    let p = 0; while (p < n && p < m && a[p] === b[p]) p++;
+    let s = 0; while (s < n - p && s < m - p && a[n - 1 - s] === b[m - 1 - s]) s++;
+    const ops = [];
+    for (let i = 0; i < p; i++) ops.push({ t: ' ', ai: i, bi: i, s: a[i] });
+    const A = a.slice(p, n - s), B = b.slice(p, m - s);
+    const N = A.length, M = B.length;
+    const L = new Int32Array((N + 1) * (M + 1));
+    for (let i = N - 1; i >= 0; i--) for (let j = M - 1; j >= 0; j--) {
+      L[i * (M + 1) + j] = A[i] === B[j] ? L[(i + 1) * (M + 1) + j + 1] + 1 : Math.max(L[(i + 1) * (M + 1) + j], L[i * (M + 1) + j + 1]);
+    }
+    let i = 0, j = 0;
+    while (i < N && j < M) {
+      if (A[i] === B[j]) { ops.push({ t: ' ', ai: p + i, bi: p + j, s: A[i] }); i++; j++; }
+      else if (L[(i + 1) * (M + 1) + j] >= L[i * (M + 1) + j + 1]) { ops.push({ t: '-', ai: p + i, bi: null, s: A[i] }); i++; }
+      else { ops.push({ t: '+', ai: null, bi: p + j, s: B[j] }); j++; }
+    }
+    while (i < N) { ops.push({ t: '-', ai: p + i, bi: null, s: A[i] }); i++; }
+    while (j < M) { ops.push({ t: '+', ai: null, bi: p + j, s: B[j] }); j++; }
+    for (let k = 0; k < s; k++) ops.push({ t: ' ', ai: n - s + k, bi: m - s + k, s: a[n - s + k] });
+    return { ops, a, b, added: ops.filter(o => o.t === '+').length, removed: ops.filter(o => o.t === '-').length };
+  }
+
+  // Find the transaction block (start..end line indices) that carries a planted repair in a ledger text.
+  function txnBlocks(lines) {
+    const blocks = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\d{4}-\d{2}-\d{2}\s+(\*|!|txn|[A-Z])/.test(lines[i]) && !/^\d{4}-\d{2}-\d{2}\s+(open|close|balance|pad|note|document|event|price|commodity)\b/.test(lines[i])) {
+        let j = i;
+        while (j + 1 < lines.length && /^\s+\S/.test(lines[j + 1])) j++;
+        blocks.push({ start: i, end: j, head: lines[i], body: lines.slice(i, j + 1) });
+      }
+    }
+    return blocks;
+  }
+  function findPlantedBlocks(lines, planted) {
+    const found = {};
+    const blocks = txnBlocks(lines);
+    for (const p of planted || []) {
+      for (const b of blocks) {
+        if (!b.head.startsWith(p.date + ' ')) continue;
+        const need = (p.required_postings || []).map(rp => rp[0]);
+        const ok = need.every(acct => b.body.some(l => new RegExp('^\\s+' + acct.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\s|$)').test(l)));
+        if (ok) { found[p.id] = b; break; }
+      }
+    }
+    return found;
+  }
+  function findTrapBlocks(lines, traps) {
+    const found = {};
+    const blocks = txnBlocks(lines);
+    for (const t of traps || []) {
+      for (const b of blocks) if (t.narration && b.head.includes(t.narration)) { found[t.id] = b; break; }
+    }
+    return found;
+  }
+
+  // ------------------------------------------------------------------ state
+  const state = { run: 0, row: 0, turn: 1, rev: 0, view: 'diff', base: 'original' };
+  let cur = null; // normalised rollout
+  const cacheNorm = new Map();
+
+  function currentRollout() {
+    const run = DATA.runs[state.run];
+    if (!run || !run.rows || !run.rows[state.row]) return null;
+    const key = state.run + '/' + state.row;
+    if (!cacheNorm.has(key)) cacheNorm.set(key, normalizeRow(run.rows[state.row], run.id, state.row, run));
+    return cacheNorm.get(key);
+  }
+  function scoreFor(rollout, rev) {
+    const run = DATA.runs[state.run];
+    if (!run) return null;
+    return DATA.scores[run.id + '/' + rollout.rowIdx + '/' + rev] || null;
+  }
+  function revisionAtTurn(rollout, turn) {
+    let r = 0;
+    for (const rv of rollout.revisions) if (rv.index > 0 && rv.turn <= turn) r = rv.index;
+    return r;
+  }
+  function firstResolvedTurn(rollout, plantedId) {
+    for (const rv of rollout.revisions) {
+      if (rv.index === 0) continue;
+      const sc = scoreFor(rollout, rv.index);
+      if (sc && sc.item_states && sc.item_states[plantedId] === 'RESOLVED') return rv.turn;
+    }
+    return null;
+  }
+  function turnKind(t) {
+    if (t.kind === 'note') return 'k-note';
+    const names = t.calls.map(c => c.name);
+    if (t.calls.some(c => c.refused)) return 'k-refused';
+    if (names.includes('submit')) return 'k-submit';
+    if (names.includes('write_ledger')) return 'k-write';
+    if (names.includes('run_beancount')) return 'k-check';
+    return 'k-read';
+  }
+
+  // ------------------------------------------------------------------ pickers
+  function fillPickers() {
+    const selA = document.getElementById('sel-agent');
+    const selR = document.getElementById('sel-rollout');
+    selA.replaceChildren(...DATA.runs.map((run, i) => h('option', { value: String(i), text: run.label || (shortModel(run.model) + ' · ' + run.id) })));
+    selA.value = String(state.run);
+    const run = DATA.runs[state.run];
+    const rows = run ? run.rows : [];
+    selR.replaceChildren(...rows.map((row, i) => {
+      const r = typeof row.reward === 'number' ? row.reward.toFixed(2) : '?';
+      const turns = row.metrics && row.metrics.num_turns ? Math.round(row.metrics.num_turns) : (Array.isArray(row.completion) ? row.completion.filter(m => m.role === 'assistant').length : '?');
+      const tag = run.budget && run.budget.default === false ? ' · non-default budget' : '';
+      return h('option', { value: String(i), text: `Rollout ${i + 1} of ${rows.length} · reward ${r} · ${turns} turns${tag}` });
+    }));
+    selR.value = String(state.row);
+    selR.disabled = rows.length <= 1;
+  }
+
+  // ------------------------------------------------------------------ render: strip
+  function renderStrip(r) {
+    const root = document.getElementById('strip');
+    const run = DATA.runs[state.run];
+    const m = r.metrics;
+    // the budget the run was built under: the shipped one unless the record says otherwise
+    const budget = run.budget || null;
+    const maxTurns = budget && budget.max_turns ? budget.max_turns : 25;
+    const ceiling = budget && budget.max_episode_output_tokens ? budget.max_episode_output_tokens : 40000;
+    const nonDefault = !!(budget && budget.default === false);
+    const tiles = h('div', { class: 'tiles' },
+      h('div', { class: 'tile reward' }, h('span', { class: 'eyebrow', text: 'Reward' }), h('span', { class: 'v num', text: fmt.score(r.reward) }), h('span', { class: 'sub', text: r.stop ? 'stop: ' + r.stop : '' })),
+      h('div', { class: 'tile' }, h('span', { class: 'eyebrow', text: 'Agent' }), h('span', { class: 'v small', text: shortModel(run.model) || run.id }), h('span', { class: 'sub', text: run.base_url ? run.base_url.replace(/^https?:\/\//, '') : (run.source || '') })),
+      h('div', { class: 'tile' }, h('span', { class: 'eyebrow', text: 'Turns' }), h('span', { class: 'v num', text: String(r.turns.filter(t => t.kind === 'turn').length) }), h('span', { class: 'sub', text: `of ${maxTurns} allowed` })),
+      h('div', { class: 'tile' }, h('span', { class: 'eyebrow', text: 'Tool calls' }), h('span', { class: 'v num', text: String(r.turns.reduce((n, t) => n + t.calls.length, 0)) }), h('span', { class: 'sub', text: `${r.revisions.length - 1} ledger ${r.revisions.length === 2 ? 'revision' : 'revisions'}` })),
+      h('div', { class: 'tile' }, h('span', { class: 'eyebrow', text: 'Tokens out' }), h('span', { class: 'v num', text: fmt.int(r.tokens.output_tokens) }), h('span', { class: 'sub', text: `ceiling ${fmt.int(ceiling)} incl. reasoning` })),
+      h('div', { class: 'tile' }, h('span', { class: 'eyebrow', text: 'Tokens in' }), h('span', { class: 'v num', text: fmt.int(r.tokens.input_tokens) }), h('span', { class: 'sub', text: 'summed over turns' })),
+      h('div', { class: 'tile' }, h('span', { class: 'eyebrow', text: 'Wall time' }), h('span', { class: 'v num', text: fmt.secs(r.timing.generation ? r.timing.generation.duration : (r.timing.total || null)) }), h('span', { class: 'sub', text: m['piv/observation_bytes'] ? fmt.int(m['piv/observation_bytes']) + ' bytes observed' : '' })),
+    );
+    const track = h('div', { class: 'track', role: 'group', 'aria-label': 'Turn scrubber' },
+      r.turns.map(t => h('button', {
+        type: 'button', class: turnKind(t), title: `Turn ${t.no}: ${t.kind === 'note' ? t.role : t.calls.map(c => c.name).join(', ')}`,
+        'aria-current': state.turn === t.no ? 'true' : null, onclick: () => selectTurn(t.no),
+      }, String(t.no))));
+    const legend = h('div', { class: 'legend' },
+      h('span', {}, h('span', { class: 'sw', style: 'background: var(--surface-2)' }), 'read / list / grep'),
+      h('span', {}, h('span', { class: 'sw', style: 'background: var(--accent-soft)' }), 'run_beancount'),
+      h('span', {}, h('span', { class: 'sw', style: 'background: var(--accent)' }), 'write_ledger'),
+      h('span', {}, h('span', { class: 'sw', style: 'background: var(--surface); border: 2px double var(--ink)' }), 'submit'),
+      r.turns.some(t => t.calls.some(c => c.refused)) ? h('span', {}, h('span', { class: 'sw', style: 'background: var(--crit-soft); border-color: var(--status-crit)' }), 'refused call') : null,
+    );
+    const budgetPill = nonDefault ? h('span', { class: 'pill budget', title: 'Built under a budget other than the shipped 25 turns / 40,000 tokens: not comparable with benchmark runs',
+      text: `non-default budget: ${budget.max_turns} turns / ${fmt.int(budget.max_episode_output_tokens)} tokens — not a benchmark run` }) : null;
+    const scrub = h('div', { class: 'scrub' }, h('span', { class: 'eyebrow', text: 'Turns' }), track, budgetPill, legend, h('span', { class: 'keys' }, h('kbd', { text: '←' }), ' ', h('kbd', { text: '→' }), ' step through turns'));
+    root.replaceChildren(tiles, scrub);
+  }
+
+  // ------------------------------------------------------------------ render: timeline
+  function argsSummary(c) {
+    const a = c.args || {};
+    if (c.name === 'write_ledger') return `content: ${typeof a.content === 'string' ? a.content.split('\n').length + ' lines' : '?'}`;
+    const parts = [];
+    for (const [k, v] of Object.entries(a)) parts.push(`${k}=${typeof v === 'string' ? JSON.stringify(v) : String(v)}`);
+    return parts.join(', ');
+  }
+  function resultSummary(c) {
+    const res = c.result;
+    if (res === null || res === undefined) return 'no result recorded';
+    if (c.name === 'read_file' && c.args && c.args.path === 'ledger.beancount' && /^option\s/.test(res)) return `complete ledger, ${res.split('\n').filter(Boolean).length} lines`;
+    if (c.name === 'write_ledger') { const att = parseAttestation(res); return att ? (att.committed ? 'committed · ' + firstLine(res.split('\n').slice(1).join('\n')) : 'not committed') : firstLine(res); }
+    if (c.name === 'submit' || c.name === 'run_beancount') return firstLine(res);
+    return `${res.split('\n').length} lines`;
+  }
+  function renderTimeline(r) {
+    const root = document.getElementById('timeline');
+    const run = DATA.runs[state.run];
+    const head = h('div', { class: 'panel-head' },
+      h('div', {}, h('h2', { text: 'Agent turns' }), h('div', { class: 'drop-hint', text: `${shortModel(run.model) || run.id} · rollout ${state.row + 1}` })),
+      h('div', { class: 'ctl' },
+        h('button', { class: 'btn', type: 'button', onclick: () => toggleAll(root, true), text: 'Expand all' }),
+        h('button', { class: 'btn', type: 'button', onclick: () => toggleAll(root, false), text: 'Collapse all' })));
+    const body = h('div', { class: 'panel-body', id: 'timeline-body' });
+    for (const t of r.turns) {
+      const art = h('article', { class: 'turn', dataset: { turn: String(t.no) }, 'aria-current': state.turn === t.no ? 'true' : null, tabindex: '0',
+        onclick: (ev) => { if (ev.target.closest('details, summary, button')) return; selectTurn(t.no); },
+        onkeydown: (ev) => { if (ev.key === 'Enter' && ev.target === art) selectTurn(t.no); } });
+      if (t.kind === 'note') {
+        art.append(h('div', { class: 'turn-head' }, h('span', { class: 'tno', text: 'T' + t.no }), h('span', { class: 'chip', text: t.role + ' message' })), h('p', { class: 'say', text: t.content }));
+        body.append(art); continue;
+      }
+      const chips = h('div', { class: 'chips' });
+      const counts = new Map();
+      for (const c of t.calls) counts.set(c.name, (counts.get(c.name) || 0) + 1);
+      for (const [name, n] of counts) {
+        const cls = name === 'write_ledger' ? 'chip write' : name === 'submit' ? 'chip submit' : 'chip';
+        const refused = t.calls.some(c => c.name === name && c.refused);
+        const unexecuted = t.calls.some(c => c.name === name && c.unexecuted);
+        chips.append(h('span', { class: refused ? 'chip refused' : unexecuted ? 'chip unexecuted' : cls, text: (n > 1 ? `${name} ×${n}` : name) + (refused ? ' · refused' : unexecuted ? ' · not executed' : '') }));
+      }
+      const writes = t.calls.filter(c => c.name === 'write_ledger' && c.revision);
+      const meta = [];
+      for (const w of writes) {
+        const rv = r.revisions[w.revision];
+        const base = r.revisions[w.revision - 1];
+        const d = diffLines(base.text || '', rv.text || '');
+        meta.push(`revision ${w.revision}: +${d.added} −${d.removed}`);
+      }
+      if (t.secs !== null && t.secs !== undefined) meta.push(fmt.secs(t.secs));
+      const headRow = h('div', { class: 'turn-head' }, h('span', { class: 'tno', text: 'T' + t.no }), chips, h('span', { class: 'turn-meta', text: meta.join(' · ') }));
+      art.append(headRow);
+      if (t.content && t.content.trim()) art.append(h('p', { class: 'say', text: t.content.trim() }));
+      if (t.reasoning) art.append(h('details', { class: 'reasoning' }, h('summary', { text: `Hidden reasoning · ${fmt.int(t.reasoning.length)} chars` }), h('div', { class: 'inner' }, h('pre', { text: t.reasoning }))));
+      if (t.calls.length) {
+        const inner = h('div', { class: 'inner' });
+        for (const c of t.calls) {
+          const callHead = h('div', { class: 'call-head' }, c.name, h('span', { class: 'args', text: '(' + argsSummary(c) + ')' }), ' → ', h('span', { class: 'args', text: resultSummary(c) }));
+          const block = h('div', { class: 'call' }, callHead);
+          if (c.name === 'write_ledger' && c.revision) block.append(h('button', { class: 'btn', type: 'button', style: 'justify-self: start', onclick: () => { state.rev = c.revision; state.turn = t.no; render(); }, text: `Show revision ${c.revision} in the ledger panel` }));
+          else if (typeof c.result === 'string' && c.result.length) block.append(h('pre', { text: c.result }));
+          inner.append(block);
+        }
+        art.append(h('details', { class: 'calls' }, h('summary', { text: `${t.calls.length} tool ${t.calls.length === 1 ? 'call' : 'calls'} and results` }), inner));
+      }
+      // planted markers: what this turn's revision resolved, per the scorer
+      const marks = h('div', { class: 'markers' });
+      for (const w of writes) {
+        const sc = scoreFor(r, w.revision), prev = scoreFor(r, w.revision - 1);
+        const rv = r.revisions[w.revision];
+        if (sc && sc.item_states) {
+          for (const [id, st] of Object.entries(sc.item_states)) {
+            const before = prev && prev.item_states ? prev.item_states[id] : 'MISSING';
+            if (st === 'RESOLVED' && before !== 'RESOLVED') marks.append(h('div', { class: 'marker resolved' }, '◆ ', h('b', { text: id }), ' resolved in this revision — the scorer credits it'));
+            else if (st !== 'RESOLVED' && before === 'RESOLVED') marks.append(h('div', { class: 'marker crit' }, '◆ ', h('b', { text: id }), ' was resolved before and is not any more (' + st + ')'));
+          }
+          for (const p of PENALTIES) { const n = (sc[p.key] || []).length; if (n) marks.append(h('div', { class: 'marker crit' }, '▲ ', h('b', { text: p.label }), ` ×${n} · ${p.once ? p.each.toFixed(2) + ' once' : (p.each * n).toFixed(2)}`)); }
+          if (sc.gated) marks.append(h('div', { class: 'marker crit' }, '▲ ', h('b', { text: 'gated' }), ' — beancount reported a defect; reward forced to 0'));
+          if (sc.outcome === 'protocol_rejected') marks.append(h('div', { class: 'marker crit' }, '▲ ', h('b', { text: 'rejected by the ledger protocol' }), ' — ' + (sc.reason || '')));
+        } else if (r.task) {
+          const blocks = findPlantedBlocks((rv.text || '').split('\n'), r.task.planted);
+          for (const id of Object.keys(blocks)) marks.append(h('div', { class: 'marker' }, '◆ ', h('b', { text: id }), ' posted here (unscored transcript: matched by date and accounts, not by the scorer)'));
+        }
+      }
+      if (marks.childElementCount) art.append(marks);
+      body.append(art);
+    }
+    const foot = h('div', { class: 'panel-foot' }, h('span', { text: `${r.turns.length} turns` }), h('span', { text: r.truncated ? 'truncated' : 'completed' }), r.error ? h('span', { text: 'error: ' + r.error }) : null);
+    root.replaceChildren(head, body, foot);
+  }
+  function toggleAll(root, open) { root.querySelectorAll('details').forEach(d => { d.open = open; }); }
+
+  // ------------------------------------------------------------------ render: ledger
+  function renderLedger(r) {
+    const root = document.getElementById('ledger');
+    const rev = r.revisions[state.rev] || r.revisions[0];
+    const tabs = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Ledger revisions',
+      onkeydown: (ev) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(ev.key)) return;
+        ev.preventDefault(); ev.stopPropagation();
+        const last = r.revisions.length - 1;
+        const next = ev.key === 'Home' ? 0 : ev.key === 'End' ? last : Math.max(0, Math.min(last, state.rev + (ev.key === 'ArrowRight' ? 1 : -1)));
+        state.rev = next; if (next > 0) state.turn = r.revisions[next].turn; render();
+        const btn = document.querySelector('.tabs [role="tab"][aria-selected="true"]'); if (btn) btn.focus();
+      } }, r.revisions.map(rv => {
+      const sc = scoreFor(r, rv.index);
+      return h('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': state.rev === rv.index ? 'true' : 'false', 'aria-controls': 'ledger-panel', tabindex: state.rev === rv.index ? '0' : '-1',
+        onclick: () => { state.rev = rv.index; if (rv.index > 0) state.turn = rv.turn; render(); } },
+        rv.index === 0 ? 'Original' : `Revision ${rv.index} · T${rv.turn}`,
+        sc ? h('span', { class: 'sc', text: fmt.score(sc.reward) }) : null);
+    }));
+    const ctl = h('div', { class: 'ctl' },
+      h('span', { class: 'seg', role: 'group', 'aria-label': 'View' },
+        h('button', { type: 'button', 'aria-pressed': state.view === 'diff' ? 'true' : 'false', onclick: () => { state.view = 'diff'; render(); }, text: 'Diff' }),
+        h('button', { type: 'button', 'aria-pressed': state.view === 'text' ? 'true' : 'false', onclick: () => { state.view = 'text'; render(); }, text: 'Full text' })),
+      h('span', { class: 'seg', role: 'group', 'aria-label': 'Diff base', hidden: state.view !== 'diff' || state.rev === 0 },
+        h('button', { type: 'button', 'aria-pressed': state.base === 'original' ? 'true' : 'false', onclick: () => { state.base = 'original'; render(); }, text: 'vs original' }),
+        h('button', { type: 'button', 'aria-pressed': state.base === 'previous' ? 'true' : 'false', onclick: () => { state.base = 'previous'; render(); }, text: 'vs previous' })));
+    const head = h('div', { class: 'panel-head' }, h('div', {}, h('h2', { text: 'Ledger' }), tabs), ctl);
+
+    const body = h('div', { class: 'panel-body', id: 'ledger-panel', role: 'tabpanel' });
+    const table = h('table', { class: 'code' });
+    const tbody = h('tbody');
+    const text = rev.text || '';
+    if (!text) {
+      body.append(h('div', { class: 'empty', text: state.rev === 0 ? 'No original ledger is available for this transcript.' : 'This revision carries no content.' }));
+    } else {
+      const sc = scoreFor(r, rev.index);
+      const lines = text.split('\n'); if (lines.length && lines[lines.length - 1] === '' && text.endsWith('\n')) lines.pop();
+      const planted = r.task ? (r.task.planted || []) : [];
+      const traps = r.task ? (r.task.traps || []) : [];
+      const pBlocks = findPlantedBlocks(lines, planted);
+      const tBlocks = findTrapBlocks(lines, traps);
+      const origLines = (r.revisions[0].text || '').split('\n');
+      const tBlocksOrig = findTrapBlocks(origLines, traps);
+      const markAt = new Map(); // bi (line index in shown text) -> marker rows
+      for (const p of planted || []) {
+        const b = pBlocks[p.id];
+        const st = sc && sc.item_states ? sc.item_states[p.id] : null;
+        if (b) {
+          const cls = st === 'RESOLVED' ? 'mark planted' : (st ? 'mark planted missing' : 'mark planted');
+          const label = st === 'RESOLVED' ? 'resolved — scorer state RESOLVED' : st ? `posted, but scorer state is ${st}` : 'posted (unscored)';
+          const list = markAt.get(b.start) || []; list.push(h('tr', { class: cls }, h('td', { colspan: '4' }, '◆ ', h('b', { text: p.id }), ' · ' + label + ' — ' + p.description))); markAt.set(b.start, list);
+        }
+      }
+      for (const t of traps || []) {
+        const b = tBlocks[t.id], b0 = tBlocksOrig[t.id];
+        const untouched = b && b0 && b.body.join('\n') === b0.body.join('\n');
+        if (b) {
+          const list = markAt.get(b.start) || [];
+          list.push(h('tr', { class: untouched || rev.index === 0 ? 'mark trap' : 'mark tamper' }, h('td', { colspan: '4' }, '△ ', h('b', { text: t.id }), (rev.index === 0 ? ' · trap: must be left untouched — ' : untouched ? ' · trap left untouched, as required — ' : ' · trap was altered — ') + t.description)));
+          markAt.set(b.start, list);
+        } else if (b0 && rev.index > 0) {
+          const list = markAt.get(-1) || [];
+          list.push(h('tr', { class: 'mark tamper' }, h('td', { colspan: '4' }, '△ ', h('b', { text: t.id }), ' · trap entry is missing from this revision — ' + t.description)));
+          markAt.set(-1, list);
+        }
+      }
+      for (const row of markAt.get(-1) || []) tbody.append(row);
+      if (state.view === 'text' || rev.index === 0) {
+        lines.forEach((s, i) => {
+          for (const row of markAt.get(i) || []) tbody.append(row);
+          tbody.append(h('tr', {}, h('td', { class: 'ln', text: String(i + 1) }), h('td', { class: 'ln', text: '' }), h('td', { class: 'g', text: '' }), h('td', { class: 't', text: s })));
+        });
+        // missing planted items: say so at the end
+        for (const p of planted || []) if (!pBlocks[p.id]) tbody.append(h('tr', { class: 'mark planted missing' }, h('td', { colspan: '4' }, '◆ ', h('b', { text: p.id }), ' · not posted in this revision — ' + p.description)));
+      } else {
+        const baseRev = state.base === 'previous' ? r.revisions[rev.index - 1] : r.revisions[0];
+        const d = diffLines(baseRev.text || '', text);
+        for (const o of d.ops) {
+          if (o.bi !== null) for (const row of markAt.get(o.bi) || []) tbody.append(row);
+          tbody.append(h('tr', { class: o.t === '+' ? 'add' : o.t === '-' ? 'del' : 'ctx' },
+            h('td', { class: 'ln', text: o.ai === null ? '' : String(o.ai + 1) }),
+            h('td', { class: 'ln', text: o.bi === null ? '' : String(o.bi + 1) }),
+            h('td', { class: 'g', text: o.t === ' ' ? '' : o.t }),
+            h('td', { class: 't', text: o.s })));
+        }
+        for (const p of planted || []) if (!pBlocks[p.id]) tbody.append(h('tr', { class: 'mark planted missing' }, h('td', { colspan: '4' }, '◆ ', h('b', { text: p.id }), ' · not posted in this revision — ' + p.description)));
+      }
+      table.append(tbody);
+      body.append(table);
+    }
+    const footBits = [];
+    if (text) footBits.push(`${text.split('\n').filter((l, i, arr) => !(i === arr.length - 1 && l === '')).length} lines`);
+    if (rev.index > 0) {
+      const d0 = diffLines(r.revisions[0].text || '', text);
+      footBits.push(`+${d0.added} −${d0.removed} vs original`);
+      if (rev.report) footBits.push(firstLine(rev.report));
+      if (rev.digest) footBits.push('logical digest ' + rev.digest.slice(0, 12));
+    } else {
+      footBits.push('as the agent first read it');
+    }
+    const foot = h('div', { class: 'panel-foot' }, footBits.map(s => h('span', { text: s })));
+    root.replaceChildren(head, body, foot);
+  }
+
+  // ------------------------------------------------------------------ render: scorer
+  function meterSvg(sc) {
+    const W = 420, H = 60, x0 = 16, x1 = W - 16, y = 16, hgt = 14;
+    const X = v => x0 + Math.max(0, Math.min(1, v)) * (x1 - x0);
+    const th = Number(sc.components && sc.components.targets_hit || 0), er = Number(sc.components && sc.components.errors_resolved || 0);
+    const t = WEIGHTS.targets * th, e = WEIGHTS.resolved * er;
+    let pen = 0;
+    for (const p of PENALTIES) { const n = (sc[p.key] || []).length; if (n) pen += p.once ? p.each : p.each * n; }
+    const pos = t + e;
+    const total = Number(sc.reward || 0);
+    const g = svg('svg', { class: 'meter', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `Reward meter: targets ${t.toFixed(2)}, resolved ${e.toFixed(2)}, penalties ${pen.toFixed(2)}, total ${total.toFixed(3)}` });
+    g.append(svg('line', { class: 'axis', x1: x0, x2: x1, y1: y + hgt + 4, y2: y + hgt + 4 }));
+    for (const v of [0, 0.25, 0.5, 0.75, 1]) {
+      g.append(svg('line', { class: 'tick', x1: X(v), x2: X(v), y1: y + hgt + 4, y2: y + hgt + 9 }));
+      g.append(svg('text', { x: X(v), y: y + hgt + 21, 'text-anchor': v === 0 ? 'start' : v === 1 ? 'end' : 'middle' }, v.toFixed(2)));
+    }
+    if (t > 0) g.append(svg('rect', { class: 'seg-1', x: X(0), y, width: Math.max(0, X(t) - X(0) - 1), height: hgt, rx: 2 }, svg('title', {}, `targets hit: 0.70 × ${th.toFixed(3)} = ${t.toFixed(3)}`)));
+    if (e > 0) g.append(svg('rect', { class: 'seg-2', x: X(t) + 1, y, width: Math.max(0, X(pos) - X(t) - 1), height: hgt, rx: 2 }, svg('title', {}, `errors resolved: 0.30 × ${er.toFixed(3)} = ${e.toFixed(3)}`)));
+    if (pen < 0 && pos > 0) {
+      const from = Math.max(0, pos + pen);
+      g.append(svg('rect', { class: 'seg-pen', x: X(from), y: y - 3, width: Math.max(2, X(pos) - X(from)), height: hgt + 6, rx: 2, opacity: '0.85' }, svg('title', {}, `penalties: ${pen.toFixed(2)}`)));
+    }
+    g.append(svg('line', { class: 'total-line', x1: X(total), x2: X(total), y1: y - 6, y2: y + hgt + 4 }));
+    g.append(svg('text', { class: 'total-lbl', x: X(total) + (total > 0.85 ? -4 : 4), y: y - 8 + 1, 'text-anchor': total > 0.85 ? 'end' : 'start' }, `total ${total.toFixed(3)}`));
+    return g;
+  }
+  function parseMiss(s) {
+    const m = /^(.*?): expected (-?[0-9.]+), got (-?[0-9.]+)$/.exec(s || '');
+    return m ? { account: m[1], expected: m[2], got: m[3] } : null;
+  }
+  function renderScorer(r) {
+    const root = document.getElementById('scorer');
+    const rev = r.revisions[state.rev] || r.revisions[0];
+    const sc = scoreFor(r, rev.index);
+    const title = h('div', { class: 'scorer-head' },
+      h('div', {}, h('h2', { text: 'Scorer breakdown' }), h('div', { class: 'drop-hint', text: rev.index === 0 ? 'the ledger as the agent received it, before any write' : `revision ${rev.index}, written on turn ${rev.turn}` })),
+      h('div', { class: 'flags' }, sc ? [
+        h('span', { class: sc.complete ? 'pill good' : 'pill', text: sc.complete ? '✓ complete month close' : 'incomplete' }),
+        h('span', { class: sc.renderable ? 'pill good' : 'pill crit', text: sc.renderable ? '✓ renderable' : '✕ not renderable' }),
+        h('span', { class: sc.gated ? 'pill crit' : 'pill', text: sc.gated ? '✕ gated by a bookkeeping defect' : 'not gated' }),
+        (sc.blocked_by || []).map(b => h('span', { class: 'pill crit', text: 'blocked: ' + b })),
+        r.revisions.length - 1 === rev.index && rev.index > 0 ? h('span', { class: 'pill', text: 'final delivery' }) : null,
+      ] : null));
+    root.replaceChildren(title);
+    if (!sc) {
+      root.append(h('div', { class: 'note' },
+        `No offline score is embedded for this ${rev.index === 0 ? 'original' : 'revision'}. `,
+        r.reward !== null ? `vf-eval recorded a final reward of ${fmt.score(r.reward)} for the rollout. ` : '',
+        'To see the per-revision breakdown, run ', h('code', { text: 'python tests/build_replay.py' }), ' in the repository with this results.jsonl under outputs/evals/.'));
+      return;
+    }
+    // total + meter
+    const th = Number(sc.components && sc.components.targets_hit || 0), er = Number(sc.components && sc.components.errors_resolved || 0);
+    let pen = 0; for (const p of PENALTIES) { const n = (sc[p.key] || []).length; if (n) pen += p.once ? p.each : p.each * n; }
+    const totalCell = h('div', { class: 'score-cell' },
+      h('span', { class: 'eyebrow', text: 'Reward' }),
+      h('div', { class: 'big' + (Number(sc.reward) === 0 ? ' zero' : ''), text: fmt.score(sc.reward) }),
+      meterSvg(sc),
+      h('div', { class: 'formula' },
+        h('div', { class: 'row' }, h('span', { class: 'sw', style: 'background: var(--series-1)' }), h('span', { class: 'k', text: `targets hit · ${sc.target_misses ? (r.task ? r.task.scored_accounts.length - sc.target_misses.length : '?') : '?'} of ${r.task ? r.task.scored_accounts.length : '?'} accounts` }), h('span', { class: 'v', text: `0.70 × ${th.toFixed(3)} = ${(WEIGHTS.targets * th).toFixed(3)}` })),
+        h('div', { class: 'row' }, h('span', { class: 'sw', style: 'background: var(--series-2)' }), h('span', { class: 'k', text: `errors resolved · ${Object.values(sc.item_states || {}).filter(s => s === 'RESOLVED').length} of ${Object.keys(sc.item_states || {}).length} planted` }), h('span', { class: 'v', text: `0.30 × ${er.toFixed(3)} = ${(WEIGHTS.resolved * er).toFixed(3)}` })),
+        h('div', { class: 'row' }, h('span', { class: 'sw', style: 'background: var(--status-crit)' }), h('span', { class: 'k', text: 'penalties' }), h('span', { class: 'v', text: pen.toFixed(2) })),
+        (sc.gated || !sc.renderable) ? h('div', { class: 'row' }, h('span', { class: 'sw', style: 'background: transparent; border: 1px solid var(--status-crit)' }), h('span', { class: 'k', text: sc.gated ? 'gated: total forced to 0' : 'not renderable: total capped at 0' }), h('span', { class: 'v', text: '→ 0.000' })) : null,
+        h('div', { class: 'row' }, h('span', { class: 'sw', style: 'background: transparent' }), h('span', { class: 'k', text: 'clamped to [0, 1], 6 decimals' }), h('span', { class: 'v', text: '= ' + fmt.score(sc.reward) }))));
+    // planted items
+    const items = h('div', { class: 'items' });
+    const planted = r.task ? (r.task.planted || []) : [];
+    const ids = Object.keys(sc.item_states || {});
+    for (const id of ids) {
+      const p = planted.find(x => x.id === id) || { id, description: '', required_postings: [], date: '' };
+      const st = sc.item_states[id];
+      const cls = st === 'RESOLVED' ? 'RESOLVED' : st === 'MISSING' ? 'MISSING' : 'other';
+      const when = firstResolvedTurn(r, id);
+      items.append(h('div', { class: 'item' },
+        h('span', { class: 'state ' + cls, text: st }), h('span', { class: 'name', text: id }),
+        p.description ? h('span', { class: 'desc', text: p.description }) : null,
+        p.required_postings && p.required_postings.length ? h('div', { class: 'post' }, h('span', { text: (p.date || '') + (p.must_be_payee && p.must_be_payee.length ? '  payee ' + p.must_be_payee.map(x => '"' + x + '"').join(' or ') : '') }), p.required_postings.map(rp => h('span', { text: `  ${rp[0]}  ${fmt.money(rp[1])}` }))) : null,
+        h('span', { class: 'when', text: st === 'RESOLVED' ? (when ? `first resolved on turn ${when}` : 'resolved')
+          : (when && rev.index > 0 && when < rev.turn) ? `was resolved on turn ${when}, not in this revision`
+          : when ? `not yet posted; the agent resolves it later, on turn ${when}`
+          : 'not posted as its own dated entry' })));
+    }
+    const plantedCell = h('div', { class: 'score-cell' }, h('h3', { text: 'Planted discrepancies' }), items.childElementCount ? items : h('p', { class: 'drop-hint', text: 'none in this task' }));
+    // target accounts
+    const misses = new Map(); for (const s of sc.target_misses || []) { const m = parseMiss(s); if (m) misses.set(m.account, m); }
+    const accounts = r.task && r.task.scored_accounts ? r.task.scored_accounts : [...misses.keys()];
+    const tbl = h('table', { class: 'acct' }, h('thead', {}, h('tr', {}, h('th', { text: 'Scored account' }), h('th', { text: 'Expected', class: 'r' }), h('th', { text: 'Got', class: 'r' }), h('th', { text: '' }))),
+      h('tbody', {}, accounts.map(acct => {
+        const m = misses.get(acct);
+        const expected = m ? m.expected : (r.task && r.task.expected_balances ? r.task.expected_balances[acct] : null);
+        return h('tr', { class: m ? 'miss' : 'hit' }, h('td', { text: acct }), h('td', { class: 'r', text: fmt.money(expected) }), h('td', { class: 'r', text: m ? fmt.money(m.got) : fmt.money(expected) }), h('td', { class: 'st', text: m ? '✕ miss' : '✓ hit' }));
+      })));
+    const collateral = (sc.collateral_damage || []).map(parseMiss).filter(Boolean);
+    const targetsCell = h('div', { class: 'score-cell' }, h('h3', { text: 'Target accounts' }), h('div', { class: 'tbl-wrap' }, tbl),
+      collateral.length ? h('div', { class: 'pen' }, collateral.map(c => h('div', { class: 'p hit' }, h('span', { text: `collateral: ${c.account}` }), h('span', { class: 'w', text: `expected ${fmt.money(c.expected)}, got ${fmt.money(c.got)}` })))) : h('p', { class: 'drop-hint', text: 'Every other account came out unchanged.' }));
+    // penalties
+    const penList = h('div', { class: 'pen' });
+    let any = false;
+    for (const p of PENALTIES) {
+      const lbls = sc[p.key] || []; const n = lbls.length; if (n) any = true;
+      penList.append(h('div', { class: 'p' + (n ? ' hit' : '') }, h('span', { text: `${p.label}${n ? ' ×' + n : ''}` }), h('span', { class: 'w', text: n ? (p.once ? p.each.toFixed(2) : (p.each * n).toFixed(2)) : (p.each.toFixed(2) + (p.once ? ' once' : ' each')) }), n ? h('span', { class: 'lbls', text: lbls.join('\n') }) : null));
+    }
+    const penCell = h('div', { class: 'score-cell' }, h('h3', { text: any ? 'Penalties charged' : 'Penalties (none charged)' }), penList);
+    root.append(h('div', { class: 'score-grid' }, totalCell, plantedCell, targetsCell, penCell));
+    const gen = DATA.generated || {};
+    root.append(h('p', { class: 'prov' },
+      'Computed offline for every revision, including the untouched original, by ', h('code', { text: gen.function || 'beancount_ledger.candidate.committed.score_committed' }),
+      ` (engine ${sc.engine || gen.engine || 'candidate/1'}) — the same function the environment calls at episode end. The final reward vf-eval recorded for this rollout is ${fmt.score(r.reward)}; it is the score of the last committed revision, not the best one. No model judged anything here.`));
+  }
+
+  function renderFoot() {
+    const gen = DATA.generated || {};
+    const root = document.getElementById('foot');
+    root.replaceChildren(
+      h('span', { text: 'beancount-ledger · a deterministic-reward RL environment for bookkeeping' }),
+      gen.at ? h('span', { text: 'built ' + gen.at + (gen.commit ? ' at ' + gen.commit : '') }) : null,
+      h('span', { text: `${DATA.runs.length} agent ${DATA.runs.length === 1 ? 'run' : 'runs'} loaded · drop another results.jsonl anywhere on the page to add one` }),
+      document.getElementById('live').hidden ? h('span', { text: 'to run your own model live, open this page with python tests/replay_desktop.py' }) : null,
+      h('a', { href: 'https://github.com/gultekinhasancan79/beancount-ledger', text: 'source on GitHub' }));
+  }
+
+  // ------------------------------------------------------------------ orchestration
+  function selectTurn(no) {
+    state.turn = no;
+    state.rev = revisionAtTurn(cur, no);
+    render();
+    const el = document.querySelector(`.turn[data-turn="${no}"]`);
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }
+  function render() {
+    cur = currentRollout();
+    fillPickers();
+    if (!cur) {
+      document.getElementById('strip').replaceChildren(h('div', { class: 'note', text: 'No rollouts embedded. Open a results.jsonl produced by vf-eval to replay it.' }));
+      document.getElementById('timeline').replaceChildren(h('div', { class: 'empty', text: 'Nothing to show yet.' }));
+      document.getElementById('ledger').replaceChildren(h('div', { class: 'empty', text: 'Nothing to show yet.' }));
+      document.getElementById('scorer').replaceChildren();
+      renderSummary(); renderFoot();
+      return;
+    }
+    if (!cur.turns.some(t => t.no === state.turn)) state.turn = cur.turns.length ? cur.turns[0].no : 1;
+    if (!cur.revisions[state.rev]) state.rev = 0;
+    renderStrip(cur); renderTimeline(cur); renderLedger(cur); renderScorer(cur); renderSummary(); renderFoot();
+  }
+
+  document.getElementById('sel-agent').addEventListener('change', (e) => { state.run = Number(e.target.value); state.row = 0; state.turn = 1; state.rev = 0; render(); });
+  document.getElementById('sel-rollout').addEventListener('change', (e) => { state.row = Number(e.target.value); state.turn = 1; state.rev = 0; render(); });
+  document.addEventListener('keydown', (e) => {
+    if (!cur || e.target.matches('input, select, textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const idx = cur.turns.findIndex(t => t.no === state.turn);
+      const next = cur.turns[idx + (e.key === 'ArrowRight' ? 1 : -1)];
+      if (next) { e.preventDefault(); selectTurn(next.no); }
+    }
+  });
+
+  // drop-in transcripts
+  function addRunFromText(name, text) {
+    const rows = [];
+    for (const line of text.split(/\r?\n/)) { const s = line.trim(); if (!s) continue; try { rows.push(JSON.parse(s)); } catch (e) { /* skip */ } }
+    if (!rows.length) { alert('No JSON rows found in ' + name); return; }
+    const model = rows[0].model || (rows[0].info && rows[0].info.model) || name;
+    DATA.runs.push({ id: 'dropped:' + name + ':' + DATA.runs.length, label: name + ' (opened here)', model: String(model), base_url: '', source: 'opened in the browser, not scored offline', rows });
+    state.run = DATA.runs.length - 1; state.row = 0; state.turn = 1; state.rev = 0;
+    render();
+  }
+  function handleFiles(files) {
+    for (const f of files) { const reader = new FileReader(); reader.onload = () => addRunFromText(f.name, String(reader.result || '')); reader.readAsText(f); }
+  }
+  document.getElementById('btn-open').addEventListener('click', () => document.getElementById('file-input').click());
+  document.getElementById('file-input').addEventListener('change', (e) => { handleFiles(e.target.files || []); e.target.value = ''; });
+  let dragDepth = 0;
+  document.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+  document.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) document.body.classList.remove('dragging'); });
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', (e) => { e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging'); if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+
+  // ------------------------------------------------------------------ results across runs
+  // One row per model over every finished run this page knows about, and a task × model reward grid.
+  // Hosted by tests/replay_desktop.py, Python aggregates outputs/evals (quarantined folders and budget
+  // notes included) plus this session's unsaved runs; on the static page the same shape is computed
+  // here from the runs embedded at build time, dropped in, or run live.
+  const summaryState = { view: 'model', data: null, markdown: null, source: 'the runs loaded in this page' };
+  const $ = id => document.getElementById(id);
+  function rowFacts(row) {
+    const failed = typeof row.reward !== 'number' || row.stop_condition === 'has_error' || !!row.error;
+    const turns = row.metrics && row.metrics.num_turns !== undefined && row.metrics.num_turns !== null ? Math.round(row.metrics.num_turns)
+      : (Array.isArray(row.completion) ? row.completion.filter(m => m.role === 'assistant').length : null);
+    const usage = row.token_usage || {};
+    const out = usage.output_tokens !== undefined && usage.output_tokens !== null ? usage.output_tokens : (usage.completion_tokens !== undefined ? usage.completion_tokens : null);
+    return { task: (row.info && row.info.task_id) || row.answer || '?', reward: failed ? null : row.reward, turns, output_tokens: out, failed };
+  }
+  function median(xs) { const v = xs.filter(x => x !== null && x !== undefined && !isNaN(x)).sort((a, b) => a - b); if (!v.length) return null; const m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; }
+  function summaryFromRuns(runs) {
+    const models = new Map(), tasks = new Map();
+    for (const run of runs) {
+      if (run.live && run.status !== 'done' && run.status !== 'failed') continue; // still running or stopped: not a result
+      const name = run.model || run.id;
+      const m = models.get(name) || { rollouts: [], failed: 0, nonDefault: 0 }; models.set(name, m);
+      const nonDefault = !!(run.budget && run.budget.default === false);
+      for (const row of run.rows || []) {
+        const f = rowFacts(row);
+        if (f.failed) { m.failed++; continue; }
+        if (nonDefault) m.nonDefault++;
+        m.rollouts.push(f);
+        const t = tasks.get(f.task) || new Map(); tasks.set(f.task, t);
+        const cell = t.get(name) || []; cell.push(f.reward); t.set(name, cell);
+      }
+    }
+    const names = [...models.keys()].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    const out = names.map(name => {
+      const m = models.get(name); const rs = m.rollouts.map(r => r.reward); const strict = rs.filter(r => r === 1).length;
+      return { model: name, runs: rs.length, failed: m.failed, mean_reward: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null, strict, strict_rate: rs.length ? strict / rs.length : null,
+        median_turns: median(m.rollouts.map(r => r.turns)), median_output_tokens: median(m.rollouts.map(r => r.output_tokens)), non_default_budget: m.nonDefault };
+    });
+    const taskRows = [...tasks.keys()].sort().map(task => { const cells = {}; for (const [name, v] of tasks.get(task)) cells[name] = { reward: v.reduce((a, b) => a + b, 0) / v.length, n: v.length, strict: v.filter(x => x === 1).length }; return { task, cells }; });
+    return { models: out, model_order: names, tasks: taskRows, records: runs.length, rollouts: out.reduce((n, m) => n + m.runs, 0), failed: out.reduce((n, m) => n + m.failed, 0) };
+  }
+  function renderSummary() {
+    const s = summaryState.data || summaryFromRuns(DATA.runs);
+    const body = $('sum-body');
+    $('sum-by-model').setAttribute('aria-pressed', summaryState.view === 'model' ? 'true' : 'false');
+    $('sum-by-task').setAttribute('aria-pressed', summaryState.view === 'task' ? 'true' : 'false');
+    $('sum-note').textContent = `${s.rollouts} scored ${s.rollouts === 1 ? 'rollout' : 'rollouts'} · ${s.failed} failed or quarantined · ${s.models.length} ${s.models.length === 1 ? 'model' : 'models'} · from ${summaryState.source}`;
+    if (!s.models.length) { body.replaceChildren(h('p', { class: 'drop-hint', text: 'No finished runs yet. Runs appear here as they finish; saved ones are read from outputs/evals.' })); return; }
+    const pct = v => (v === null || v === undefined) ? '–' : Math.round(100 * v) + '%';
+    if (summaryState.view === 'model') {
+      body.replaceChildren(h('table', { class: 'sum' },
+        h('thead', {}, h('tr', {}, h('th', { text: 'Model' }), h('th', { class: 'num', text: 'Runs' }), h('th', { class: 'num', text: 'Mean reward' }), h('th', { class: 'num', text: 'Strict solves' }),
+          h('th', { class: 'num', text: 'Median turns' }), h('th', { class: 'num', text: 'Median output tokens' }), h('th', { class: 'num', text: 'Failed / quarantined' }), h('th', { class: 'num', text: 'Non-default budget' }))),
+        h('tbody', {}, s.models.map(m => h('tr', {},
+          h('td', { class: 'name', text: m.model }), h('td', { class: 'num', text: String(m.runs) }), h('td', { class: 'num', text: fmt.score(m.mean_reward) }),
+          h('td', { class: 'num' + (m.runs && m.strict === m.runs ? ' strict' : ''), text: `${m.strict} (${pct(m.strict_rate)})` }),
+          h('td', { class: 'num', text: fmt.int(m.median_turns) }), h('td', { class: 'num', text: fmt.int(m.median_output_tokens) }), h('td', { class: 'num', text: String(m.failed) }),
+          m.non_default_budget ? h('td', { class: 'num' }, h('span', { class: 'pill budget', text: `${m.non_default_budget} ${m.non_default_budget === 1 ? 'run' : 'runs'}` })) : h('td', { class: 'none', text: '–' }))))));
+    } else {
+      const order = s.model_order || [];
+      body.replaceChildren(h('table', { class: 'sum' },
+        h('thead', {}, h('tr', {}, h('th', { text: 'Task' }), order.map(n => h('th', { class: 'num', text: n })))),
+        h('tbody', {}, s.tasks.map(t => h('tr', {}, h('td', { class: 'name', text: t.task }), order.map(n => {
+          const c = t.cells[n];
+          return c ? h('td', { class: 'num' + (c.reward === 1 ? ' strict' : ''), title: `${c.strict} of ${c.n} strict solves`, text: `${fmt.score(c.reward)} (n=${c.n})` }) : h('td', { class: 'none', text: '–' });
+        }))))));
+    }
+  }
+  $('sum-by-model').addEventListener('click', () => { summaryState.view = 'model'; renderSummary(); });
+  $('sum-by-task').addEventListener('click', () => { summaryState.view = 'task'; renderSummary(); });
+  // The selected rollout as a table of turns: what the export writes beside the summary.
+  function timelineOf(r) {
+    const run = DATA.runs[state.run] || {};
+    const rows = r.turns.map(t => {
+      if (t.kind === 'note') return { turn: t.no, kind: 'note', tools: t.role + ' message', ledger: '', score: null, secs: null };
+      const counts = new Map(); for (const c of t.calls) counts.set(c.name, (counts.get(c.name) || 0) + 1);
+      const tools = [...counts].map(([n, k]) => (k > 1 ? `${n} ×${k}` : n) + (t.calls.some(c => c.name === n && c.refused) ? ' (refused)' : '')).join(', ') || '(no tool call)';
+      let ledger = '', score = null;
+      for (const c of t.calls) if (c.name === 'write_ledger') {
+        if (c.revision) { const d = diffLines(r.revisions[c.revision - 1].text || '', r.revisions[c.revision].text || ''); ledger = `rev ${c.revision}: +${d.added} −${d.removed}`; const sc = scoreFor(r, c.revision); score = sc ? sc.reward : null; }
+        else ledger = c.refused ? 'refused' : c.unexecuted ? 'not executed' : '';
+      }
+      return { turn: t.no, kind: 'turn', tools, ledger, score, secs: t.secs === undefined ? null : t.secs };
+    });
+    return { run_id: run.id, model: run.model, task: r.taskId, reward: r.reward, stop: r.stop, budget: run.budget || null, rows };
+  }
+
+  // ------------------------------------------------------------------ live runs (when hosted by tests/replay_desktop.py through pywebview)
+  const live = { run: null, running: false, lastEventAt: 0, hosted: false, defaults: { max_turns: 25, max_episode_tokens: 40000 } };
+  function setLiveStatus(cls, text) {
+    const el = $('lv-status'); el.className = 'live-status' + (cls ? ' ' + cls : '');
+    $('lv-status-text').textContent = text;
+  }
+  // Everything that configures a run is frozen while one is in progress (a whole queue counts as one):
+  // the settings a run was started with are the settings it is scored under, and the record must say so.
+  const LIVE_CONTROLS = ['lv-base', 'lv-key', 'lv-keyvar', 'lv-model', 'lv-modelsel', 'lv-worldsel', 'lv-task', 'lv-taskclear', 'lv-tokens', 'lv-turns', 'lv-episode', 'lv-save', 'lv-follow', 'lv-replay', 'lv-strict'];
+  function lockLiveUi(locked) {
+    for (const id of LIVE_CONTROLS) { const el = $(id); if (el) el.disabled = locked; }
+    for (const el of $('lv-tasks').querySelectorAll('input')) el.disabled = locked;
+    $('live-form').classList.toggle('locked', locked);
+  }
+  function finishLiveUi() { $('lv-run').disabled = false; $('lv-stop').disabled = true; lockLiveUi(false); }
+  async function refreshSummary() {
+    if (live.hosted) {
+      try {
+        const res = await window.pywebview.api.summary();
+        if (res && res.summary) { summaryState.data = res.summary; summaryState.markdown = res.markdown; summaryState.source = (res.evals_dir || 'outputs/evals') + ' and this session'; }
+      } catch (e) { /* keep what the page computed itself */ }
+    }
+    renderSummary();
+  }
+
+  // ---- the queue: several ticked tasks run one after another, each an ordinary run under the same settings
+  const queue = { items: [], at: -1, active: false, stopAfter: false, results: [], cfg: null };
+  function renderQueue(status) {
+    const box = $('lv-queue');
+    if (queue.items.length < 2) { box.hidden = true; return; }
+    box.hidden = false;
+    const n = queue.items.length;
+    $('lv-queue-prog').textContent = queue.at >= 0 && queue.at < n && queue.active ? `${queue.at + 1} of ${n} · ${queue.items[queue.at]} · ${status}` : `${queue.results.length} of ${n} · ${status}`;
+    $('lv-queue-done').replaceChildren(...queue.results.map(r => h('span', { class: 'chip ' + (r.error ? 'bad' : r.stopped ? '' : r.reward === 1 ? 'ok' : ''), title: r.error || (r.stopped ? 'stopped' : ''),
+      text: `${r.task} ${r.error ? '✕' : r.stopped ? '■' : fmt.score(r.reward)}` })));
+  }
+  function readCfg() {
+    return { base_url: $('lv-base').value.trim(), api_key: $('lv-key').value, model: $('lv-model').value.trim(),
+      max_tokens: Number($('lv-tokens').value) || 8000, max_turns: Number($('lv-turns').value) || live.defaults.max_turns, max_episode_tokens: Number($('lv-episode').value) || live.defaults.max_episode_tokens,
+      save: $('lv-save').checked, replay_reasoning: $('lv-replay').checked, strict_schema: $('lv-strict').checked };
+  }
+  let selectedTasks = () => [$('lv-task').value.trim() || 'bank_recon_001']; // replaced by the task list once the world list is loaded
+  async function startLive() {
+    if (queue.active) return;
+    const cfg = readCfg(), items = selectedTasks();
+    if (!cfg.base_url || !cfg.model) { setLiveStatus('failed', 'Base URL and model are required.'); return; }
+    if (!items.length) { setLiveStatus('failed', 'Tick at least one task.'); return; }
+    if (!(cfg.max_turns >= 2) || !(cfg.max_episode_tokens >= 1000)) { setLiveStatus('failed', 'Episode turns must be at least 2 and episode tokens at least 1,000.'); return; }
+    Object.assign(queue, { items, at: -1, active: true, stopAfter: false, results: [], cfg });
+    $('lv-run').disabled = true; $('lv-stop').disabled = false;
+    lockLiveUi(true);
+    renderQueue('starting');
+    await runNextQueueItem();
+  }
+  async function runNextQueueItem() {
+    queue.at++;
+    if (queue.at >= queue.items.length || queue.stopAfter) { finishQueue(); return; }
+    const task = queue.items[queue.at];
+    const many = queue.items.length > 1;
+    setLiveStatus('running', `loading task ${task}…` + (many ? ` (${queue.at + 1} of ${queue.items.length})` : ''));
+    renderQueue('loading');
+    live.lastEventAt = Date.now(); live.running = true;
+    let res;
+    try { res = await window.pywebview.api.start_run(Object.assign({}, queue.cfg, { task })); }
+    catch (e) { res = { error: 'could not start: ' + (e && e.message || e) }; }
+    if (res && res.error) {
+      // the next item may well work (a generated selector without the secret does not spoil a hand-authored task)
+      live.running = false;
+      queue.results.push({ task, error: res.error });
+      setLiveStatus('failed', `${task}: ${res.error}`);
+      renderQueue('failed to start');
+      refreshSummary();
+      setTimeout(runNextQueueItem, 50);
+    }
+  }
+  function onItemFinished(result) {
+    if (!queue.active) { finishLiveUi(); return; }
+    queue.results.push(result);
+    if (result.stopped) { finishQueue(); return; }
+    renderQueue(result.error ? 'failed' : 'done');
+    setTimeout(runNextQueueItem, 50);
+  }
+  async function finishQueue() {
+    const n = queue.items.length;
+    queue.active = false; live.running = false;
+    finishLiveUi();
+    if (n > 1) {
+      const scored = queue.results.filter(r => typeof r.reward === 'number');
+      const mean = scored.length ? scored.reduce((a, r) => a + r.reward, 0) / scored.length : null;
+      const how = queue.stopAfter || queue.results.some(r => r.stopped) ? 'stopped' : 'done';
+      renderQueue(how);
+      setLiveStatus(scored.length ? 'done' : 'failed', `queue ${how}: ${queue.results.length} of ${n} ran · ${scored.length} scored · mean reward ${fmt.score(mean)} · ${queue.results.filter(r => r.error).length} failed`);
+    }
+    await refreshSummary();
+    // the report a headless smoke reads: what ran, what the status line says, and whether the summary table rendered
+    const shown = summaryState.data || summaryFromRuns(DATA.runs);
+    try { window.pywebview.api.queue_done({ items: queue.items, results: queue.results, status: $('lv-status-text').textContent, summary_models: shown.models.length, summary_rows_shown: $('sum-body').querySelectorAll('tbody tr').length }); } catch (e) { /* not hosted */ }
+  }
+  window.replay = {
+    onEvent(ev) {
+      try { applyLiveEvent(ev); }
+      catch (e) { setLiveStatus('failed', 'viewer error while showing a ' + (ev && ev.type) + ' event: ' + (e && e.message || e)); }
+    },
+  };
+  function applyLiveEvent(ev) {
+    live.lastEventAt = Date.now();
+    const t = ev.type;
+    if (t === 'start') {
+      const run = {
+        id: 'live:' + Date.now().toString(36), label: `${shortModel(ev.model)} · ${ev.task ? ev.task.id : '?'} · live ${new Date().toLocaleTimeString()}`, model: ev.model, base_url: ev.base_url,
+        live: true, status: 'running', task: ev.task, original_ledger: ev.original, source: 'live run from this window',
+        budget: ev.budget || null, strict_schema: !!ev.strict_schema,
+        rows: [{ completion: [], reward: null, info: { task_id: ev.task && ev.task.id }, answer: ev.task && ev.task.id, metrics: {}, timing: { model: { spans: [] } }, token_usage: null, stop_condition: null, error: null }],
+      };
+      DATA.runs.unshift(run); live.run = run; live.running = true;
+      state.run = 0; state.row = 0; state.turn = 1; state.rev = 0; cacheNorm.clear();
+      const tagged = ev.budget && ev.budget.default === false ? ` · non-default budget ${ev.budget.max_turns} turns / ${fmt.int(ev.budget.max_episode_output_tokens)} tokens` : '';
+      setLiveStatus('running', `running ${shortModel(ev.model)} on ${ev.task ? ev.task.id : '?'}${tagged} · waiting for the first turn…`);
+      renderQueue('running');
+      render(); return;
+    }
+    const run = live.run;
+    const taskId = ev.task || (run && run.task && run.task.id) || (queue.items[queue.at] || '?');
+    if (!run) {
+      // a terminal event with no run on screen (the episode failed before its first event): the queue must still move on
+      if (t === 'error') { setLiveStatus('failed', 'failed: ' + ev.message); onItemFinished({ task: taskId, error: ev.message }); }
+      else if (t === 'stopped') { setLiveStatus('', 'stopped by you'); onItemFinished({ task: taskId, stopped: true }); }
+      else if (t === 'done') { onItemFinished({ task: taskId, reward: typeof ev.reward === 'number' ? ev.reward : null, error: ev.quarantined || null }); }
+      return;
+    }
+    let row = run.rows[0];
+    if (t === 'revision') {
+      DATA.scores[run.id + '/0/' + ev.revision] = ev.score;
+      if (ev.revision === 0 && ev.text) run.original_ledger = ev.text;
+      if (ev.revision > 0) { state.rev = ev.revision; setLiveStatus('running', `revision ${ev.revision} committed and scored: ${fmt.score(ev.score && ev.score.reward)}`); }
+    } else if (t === 'assistant') {
+      row.completion.push({ role: 'assistant', content: ev.content || '', reasoning_content: ev.reasoning || '', tool_calls: (ev.tool_calls || []).map(tc => ({ id: tc.id, name: tc.name, arguments: tc.arguments })) });
+      row.timing.model.spans.push({ duration: ev.secs || 0 });
+      if (ev.usage) { row.token_usage = row.token_usage || { input_tokens: 0, output_tokens: 0 }; row.token_usage.input_tokens += ev.usage.prompt_tokens || 0; row.token_usage.output_tokens += ev.usage.completion_tokens || 0; }
+      setLiveStatus('running', `model answered: ${(ev.tool_calls || []).map(c => c.name).join(', ') || 'no tool call'}`);
+    } else if (t === 'tools') {
+      for (const res of ev.results || []) row.completion.push(res.role === 'user' ? { role: 'user', content: res.content } : { role: 'tool', tool_call_id: res.tool_call_id, content: res.content });
+    } else if (t === 'done') {
+      live.running = false;
+      const failed = !!ev.quarantined || ev.stop === 'has_error';
+      run.status = failed ? 'failed' : 'done';
+      if (ev.row && !failed) { delete ev.row.tool_defs; run.rows[0] = ev.row; row = ev.row; }
+      if (!failed) {
+        row.reward = typeof ev.reward === 'number' ? ev.reward : row.reward;
+        row.stop_condition = ev.stop || row.stop_condition;
+        setLiveStatus('done', `done · reward ${fmt.score(row.reward)} · ${ev.stop || ''}` + (ev.saved_to ? ` · saved to ${ev.saved_to}` : ' · not saved'));
+      } else {
+        run.error = [ev.cause, ev.quarantined].filter(Boolean).join(' · ') || 'the provider returned an error';
+        row.error = run.error; row.reward = null;
+        setLiveStatus('failed', 'failed (quarantined, not a scored run): ' + run.error + (ev.saved_to ? ` · record set aside under ${ev.saved_to}` : ''));
+      }
+      live.run = null;
+      onItemFinished({ task: taskId, reward: failed ? null : row.reward, error: failed ? run.error : null });
+    } else if (t === 'stopped') {
+      live.running = false; run.status = 'stopped';
+      setLiveStatus('', 'stopped by you; nothing saved' + (ev.removed ? ' (the empty run folder was removed)' : ''));
+      live.run = null;
+      onItemFinished({ task: taskId, stopped: true });
+    } else if (t === 'error') {
+      live.running = false; run.status = 'failed'; run.error = ev.message; row.error = ev.message;
+      setLiveStatus('failed', 'failed: ' + ev.message);
+      live.run = null;
+      onItemFinished({ task: taskId, error: ev.message });
+    } else if (t === 'log') {
+      setLiveStatus('running', ev.message || '');
+    }
+    const idx = DATA.runs.indexOf(run);
+    cacheNorm.delete(idx + '/0');
+    if (state.run === idx && state.row === 0) {
+      const now = currentRollout();
+      if ($('lv-follow').checked && now && now.turns.length) { state.turn = now.turns[now.turns.length - 1].no; state.rev = revisionAtTurn(now, state.turn); }
+      render();
+    } else {
+      fillPickers();
+    }
+  }
+  async function stopLive() {
+    if (queue.active && queue.items.length > 1 && !queue.stopAfter) {
+      // first press: let the current task finish, then end the queue; a second press cancels the current task too
+      queue.stopAfter = true;
+      setLiveStatus('running', 'finishing the current task, then stopping the queue · press Stop again to cancel the current task now');
+      renderQueue('running · stopping after this one');
+      return;
+    }
+    try { await window.pywebview.api.stop_run(); setLiveStatus('running', 'stopping…'); } catch (e) { setLiveStatus('failed', 'could not stop: ' + (e && e.message || e)); }
+  }
+  async function copySummary() {
+    const md = summaryState.markdown;
+    if (!md) { setLiveStatus('failed', 'nothing to copy yet'); return; }
+    // Python first (the Win32 clipboard outlives this process); the page's own clipboard as a fallback
+    try { const res = await window.pywebview.api.copy_text(md); if (!res.error) { setLiveStatus('done', `summary copied to the clipboard as Markdown (${res.via})`); return; } } catch (e) { /* fall through */ }
+    try { await navigator.clipboard.writeText(md); setLiveStatus('done', 'summary copied to the clipboard as Markdown'); }
+    catch (e) { setLiveStatus('failed', 'could not copy: ' + (e && e.message || e)); }
+  }
+  async function exportSummary() {
+    const payload = { timeline: cur ? timelineOf(cur) : null };
+    try {
+      const res = await window.pywebview.api.export(payload);
+      if (res.error) setLiveStatus('failed', 'export failed: ' + res.error);
+      else setLiveStatus('done', `exported the summary${cur ? ' and the selected run’s timeline' : ''} to ${res.md} and ${res.csv}`);
+    } catch (e) { setLiveStatus('failed', 'export failed: ' + (e && e.message || e)); }
+  }
+  let liveInit = false;
+  async function initLive() {
+    if (liveInit || !window.pywebview || !window.pywebview.api) return;
+    let info;
+    try { info = await window.pywebview.api.health(); } catch (e) { return; }
+    liveInit = true; live.hosted = true;
+    $('live').hidden = false;
+    $('sum-copy').hidden = false; $('sum-export').hidden = false;
+    $('sum-copy').addEventListener('click', copySummary);
+    $('sum-export').addEventListener('click', exportSummary);
+    // saved runs that were built under a budget other than the shipped one carry a tag
+    for (const run of DATA.runs) if (info.run_budgets && info.run_budgets[run.id]) run.budget = info.run_budgets[run.id];
+    // the budget inputs: the shipped defaults, and a warning colour on the label when they differ
+    if (info.budget_defaults) live.defaults = info.budget_defaults;
+    $('lv-turns').value = String(live.defaults.max_turns); $('lv-episode').value = String(live.defaults.max_episode_tokens);
+    const reflectBudget = () => {
+      $('lv-turns-lbl').classList.toggle('off', Number($('lv-turns').value) !== live.defaults.max_turns);
+      $('lv-episode-lbl').classList.toggle('off', Number($('lv-episode').value) !== live.defaults.max_episode_tokens);
+    };
+    $('lv-turns').addEventListener('input', reflectBudget); $('lv-episode').addEventListener('input', reflectBudget);
+    // first the company and month (a hand-authored world, or the generated
+    // population), then the tasks inside it: every world carries several
+    // workflows over the same statement and the same facts. Ticks are kept
+    // when the company changes, so a queue may span companies.
+    const worldSel = $('lv-worldsel'), taskList = $('lv-tasks'), taskInput = $('lv-task');
+    const shipped = (info.tasks || []).filter(t => !t.includes(':'));
+    const generated = (info.tasks || []).filter(t => t.includes(':'));
+    const worlds = (info.worlds && info.worlds.length) ? info.worlds.slice()
+      : [{ id: 'hand-authored', title: 'Hand-authored tasks', period: '', tasks: shipped.map(t => ({ id: t, label: t })) }];
+    worlds.push({ id: '__generated__', title: 'Generated worlds', period: 'training population', tasks: generated.map(t => ({ id: t, label: t })) });
+    worldSel.replaceChildren(...worlds.map(w => h('option', { value: w.id, text: w.period ? `${w.title} · ${w.period}` : w.title })));
+    const picked = new Set();
+    selectedTasks = () => {
+      const out = [];
+      for (const w of worlds) for (const t of w.tasks) if (picked.has(t.id)) out.push(t.id);
+      if (picked.has('__custom__')) for (const s of taskInput.value.split(/[\s,]+/)) if (s.trim()) out.push(s.trim());
+      return out;
+    };
+    const reflectTasks = () => {
+      taskInput.hidden = !picked.has('__custom__');
+      const items = selectedTasks();
+      const companies = worlds.filter(w => w.id !== '__generated__' && w.tasks.some(t => picked.has(t.id))).length;
+      $('lv-taskcount').textContent = items.length ? `${items.length} ticked${companies > 1 ? ` across ${companies} companies` : ''}` : 'none ticked';
+      $('lv-run').textContent = items.length > 1 ? `▶ Run ${items.length} tasks` : '▶ Run';
+      if (!queue.active) setLiveStatus('', items.length ? `${items.length === 1 ? 'task' : 'queue'}: ${items.join(', ')} · ${shipped.length} hand-authored tasks in ${worlds.length - 1} companies, ${generated.length} generated selectors listed` : 'tick at least one task');
+    };
+    const taskRow = (id, label, code) => {
+      const cb = h('input', { type: 'checkbox', value: id, checked: picked.has(id) ? true : null });
+      cb.addEventListener('change', () => { if (cb.checked) picked.add(id); else picked.delete(id); reflectTasks(); if (id === '__custom__' && cb.checked) taskInput.focus(); });
+      return h('label', { title: code || id }, cb, h('span', { text: label }), code ? h('code', { text: code }) : null);
+    };
+    const fillTasks = (worldId) => {
+      const w = worlds.find(x => x.id === worldId) || worlds[0];
+      const rows = w.tasks.map(t => taskRow(t.id, t.label, t.label === t.id ? '' : t.id));
+      if (w.id === '__generated__') rows.push(taskRow('__custom__', 'other selectors…', 'train:<n>, train:<n>:hard'));
+      taskList.replaceChildren(...rows);
+      reflectTasks();
+    };
+    worldSel.addEventListener('change', () => fillTasks(worldSel.value));
+    taskInput.addEventListener('input', reflectTasks);
+    $('lv-taskclear').addEventListener('click', () => { picked.clear(); fillTasks(worldSel.value); });
+    const home = worlds.find(w => w.tasks.some(t => t.id === 'bank_recon_001')) || worlds[0];
+    if (home.tasks.some(t => t.id === 'bank_recon_001')) picked.add('bank_recon_001');
+    else if (home.tasks.length) picked.add(home.tasks[0].id);
+    worldSel.value = home.id;
+    fillTasks(home.id);
+    // keys set on this PC: names only, the value never reaches the page
+    const keyVars = info.key_vars || [];
+    const sel = $('lv-keyvar');
+    sel.replaceChildren(h('option', { value: '', text: keyVars.length ? `from this PC… (${keyVars.length})` : 'no keys found on this PC' }),
+      ...keyVars.map(k => h('option', { value: k.name, text: '$' + k.name, dataset: { base: k.base_url || '' } })));
+    sel.disabled = !keyVars.length;
+    const keyInput = $('lv-key');
+    const reflectKey = () => { const isVar = keyInput.value.startsWith('$'); keyInput.type = isVar ? 'text' : 'password'; keyInput.classList.toggle('is-var', isVar); };
+    sel.addEventListener('change', () => {
+      if (!sel.value) return;
+      keyInput.value = '$' + sel.value; reflectKey();
+      const base = sel.selectedOptions[0].dataset.base;
+      if (base && (!$('lv-base').value.trim() || $('lv-base').value === (info.demo_url || '') || Object.values(keyVars).some(k => k.base_url === $('lv-base').value))) $('lv-base').value = base;
+      if ($('lv-model').value === 'demo/scripted-agent') $('lv-model').value = '';
+      setLiveStatus('', `using $${sel.value} from this PC · the key stays in Python`);
+    });
+    keyInput.addEventListener('input', () => { reflectKey(); if (!keyInput.value.startsWith('$')) sel.value = ''; });
+    // models at the endpoint: GET /models through Python, ids only
+    const modelSel = $('lv-modelsel'), modelList = $('lv-models'), modelInput = $('lv-model');
+    let modelsSeq = 0;
+    async function refreshModels() {
+      const base = $('lv-base').value.trim(), key = keyInput.value;
+      if (!base) return;
+      const seq = ++modelsSeq;
+      modelSel.replaceChildren(h('option', { value: '', text: 'fetching models…' }));
+      modelSel.disabled = true;
+      let res;
+      try { res = await window.pywebview.api.list_models({ base_url: base, api_key: key }); }
+      catch (e) { res = { models: [], error: 'could not ask Python: ' + (e && e.message || e) }; }
+      if (seq !== modelsSeq) return; // a newer request superseded this one
+      const models = res.models || [];
+      modelSel.replaceChildren(
+        h('option', { value: '', text: res.error ? 'could not list models' : `models at this endpoint… (${models.length})` }),
+        ...models.map(m => h('option', { value: m, text: m })));
+      modelList.replaceChildren(...models.map(m => h('option', { value: m })));
+      modelSel.disabled = !models.length;
+      if (res.error) setLiveStatus('failed', res.error);
+      else setLiveStatus('', `${models.length} models listed from ${res.url}` + (models.length ? ' · pick one, or type to filter' : ''));
+    }
+    modelSel.addEventListener('change', () => { if (modelSel.value) { modelInput.value = modelSel.value; setLiveStatus('', `model: ${modelSel.value}`); } });
+    $('lv-base').addEventListener('change', refreshModels);
+    keyInput.addEventListener('change', refreshModels);
+    sel.addEventListener('change', () => { if (sel.value) refreshModels(); });
+    window.replayRefreshModels = refreshModels;
+    if (info.demo_url) {
+      $('lv-base').value = info.demo_url; $('lv-key').value = 'demo'; $('lv-model').value = 'demo/scripted-agent'; $('lv-save').checked = false;
+      $('live-hint').textContent = `Demo mode: a scripted agent is listening at ${info.demo_url}. Press Run to watch an episode at zero cost, or point the form at a real endpoint.`;
+      refreshModels();
+    }
+    $('lv-run').addEventListener('click', startLive);
+    $('lv-stop').addEventListener('click', stopLive);
+    $('live-form').addEventListener('submit', (e) => { e.preventDefault(); startLive(); });
+    setInterval(() => {
+      if (!live.running || Date.now() - live.lastEventAt < 5000) return;
+      const base = $('lv-status-text').textContent.replace(/ · \d+ s since the last event$/, '');
+      $('lv-status-text').textContent = `${base} · ${Math.round((Date.now() - live.lastEventAt) / 1000)} s since the last event`;
+    }, 1000);
+    renderFoot();
+    refreshSummary();
+    if (info.autorun) {
+      // the headless smoke (--demo --autorun): a recorded two-task queue in one company, so the summary gets a row
+      $('lv-save').checked = true;
+      const pair = worlds.find(w => w.id !== '__generated__' && w.tasks.length >= 2) || home;
+      picked.clear();
+      for (const t of pair.tasks.slice(0, 2)) picked.add(t.id);
+      worldSel.value = pair.id;
+      fillTasks(pair.id);
+      startLive();
+    }
+  }
+  window.addEventListener('pywebviewready', initLive);
+  if (window.pywebview && window.pywebview.api) initLive();
+
+  // first paint: the first rollout, at its first write if there is one
+  cur = currentRollout();
+  if (cur) { const firstWrite = cur.revisions.find(rv => rv.index === 1); if (firstWrite) { state.turn = firstWrite.turn; state.rev = 1; } }
+  render();
+})();
+</script>
