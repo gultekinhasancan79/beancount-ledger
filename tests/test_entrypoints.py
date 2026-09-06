@@ -286,7 +286,11 @@ def test_read_tools_grant_only_the_manifest():
 
     # an undeclared file created inside the workspace is invisible
     (Path(ws) / "receipt.json").write_text('{"expected_balances": 1}', encoding="utf-8")
-    denied = [str(key), os.path.relpath(key, ws), "..", ".", "", "/etc/passwd", "C:/Windows/win.ini",
+    try:
+        key_relative = os.path.relpath(key, ws)
+    except ValueError:                  # Windows: the key and the workspace on different drives (a CI runner)
+        key_relative = str(key)
+    denied = [str(key), key_relative, "..", ".", "", "/etc/passwd", "C:/Windows/win.ini",
               "world/../../tasks/bank_recon_001.json", "receipt.json", "./ledger.beancount",
               "Ledger.beancount", "ledger.beancount:secret", "\\\\?\\" + str(Path(ws) / "ledger.beancount"),
               "CON", "NUL", "C:ledger.beancount", Path(ws).name + "-evil/ledger.beancount", 42, None]
