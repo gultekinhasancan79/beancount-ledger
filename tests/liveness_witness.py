@@ -63,9 +63,32 @@ PANEL_SELECTORS = ("train:1", "train:12", "train:30", "eval:5", "train:3:hard", 
 
 def _configure_secret(production: bool) -> None:
     if production:
+        # A witness that says PRODUCTION must run under the evaluator's own key
+        # and the release manifest. Anything already in the environment would
+        # silently make it something else, so it is refused rather than ignored.
+        loud = [name for name in ("PIV_EVAL_SECRET", "PIV_DEV_UNMANIFESTED") if os.environ.get(name)]
+        if loud:
+            raise SystemExit(f"--production with {', '.join(loud)} set: unset them, or drop --production. "
+                             "A witness cannot claim the production door while a test key or the development "
+                             "route is in force.")
         return
     os.environ.setdefault("PIV_EVAL_SECRET", TEST_SECRET)
     os.environ.setdefault("PIV_DEV_UNMANIFESTED", "1")
+
+
+def pinned_sentinels() -> list:
+    """The pinned structural sentinels, READ from tests/test_sentinels.py rather
+    than imported: importing that module installs the suites' test secret and
+    the development route at import time, which would turn a --production run
+    into a test-secret run without saying so."""
+    import ast
+
+    source = (Path(__file__).resolve().parent / "test_sentinels.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "SENTINELS" for t in node.targets):
+            return list(ast.literal_eval(node.value))
+    raise SystemExit("tests/test_sentinels.py no longer defines SENTINELS")
 
 
 def golden_text_for(selector: str) -> str:
@@ -267,8 +290,17 @@ def main() -> int:
 
     selectors = list(args.selectors or PANEL_SELECTORS)
     if args.sentinels:
-        import test_sentinels as TS
-        selectors += [s for s in TS.SENTINELS if s not in selectors]
+        sentinels = [s for s in pinned_sentinels() if s not in selectors]
+        if args.production:
+            # The sentinels are chosen under the SUITES' key, from a pool wider
+            # than the released population; under the evaluator's key they name
+            # other worlds, and one outside the preflighted range is not in the
+            # manifest at all. Witnessing them here would witness nothing.
+            print(f"--production: the {len(sentinels)} pinned sentinels are chosen under the test key and "
+                  f"are not part of the released population; they are skipped. Run without --production to "
+                  f"witness them, or pass them to --selectors deliberately.\n")
+        else:
+            selectors += sentinels
 
     print(f"deterministic liveness witness: {len(selectors)} selector(s) x {args.runs} run(s), "
           f"{'PRODUCTION' if args.production else 'test'} secret, no live API call")

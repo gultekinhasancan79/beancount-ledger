@@ -871,7 +871,9 @@ def test_bounded_layout_attempts_are_deterministic_and_finite():
     """A draw that cannot carry the profile's minimum is not a
     refusal any more — the selector is retried under the next attempt
     substream, deterministically, at most MAX_LAYOUT_ATTEMPTS times. The
-    sweep sees ~0.7% of selectors land on attempt 1. Witness: (a) some
+    sweep sees about a fifth of standard and a third of hard selectors land
+    on attempt 1 or later, most of them refused by the public-uniqueness
+    gate rather than by the generator. Witness: (a) some
     selector under the test secret uses attempt > 0 and minting it twice
     gives the same bytes, (b) attempt 0 selectors are exactly what the raw
     generator returns for the attempt-0 substream, (c) when every attempt

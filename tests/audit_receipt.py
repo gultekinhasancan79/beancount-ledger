@@ -21,7 +21,7 @@ Per generated selector (the preflight population):
 Per hand-authored task (--manual): the world verification (problems and
 warnings), the same scorer facts, the same lattice counts.
 
-    PIV_MANIFEST=~/.piv/manifest_v9.json python tests/audit_receipt.py --production \\
+    python tests/audit_receipt.py --production \\
         --train 1000 --eval 200 --hard 200 --workers 8 \\
         --lattice-json <lattice_v9_production.json> --exploit-out <exploit_sweep.out> --json reviews/audit_receipt_v9.json
     python tests/audit_receipt.py --manual --lattice-json <lattice_manual.json> --json <out>

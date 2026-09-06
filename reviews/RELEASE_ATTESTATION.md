@@ -53,9 +53,9 @@ Not a release. What the dense-plan generator (commit `a149060`, "Dense plans: fi
 
 ## Contracts and versions
 - component versions: `{'generator': 9, 'identify': 7, 'scorer_contract': 1, 'renderer': 1, 'task_contract': 1, 'manifest_schema': 2, 'preflight_contract': 1, 'gate_set': 'e2f26ab5cdf60d53'}` — only the generator moved; scorer, gates and contracts are the release's
-- v9 manifest, written to a SEPARATE path (`~/.piv/manifest_v9.json`, the v8 file untouched and still the rotation's active manifest): sha256 `48500f6c3ee7c06ede2ea93ddbcd1fd55ce95fb75237d6299d3a82168df9be60`; preflight 1400/1400 (1,000 train / 200 eval / 200 hard; phase 1 offline gates AND phase 2 signed-manifest serving door), 197 s with 6 workers; layout attempts {0: 1064, 1: 259, 2: 63, 3: 10, 4: 3, 5: 1}; the secret never appears here
+- v9 manifest, first written to a SEPARATE path and PROMOTED on 2026-09-06 (it is now `~/.piv/manifest.json`; the v8 file is kept as `~/.piv/manifest_v8.json`, sha256 `06800e0308658c5c9559ba51c16e766009462947726a917bf60ab527a099996e`, and the sealed confirm1v4 schedule needs that file and the v8 code to be re-run): sha256 `48500f6c3ee7c06ede2ea93ddbcd1fd55ce95fb75237d6299d3a82168df9be60`; preflight 1400/1400 (1,000 train / 200 eval / 200 hard; phase 1 offline gates AND phase 2 signed-manifest serving door), 197 s with 6 workers; layout attempts {0: 1064, 1: 259, 2: 63, 3: 10, 4: 3, 5: 1}; the secret never appears here
 - ledger census over the 1,400: max 13,901 bytes / 304 lines, min 8,821 / 191; envelope 48,000 / 1,000 (headroom x3.45 bytes, x3.29 lines)
-- serving door witnessed with `PIV_MANIFEST` pointing at the v9 file: `tests/liveness_witness.py --production --sentinels` 10/10 (the six confirm1 panel selectors and the four v9 sentinels), reward 1.0, identical across 2 runs. Without `PIV_MANIFEST` the same code refuses every generated selector ("minted under other component versions: ['generator']") — the intended behaviour of the untouched v8 file
+- serving door: `tests/liveness_witness.py --production` witnesses the six confirm1 panel selectors, reward 1.0, identical across 2 runs. CORRECTION (2026-09-06): the run recorded here was `--production --sentinels` and reported 10/10, but importing the sentinel list installed the suites' test key and the development route at import time, so that run did not exercise the production door at all; the witness now refuses that combination and skips the sentinels under `--production` (they are chosen under the test key, and one of them, `train:263:hard`, is outside the preflighted range). What DOES witness the production door is the audit receipt below (1,400/1,400 admitted, each serving the id its gates minted) and the probe that a selector outside the manifest is refused
 
 ## What the bump is for (measured under the test secret, train:0-299 / eval:0-99 / train:0-299:hard)
 - 700/700 minted, no refusals; planted 5-6 standard, 6-8 hard; target accounts 5 in 85% of worlds, 4 otherwise (v8: 2-4 items, 3-4 targets)
@@ -67,7 +67,7 @@ Not a release. What the dense-plan generator (commit `a149060`, "Dense plans: fi
 - `reviews/sweep_failures.json` and `tests/exploits/failures.json` unchanged (clean)
 
 ## Not done here, by design
-- the v9 manifest is not promoted: copying it over `~/.piv/manifest.json` would make the sealed confirm1v4 schedule un-runnable (manifest digest and expected public task ids are bound); any new confirmatory schedule must be sealed under the manifest it will run against
+- (superseded 2026-09-06: the v9 manifest WAS promoted, see above. Promotion makes the sealed confirm1v4 schedule un-runnable against the active manifest — its digest and expected public task ids are bound — so re-running it needs `PIV_MANIFEST=~/.piv/manifest_v8.json` and the v8 code; any new confirmatory schedule must be sealed under the manifest it will run against)
 - no model panel was run on the dense worlds; the ladder figures above are structural (what a partial repair CAN score), not observed model behaviour
 
 ## Reward lattice audit (2026-09-06, `tests/reward_lattice_audit.py`, evidence `reviews/reward_lattice_v9.json`)
@@ -81,7 +81,7 @@ Every subset of a world's golden repairs applied to the untouched ledger and sco
 ## Audit receipt (2026-09-06, `tests/audit_receipt.py`, evidence `reviews/audit_receipt_v9.json`)
 One record per world, built from the evidence the package already produces: the preflight's offline gates re-run on the freshly minted world (minted, ledger within the envelope, publicly identifiable, the public-only checker's repairs EQUAL the seeded plan, golden 1.0 through the real loop), the serving door (admitted by the signed v9 manifest, served id == minted id), a sha256 over the eight public files, the scorer facts (golden 1.0 and complete; untouched 0 with every item unresolved), the reward-lattice counts, and whether the exploit corpus exercised the world.
 - generated v9, 1,400/1,400 ok: gates 1,400/1,400; admitted with matching id 1,400/1,400; golden 1.0 1,400/1,400; untouched unresolved 1,400/1,400; lattice clean 1,400/1,400; exploit corpus exercised on 33 (the sentinels and the rotating shard); 182 s with 8 workers
-- hand-authored, 91/91 ok: verification 0 problems, golden 1.0, untouched unresolved, lattice clean
+- hand-authored, 91/91 ok (`reviews/audit_receipt_manual.json`): verification 0 problems, golden 1.0, untouched unresolved, lattice clean
 
 ## Budget calibration, scripted oracle (2026-09-06, `tests/oracle_budget.py`, evidence `reviews/oracle_budget_v9.json`)
 Four scripted strategies that KNOW the answer, played through the real `evaluate` door with realistic reported output tokens, on 15 stratified v9 training worlds (standard k=5,6; hard k=6,7,8; 3 each); caps 25 turns (24 executable) / 40,000 output tokens.
@@ -99,3 +99,11 @@ Planned: two models on ten stratified v9 training worlds (standard k=5,6; hard k
 - Kimi K3 (NVIDIA): 17 of 20 episodes ended in provider 500/504 after 15–28 minutes each; the three that ran solved their world completely — train:3 (k=5) 1.0 in 6 turns / 5.9k tokens, train:3:hard (k=7) 1.0 in 7 turns / 4.3k tokens, and under the looser arm train:2:hard (k=7) 1.0 in 7 turns / 5.2k tokens — all far inside the shipped budget, consistent with the write-once oracle above
 - DeepSeek V4 Flash (NVIDIA): first episode 504; the chain was stopped
 - what can be said: nothing observed contradicts "the shipped budget is not what makes a dense world hard" — a capable model that reads, writes once and submits finishes a seven-item world in 7 turns; the budget-bound failure seen (Nemotron) is a model spending its output on reasoning, not on the ledger. What cannot be said yet: strict-solve rates by k and the shipped-versus-loose delta; that needs a paid or quieter endpoint and is the user's call
+
+## Known issues (2026-09-06)
+Open defects and limits, recorded here because a reader should not have to find them in a diff.
+- `graph/project.py` renders an account name of 30 characters or more into the opening block without a separator; hand-authored worlds must keep names at 29 characters or fewer. The generator's own charts are inside that limit.
+- An `ExpensePayment` or `Prepayment` settled by ACH_OUT raises in the projector (it looks for an invoice that kind of event does not carry). Cheque and card are the settlement rails those events support.
+- The six public tools' JSON schemas declare `required: []` beside an empty `properties` with `strict: true` for the parameterless tools; providers that validate strictly (Groq) refuse the request. Fixing the schema moves the episode-contract digest, so it waits for a contract version bump.
+- The reward lattice contains four subsets (of 82,016) where two unresolved transpositions cancel on the bank leg, so the bank balance is right while both items stay unresolved. The scorer measures balances, so this is its arithmetic, not a defect; a later generator can refuse equal-and-opposite bank residuals.
+- The hosted-model budget calibration is inconclusive (provider quotas and outages, see above); the scripted-oracle calibration is what the budget claim rests on.

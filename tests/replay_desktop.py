@@ -1474,7 +1474,7 @@ class App(tk.Tk):
         row1.grid(row=1, column=0, columnspan=3, sticky="ew")
         f = ttk.Frame(row1, style="Card.TFrame"); f.pack(side="left", padx=(0, 14))
         ttk.Label(f, text="Task", style="Eyebrow.TLabel").pack(anchor="w")
-        self.task_box = ttk.Combobox(f, textvariable=self.v_task, width=15, values=sorted(REGISTRY) + ["train:7", "eval:3", "train:7:hard"])
+        self.task_box = ttk.Combobox(f, textvariable=self.v_task, width=15, values=sorted(REGISTRY) + ["train:0", "train:7", "train:12", "train:0:hard", "train:7:hard"])
         self.task_box.pack(anchor="w")
         f = ttk.Frame(row1, style="Card.TFrame"); f.pack(side="left", padx=(0, 14))
         ttk.Label(f, text="Max tokens / turn", style="Eyebrow.TLabel").pack(anchor="w")

@@ -36,7 +36,7 @@ duplicate -> delete one copy of the same-head block.
         under the suite's test secret and the development route (the default)
     python tests/reward_lattice_audit.py --manual --workers 4
         every hand-authored task in the registry (no secret involved)
-    PIV_MANIFEST=~/.piv/manifest_v9.json python tests/reward_lattice_audit.py --production \\
+    python tests/reward_lattice_audit.py --production \\
         --train 1000 --eval 200 --hard 200 --workers 8 --json <out>
         under the evaluator's own secret through the serving door; nothing
         secret is printed, and the development flag is never set

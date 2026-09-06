@@ -3,7 +3,7 @@
 A small fixed set of worlds that together reach every structural branch a
 topology-dependent regression could hide in is what fast CI needs, so that it
 is not "one selector per profile plus hope".
-`tests/select_sentinels.py` derives that set — it describes 270 minted worlds
+`tests/select_sentinels.py` derives that set — it describes 675 minted worlds
 by structural feature and takes a deterministic greedy cover — and prints it.
 This file PINS the answer and re-earns it on every run:
 

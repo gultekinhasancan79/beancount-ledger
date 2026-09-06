@@ -1,0 +1,3603 @@
+{
+ "header": {
+  "generator_version": 9,
+  "versions": {
+   "generator": 9,
+   "identify": 7,
+   "scorer_contract": 1,
+   "renderer": 1,
+   "task_contract": 1,
+   "manifest_schema": 2,
+   "preflight_contract": 1,
+   "gate_set": "e2f26ab5cdf60d53"
+  },
+  "mode": "test",
+  "engine": "candidate/1"
+ },
+ "summary": {
+  "worlds": 91,
+  "ok": 91,
+  "not_ok": [],
+  "seconds": 28,
+  "golden_1_0": 91,
+  "untouched_unresolved": 91,
+  "lattice_audited_clean": 91
+ },
+ "worlds": [
+  {
+   "selector": "ap_payment_run_001",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "2e74d6233809c30f651a68091ae245ed848e0dd4759dd7a21baf6723e1e7142c",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "10b2d061005f25afa4f5114eaa76fc56c0dc9fa8dcd83d0b5ae3149641f55816",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "63d45cbb51bbfaf10b7f24ebd6973e783f5cba94c040ff25b019fdb0b4e104f2",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "925dce3677945d161b0e4a9763738bb9cf1194d285c0b949e5655210f2d06f6f",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "299a2aa67038532e8d8a68ce5ba0b23e1257a17a91ed02038930fdcca49642f8",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.4,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "769d293483f69cbfa5cff8d9d7686a22c861297a8a54fac62943d2717b10c423",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "41410b299b12081375433cf2976d2c46154e13e58893b572767327b3e6cf274e",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "25079507d0303165eea08f31fc97815ea1dd0848c144bd98200296fdda3b6013",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ap_payment_run_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "69c07321922510cdd88f1cf0fcac8bc0432f3dfba8622ac36a0d7fc601cb2c0e",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:AP"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_001",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "02443d85a59483d323849d9b7e38aa5b8957d5073a621bd8a1a4ac44c1b1ecd7",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "9c6609ad5339c201b8cc41f4bce38873a283062869c83e1a77cc9e5dd8ce6b32",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "94ad03f367363264a62f3a7f1ed918ceed5b903b5c7d29742664508ce908630f",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "11d3976ea84f2a7cb03a36692e4a4cb1288c81f9d9d68eeef01873f1d46503dc",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "8e4611a7353da85b6519ce6e01676b275331d635ea530e871846b24da067f424",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "406a0ddba1e9fb31e869a787702ae35dc9039aed474eb39ad65790feefd613bc",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "9c83b5d1d1195592bb030d9a6dc8c1b36c25b9d476ad183f803d08255e7a1646",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "38eb15f64e1dfcc867ae752451f81527667cc31e928521e3ac4cfc0b8f1490d8",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "ar_collections_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "9b30bfa03d1978bd1ff1effd7a2a2e8c6afbcd2e92986352622f792160110fcc",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.8,
+    "jump_max": 0.8
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_001",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "7c72d0897bdf2f3229c2e6b2cf2c2f86cc6d5ebb73c7dd57352d0b1e952002d9",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Software",
+     "Expenses:Travel",
+     "Expenses:Office"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "828498b598b14de237936372a83688aa1eb5ffb1b3d16db33992a5fc495c1e86",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Software",
+     "Expenses:Telecom"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "b131746931d7699d9959d665e6fd2abce926bc50ba8142241be66306a9aba8e6",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Software",
+     "Expenses:Telecom",
+     "Expenses:Office"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "791a0ec9525f4b72c47ef2ee2c96274a554a1d478dcedc83bfc514befe34a83e",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Software",
+     "Expenses:Telecom",
+     "Expenses:Travel"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "99f2f84a4254dbb904d3280ee76f09f5b3f70e4ff2ce5a4f09ae38ea88836da7",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Software",
+     "Expenses:Telecom",
+     "Expenses:Office"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "f591492423ebdf05e53a30f7ef07532a41eafa98bf95c6ed32dd08abdc28b460",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Office",
+     "Expenses:Software",
+     "Expenses:Telecom"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "655c4f4996db2afc9b1c059efd113b991ee5ff7e1c0e864b23b506991e29e138",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Software",
+     "Expenses:Telecom",
+     "Expenses:Office"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "7bf4488242872a11f74617aed363cb70bcc49345f946931f3cbef733439451a2",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Software",
+     "Expenses:Travel",
+     "Expenses:Telecom"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_feed_categorisation_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "3c979861a0a46428b7540dfd4755e416c2bd9c85c4b3a9cd82ec5522c3f56b42",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Office",
+     "Expenses:Software",
+     "Expenses:Telecom"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_001",
+   "kind": "hand-authored",
+   "world": "alpine-2025-11",
+   "company": "Alpine Trading Co.",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 1
+   },
+   "public_evidence_sha256": "175726a8988dc6a212ab7bd0226ef0dd44f151ea253f5de11e983a77253362f0",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 2,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 4,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 3,
+    "jump_p95": 0.616667,
+    "jump_max": 0.616667
+   },
+   "secs": 0.1,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "6e55b350d8ac254bfd6349a89c772b517b94cbf1798efb5c824b781e91e0f74c",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "bfe8286b61c3256c87f7fd6bf5cd255383af1a3adbc6d85465056e1af9004b28",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "5a0005e962a461caa58d0a701d98def38fe8cee4f4069cda20cec4eb59cc5390",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.4,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "6f2f2c02f260881df9e972ed6cca60bcd24a444406b0672adc6eab5133856217",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "e0661de7cc151110a404d4d9f1d3e30b7b909a2138096cc10fe0e7001ac48391",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "ec767b196241f28c67d89f5e8560ee871c59698777326cd7cf61389332c8b7a1",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "8b7d18e92d8ca7eca19fa555999bdaf4d74972943cae35db4393b8c93d109c7c",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "ef78f41a64c5b42ec7ffd577acb18b8d6b4f942b7d26bb5cde9e798001f74181",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "bank_recon_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "c8349f009e6af5c24ca90b0b754b1ccec8b7fbe5bc4ce2a7559c7d61990f6c9c",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:AP",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_001",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "c9b07d4b787a906c88da7d9ee87544f4d0b2d49a3d6bee9fcc25a20ad7ab61cc",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:FieldSupplies",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "24a3d9244d8c1e440c09cff0a1aa0703b47529d357fd38e094a30a76236b2d44",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "7cc8f6542ef188ff95d6669ee00ff1c0bfa05807c3d86a3f702b677601fffc7b",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "c05f072b279d8e0f7100c6321b860fe68990bc70f2eee1908ad0f58c50e0169f",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "7ba0e6da5c44e0a325a6520321ec2628a9738f2b1ac498d7c7b62af7d5be1f8b",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "468fa783e0e35a4300354c449ae1110e27d68462eea9d119ab0f5ba33b0993f0",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "e2b5397a00043d42ab68190e2f12eaef70bdee2514eb57161f94372ae468e9e7",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "781ebbeccb04c2ea72964dbe5e46bad49fdcb06d1db58578bcf51c4ed35af61a",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "expense_reports_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "cf10b6705f937b8146c6f76266232b3a93b1c5a3733c436ee571c3402e3132e9",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Expenses:Travel",
+     "Expenses:Vehicle"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_001",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "3a7882334130ecaf7e5913340b1aade9dcb4d01aee7890ef1645ea74ad5e6b4f",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:Repairs",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "c87c766de85ef87c8cd0a912ab6fdda3cddf9029be02bdd95609b66bb8cc6359",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:BankFees",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "077b216e8d2993826905ab9cb9ec580fe8cccef88582185aac31a04b058166b7",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "7cbd6e8ec3897f5108bfb315b94bec3d0bf558b07500e3682da8e5cf3700374b",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:BankFees",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "e44b2dbec365d4bdf539c522e20c689d78b65ee8ad11478b8d3527a8713ab083",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "eb3ecb26c0a965c4e91bc74bf6e776c43e6eb19d32990fc5c17681ec15032248",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:BankFees",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "b631c484c745f9ab81a25a179f3cca0e8d0da1fe5d89e69fe9a547dbd1f7bed0",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:BankFees",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "56ca4f72ebcb54f08198639d70726e1cae6b1fef5daec9d8dc10101bc0801beb",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:BankFees",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "fixed_assets_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "04c910a91b55cc5df2d584d01a63291f01e74f8d9b66754b00010ed863f40353",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:Equipment",
+     "Expenses:BankFees",
+     "Expenses:Repairs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_001",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "94d152c715e8cadb4829b0f1a4401eadbbcaed47883c371899a2ca1d2e997cfc",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Subsidiary"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "dfe11d626dbc12529697c17d25333f80880beffe75115138327cc7a371aeccd1",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Bluewater-Svc"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.4,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "9353ff938c99965d3dff628e9a1cf0c25ea9b11e1551d4e30b2c8e240656e879",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Geomatics"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "dcf51dd4127b52069f01e09104856d1bc21b3e797b3b54f1ecf0bd76c5bf720e",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Hawthorn-Cafe"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.4,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "8b835eebe207a4b9c5e9b3443ce4a02034e67dac1beef5debf16e5c07161bcd2",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Finishing"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "7f065387c0827bbde42a15b822ffd88161ce66860fdbaa668e31d31002fdc7c6",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Maple-Equine"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "bddd0f092f565eff8e3aef246aa38d5288ad3d7e547a3f189867efbc81076b17",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Coatings-LLC"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "0b24f4a8af97c51cca6311f4a72c5026b976ce4419950f116fdc069d9fb1ae17",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-Dental-Labs"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "intercompany_transfers_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "63cb3f29c5472a05f080696cc1158f174e6f278b84771bf5638fec2e86778148",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Due-From-TQ-Interiors"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_001",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "d4d7c755a1ca8da1ee239780636a85d41fba4139146fbbd52514241300294539",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "16968e56e962bfe58b641822cd9b3917452331e6c6397a264338b53b1543070a",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "9436f68347169572edfc8272e0213bbf5b7da44e688e2731f5904df57e6621d9",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "cb52d3cb905796ee512e220bc90565d30272d3e857097e860d35919b0477d7f0",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.5,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "527cc30d907bb66dfed19810fb00e05bc9b3c43ea449e11284cc7954c5047223",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "dd882aea5d5f27d988bfc4e5a7f24557d7e2c665e214137cd2166873dc4fc3a1",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "46bc65f4fad6331961215add70c48ac0400ad1c06e8c82e87a32d2c944b8085f",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "2cce91300e2110e27466865ada98f18e6aaa081c33bfd441cc973e4ed6f94fbe",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "month_end_close_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "f2339e95b59691999973bf19289b5aaefd1eddc735576171a8521e8defec989e",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Assets:Prepayments",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_001",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "cc3f0072ef1b4cbf6d410478870324f91499152b0f3666c68825528b581a6b0c",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_bluewater",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "5ae85b8ae6ad3642d3a51f2b7c3511b0345f3b6cf6721f45fe094094a8271bd1",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "1267780d83a3c941501c8784778ceb4ce6071397743d80b63869f427abb0ee7c",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "dc028c282a1405c4d308d40fff823559adf8e28368197d220e296462263de0ab",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "3201bcb33b03a42702b49fbdec6c09aba9f16f077735db02f5a08e111faeaf79",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "96354df60b95aecfbb698ebc2103d400dec4e1008383b990b761213d32525ef6",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "976ebc9116ce4273d6ec2800fb3eaba7f347504160865ffdd630d991e8fcd6ed",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "33b8eec87c211994c06a21efea7460f450a9a0410f52e5176b788cd2cf21b492",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax-Due",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "payroll_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "ac0902143fdc4de337e373bbbaf29b05e9c2656c0c4267ffa01555a94b9b6faa",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Liabilities:PayrollTax",
+     "Expenses:Salaries"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 5,
+    "jump_p95": 0.566667,
+    "jump_max": 0.566667
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_001",
+   "kind": "hand-authored",
+   "world": "bluewater-2025-10",
+   "company": "Bluewater Marine Supply",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "1a6619314f32fae2a7dbfcc2260c8b63a406d66ece30c373fe6eb6b6525cc6a9",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.4,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_falcon",
+   "kind": "hand-authored",
+   "world": "falcon-2026-02",
+   "company": "Falcon Ridge Surveying",
+   "period": "February 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "69dfee52849d1f20a7f6a6ddff03933fbfb6bcea2272657d6dfaf9516f4aa7cf",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_hawthorn",
+   "kind": "hand-authored",
+   "world": "hawthorn-2025-12",
+   "company": "Hawthorn Bakery",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "bc30b5aae89bc568d020b3c70f91a00d5e2f282a1abcbe6f128efa43423fd305",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_ironwood",
+   "kind": "hand-authored",
+   "world": "ironwood-2025-10",
+   "company": "Ironwood Furniture Works",
+   "period": "October 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "41b857f27be66a87cfd8bba112d86a1629cfd6530a0b9f6dcbb81ec739300413",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_maple",
+   "kind": "hand-authored",
+   "world": "maple-2025-12",
+   "company": "Maple Street Veterinary Clinic",
+   "period": "December 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "326842fe89b9f129c124943000f67f2bf9d3279e41339460bac6187c0c7b81ee",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_oakridge",
+   "kind": "hand-authored",
+   "world": "oakridge-2026-03",
+   "company": "Oakridge Machining",
+   "period": "March 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "d9266e39e810b73c1abd83b51db5574d46706adfc0a963d8f423d969c0037eaa",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_redwood",
+   "kind": "hand-authored",
+   "world": "redwood-2025-11",
+   "company": "Redwood Analytics Group",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "3cb99fec904ad81b2c87717eafdf04757aa22bb00980d4dcf0dadbbaa2f444e2",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_silverbrook",
+   "kind": "hand-authored",
+   "world": "silverbrook-2025-11",
+   "company": "Silverbrook Dental Supply",
+   "period": "November 2025",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "2e1aa851a3b82ea18f1e3c0a67f3508625e669bccd93a2a51fe06862221a2bac",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  },
+  {
+   "selector": "sales_tax_remittance_thistle",
+   "kind": "hand-authored",
+   "world": "thistle-2026-01",
+   "company": "Thistle & Quill Design Studio",
+   "period": "January 2026",
+   "verification": {
+    "problems": [],
+    "warnings": 0
+   },
+   "public_evidence_sha256": "78cbacf7576b2a8fd5336516b074160be9cc41260655f47a4a033133647f5aa4",
+   "scorer": {
+    "golden_score": 1.0,
+    "golden_complete": true,
+    "untouched_score": 0.0,
+    "untouched_unresolved": true,
+    "planted": 3,
+    "targets": [
+     "Assets:Bank:Checking",
+     "Assets:AR",
+     "Liabilities:SalesTax-Payable",
+     "Expenses:BankFees"
+    ]
+   },
+   "reward_lattice": {
+    "audited": true,
+    "subsets": 8,
+    "monotonicity_violations": 0,
+    "penalty_activations": 0,
+    "unexpected_states": 0,
+    "cancelling_hits": 0,
+    "loop_checked": 2,
+    "loop_mismatches": 0,
+    "ladder_rungs": 4,
+    "jump_p95": 0.45,
+    "jump_max": 0.45
+   },
+   "secs": 0.3,
+   "ok": true
+  }
+ ]
+}

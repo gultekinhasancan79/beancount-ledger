@@ -12,7 +12,7 @@ environment is loaded (the prompt restates the cap it reads) and by
 disclosed ceiling and recomputes the episode contract digest; the digest of
 each arm is recorded so nobody mistakes a looser run for a benchmark run.
 
-    PIV_MANIFEST=~/.piv/manifest_v9.json python tests/budget_calibration.py --production \\
+    python tests/budget_calibration.py --production \\
         --model nvidia/nemotron-3-super-120b-a12b --base-url https://integrate.api.nvidia.com/v1 \\
         --key-var NVIDIA_API_KEY --selectors train:0 train:1:hard ... --turns 25 --tokens 40000 --json <out>
 """

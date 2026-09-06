@@ -266,8 +266,19 @@ def git_head() -> str | None:
 def build(check: bool) -> int:
     runs = discover_runs()
     if not runs:
-        print(f"no results.jsonl under {EVALS}", file=sys.stderr)
-        return 2
+        # A fresh checkout has no runs: build the page anyway, with an empty
+        # picker, so the desktop app can open and record its first one.
+        if check:
+            print(f"no results.jsonl under {EVALS}: nothing to check")
+            return 0
+        template = TEMPLATE.read_text(encoding="utf-8")
+        if PLACEHOLDER not in template:
+            print(f"{TEMPLATE}: placeholder {PLACEHOLDER} missing", file=sys.stderr)
+            return 2
+        empty = json.dumps({"runs": [], "tasks": {}, "built": None}, ensure_ascii=False)
+        OUTPUT.write_text(template.replace(PLACEHOLDER, empty), encoding="utf-8", newline="\n")
+        print(f"no results.jsonl under {EVALS}; wrote {OUTPUT} with an empty run picker")
+        return 0
     scores: dict[str, dict] = {}
     task_ids: set[str] = set()
     unscored: list[str] = []

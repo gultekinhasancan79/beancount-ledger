@@ -38,6 +38,9 @@ read off the minted world or off `identify.structure()`:
                                 were quotiented
     dropped>0                   a component where the whole-month constraint
                                 actually discarded a reading
+    repeat:*                    a kind planted more than once in one world
+    plant:*                     the (kind, rule) pair a planted item is:
+                                its mutation id without the -again suffix
     attempt>0                   a world a bounded layout retry produced
 
 The set is then a deterministic greedy cover: repeatedly take the selector

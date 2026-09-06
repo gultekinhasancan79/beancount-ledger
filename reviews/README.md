@@ -299,7 +299,8 @@ bookkeeping.
   status, and both censuses. It is audit evidence for the pre-registered
   estimands: it introduces no outcome metric and no decision threshold.
 - `reward_lattice_v9.json` — the exhaustive golden-repair-subset audit of the reward (generated v9 through the serving door, and the hand-authored registry): counts, jump percentiles, the four cancelling-hit cases
-- `audit_receipt_v9.json` — one record per world (1,400 generated v9 + 91 hand-authored): gates, serving door, public-evidence hash, scorer facts, lattice counts, exploit coverage
+- `audit_receipt_v9.json` — one record per generated world (1,400 v9 selectors): gates, serving door, public-evidence hash, scorer facts, lattice counts, exploit coverage
+- `audit_receipt_manual.json` — the same record for each of the 91 hand-authored tasks: world verification, scorer facts, lattice counts
 - `oracle_budget_v9.json` — scripted strategies that know the answer, through the real door: turns and output tokens against the caps per (profile, k)
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 

@@ -19,7 +19,7 @@ bytes, reward, stop condition. The question is calibration, not skill: if the
 sloppy-but-correct route cannot finish inside 25 turns / 40,000 output tokens
 on an eight-item world, the cap is what makes that world hard.
 
-    PIV_MANIFEST=~/.piv/manifest_v9.json python tests/oracle_budget.py --production \\
+    python tests/oracle_budget.py --production \\
         --selectors train:3 train:9 ... --json <out>
     python tests/oracle_budget.py --selectors train:0 train:1:hard        (test secret)
 """
