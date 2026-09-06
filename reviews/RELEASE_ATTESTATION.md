@@ -71,3 +71,16 @@ Every subset of a world's golden repairs applied to the untouched ledger and sco
 - ladder rungs per world: min 9, median 12, max 21
 - cancelling hits: 4 subsets in 4 worlds (train:166, train:568, eval:39, eval:132) where two unresolved transpositions of the same magnitude leave the bank balance right while both counter accounts still miss; the scorer measures balances, so the reward is exactly its arithmetic and stays monotone — a compensating-error case a v10 generator could refuse (equal and opposite bank residuals), noted, not changed
 - hand-authored, all 91 registry tasks: 724 subsets, 182 through the loop; 0 / 0 / 0 / 0; 2–3 items a task, so 75% of steps jump above 0.25 (the demo set is small by design; its ladders are 3–5 rungs)
+
+## Audit receipt (2026-09-06, `tests/audit_receipt.py`, evidence `reviews/audit_receipt_v9.json`)
+One record per world, built from the evidence the package already produces: the preflight's offline gates re-run on the freshly minted world (minted, ledger within the envelope, publicly identifiable, the public-only checker's repairs EQUAL the seeded plan, golden 1.0 through the real loop), the serving door (admitted by the signed v9 manifest, served id == minted id), a sha256 over the eight public files, the scorer facts (golden 1.0 and complete; untouched 0 with every item unresolved), the reward-lattice counts, and whether the exploit corpus exercised the world.
+- generated v9, 1,400/1,400 ok: gates 1,400/1,400; admitted with matching id 1,400/1,400; golden 1.0 1,400/1,400; untouched unresolved 1,400/1,400; lattice clean 1,400/1,400; exploit corpus exercised on 33 (the sentinels and the rotating shard); 182 s with 8 workers
+- hand-authored, 91/91 ok: verification 0 problems, golden 1.0, untouched unresolved, lattice clean
+
+## Budget calibration, scripted oracle (2026-09-06, `tests/oracle_budget.py`, evidence `reviews/oracle_budget_v9.json`)
+Four scripted strategies that KNOW the answer, played through the real `evaluate` door with realistic reported output tokens, on 15 stratified v9 training worlds (standard k=5,6; hard k=6,7,8; 3 each); caps 25 turns (24 executable) / 40,000 output tokens.
+- minimal (read the ledger, write the golden, submit): 4 turns, ~3.7k tokens, 15/15
+- diligent (read all eight files, check, write, check, submit): 13 turns, ~5k tokens, 15/15
+- incremental (one full rewrite per item, then check and submit): k + 11 turns = 16–19, 17–29k tokens (up to 72% of the ceiling on k=8), 15/15
+- sloppy (rewrite, check and re-read per item): 3k + 11 turns; solves k=5 (25 turns) and fails every k >= 6 world at the turn cap with the last committed revision scored (0.33–0.67)
+- reading: the shipped budget fits a write-once or write-per-item agent on every world; an agent that also re-reads the whole ledger after every write cannot finish a six-item world. Whether real models are turn-bound or accounting-bound is the hosted-model calibration below.

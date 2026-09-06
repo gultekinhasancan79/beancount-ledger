@@ -51,6 +51,24 @@ from verifiers.legacy.types import ClientConfig  # noqa: E402
 from beancount_ledger import beancount_ledger as env_mod  # noqa: E402
 
 
+def relax_response_literals() -> None:
+    """The OpenAI SDK's response models hold closed literals that some
+    OpenAI-compatible providers do not respect: Groq answers
+    `service_tier: "on_demand"`, Gemini a `finish_reason` of its own. The
+    provider's answer is otherwise a normal completion, so for calibration
+    those two fields accept any string. Calibration only; never the
+    environment."""
+    from typing import Optional
+    from openai.types.chat import chat_completion as _cc
+    for model, field in ((_cc.ChatCompletion, "service_tier"), (_cc.Choice, "finish_reason")):
+        if field in model.model_fields:
+            model.model_fields[field].annotation = Optional[str]
+            model.model_rebuild(force=True)
+
+
+relax_response_literals()
+
+
 class TolerantClient(OpenAIChatCompletionsClient):
     """The provider quirks tests/replay_desktop.py learned the hard way: an
     assistant message with `content: null` or `tool_calls: null` is rejected
@@ -63,22 +81,96 @@ class TolerantClient(OpenAIChatCompletionsClient):
                 continue
             if m.get("content") is None:
                 m["content"] = ""
+            m.pop("reasoning_content", None)         # Groq: "property 'reasoning_content' is unsupported"
             for key in [k for k, v in m.items() if v is None]:
                 m.pop(key, None)
         return native, extra
 
+    async def to_native_tools(self, tools):
+        # Groq validates tool schemas strictly: a parameterless tool whose
+        # schema carries `required` but no `properties` is refused ("'required'
+        # present but 'properties' is missing"). The environment's schema for
+        # list_files / run_beancount / submit is exactly that after the hidden
+        # workspace argument is filtered out. Sent with an empty `properties`
+        # here; the environment's own contract is untouched (a finding to fix
+        # there under an episode-contract version bump).
+        native = await super().to_native_tools(tools)
+        return self._with_properties(native)
+
+    @staticmethod
+    def _with_properties(native):
+        for tool in native or []:
+            fn = tool.get("function") if isinstance(tool, dict) else getattr(tool, "function", None)
+            params = fn.get("parameters") if isinstance(fn, dict) else getattr(fn, "parameters", None)
+            if isinstance(params, dict):
+                params.setdefault("properties", {})
+                if not params["properties"] and params.get("required") == []:
+                    params.pop("required")          # Groq: an empty `required` beside empty `properties` is refused
+            if isinstance(fn, dict) and fn.get("strict"):
+                fn["strict"] = False                # Groq validates calls against `required` under strict mode, so an
+                                                    # omitted optional argument (read_file offset/limit) is refused
+        return native
+
+    async def get_native_response(self, prompt, model, sampling_args, tools=None, **kwargs):
+        if tools:
+            tools = self._with_properties([dict(t) if isinstance(t, dict) else t for t in tools])
+            if os.environ.get("PIV_CALIB_DEBUG"):
+                import sys as _s
+                print("TOOLS>", [(t.get("function", {}).get("name"), sorted((t.get("function", {}).get("parameters") or {}).keys())) for t in tools if isinstance(t, dict)], file=_s.stderr)
+        return await super().get_native_response(prompt, model, sampling_args, tools=tools, **kwargs)
+
+
+_ORIGINAL_TOOL_DEFS = env_mod.public_tool_defs
+
+
+def _tool_defs_with_properties():
+    """Groq refuses a parameterless tool whose schema carries `required: []`
+    beside an empty `properties` (list_files, run_beancount, submit after the
+    hidden workspace argument is filtered out): its validator reads the empty
+    object as missing. For calibration the empty `required` is dropped here,
+    at the source every request path reads; the episode contract digest of the
+    run records the changed schema. The environment itself is unchanged: the
+    fix belongs there under an episode-contract version bump."""
+    defs = _ORIGINAL_TOOL_DEFS()
+    for t in defs:
+        params = t.parameters
+        if isinstance(params, dict):
+            params.setdefault("properties", {})
+            if not params["properties"] and params.get("required") == []:
+                params.pop("required")
+    return defs
+
 
 def run_one(selector: str, args) -> dict:
     t0 = time.time()
+    env_mod.public_tool_defs = _tool_defs_with_properties if args.tool_schema_fix else _ORIGINAL_TOOL_DEFS
     env_mod.MAX_TURNS = args.turns                       # the prompt reads it when the environment is built
     env = env_mod.load_environment(selector, timeout_seconds=float(args.timeout),
                                    max_episode_output_tokens=int(args.tokens))
     client = TolerantClient(ClientConfig(client_type="openai_chat_completions", api_key_var=args.key_var,
                                          api_base_url=args.base_url, timeout=float(args.timeout),
                                          connect_timeout=10.0, max_retries=1))
-    results = asyncio.run(env.evaluate(client=client, model=args.model, sampling_args={"max_tokens": int(args.max_tokens)},
-                                       num_examples=1, rollouts_per_example=1, max_concurrent=1, max_retries=0,
-                                       save_results=False, state_columns=["piv_observation_bytes", "piv_phase", "piv_score"]))
+    try:
+        results = asyncio.run(env.evaluate(client=client, model=args.model, sampling_args={"max_tokens": int(args.max_tokens)},
+                                           num_examples=1, rollouts_per_example=1, max_concurrent=1, max_retries=0,
+                                           save_results=False, state_columns=["piv_observation_bytes", "piv_phase", "piv_score"]))
+    except env_mod.PIVEvaluationBatchInvalid as exc:
+        # the real reason lives in the batch artifact of THIS process; the key never reaches the record
+        chain = None
+        try:
+            for rec in env_mod.quarantine_artifact(exc.batch_id):
+                out = rec.get("output") if isinstance(rec, dict) else None
+                err = out.get("error") if isinstance(out, dict) else None
+                chain = (err.get("error_chain_repr") or err.get("message") or str(err)) if isinstance(err, dict) else (str(err) if err else None)
+                if chain:
+                    break
+        except Exception as inner:                          # noqa: BLE001
+            chain = f"artifact unavailable: {type(inner).__name__}"
+        secret = os.environ.get(args.key_var, "")
+        chain = (chain or str(exc)).replace(secret, "***") if secret else (chain or str(exc))
+        return {"selector": selector, "k": len(env.contract.planted),
+                "profile": "hard" if selector.endswith(":hard") else "standard",
+                "reward": None, "quarantined": chain[:600], "secs": round(time.time() - t0)}
     out = results["outputs"][0]
     metrics = out.get("metrics") or {}
     usage = out.get("token_usage") or {}
@@ -104,6 +196,9 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=1800)
     parser.add_argument("--json", type=Path, default=None)
     parser.add_argument("--production", action="store_true")
+    parser.add_argument("--tool-schema-fix", action="store_true", help="complete parameterless tool schemas with an empty properties object (Groq)")
+    parser.add_argument("--retries", type=int, default=6, help="retries of an episode the provider rate-limited (429)")
+    parser.add_argument("--backoff", type=float, default=90.0, help="seconds to wait before such a retry")
     args = parser.parse_args()
     if not os.environ.get(args.key_var):
         print(f"{args.key_var} is not set in this process"); return 2
@@ -112,13 +207,20 @@ def main() -> int:
     t0 = time.time()
     rows = []
     for selector in args.selectors:
-        try:
-            r = run_one(selector, args)
-        except Exception as exc:                        # noqa: BLE001
-            r = {"selector": selector, "crashed": f"{type(exc).__name__}: {exc}"[:200]}
+        for attempt in range(1, args.retries + 2):
+            try:
+                r = run_one(selector, args)
+            except Exception as exc:                    # noqa: BLE001
+                r = {"selector": selector, "crashed": f"{type(exc).__name__}: {exc}"[:200]}
+            transient = "429" in str(r.get("quarantined", "")) or "RateLimit" in str(r.get("quarantined", ""))
+            if not transient or attempt > args.retries:
+                break
+            print(f"  {selector:<16} rate limited; waiting {args.backoff}s (attempt {attempt}/{args.retries})", flush=True)
+            time.sleep(args.backoff)
+        r["attempts"] = attempt
         rows.append(r)
         print(f"  {selector:<16} k={r.get('k', '?')} reward={r.get('reward', '?')} turns={r.get('turns', '?')} "
-              f"out_tokens={r.get('output_tokens', '?')} stop={r.get('stop', r.get('crashed'))} {r.get('secs', '')}s", flush=True)
+              f"out_tokens={r.get('output_tokens', '?')} stop={r.get('stop', r.get('crashed') or r.get('quarantined'))} {r.get('secs', '')}s", flush=True)
         if args.json:
             args.json.parent.mkdir(parents=True, exist_ok=True)
             args.json.write_text(json.dumps({"model": args.model, "turns": args.turns, "tokens": args.tokens,
