@@ -86,6 +86,8 @@ Ninety-one tasks ship in the wheel and need no secret: ten small companies, one 
 
 Task ids are `<workflow>_<company>`; the ten original tasks keep their `_001` ids. In the table, the letters after each id are the planted kinds in plan order.
 
+Count them honestly: this is **nine independently authored company-months plus Alpine, exercised through ninety workflow-conditioned variants**, not ninety-one independent samples. The variants of one company share its statement, its parties and its amounts, so a model that has seen Ironwood's payment run has seen most of what Ironwood's payroll task shows it. Two rules follow. Split by world, never by task: every variant of a company stays on the same side of a train/eval split. Aggregate by world first: average a model's ten variants into one number per company, then compare companies. Within one company the ten variants are legitimate data augmentation for training, and a 7-train / 3-eval split of workflows inside a world measures workflow transfer, not generalisation to a new company. For generalisation, use the generated population.
+
 | company, period | bank recon | AP run | AR collections | bank feed | expense reports | payroll | sales tax | fixed assets | intercompany | month-end close |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Hawthorn Bakery, December 2025 | `bank_recon_hawthorn` (oad) | `ap_payment_run_hawthorn` (oad) | `ar_collections_hawthorn` (oad) | `bank_feed_categorisation_hawthorn` (ooa) | `expense_reports_hawthorn` (oda) | `payroll_001` (oao) | `sales_tax_remittance_hawthorn` (oad) | `fixed_assets_hawthorn` (oao) | `intercompany_transfers_hawthorn` (oda) | `month_end_close_hawthorn` (oad) |
