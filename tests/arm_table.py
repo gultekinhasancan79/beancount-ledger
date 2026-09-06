@@ -2349,10 +2349,10 @@ def render_table(rows: list[dict], label: str, files: list[Path], schedule: dict
         lines.append(f"Schedule `{schedule['label']}` ({schedule['schedule_id']}), {schedule['n_cells']} cells, "
                      f"date stamp {schedule['date_stamp']}.")
         lines.append(f"Balance as scheduled: {schedule['balance']['statement']}")
-        lines.append(f"Unrun scheduled cells are treated as "
-                     f"{'NON-DELIVERY (the panel is complete)' if schedule_complete else
-                        'OUT OF SCOPE (the panel is INCOMPLETE: they are reported as unrun and '
-                        'left out of the operational denominator)'}.")
+        unrun_rule = ("NON-DELIVERY (the panel is complete)" if schedule_complete else
+                      "OUT OF SCOPE (the panel is INCOMPLETE: they are reported as unrun and "
+                      "left out of the operational denominator)")
+        lines.append(f"Unrun scheduled cells are treated as {unrun_rule}.")
     if confirmatory:
         contract = schedule["experiment_contract"]
         lines += ["", "**Sealed experiment contract** (schedule v2, Codex T49 §2). `schedule_id` hashes the "
