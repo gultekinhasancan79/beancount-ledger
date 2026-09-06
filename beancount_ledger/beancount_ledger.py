@@ -3589,6 +3589,12 @@ _ROLLOUT_ID = re.compile(r"^[0-9a-f]{32}$")
 # can reach it, by construction rather than by omission from a manifest.
 AUDIT_ROOT = Path(tempfile.gettempdir()) / "piv_audit"
 MAX_AUDIT_ROLLOUTS = 64            # per run: oldest rollout archives are evicted first
+# The archive root is shared by every process on the machine (the test
+# battery runs eight suites at once). Eviction therefore never touches a
+# rollout archive written to within this window: it may belong to a sibling
+# process whose rollout is still publishing, and pulling its directory away
+# turned into a FileNotFoundError inside that sibling's score_core (CI, 2026-09-06).
+AUDIT_LIVE_SECONDS = 600
 
 
 def audit_dir(rollout_id: str) -> Path:
@@ -3648,10 +3654,16 @@ def _archive_submission(rollout_id: str, revision: int, data: bytes) -> None:
         old_revision, old_name, size = kept.pop(0)
         os.unlink(audit / old_name)
         total -= size
-    rollouts = [(e.stat(follow_symlinks=False).st_mtime_ns, e.name) for e in os.scandir(AUDIT_ROOT)
-                if e.is_dir(follow_symlinks=False) and _ROLLOUT_ID.match(e.name)]
+    rollouts = []
+    for e in os.scandir(AUDIT_ROOT):
+        try:
+            if e.is_dir(follow_symlinks=False) and _ROLLOUT_ID.match(e.name):
+                rollouts.append((e.stat(follow_symlinks=False).st_mtime_ns, e.name))
+        except FileNotFoundError:
+            continue                                 # a sibling process evicted it between listing and stat
     rollouts.sort()
-    while len(rollouts) > MAX_AUDIT_ROLLOUTS and rollouts[0][1] != rollout_id:
+    live_after = time.time_ns() - AUDIT_LIVE_SECONDS * 1_000_000_000
+    while len(rollouts) > MAX_AUDIT_ROLLOUTS and rollouts[0][1] != rollout_id and rollouts[0][0] < live_after:
         _, old = rollouts.pop(0)
         shutil.rmtree(AUDIT_ROOT / old, ignore_errors=True)
 
