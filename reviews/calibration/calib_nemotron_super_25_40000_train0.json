@@ -1,0 +1,21 @@
+{
+ "model": "nvidia/nemotron-3-super-120b-a12b",
+ "turns": 25,
+ "tokens": 40000,
+ "rows": [
+  {
+   "selector": "train:0",
+   "k": 5,
+   "profile": "standard",
+   "reward": 0.0,
+   "stop": "piv_output_budget_exhausted",
+   "error": null,
+   "turns": 25.0,
+   "output_tokens": 40000.0,
+   "observation_bytes": 29362,
+   "phase": "ACTIVE_NO_CANDIDATE",
+   "contract_digest": "152dbbaf80a1f761d42d5b94139fd64c320f0810cbbe4855c7cb1cc0766fea59",
+   "secs": 537
+  }
+ ]
+}

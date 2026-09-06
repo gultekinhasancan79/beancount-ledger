@@ -1,0 +1,103 @@
+{
+ "model": "moonshotai/kimi-k3",
+ "turns": 50,
+ "tokens": 80000,
+ "rows": [
+  {
+   "selector": "train:0",
+   "k": 5,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1304,
+   "attempts": 1
+  },
+  {
+   "selector": "train:1",
+   "k": 6,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 955,
+   "attempts": 1
+  },
+  {
+   "selector": "train:2",
+   "k": 6,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 915,
+   "attempts": 1
+  },
+  {
+   "selector": "train:3",
+   "k": 5,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 847,
+   "attempts": 1
+  },
+  {
+   "selector": "train:0:hard",
+   "k": 8,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1164,
+   "attempts": 1
+  },
+  {
+   "selector": "train:1:hard",
+   "k": 8,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1071,
+   "attempts": 1
+  },
+  {
+   "selector": "train:2:hard",
+   "k": 7,
+   "profile": "hard",
+   "reward": 1.0,
+   "stop": "piv_submitted",
+   "error": null,
+   "turns": 7.0,
+   "output_tokens": 5199.0,
+   "observation_bytes": 20463,
+   "phase": "TERMINAL",
+   "contract_digest": "689d4c68fb7b16f6b34b315609348c8c33bee58d9d2938e17988647b7dc610fd",
+   "secs": 856,
+   "attempts": 1
+  },
+  {
+   "selector": "train:3:hard",
+   "k": 7,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1081,
+   "attempts": 1
+  },
+  {
+   "selector": "train:4:hard",
+   "k": 6,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1389,
+   "attempts": 1
+  },
+  {
+   "selector": "train:6:hard",
+   "k": 6,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1645,
+   "attempts": 1
+  }
+ ]
+}

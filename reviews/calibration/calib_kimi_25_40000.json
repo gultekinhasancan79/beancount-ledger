@@ -1,0 +1,109 @@
+{
+ "model": "moonshotai/kimi-k3",
+ "turns": 25,
+ "tokens": 40000,
+ "rows": [
+  {
+   "selector": "train:0",
+   "k": 5,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError(\"Error code: 500 - {'message': 'Failed to generate completions', 'type': 'Internal Server Error', 'code': 500}\")",
+   "secs": 496,
+   "attempts": 1
+  },
+  {
+   "selector": "train:1",
+   "k": 6,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1723,
+   "attempts": 2
+  },
+  {
+   "selector": "train:2",
+   "k": 6,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 946,
+   "attempts": 1
+  },
+  {
+   "selector": "train:3",
+   "k": 5,
+   "profile": "standard",
+   "reward": 1.0,
+   "stop": "piv_submitted",
+   "error": null,
+   "turns": 6.0,
+   "output_tokens": 5934.0,
+   "observation_bytes": 21599,
+   "phase": "TERMINAL",
+   "contract_digest": "152dbbaf80a1f761d42d5b94139fd64c320f0810cbbe4855c7cb1cc0766fea59",
+   "secs": 968,
+   "attempts": 1
+  },
+  {
+   "selector": "train:0:hard",
+   "k": 8,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1696,
+   "attempts": 1
+  },
+  {
+   "selector": "train:1:hard",
+   "k": 8,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 951,
+   "attempts": 1
+  },
+  {
+   "selector": "train:2:hard",
+   "k": 7,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 907,
+   "attempts": 1
+  },
+  {
+   "selector": "train:3:hard",
+   "k": 7,
+   "profile": "hard",
+   "reward": 1.0,
+   "stop": "piv_submitted",
+   "error": null,
+   "turns": 7.0,
+   "output_tokens": 4321.0,
+   "observation_bytes": 18918,
+   "phase": "TERMINAL",
+   "contract_digest": "152dbbaf80a1f761d42d5b94139fd64c320f0810cbbe4855c7cb1cc0766fea59",
+   "secs": 1083,
+   "attempts": 1
+  },
+  {
+   "selector": "train:4:hard",
+   "k": 6,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1204,
+   "attempts": 1
+  },
+  {
+   "selector": "train:6:hard",
+   "k": 6,
+   "profile": "hard",
+   "reward": null,
+   "quarantined": "ModelError() -> InternalServerError('Error code: 504')",
+   "secs": 1067,
+   "attempts": 1
+  }
+ ]
+}
