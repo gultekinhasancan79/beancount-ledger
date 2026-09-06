@@ -12,7 +12,7 @@ Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/ve
 
 - **The reward is derived, not judged.** Trial balance ties or it does not; planted discrepancies are resolved or they are not. Penalties for damaging existing records, fabricating entries or inventing accounts.
 - **Nothing the agent sees regenerates an answer.** Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The wheel ships no golden ledgers, no tests and no provenance for generated worlds. The hand-authored tasks are demos by construction, never a held-out evaluation.
-- **An exploit corpus and an adversary loop** live in `tests/`: 26 hand-written attacks on the demo world, 14 constructions (13 families, 92 payloads) built from a minted world's public bytes, and a nightly sweep over rotating shards. The exploit corpus is scored against an oracle independent of the scorer.
+- **An exploit corpus and an adversary loop** live in `tests/`: 26 hand-written attacks on the demo world, 14 constructions (13 families, 103 declared payloads, of which a world builds about 90 and skips the rest by name because it lacks the structure they attack) built from a minted world's public bytes, and a nightly sweep over rotating shards. The exploit corpus is scored against an oracle independent of the scorer.
 
 ### Quickstart
 

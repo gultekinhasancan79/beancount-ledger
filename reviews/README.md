@@ -301,6 +301,8 @@ bookkeeping.
 - `reward_lattice_v9.json` — the exhaustive golden-repair-subset audit of the reward (generated v9 through the serving door, and the hand-authored registry): counts, jump percentiles, the four cancelling-hit cases
 - `audit_receipt_v9.json` — one record per generated world (1,400 v9 selectors): gates, serving door, public-evidence hash, scorer facts, lattice counts, exploit coverage
 - `audit_receipt_manual.json` — the same record for each of the 91 hand-authored tasks: world verification, scorer facts, lattice counts
+- `provider_failed_attempts_2026-08-31/` — the rows of confirmatory cells whose provider call failed before a rollout existed, kept beside the panel they belong to: a failed attempt records what the run met, never a result, and none of them enters an estimand
+- `resume_conductor.log` — the console log of the resumed confirmatory run of 2026-08-31, kept as the record of that resume
 - `oracle_budget_v9.json` — scripted strategies that know the answer, through the real door: turns and output tokens against the caps per (profile, k)
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 

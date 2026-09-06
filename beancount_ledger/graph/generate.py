@@ -759,36 +759,6 @@ _OMIT_ID = {
 }
 
 
-def _wrong_legs(rng: random.Random, amount: D, forbidden) -> D | None:
-    """A bookkeeper's slip on one amount: two digits transposed, or a digit
-    dropped. Transposition is the classic one and keeps the magnitude, so
-    it is preferred wherever the figure admits one. Never a figure another
-    statement row already carries, so the wrong entry cannot be read as a
-    different real transaction."""
-    dollars, cents = f"{amount:.2f}".split(".")
-    transposed, dropped = [], []
-    for index in range(len(dollars) - 1):
-        if dollars[index] != dollars[index + 1]:
-            swapped = list(dollars)
-            swapped[index], swapped[index + 1] = swapped[index + 1], swapped[index]
-            transposed.append(f"{''.join(swapped).lstrip('0') or '0'}.{cents}")
-    if cents[0] != cents[1]:
-        transposed.append(f"{dollars}.{cents[1]}{cents[0]}")
-    for index in range(len(dollars)):
-        rest = (dollars[:index] + dollars[index + 1:]).lstrip("0")
-        if rest:
-            dropped.append(f"{rest}.{cents}")
-
-    def usable(written):
-        return sorted(w for w in {D(x) for x in written} - {amount} - set(forbidden) if w > 0)
-
-    slips, losses = usable(transposed), usable(dropped)
-    if slips and losses:
-        return rng.choice(slips) if _weighted(rng, ((True, 6), (False, 4))) else rng.choice(losses)
-    options = slips or losses
-    return rng.choice(options) if options else None
-
-
 def _claim(kind: str, world: World, event, movement, wrong: D | None) -> str:
     party = world.party(getattr(event, "party_id", world.bank_party_id))
     row = f"{movement.cleared_on} {movement.description} for {abs(movement.amount):.2f}"
@@ -859,7 +829,8 @@ def _plan(seed: int, profile: Profile, world: World, period: Period) -> Mutation
         if movement.reference or _RULE_OF[type(event)] == "bank_fee" or _days(period.end, movement.cleared_on) > 10:
             alterable_ids.add(event.id)
     if len(candidates) < 2:
-        raise GenerationError(f"seed {seed}: {len(candidates)} identifiable recognitions; a plan needs two")
+        raise GenerationError(f"seed {seed}: {len(candidates)} identifiable recognition(s); profile "
+                              f"{profile.name} needs {profile.planted[0]}")
 
     # spread the plan over different kinds of event where the world allows
     by_rule: dict[str, list] = {}
@@ -975,7 +946,7 @@ def _alter_choice(rng: random.Random, world: World, event, printed: Counter):
     dropped digit; a decimal shift is the rare third, and never on a bank
     fee — a ten-fold error on a $85 charge reads as fabricated, not as a
     clerk's slip."""
-    from .project import ProjectionError, derive_mutant
+    from .project import ProjectionError
     recognition = recognitions_of(world, Roles(**dict(world.roles)), event)[0]
     true_legs = tuple((leg.account, leg.amount) for leg in recognition.legs)
     cents = int((abs(true_legs[0][1]) * 100).to_integral_value())
