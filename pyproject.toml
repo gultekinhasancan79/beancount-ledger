@@ -6,7 +6,7 @@ version = "0.1.0"
 license = {text = "Apache-2.0"}
 readme = "README.md"
 authors = [{name = "Hasancan Gültekin", email = "gultekinhasancan79@gmail.com"}]
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.14"          # verifiers 0.3.1 admits 3.11-3.13
 # PINNED EXACTLY, on purpose (Codex T48 §8, T47 answer 7).
 #
 # `episode_contract_digest()` binds the tool schemas the MODEL is shown, and we
