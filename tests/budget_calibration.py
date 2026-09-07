@@ -122,7 +122,9 @@ def _tool_defs_with_properties():
     object as missing. For calibration the empty `required` is dropped here,
     at the source every request path reads; the episode contract digest of the
     run records the changed schema. The environment itself is unchanged: the
-    fix belongs there under an episode-contract version bump."""
+    fix belongs there under an episode-contract version bump. Contract 3 made
+    that change in `public_tool_defs`, so this is a no-op on a current tree;
+    it stays so that an older tree can still be measured against Groq."""
     defs = _ORIGINAL_TOOL_DEFS()
     for t in defs:
         params = t.parameters

@@ -1206,7 +1206,9 @@ def parse_attestation(content) -> dict | None:
 #: but actively wrong, and what it cost the models that did not is unmeasured.
 #: The replacement keeps both things the old wording protected — a whole-file
 #: write must not silently drop entries, and the chart is closed — without
-#: naming a kind of error or how many there are.
+#: naming a kind of error or how many there are. The same bump drops the
+#: `required: []` a parameterless tool advertised beside its empty
+#: `properties`, which strict validators (Groq) refused outright.
 #: 2: every model-facing reply template hoisted into the view, the
 #: idempotent whole-read rule and its receipt, the read-side envelope
 #: refusal, and the submit-is-not-required delivery sentence in the
@@ -1269,6 +1271,21 @@ STOP_CONDITION_PRIORITY = (
 )
 
 
+def _advertise_parameterless(params: dict) -> None:
+    """A parameterless tool (list_files, run_beancount, submit once the hidden
+    workspace argument is pruned) used to advertise `required: []` beside an
+    empty `properties`. Strict validators (Groq) read the empty object as "no
+    properties", find a `required` key that names none, and refuse the whole
+    request. Advertise the empty object and no `required` — the schema the
+    framework itself produces for a function with no arguments. Applied to
+    the contract view AND to a live environment's `tool_defs`, from this one
+    place, so the equality `test_episode_contract` pins cannot drift. Contract 3."""
+    if isinstance(params, dict) and not params.get("properties"):
+        params["properties"] = {}
+        if params.get("required") == []:
+            params.pop("required")
+
+
 def public_tool_defs() -> list:
     """The tool definitions AS THE FRAMEWORK GENERATES THEM, without an
     environment instance.
@@ -1311,6 +1328,7 @@ def public_tool_defs() -> list:
                 required.remove(arg)
         if "$defs" in params and not params["$defs"]:
             params.pop("$defs")
+        _advertise_parameterless(params)
         defs.append(tool_def)
     _PUBLIC_TOOL_DEFS = defs
     return [t.model_copy(deep=True) for t in defs]
@@ -1698,6 +1716,8 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         self.public_files = dict(public_files)
         for tool in PUBLIC_TOOLS:
             self.add_tool(tool, args_to_skip=list(HIDDEN_TOOL_ARGS))
+        for tool_def in self.tool_defs:
+            _advertise_parameterless(tool_def.parameters)
         # The episode contract's two named doors, checked here rather than
         # only in a test: `env_response` recognises a commit by WRITE_TOOL and
         # the rollout ends on TERMINAL_TOOL, so a tool renamed out from under

@@ -1789,7 +1789,7 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
 #: names/descriptions/schemas the framework generates, the observation modes
 #: and envelope, the phase machine, the stop conditions in priority order, the
 #: budgets and the pending-call rule, and every public nudge or refusal.
-EPISODE_CONTRACT_DIGEST = "09e16d67e0e39dabdba6f62abc664060559ea3ff82542028394fbfaae83962fc"
+EPISODE_CONTRACT_DIGEST = "b16d726ac2637486c549c3a2e94ede4da21cccc4be4e9410cb6e081c875ccba8"
 
 
 def test_the_episode_contract_digest_is_pinned():
