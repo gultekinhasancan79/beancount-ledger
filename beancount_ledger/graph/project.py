@@ -82,6 +82,16 @@ POSTING_AMOUNT_WIDTH = 9
 BANNER = "; " + "-" * 75
 
 
+def _padded(name: str, width: int) -> int:
+    """The column an account name is padded to: the fixed width, or one more
+    than the name when the name has reached it. `f"{name:<30}USD"` prints no
+    separator at all for a 30-character name, and Beancount then reads
+    `...-LtdUSD` as the account — a silently wrong chart, not an error. Every
+    account the shipped worlds carry is shorter than both widths, so for them
+    this is the fixed width and no shipped byte moves."""
+    return max(width, len(name) + 1)
+
+
 class ProjectionError(Exception):
     """A world the projector could not render exhaustively. Ours."""
 
@@ -392,7 +402,7 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
         lines = [f'option "title" "{world.title}"', f'option "operating_currency" "{world.currency}"', "",
                  "; Chart of accounts"]
         for a in sorted(world.accounts, key=lambda a: a.code):
-            lines.append(f"{a.opened} open {a.name:<{OPEN_ACCOUNT_WIDTH}}{world.currency}")
+            lines.append(f"{a.opened} open {a.name:<{_padded(a.name, OPEN_ACCOUNT_WIDTH)}}{world.currency}")
             obs.append(Observation(name, f"open {a.name}", (f"account:{a.name}",)))
         lines += ["", f"; Opening balances as of {period.start}"]
         body: list[str] = []
@@ -436,13 +446,13 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
                 # recognition is absent for the planted reason.
                 wrong_legs = derive_mutant(tuple((l.account, l.amount) for l in rec.legs), mutation.strategy, mutation.parameter)
                 for account, amount in wrong_legs:
-                    entry.append(f"  {account:<{POSTING_ACCOUNT_WIDTH}}{_money(Decimal(amount)):>{POSTING_AMOUNT_WIDTH}} {world.currency}")
+                    entry.append(f"  {account:<{_padded(account, POSTING_ACCOUNT_WIDTH)}}{_money(Decimal(amount)):>{POSTING_AMOUNT_WIDTH}} {world.currency}")
                     obs.append(Observation(name, f"{when} {account}",
                                            (f"mut:{mutation.mutation_id}", rec.id, rec.event_id), Decimal(amount)))
                 abs_.append(Absence(name, rec.id, Reason.PLANTED_MUTATION, mutation.mutation_id))
             else:
                 for leg in rec.legs:
-                    entry.append(f"  {leg.account:<{POSTING_ACCOUNT_WIDTH}}{_money(leg.amount):>{POSTING_AMOUNT_WIDTH}} {world.currency}")
+                    entry.append(f"  {leg.account:<{_padded(leg.account, POSTING_ACCOUNT_WIDTH)}}{_money(leg.amount):>{POSTING_AMOUNT_WIDTH}} {world.currency}")
                     obs.append(Observation(name, f"{when} {leg.account}", (rec.id, rec.event_id), leg.amount))
             if rec.rule == "opening":
                 lines += entry + ["", BANNER, f"; {period.label} activity", BANNER]

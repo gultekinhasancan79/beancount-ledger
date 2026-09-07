@@ -616,13 +616,21 @@ def test_the_ledger_is_observed_whole_and_the_others_in_slices():
         if needle not in description:
             problems.append(f"read_file's description does not say {needle!r}: {description!r}")
     for needle in ("one complete call", "returns the complete ledger exactly as the scorer sees it",
-                   "line endings are normalized to LF", "Preserve every existing transaction"):
+                   "line endings are normalized to LF",
+                   # the whole-file write must not silently drop entries — the point the old
+                   # "Preserve every existing transaction" was making before it was read as a
+                   # ban on the corrections the bookkeeping policies require
+                   "carry through every transaction you are not correcting"):
         if needle not in env.SYSTEM_PROMPT:
             problems.append(f"SYSTEM_PROMPT does not say {needle!r}")
     # "exactly as stored" was true only of an LF-only ledger; `logical_text`
     # maps CRLF and CR to LF, so the claim is now the scorer-logical one
     # — and the same sentence appears in the tool docstring
-    for stale in ("exactly as stored",):
+    for stale in ("exactly as stored",
+                  # contract 3 removed these: the policies require removing one copy of a
+                  # doubled entry and re-posting a mis-keyed one, so a prompt forbidding it
+                  # contradicts the tasks
+                  "Preserve every existing transaction", "do not remove or rewrite entries"):
         if stale in env.SYSTEM_PROMPT or stale in description:
             problems.append(f"the {stale!r} claim survives in the prompt or the tool description")
     if "read them in slices" in env.SYSTEM_PROMPT:

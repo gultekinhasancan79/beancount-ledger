@@ -514,7 +514,8 @@ def system_prompt(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) ->
 You have a set of files to work from. Start with the manifest, then read what \
 you need. Read `{LEDGER}` in one complete call before editing it — it \
 returns the complete ledger exactly as the scorer sees it; line endings are \
-normalized to LF. Preserve every existing transaction. Use sliced reads or \
+normalized to LF. A write replaces the whole file, so carry through every \
+transaction you are not correcting. Use sliced reads or \
 grep only for the other files when you need them.
 
 {LEDGER} is sent to you ONCE per revision: a second complete read of a \
@@ -523,8 +524,10 @@ file, so keep the content of your last complete read. A successful \
 write_ledger makes a new revision, and the next complete read returns it.
 
 When you have worked out what is wrong, write the corrected ledger back with \
-write_ledger. Post what is genuinely missing; do not remove or rewrite entries \
-that are already there, and do not invent accounts that are not in the chart.
+write_ledger. Post what is genuinely missing. An entry that is already there \
+may itself be the error: correct or remove one only where the files you were \
+given show that it is wrong, and leave anything you cannot show is wrong \
+exactly as it stands. Do not invent accounts that are not in the chart.
 
 You may call run_beancount at any time to check that the ledger still loads.
 
@@ -1195,11 +1198,20 @@ def parse_attestation(content) -> dict | None:
 #: budget, or a public nudge/refusal message. NOT `GENERATOR_VERSION`: the
 #: generated accounting world is untouched by any of those, and conflating the
 #: two would invalidate every world for a wording change.
+#: 3: the prompt stopped contradicting the tasks. It had said "Preserve every
+#: existing transaction" and "do not remove or rewrite entries that are already
+#: there" while the bookkeeping policies require removing one copy of a doubled
+#: entry and re-posting a mis-keyed one. Every model that scored 1.0 resolved
+#: the conflict in the policies' favour, so the instruction was not redundant
+#: but actively wrong, and what it cost the models that did not is unmeasured.
+#: The replacement keeps both things the old wording protected — a whole-file
+#: write must not silently drop entries, and the chart is closed — without
+#: naming a kind of error or how many there are.
 #: 2: every model-facing reply template hoisted into the view, the
 #: idempotent whole-read rule and its receipt, the read-side envelope
 #: refusal, and the submit-is-not-required delivery sentence in the
 #: prompt. 1: the original observation-and-termination contract.
-EPISODE_CONTRACT_VERSION = 2
+EPISODE_CONTRACT_VERSION = 3
 #: /2: the view gained the hoisted reply templates, the repeated-read and
 #: observation-budget semantics and the envelope units — a reader of /1 would
 #: find keys it does not know, so the SHAPE has a new name as well as the

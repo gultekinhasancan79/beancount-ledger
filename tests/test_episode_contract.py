@@ -1789,7 +1789,7 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
 #: names/descriptions/schemas the framework generates, the observation modes
 #: and envelope, the phase machine, the stop conditions in priority order, the
 #: budgets and the pending-call rule, and every public nudge or refusal.
-EPISODE_CONTRACT_DIGEST = "152dbbaf80a1f761d42d5b94139fd64c320f0810cbbe4855c7cb1cc0766fea59"
+EPISODE_CONTRACT_DIGEST = "09e16d67e0e39dabdba6f62abc664060559ea3ff82542028394fbfaae83962fc"
 
 
 def test_the_episode_contract_digest_is_pinned():
@@ -1806,7 +1806,7 @@ def test_the_episode_contract_digest_is_pinned():
     if env_mod.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
         problems.append(f"the episode contract changed: bump EPISODE_CONTRACT_VERSION and re-pin "
                         f"(now {env_mod.episode_contract_digest()}, pinned {EPISODE_CONTRACT_DIGEST})")
-    if env_mod.EPISODE_CONTRACT_VERSION != 2:
+    if env_mod.EPISODE_CONTRACT_VERSION != 3:
         problems.append(f"EPISODE_CONTRACT_VERSION is {env_mod.EPISODE_CONTRACT_VERSION}; re-pin the digest")
     view = env_mod.episode_contract()
     if view.get("system_prompt") != env_mod.SYSTEM_PROMPT:

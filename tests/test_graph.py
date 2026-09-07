@@ -585,6 +585,66 @@ def test_alter_and_duplicate_project_and_derive():
                  not problems, "\n".join(problems))
 
 
+def test_events_without_an_invoice_settle_by_ach():
+    """`movement_of` read `event.invoice_id` on every ACH row. ExpensePayment
+    and Prepayment carry no invoice — the schema admits them on any rail — so
+    a schema-valid event was refused at movement time. The bank quotes nothing
+    for them, exactly as it quotes nothing on a card row."""
+    from beancount_ledger.graph.schema import ExpensePayment, Prepayment, Settlement, Rail
+    problems = []
+    world = A.WORLD
+    events = (ExpensePayment("event:t-exp", "2025-11-05", "party:office-depot", Decimal("120.00"),
+                             Settlement(Rail.ACH_OUT, "2025-11-05"), "Office supplies by ACH"),
+              Prepayment("event:t-pre", "2025-11-06", "party:cedar", Decimal("900.00"),
+                         Settlement(Rail.ACH_OUT, "2025-11-06"), "2025-12", "December rent in advance"))
+    for event in events:
+        try:
+            movement = PL.movement_of(world, event)
+        except AttributeError as exc:
+            problems.append(f"{type(event).__name__} by ACH is refused: {exc}")
+            continue
+        if movement is None or movement.rail is not Rail.ACH_OUT or movement.amount != -event.amount:
+            problems.append(f"{type(event).__name__}: wrong movement {movement}")
+        elif movement.reference != "":
+            problems.append(f"{type(event).__name__}: an ACH row with no invoice quoted {movement.reference!r}")
+        elif not movement.description.startswith("ACH OUT "):
+            problems.append(f"{type(event).__name__}: description {movement.description!r}")
+    return check("an ExpensePayment or Prepayment settled by ACH renders a bank row with an empty reference",
+                 not problems, "; ".join(problems))
+
+
+def test_an_account_name_at_the_column_width_keeps_its_separator():
+    """`f"{name:<30}USD"` prints no space once the name reaches 30 characters,
+    and Beancount then opens `...XUSD` — a silently wrong chart. The longest
+    shipped account is 29 characters, one short of the fault. The padding is
+    now the fixed width or one past the name, whichever is larger, so every
+    shipped byte is unchanged and a long name still gets its space."""
+    from beancount_ledger.graph.schema import Account
+    problems = []
+    # built to the width rather than counted by hand
+    name30 = "Assets:" + "W" * (PJ.OPEN_ACCOUNT_WIDTH - len("Assets:"))
+    name40 = "Expenses:" + "W" * (PJ.POSTING_ACCOUNT_WIDTH - len("Expenses:"))
+    if len(name30) != PJ.OPEN_ACCOUNT_WIDTH or len(name40) != PJ.POSTING_ACCOUNT_WIDTH:
+        return check("the guard names hit the widths", False, f"{len(name30)}/{len(name40)}")
+    template = next(a for a in A.WORLD.accounts if a.name == "Assets:Bank:Checking")
+    extra = tuple(dataclasses.replace(template, name=n, code=9990 + i, description="width guard")
+                  for i, n in enumerate((name30, name40)))
+    world = dataclasses.replace(A.WORLD, accounts=A.WORLD.accounts + extra)
+    bundle, _ = derive(world, _plan())
+    text = bundle.view(PJ.LEDGER_VIEW).text
+    for name in (name30, name40):
+        if f"open {name} {world.currency}" not in text:
+            problems.append(f"no separator after {name!r}")
+        if f"{name}{world.currency}" in text:
+            problems.append(f"{name!r} is glued to the currency")
+    try:
+        parse_once(text)
+    except Exception as exc:  # noqa: BLE001
+        problems.append(f"the rendered ledger does not load: {exc}")
+    return check("a 30- and a 40-character account name render with a separator and the ledger loads",
+                 not problems, "; ".join(problems))
+
+
 TESTS = [
     test_the_shipped_world_is_the_projection,
     test_the_golden_solution_is_the_expected_projection,
@@ -604,6 +664,8 @@ TESTS = [
     test_the_named_inverse_returns_the_clean_fingerprint,
     test_derived_answers_are_unrepresentable_in_the_authored_layer,
     test_alter_and_duplicate_project_and_derive,
+    test_events_without_an_invoice_settle_by_ach,
+    test_an_account_name_at_the_column_width_keeps_its_separator,
 ]
 
 

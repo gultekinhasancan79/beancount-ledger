@@ -197,13 +197,18 @@ def movement_of(world: World, event) -> BankMovement | None:
         return None
     party = world.party(event.party_id).name.upper()
     reference = ""
+    # An ACH row quotes the invoice it settles; an event with no invoice
+    # (ExpensePayment, Prepayment) is a plain transfer and quotes nothing,
+    # exactly as a card row does. Reading `event.invoice_id` unconditionally
+    # here refused a schema-valid event at movement time.
+    invoice_id = getattr(event, "invoice_id", None)
     if settlement.rail is Rail.ACH_IN:
         description = f"ACH IN {party}"
-        reference = world.document(event.invoice_id).number
+        reference = world.document(invoice_id).number if invoice_id else ""
         amount = event.amount
     elif settlement.rail is Rail.ACH_OUT:
         description = f"ACH OUT {party}"
-        reference = world.document(event.invoice_id).number
+        reference = world.document(invoice_id).number if invoice_id else ""
         amount = -event.amount
     elif settlement.rail is Rail.CHEQUE:
         number = world.document(settlement.cheque_id).number
