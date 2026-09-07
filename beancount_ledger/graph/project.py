@@ -653,9 +653,15 @@ def check_bundle(world: World, bundle: Bundle) -> list[str]:
         problems.append(f"reconciliation identity fails: statement {statement_close} + unsettled {unsettled} != books {books_bank}")
     # receipts against invoices; sales against their invoice gross; tax arithmetic
     applied: dict[str, Decimal] = {}
+    paid: dict[str, Decimal] = {}
     for e in world.events:
         if isinstance(e, CustomerReceipt):
             applied[e.invoice_id] = applied.get(e.invoice_id, Decimal("0")) + e.amount
+        if isinstance(e, VendorPayment):
+            # accumulated per invoice, as receipts are: the per-payment check below
+            # refuses one payment above the gross but let two half-payments that
+            # sum above it through, so an economically wrong world could be built
+            paid[e.invoice_id] = paid.get(e.invoice_id, Decimal("0")) + e.amount
         if isinstance(e, Sale):
             gross = (e.net + (e.net * e.tax_rate).quantize(Decimal("0.01"))).quantize(Decimal("0.01"))
             if world.document(e.invoice_id).gross != gross:
@@ -667,6 +673,9 @@ def check_bundle(world: World, bundle: Bundle) -> list[str]:
     for invoice_id, total in applied.items():
         if total > world.document(invoice_id).gross:
             problems.append(f"{invoice_id}: receipts {total} exceed gross {world.document(invoice_id).gross}")
+    for invoice_id, total in paid.items():
+        if total > world.document(invoice_id).gross:
+            problems.append(f"{invoice_id}: payments {total} exceed gross {world.document(invoice_id).gross}")
     # opening receivables/payables cover the prior invoices still open at the boundary
     carried = dict(world.opening.carried)
     prior_open_ar = sum((d.gross for d in world.documents if d.kind is DocumentKind.SALES_INVOICE
