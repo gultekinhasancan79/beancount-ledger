@@ -149,6 +149,8 @@ DIAGNOSTIC_STATE_COLUMNS = [
     "piv_truncation_limit_reached", "piv_no_tool_limit_reached", "piv_output_budget_exhausted",
     "piv_output_budget_deferred", "piv_revision", "piv_ledger_receipts", "piv_submitted",
     "piv_episode_contract_digest", "piv_turn",
+    # episode contract 4: the raw malformed calls, and the run that bounds them
+    "piv_rejected_calls", "piv_consecutive_rejected_turns",
     # the episode's workspace outlives the rollout; a sidecar reads the final ledger from it
     "workspace",
 ]
@@ -212,6 +214,7 @@ def run_one(selector: str, args) -> dict:
             "truncated_run": out.get("piv_consecutive_truncated_turns"),
             "no_tool_truncated_turns": out.get("piv_no_tool_truncated_turns"),
             "no_tool_turns": out.get("piv_no_tool_turns"),
+            "rejected_calls": out.get("piv_rejected_calls"),
             "truncation_limit_reached": out.get("piv_truncation_limit_reached"),
             "no_tool_limit_reached": out.get("piv_no_tool_limit_reached"),
             "budget_exhausted": out.get("piv_output_budget_exhausted"),

@@ -208,7 +208,12 @@ BASE_STATE_COLUMNS = [
 # visible rather than assumed away).
 OPTIONAL_STATE_COLUMNS = ["piv_budget_accounting_invalid", "piv_budget_accounting_detail",
                           "piv_episode_contract_digest", "piv_budget_accounting_suspicious",
-                          "piv_complete_reads", "piv_observation_bytes", "piv_library_versions"]
+                          "piv_complete_reads", "piv_observation_bytes", "piv_library_versions",
+                          # episode contract 4: the calls whose `arguments` were not a JSON object,
+                          # raw and bounded. Before the contract-4 rewrite these episodes did not
+                          # reach the archive at all -- the provider refused every later request and
+                          # the rollout was recorded as a provider failure.
+                          "piv_rejected_calls"]
 
 # The CLOSED set of `budget_accounting` status codes (adversarial-review
 # follow-up): `compute_budget_accounting` returns "VALID" or
@@ -2739,6 +2744,9 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # BOUND both (see tests/pilot_facts.py); the package counts them.
         "complete_reads": out.get("piv_complete_reads"),
         "observation_bytes": out.get("piv_observation_bytes"),
+        # Episode contract 4: tool calls this episode emitted whose arguments
+        # were not a JSON object -- refused, never executed, stored replayable.
+        "rejected_calls": out.get("piv_rejected_calls"),
         # The SERVING host's own view of the packages the replay contract is
         # bound to, beside this process's own — a disagreement means the row
         # was produced under a different projection than its digest claims.

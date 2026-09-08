@@ -287,6 +287,34 @@ MAX_CONSECUTIVE_NO_TOOL_TURNS = 3
 # ends under `piv_no_tool_call_limit` ("stopped calling tools"). Same budget,
 # two distinguishable diagnoses.
 MAX_CONSECUTIVE_TRUNCATED_TURNS = MAX_CONSECUTIVE_NO_TOOL_TURNS
+# The malformed-call bound. A turn whose calls ALL carry arguments that are not
+# a JSON object executed nothing, so it is the third way to spend the budget
+# without acting, beside narrating and truncating. It rides the same K for the
+# same reason the truncation bound does — a larger one could not fire before
+# the turn cap, a smaller one would be the effective bound for everything —
+# and it keeps its OWN counter (`piv_consecutive_rejected_turns`, reset by any
+# turn carrying at least one well-formed call), so "kept emitting broken calls"
+# ends under `piv_rejected_call_limit` and is separable in the metrics from
+# "stopped calling tools" and "looping at the completion cap".
+MAX_CONSECUTIVE_REJECTED_TURNS = MAX_CONSECUTIVE_NO_TOOL_TURNS
+# What a rejected call's stored `arguments` is REWRITTEN to, so the transcript
+# stays replayable. Measured (qwen3-8b, 2026-09-08): the pinned framework
+# answers an unparseable `arguments` with `error_formatter` and then
+# re-serialises the ORIGINAL string verbatim into every later request
+# (`verifiers/legacy/clients/openai_chat_completions_client.py`,
+# `from_chat_message`), so a provider that validates tool arguments (Alibaba
+# Model Studio: HTTP 400 `The "function.arguments" parameter of the code model
+# must be in JSON format`) refuses every subsequent request and the episode is
+# lost as a PROVIDER failure rather than continuing as the agent's outcome —
+# five of ten episodes in one run. The empty object is the only rewrite that
+# invents nothing: it is valid JSON, it is what "no arguments were legible"
+# means, and it is never executed.
+MALFORMED_CALL_REPLAY_ARGUMENTS = "{}"
+# How much of the raw, unparseable argument text the audit record keeps per
+# call. The raw text is the only evidence of what the model actually emitted
+# once the stored call has been rewritten, and it is bounded because a
+# malformed `write_ledger` can carry the whole ledger.
+MAX_REJECTED_CALL_RECORD_CHARS = 2_000
 # The per-episode output ceiling, in completion tokens summed
 # over every turn. The M2 measurement arms differ in their PER-TURN cap
 # (8K vs 16K) and must be compared at EQUAL total output, or the comparison
@@ -307,6 +335,18 @@ PENDING_CALL_AT_BUDGET = (
     "tool calls emitted on the turn that exhausts the output ceiling are executed once, in call "
     "order, and the episode is then sealed without another model request; calls emitted on the "
     "turn that reaches max_turns are never executed"
+)
+# The malformed-call rule as one sentence, so the episode contract digest binds
+# a statement of it. DOCUMENTATION, not the mechanism: the behaviour lives in
+# `_record_malformed_calls` and the rejected-call branch of `_answer_turn`.
+MALFORMED_CALL_POLICY = (
+    "a tool call whose arguments are not a JSON object is answered PUBLIC_TOOL_ERROR and never "
+    "executed, so it can never produce a ledger revision; the stored call's arguments are "
+    "rewritten to the empty object so the transcript replays to a provider that validates them, "
+    "the raw text is kept in state['piv_rejected_calls'] for audit and never sent to the model, "
+    "the turn is charged to max_turns and the reply to the observation budget like any other, and "
+    "max_consecutive_rejected_turns turns in a row whose calls were ALL rejected end the episode "
+    "under piv_rejected_call_limit"
 )
 
 #: The ONE sampling field a clamped request carries, and the only spelling
@@ -1198,6 +1238,20 @@ def parse_attestation(content) -> dict | None:
 #: budget, or a public nudge/refusal message. NOT `GENERATOR_VERSION`: the
 #: generated accounting world is untouched by any of those, and conflating the
 #: two would invalidate every world for a wording change.
+#: 4: provider-valid replay of rejected calls. A tool call whose `arguments`
+#: are not a JSON object is answered PUBLIC_TOOL_ERROR and executes nothing —
+#: that much was already true, through the framework's `error_formatter` —
+#: but the STORED call kept its unparseable text and the framework's client
+#: re-serialises it verbatim into every later request, so a provider that
+#: validates tool arguments refused every subsequent request and the episode
+#: died as a provider failure (measured on qwen3-8b, five of ten episodes,
+#: 2026-09-08). The stored arguments are now rewritten to the empty object,
+#: the raw text is retained in `state["piv_rejected_calls"]` for audit, and a
+#: run of MAX_CONSECUTIVE_REJECTED_TURNS turns whose calls were all rejected
+#: ends the episode under `piv_rejected_call_limit` — a third named ending
+#: beside "stopped calling tools" and "looping at the completion cap".
+#: `candidate/1` is untouched; ordinary turn, output and observation budgets
+#: are charged exactly as for any other turn.
 #: 3: the prompt stopped contradicting the tasks. It had said "Preserve every
 #: existing transaction" and "do not remove or rewrite entries that are already
 #: there" while the bookkeeping policies require removing one copy of a doubled
@@ -1213,7 +1267,7 @@ def parse_attestation(content) -> dict | None:
 #: idempotent whole-read rule and its receipt, the read-side envelope
 #: refusal, and the submit-is-not-required delivery sentence in the
 #: prompt. 1: the original observation-and-termination contract.
-EPISODE_CONTRACT_VERSION = 3
+EPISODE_CONTRACT_VERSION = 4
 #: /2: the view gained the hoisted reply templates, the repeated-read and
 #: observation-budget semantics and the envelope units — a reader of /1 would
 #: find keys it does not know, so the SHAPE has a new name as well as the
@@ -1262,6 +1316,7 @@ STOP_CONDITION_PRIORITY = (
     ("piv_submitted", 50),
     ("piv_output_budget_exhausted", 48),
     ("piv_truncation_limit", 45),
+    ("piv_rejected_call_limit", 42),
     ("piv_no_tool_call_limit", 40),
     ("piv_turn_cap_submit_unexecuted", 36),
     ("piv_turn_cap_no_submit", 35),
@@ -1447,12 +1502,16 @@ def episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS)
                 "no tool body executed"
             ),
             "stop_conditions": [list(row) for row in STOP_CONDITION_PRIORITY],
+            "malformed_call_policy": MALFORMED_CALL_POLICY,
+            "malformed_call_replay_arguments": MALFORMED_CALL_REPLAY_ARGUMENTS,
+            "max_rejected_call_record_chars": MAX_REJECTED_CALL_RECORD_CHARS,
         },
         "budgets": {
             "max_turns": MAX_TURNS,
             "last_executable_turn": MAX_TURNS - 1,
             "max_consecutive_no_tool_turns": MAX_CONSECUTIVE_NO_TOOL_TURNS,
             "max_consecutive_truncated_turns": MAX_CONSECUTIVE_TRUNCATED_TURNS,
+            "max_consecutive_rejected_turns": MAX_CONSECUTIVE_REJECTED_TURNS,
             "max_episode_output_tokens": int(max_episode_output_tokens),
             "pending_call_at_budget": PENDING_CALL_AT_BUDGET,
             "token_cap_field": TOKEN_CAP_FIELD,
@@ -2359,6 +2418,29 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         """
         return bool(state.get("piv_truncation_limit_reached"))
 
+    @vf.stop(priority=42)
+    async def piv_rejected_call_limit(self, state) -> bool:
+        """MAX_CONSECUTIVE_REJECTED_TURNS turns in a row whose calls were ALL
+        rejected as malformed.
+
+        The third way to spend the budget without acting, and it needs its own
+        name for the same reason the truncation limit did: the fix differs.
+        A model looping here is emitting `arguments` that are not a JSON
+        object — a template or a tokenizer problem — which is nothing like
+        narrating instead of acting, and nothing like reasoning past the
+        completion cap. Between `piv_truncation_limit` and
+        `piv_no_tool_call_limit` in priority: it is more specific than either,
+        and it cannot co-fire with them (a turn with calls is not a no-tool
+        turn), so the order only records where the diagnosis belongs.
+
+        An ordinary counted outcome, never a quarantine and never the
+        protocol score: emitting a broken call is the agent's behaviour, the
+        turn was answered representably (one bounded reply per call id, and
+        the stored call replays), and the last committed revision is scored
+        exactly as at the other limits.
+        """
+        return bool(state.get("piv_rejected_call_limit_reached"))
+
     @vf.stop(priority=40)
     async def piv_no_tool_call_limit(self, state) -> bool:
         """MAX_CONSECUTIVE_NO_TOOL_TURNS turns in a row with no tool call.
@@ -2483,6 +2565,15 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
           - any turn after `submit` has been answered, because the workspace
             is frozen from that instant.
 
+        And one CALL never reaches the tool loop: one whose `arguments` are
+        not a JSON object. It is answered PUBLIC_TOOL_ERROR, executes
+        nothing, and — the part the framework does not do — has its STORED
+        arguments rewritten to the empty object, because the client
+        re-serialises the original string into every later request and a
+        provider that validates them then refuses the whole episode. The raw
+        text is kept for audit in `state["piv_rejected_calls"]`; see
+        `_record_malformed_calls`.
+
         Two counters ride every turn, for the input side of the budget the
         output ceiling does not price: `piv_turn`, so the
         whole-read receipt can name the turn the content was sent on, and
@@ -2542,6 +2633,19 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         # whether or not this turn was also cut off at the completion cap.
         state["piv_consecutive_no_tool_turns"] = 0
         state["piv_consecutive_truncated_turns"] = 0
+        # PROVIDER-VALID REPLAY, BEFORE ANY OTHER JUDGEMENT OF THIS TURN.
+        # Recorded and rewritten here rather than beside the refusal below,
+        # because the transcript must replay whichever way the turn is
+        # answered: a turn that is ALSO a duplicate-id or multi-write refusal
+        # still has its broken `arguments` re-serialised into the next request
+        # by the framework's client, and that is the request the provider
+        # refuses.
+        malformed = self._record_malformed_calls(calls, state)
+        # The consecutive run is reset by ANY turn carrying at least one
+        # well-formed call — the agent is emitting representable calls again,
+        # whatever else is wrong with the turn.
+        if len(malformed) < len(calls):
+            state["piv_consecutive_rejected_turns"] = 0
         ids = [getattr(c, "id", None) for c in calls]
         writes = [c for c in calls if getattr(c, "name", None) == WRITE_TOOL]
         if len(set(ids)) != len(ids):
@@ -2574,11 +2678,49 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             return self._seal_if_budget_spent(state, self._count_observation(
                 state, [ToolMessage(role="tool", content=TURN_MULTI_WRITE, tool_call_id=i or "") for i in ids]))
 
+        rejected = self._count_observation(state, [
+            ToolMessage(role="tool", content=PUBLIC_TOOL_ERROR, tool_call_id=getattr(c, "id", None) or "")
+            for c in malformed])
+        if len(malformed) == len(calls):
+            # Nothing to execute. The turn is charged to `max_turns` like any
+            # other and its replies to the observation budget like any other;
+            # what it never does is reach a tool, so no ledger revision can
+            # come out of it. Bounded, so the refusal cannot become its own
+            # loop hazard — the same shape, and the same K, as the nudge.
+            run = state.get("piv_consecutive_rejected_turns", 0) + 1
+            state["piv_consecutive_rejected_turns"] = run
+            if run >= MAX_CONSECUTIVE_REJECTED_TURNS:
+                state["piv_rejected_call_limit_reached"] = True
+                # As everywhere else in this method: the framework re-checks
+                # stop conditions before the next model call only when
+                # `final_env_response` is set, so without this the model is
+                # asked once more after the episode has already ended.
+                state["final_env_response"] = rejected
+                return rejected
+            return self._seal_if_budget_spent(state, rejected)
+
         token = _PIV_STATE.set(state)
+        last = messages[-1]
+        if malformed:
+            # The well-formed calls, and only those, are handed to the base
+            # loop: the rewritten `arguments` now PARSE, so leaving a rejected
+            # call in the list would make the framework execute the tool with
+            # no arguments — which is exactly the "guess a corrected call" the
+            # contract forbids. Restored whole afterwards, rewritten, because
+            # this object is the one the client re-serialises.
+            last.tool_calls = [c for c in calls if id(c) not in {id(m) for m in malformed}]
         try:
             tool_messages = await super().env_response(messages, state, **kwargs)
         finally:
+            if malformed:
+                last.tool_calls = calls
             _PIV_STATE.reset(token)
+        if malformed:
+            # One reply per call occurrence, in call order, which is what a
+            # provider requires of the next request.
+            answered = {(getattr(m, "tool_call_id", None) or ""): m
+                        for m in list(rejected) + list(tool_messages)}
+            tool_messages = [answered[i] for i in ((x or "") for x in ids) if i in answered]
 
         by_id = {getattr(c, "id", None): c for c in calls}
         for message in tool_messages:
@@ -2654,10 +2796,61 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             state["final_env_response"] = tool_messages
         return self._seal_if_budget_spent(state, tool_messages)
 
+    @staticmethod
+    def _record_malformed_calls(calls, state) -> list:
+        """Audit and REWRITE every call this turn cannot answer, and return them.
+
+        THE MECHANISM, stated because the fix depends on it. The framework
+        assembles the next request from the objects it already has:
+        `MultiTurnEnv.get_prompt_messages` reads
+        `state["trajectory"][-1]["completion"]`, `concat_messages` extends a
+        new list with THOSE SAME message objects, hands them here as
+        `messages`, and concatenates our replies onto them to become the next
+        turn's prompt. The client then serialises each one
+        (`openai_chat_completions_client.from_chat_message`) by reading
+        `tool_call.arguments` off the object. `ToolCall` is an ordinary
+        mutable pydantic model, so the object mutated here IS the object the
+        provider is shown — on this request and on every later one, since
+        `render_completion` rebuilds `state["completion"]` from the same
+        trajectory. Nothing under `.venv` is patched.
+
+        What is rewritten is the REPLAYABILITY of the call, never its meaning:
+        the empty object stands for "no arguments were legible", nothing is
+        executed with it, and the raw text the model actually emitted is kept
+        in `state["piv_rejected_calls"]` — bounded, for audit, never sent
+        back to the model. A rejected call therefore cannot reach a tool and
+        cannot produce a ledger revision, which is the property that makes
+        rewriting the stored call safe at all.
+        """
+        malformed = []
+        for call in calls:
+            raw = getattr(call, "arguments", None)
+            if _call_arguments_are_an_object(raw):
+                continue
+            malformed.append(call)
+            record = list(state.get("piv_rejected_calls") or [])
+            record.append({
+                "turn": state.get("piv_turn", 0),
+                "tool": getattr(call, "name", None),
+                "tool_call_id": getattr(call, "id", None),
+                "arguments": _raw_arguments_text(raw)[:MAX_REJECTED_CALL_RECORD_CHARS],
+            })
+            state["piv_rejected_calls"] = record
+            call.arguments = MALFORMED_CALL_REPLAY_ARGUMENTS
+        return malformed
+
     def _frozen_turn(self, calls, state) -> list:
-        """Every call in a post-submit turn refused, nothing executed."""
+        """Every call in a post-submit turn refused, nothing executed.
+
+        The malformed ones are still recorded and rewritten. No further
+        request goes to the provider from here — the episode is over — but
+        the transcript this leaves behind is replayed by other tools, and a
+        stored call that no provider will accept is the same defect one
+        remove.
+        """
         from verifiers.legacy.types import ToolMessage
 
+        self._record_malformed_calls(calls, state)
         state["piv_turns_rejected"] = state.get("piv_turns_rejected", 0) + 1
         seen: list = []
         for call in calls:
@@ -3194,6 +3387,8 @@ METRIC_NO_TOOL_TURNS = "piv/no_tool_turns"
 METRIC_NO_TOOL_LIMIT = "piv/no_tool_limit"
 METRIC_NO_TOOL_TRUNCATED = "piv/no_tool_truncated"     # of the no-tool turns, how many the client marked truncated
 METRIC_TRUNCATION_LIMIT = "piv/truncation_limit"       # ended on an unbroken run of truncated no-tool turns
+METRIC_REJECTED_CALLS = "piv/rejected_calls"           # tool calls whose arguments were not a JSON object
+METRIC_REJECTED_CALL_LIMIT = "piv/rejected_call_limit"  # ended on a run of turns whose calls were all rejected
 METRIC_TURN_CAP_NO_SUBMIT = "piv/turn_cap_no_submit"   # ended at max_turns with no accepted submit
 METRIC_TURN_CAP_SUBMIT_UNEXECUTED = "piv/turn_cap_submit_unexecuted"   # submit asked for on the last turn, never run
 METRIC_SUBMIT_REFUSED = "piv/submit_refused"           # submit calls answered "nothing to submit"
@@ -3745,6 +3940,35 @@ def _calls_in_last_turn(state) -> list:
     return names
 
 
+def _call_arguments_are_an_object(raw) -> bool:
+    """Is this tool call's `arguments` a JSON OBJECT the tool loop can use?
+
+    The exact predicate the pinned framework applies, stated positively:
+    `ToolEnv.env_response` does `json.loads(tool_call.arguments)` and then
+    `call_tool(..., **tool_args)`, so anything that is not a string, does not
+    parse, or parses to something other than a mapping is a call the loop can
+    only answer with `error_formatter`. A JSON array, `null` or a bare number
+    is included deliberately: it parses, but it cannot be splatted into a tool
+    signature, and it is just as likely to be refused on replay by a provider
+    that validates `function.arguments` as an object.
+    """
+    if not isinstance(raw, str):
+        return False
+    try:
+        value = json.loads(raw)
+    except (ValueError, TypeError):
+        return False
+    return isinstance(value, dict)
+
+
+def _raw_arguments_text(raw) -> str:
+    """The unparseable argument text as the audit record keeps it: the string
+    the model emitted when it emitted one, and `repr` of whatever the client
+    handed back when it did not (`None`, a parsed dict from a lenient client).
+    Bounded by the caller; never sent to the model."""
+    return raw if isinstance(raw, str) else repr(raw)
+
+
 def _last_turn_truncated(state) -> bool:
     """Whether the framework marked the last assistant turn truncated.
 
@@ -4187,6 +4411,28 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
 
     truncation_limit.__name__ = METRIC_TRUNCATION_LIMIT
 
+    def rejected_calls(state, **_kwargs) -> float:
+        """Zero-weight: how many tool calls this episode carried whose
+        `arguments` were not a JSON object. Each was answered
+        PUBLIC_TOOL_ERROR, executed nothing, and had its stored call rewritten
+        to the empty object so the transcript still replays; the raw text is
+        in `state["piv_rejected_calls"]`. A non-zero count on a model family
+        is a template or tokenizer problem, not a bookkeeping one — before the
+        rewrite it showed up as a PROVIDER failure and the episode was lost."""
+        return float(len(state.get("piv_rejected_calls") or []))
+
+    rejected_calls.__name__ = METRIC_REJECTED_CALLS
+
+    def rejected_call_limit(state, **_kwargs) -> float:
+        """Zero-weight: 1.0 when the episode ended on
+        MAX_CONSECUTIVE_REJECTED_TURNS turns in a row whose calls were ALL
+        rejected. Separate from `piv/no_tool_limit` and
+        `piv/truncation_limit` because the fix differs: this model is emitting
+        calls, they are just not representable."""
+        return 1.0 if state.get("piv_rejected_call_limit_reached") else 0.0
+
+    rejected_call_limit.__name__ = METRIC_REJECTED_CALL_LIMIT
+
     def turn_cap_no_submit(state, **_kwargs) -> float:
         """Zero-weight: 1.0 when the episode ran to `max_turns` without an
         accepted `submit`. The reward is unaffected — the last committed
@@ -4300,10 +4546,11 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
     rubric = vf.Rubric(
         funcs=[ledger_reward, evaluator_failed, protocol_failed, training_eligible_monitor,
                submitted, no_tool_turns, no_tool_limit, no_tool_truncated,
-               truncation_limit, turn_cap_no_submit, turn_cap_submit_unexecuted, submit_refused,
+               truncation_limit, rejected_calls, rejected_call_limit,
+               turn_cap_no_submit, turn_cap_submit_unexecuted, submit_refused,
                output_budget_exhausted, budget_accounting_invalid, budget_accounting_suspicious,
                observation_bytes, complete_reads, ledger_receipts, observation_refused],
-        weights=[1.0] + [0.0] * 18,
+        weights=[1.0] + [0.0] * 20,
     )
 
     # The per-episode output ceiling is the environment's, not the caller's

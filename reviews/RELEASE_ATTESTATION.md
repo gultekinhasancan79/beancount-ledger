@@ -13,8 +13,9 @@
 - license: Apache-2.0 (SPDX), LICENSE sha256 `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
 
 ## Contracts and versions
-- episode contract: version 3, digest `b16d726ac2637486c549c3a2e94ede4da21cccc4be4e9410cb6e081c875ccba8` (2026-09-07; version 2 was `152dbbaf80a1…`). Deliberately NOT in the manifest's `versions()`, which binds world semantics only.
+- episode contract: version 4, digest `e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866` (2026-09-08; version 3 was `b16d726ac263…`, version 2 `152dbbaf80a1…`). Deliberately NOT in the manifest's `versions()`, which binds world semantics only.
 - component versions: `{'generator': 8, 'identify': 7, 'scorer_contract': 1, 'renderer': 1, 'task_contract': 1, 'manifest_schema': 2, 'preflight_contract': 1, 'gate_set': 'e2f26ab5cdf60d53'}`
+- episode contract v3, digest `b16d726ac2637486c549c3a2e94ede4da21cccc4be4e9410cb6e081c875ccba8`
 - episode contract v2, digest `152dbbaf80a1f761d42d5b94139fd64c320f0810cbbe4855c7cb1cc0766fea59`
 - replay contract v1: A/B1 `180288689de672797295e0b4d189856d59830201fcd633794c5dc026169288ed`, B2 `29f0ddf85e422a94d127d98f658f2d63248a12402d4ed4da0e14292bd69d65d0`
 - production manifest: rotation-selected file sha256 `06800e0308658c5c9559ba51c16e766009462947726a917bf60ab527a099996e`; preflight 1400/1400 (phase 1 offline gates AND phase 2 signed-manifest serving door); the secret never appears here

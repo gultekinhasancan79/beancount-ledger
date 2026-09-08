@@ -1271,6 +1271,14 @@ def test_revision_advances_only_on_a_committed_write():
     bad = SimpleNamespace(id="call-2", name="write_ledger", arguments="{not json")
     asyncio.run(env.env_response([SimpleNamespace(role="assistant", content="", tool_calls=[bad])], state))
     r2 = state.get("piv_revision")
+    # Episode contract 4: the call executed nothing, AND the stored call is
+    # now replayable — the framework's client re-serialises `arguments`
+    # verbatim into every later request, so leaving "{not json" there ended
+    # the episode as a provider failure on the next turn.
+    from beancount_ledger import beancount_ledger as env_mod
+
+    replayable = bad.arguments == env_mod.MALFORMED_CALL_REPLAY_ARGUMENTS
+    audited = [e for e in (state.get("piv_rejected_calls") or []) if e.get("arguments") == "{not json"]
 
     other = SimpleNamespace(id="call-3", name="list_files", arguments=json.dumps({}))
     asyncio.run(env.env_response([SimpleNamespace(role="assistant", content="", tool_calls=[other])], state))
@@ -1287,7 +1295,14 @@ def test_revision_advances_only_on_a_committed_write():
         problems.append(f"a malformed tool call advanced the revision to {r2}")
     if r3 != 1:
         problems.append(f"an unrelated tool call advanced the revision to {r3}")
-    return check("revision advances only on a committed write_ledger", not problems,
+    if not replayable:
+        problems.append(f"the malformed call is still stored as {bad.arguments!r}; the next request "
+                        "would be refused by a provider that validates function.arguments")
+    if len(audited) != 1:
+        problems.append(f"the raw malformed arguments are not in the audit record: "
+                        f"{state.get('piv_rejected_calls')}")
+    return check("revision advances only on a committed write_ledger; a malformed call executes nothing, "
+                 "is stored replayable and is kept raw in the audit record", not problems,
                  "\n".join(problems))
 
 

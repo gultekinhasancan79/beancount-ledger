@@ -872,6 +872,243 @@ def test_an_unbroken_run_of_truncated_turns_ends_under_the_truncation_limit():
 
 
 # --------------------------------------------------------------------------
+# 3a. a call whose arguments are not JSON is rejected AND made replayable
+# --------------------------------------------------------------------------
+
+def broken(tag: str = "b", name: str = "write_ledger", arguments: str = "{not json") -> ResponseMessage:
+    """An assistant turn whose tool call carries unparseable arguments.
+
+    What qwen3-8b actually did on 2026-09-08: five of ten episodes emitted a
+    tool call whose `arguments` were not a JSON object. The pinned framework
+    answered each with `error_formatter` and then re-serialised the ORIGINAL
+    string into every later request, so Alibaba Model Studio refused all of
+    them (HTTP 400, `The "function.arguments" parameter of the code model must
+    be in JSON format`) and the episodes were lost as PROVIDER failures.
+    """
+    return ResponseMessage(
+        content="", finish_reason="tool_calls", is_truncated=False,
+        tool_calls=[ToolCall(id=tag, name=name, arguments=arguments)],
+    )
+
+
+def _maybe_json(value):
+    try:
+        return json.loads(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _stored_tool_calls(completion) -> list:
+    """Every tool call in a saved completion, as dicts.
+
+    `save_utils.sanitize_tool_calls` stores each call as a JSON STRING, which
+    is what a replay tool reads back and what a provider is eventually shown.
+    """
+    out = []
+    for message in completion or []:
+        calls = message.get("tool_calls") if isinstance(message, dict) else getattr(message, "tool_calls", None)
+        for call in calls or []:
+            out.append(json.loads(call) if isinstance(call, str) else call)
+    return out
+
+
+def test_a_malformed_call_is_rejected_rewritten_and_audited():
+    """The four properties of a rejected call, through the real `env_response`.
+
+    Answered with the fixed public refusal; nothing executed, so no revision
+    and no bytes on disk; the STORED call rewritten to the empty object, which
+    is what makes the next request valid; and the raw text retained in the
+    rollout's own audit list, bounded, where the model can never see it.
+    """
+    from types import SimpleNamespace
+
+    env, state, workspace = fresh()
+    before = (workspace / env_mod.LEDGER).read_bytes()
+    call = SimpleNamespace(id="c1", name=env_mod.WRITE_TOOL, arguments="{not json" + "x" * 5000)
+    message = SimpleNamespace(role="assistant", content="", tool_calls=[call])
+    out = asyncio.run(env.env_response([message], state))
+
+    problems = []
+    if replies(out) != [env_mod.PUBLIC_TOOL_ERROR]:
+        problems.append(f"the reply was {replies(out)!r}, expected PUBLIC_TOOL_ERROR")
+    if [getattr(m, "tool_call_id", None) for m in out] != ["c1"]:
+        problems.append("the reply is not paired to the call id")
+    if call.arguments != env_mod.MALFORMED_CALL_REPLAY_ARGUMENTS:
+        problems.append(f"the stored call still carries {call.arguments!r}; the next request would be "
+                        "refused by a provider that validates function.arguments")
+    if json.loads(call.arguments) != {}:
+        problems.append("the rewritten arguments are not the empty JSON object")
+    if message.tool_calls != [call]:
+        problems.append("the assistant message's call list was not restored")
+    record = state.get("piv_rejected_calls")
+    if not record or len(record) != 1:
+        problems.append(f"the audit list is {record!r}")
+    else:
+        entry = record[0]
+        if entry.get("tool") != env_mod.WRITE_TOOL or entry.get("tool_call_id") != "c1":
+            problems.append(f"the audit entry does not name the call: {entry}")
+        if entry.get("turn") != state.get("piv_turn"):
+            problems.append(f"the audit entry names turn {entry.get('turn')}, not {state.get('piv_turn')}")
+        if not entry.get("arguments", "").startswith("{not json"):
+            problems.append("the audit entry does not hold the raw text the model emitted")
+        if len(entry.get("arguments", "")) != env_mod.MAX_REJECTED_CALL_RECORD_CHARS:
+            problems.append(f"the retained raw text is {len(entry.get('arguments', ''))} chars, not bounded "
+                            f"at {env_mod.MAX_REJECTED_CALL_RECORD_CHARS}")
+    if state.get("piv_revision") != 0:
+        problems.append(f"a rejected call advanced the revision to {state.get('piv_revision')}")
+    if phase(state) is not env_mod.EpisodePhase.NO_CANDIDATE:
+        problems.append(f"the phase moved to {phase(state)}")
+    if (workspace / env_mod.LEDGER).read_bytes() != before:
+        problems.append("a rejected call changed the ledger on disk")
+    if state.get("piv_observation_bytes", 0) < len(env_mod.PUBLIC_TOOL_ERROR):
+        problems.append("the refusal was not charged to the observation budget")
+    return check("a call whose arguments are not a JSON object is answered PUBLIC_TOOL_ERROR, executes "
+                 "nothing, has its stored arguments rewritten to the empty object and its raw text "
+                 "retained (bounded) in the audit record", not problems, "\n".join(problems))
+
+
+def test_a_malformed_call_does_not_cost_the_episode():
+    """broken -> write -> submit scores exactly as write -> submit.
+
+    The whole point of the fix: the episode CONTINUES. Before it, the second
+    request carried the unparseable arguments back to the provider, the
+    provider refused it, and the rollout was lost as a provider failure with
+    nothing delivered.
+
+    The end-to-end property is asserted on the SAVED transcript, not on our
+    own state: every tool call the completion stores must parse as a JSON
+    object, because that is the string the client hands the provider.
+    """
+    problems = []
+    results, client, raised = run([broken(), write(), submit()],
+                                  state_columns=["piv_rejected_calls", "piv_consecutive_rejected_turns"])
+    if raised is not None:
+        return check("a malformed call must not raise", False, str(raised))
+    out = one(results)
+    metrics = out.get("metrics") or {}
+    if out.get("reward") != 1.0:
+        problems.append(f"reward {out.get('reward')}, expected the same 1.0 as write -> submit")
+    if out.get("stop_condition") != "piv_submitted" or out.get("error") is not None:
+        problems.append(f"stop_condition {out.get('stop_condition')!r} error {out.get('error')}")
+    if client.turn != 3:
+        problems.append(f"the model was asked {client.turn} times, expected 3")
+    if metrics.get(env_mod.METRIC_REJECTED_CALLS) != 1.0:
+        problems.append(f"piv/rejected_calls {metrics.get(env_mod.METRIC_REJECTED_CALLS)}")
+    if metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT) != 0.0:
+        problems.append("piv/rejected_call_limit fired on an episode that recovered")
+    if metrics.get("piv/evaluator_failed") != 0.0 or metrics.get("piv/training_eligible") != 1.0:
+        problems.append("a rejected call was treated as a failure rather than an agent outcome")
+    if out.get("piv_consecutive_rejected_turns") != 0:
+        problems.append(f"the consecutive run was not reset by the well-formed turn: "
+                        f"{out.get('piv_consecutive_rejected_turns')}")
+    audit = out.get("piv_rejected_calls") or []
+    if len(audit) != 1 or audit[0].get("arguments") != "{not json":
+        problems.append(f"the raw call did not reach the episode record: {audit}")
+    meta = results["metadata"]
+    if meta.get("piv_status") != "VALID" or meta.get("piv_quarantined_count") != 0:
+        problems.append(f"quarantined: status={meta.get('piv_status')}")
+    unreplayable = [c for c in _stored_tool_calls(out.get("completion"))
+                    if not isinstance(_maybe_json(c.get("arguments")), dict)]
+    if unreplayable:
+        problems.append(f"the saved transcript still carries calls no provider will accept: {unreplayable}")
+    tool_replies = [str(m.get("content") if isinstance(m, dict) else getattr(m, "content", None))
+                    for m in out.get("completion") or []
+                    if (m.get("role") if isinstance(m, dict) else getattr(m, "role", None)) == "tool"]
+    if env_mod.PUBLIC_TOOL_ERROR not in tool_replies:
+        problems.append("the malformed call was not answered with the public refusal in the transcript")
+    return check("a malformed call costs a turn and nothing else: the episode continues, delivers and "
+                 "scores 1.0, the raw call is in the record, and every tool call in the saved "
+                 "transcript parses as a JSON object", not problems, "\n".join(problems))
+
+
+def test_repeated_malformed_calls_end_the_episode_at_the_bound():
+    """The refusal must not become its own loop hazard, and it must be nameable.
+
+    Same shape and same K as the nudge limit: MAX_CONSECUTIVE_REJECTED_TURNS
+    turns in a row whose calls were ALL rejected end the episode under
+    `piv_rejected_call_limit` — a name that separates "kept emitting broken
+    calls" from "stopped calling tools" (`piv_no_tool_call_limit`) and from
+    "looping at the completion cap" (`piv_truncation_limit`). One well-formed
+    call in between clears the run, so a model that recovers is never cut
+    short, and a MIXED turn is not a rejected turn at all.
+    """
+    from types import SimpleNamespace
+
+    problems = []
+    results, client, raised = run([broken("b1"), broken("b2"), broken("b3"), write(), submit()])
+    if raised is not None:
+        problems.append(f"the rejected-call limit raised {type(raised).__name__}: {raised}")
+    else:
+        out = one(results)
+        metrics = out.get("metrics") or {}
+        if client.turn != env_mod.MAX_CONSECUTIVE_REJECTED_TURNS:
+            problems.append(f"the model was asked {client.turn} times, expected "
+                            f"{env_mod.MAX_CONSECUTIVE_REJECTED_TURNS}")
+        if out.get("stop_condition") != "piv_rejected_call_limit":
+            problems.append(f"stop_condition {out.get('stop_condition')!r}")
+        if metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT) != 1.0:
+            problems.append(f"piv/rejected_call_limit {metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT)}")
+        if metrics.get(env_mod.METRIC_REJECTED_CALLS) != float(env_mod.MAX_CONSECUTIVE_REJECTED_TURNS):
+            problems.append(f"piv/rejected_calls {metrics.get(env_mod.METRIC_REJECTED_CALLS)}")
+        for other in (env_mod.METRIC_NO_TOOL_LIMIT, env_mod.METRIC_TRUNCATION_LIMIT,
+                      env_mod.METRIC_SUBMITTED, env_mod.METRIC_NO_TOOL_TURNS):
+            if metrics.get(other) != 0.0:
+                problems.append(f"{other} {metrics.get(other)} on a rejected-call ending")
+        if out.get("reward") != 0.0 or out.get("error") is not None:
+            problems.append(f"reward {out.get('reward')} error {out.get('error')}; expected a counted 0.0")
+        if metrics.get("piv/evaluator_failed") != 0.0 or metrics.get("piv/training_eligible") != 1.0:
+            problems.append("the limit was treated as a failure rather than an agent outcome")
+        if metrics.get("piv/protocol_failed") != 0.0:
+            problems.append("a rejected call was scored as a terminal protocol violation")
+        meta = results["metadata"]
+        if meta.get("piv_status") != "VALID" or meta.get("piv_quarantined_count") != 0:
+            problems.append(f"quarantined: status={meta.get('piv_status')}")
+
+    turns = []
+    for _ in range(3):
+        turns += [broken("x1"), broken("x2"), calls(("g", "list_files", {}))]
+    turns += [write(), submit()]
+    results, client, raised = run(turns)
+    if raised is not None:
+        problems.append(f"the recovery route raised {type(raised).__name__}: {raised}")
+    else:
+        out = one(results)
+        metrics = out.get("metrics") or {}
+        if out.get("stop_condition") != "piv_submitted" or out.get("reward") != 1.0:
+            problems.append(f"a well-formed call did not clear the rejected run: "
+                            f"{out.get('stop_condition')!r} reward {out.get('reward')}")
+        if metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT) != 0.0:
+            problems.append("the rejected-call limit fired on a route that recovered")
+        if metrics.get(env_mod.METRIC_REJECTED_CALLS) != 6.0:
+            problems.append(f"piv/rejected_calls {metrics.get(env_mod.METRIC_REJECTED_CALLS)}, expected 6")
+        if client.turn != len(turns):
+            problems.append(f"the model was asked {client.turn} times, expected {len(turns)}")
+
+    env, state, workspace = fresh()
+    bad = SimpleNamespace(id="m1", name=env_mod.WRITE_TOOL, arguments="")
+    good = SimpleNamespace(id="m2", name="list_files", arguments="{}")
+    got = asyncio.run(env.env_response(
+        [SimpleNamespace(role="assistant", content="", tool_calls=[bad, good])], state))
+    if [getattr(m, "tool_call_id", None) for m in got] != ["m1", "m2"]:
+        problems.append(f"a mixed turn is not answered one reply per call in call order: "
+                        f"{[getattr(m, 'tool_call_id', None) for m in got]}")
+    elif replies(got)[0] != env_mod.PUBLIC_TOOL_ERROR:
+        problems.append("the broken call in a mixed turn was not refused")
+    elif env_mod.LEDGER not in str(replies(got)[1]):
+        problems.append(f"the well-formed call in a mixed turn did not run: {replies(got)[1]!r}")
+    if bad.arguments != env_mod.MALFORMED_CALL_REPLAY_ARGUMENTS:
+        problems.append("the broken call in a mixed turn was not rewritten")
+    if state.get("piv_consecutive_rejected_turns") != 0:
+        problems.append("a mixed turn counted as a rejected turn")
+    if state.get("piv_revision") != 0:
+        problems.append("a mixed turn's rejected write produced a revision")
+    return check("three turns in a row whose calls are all rejected -> piv_rejected_call_limit, counted "
+                 "0.0, never quarantined; a well-formed call clears the run; a mixed turn answers both "
+                 "calls, runs only the good one and does not count as rejected",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
 # 3b. the per-episode output ceiling, enforced on the REQUEST
 # --------------------------------------------------------------------------
 
@@ -1789,7 +2026,7 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
 #: names/descriptions/schemas the framework generates, the observation modes
 #: and envelope, the phase machine, the stop conditions in priority order, the
 #: budgets and the pending-call rule, and every public nudge or refusal.
-EPISODE_CONTRACT_DIGEST = "b16d726ac2637486c549c3a2e94ede4da21cccc4be4e9410cb6e081c875ccba8"
+EPISODE_CONTRACT_DIGEST = "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866"
 
 
 def test_the_episode_contract_digest_is_pinned():
@@ -1806,7 +2043,7 @@ def test_the_episode_contract_digest_is_pinned():
     if env_mod.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
         problems.append(f"the episode contract changed: bump EPISODE_CONTRACT_VERSION and re-pin "
                         f"(now {env_mod.episode_contract_digest()}, pinned {EPISODE_CONTRACT_DIGEST})")
-    if env_mod.EPISODE_CONTRACT_VERSION != 3:
+    if env_mod.EPISODE_CONTRACT_VERSION != 4:
         problems.append(f"EPISODE_CONTRACT_VERSION is {env_mod.EPISODE_CONTRACT_VERSION}; re-pin the digest")
     view = env_mod.episode_contract()
     if view.get("system_prompt") != env_mod.SYSTEM_PROMPT:
@@ -2407,7 +2644,8 @@ MODEL_FACING_FUNCTIONS = ("_clip", "_clip_bytes", "list_files", "read_file", "_w
 #: shape as the one the hoist closed: a reply written inline in
 #: `_no_tool_call_turn` or `_frozen_turn` would not be in the digest and
 #: nothing would say so.
-MODEL_FACING_METHODS = ("call_tool", "_answer_turn", "_frozen_turn", "_no_tool_call_turn")
+MODEL_FACING_METHODS = ("call_tool", "_answer_turn", "_frozen_turn", "_no_tool_call_turn",
+                        "_record_malformed_calls")
 ALLOWED_LITERALS = {
     "",                       # empty tail / empty accumulator
     "\n",                     # the join between lines of one reply
@@ -2429,6 +2667,7 @@ ALLOWED_LITERALS = {
     "piv_complete_reads", "piv_observation_bytes", "piv_observation_refused",
     "piv_calls_refused_after_submit", "piv_turns_rejected", "piv_no_tool_turns",
     "piv_consecutive_no_tool_turns", "piv_consecutive_truncated_turns",
+    "piv_rejected_calls", "piv_consecutive_rejected_turns", "piv_rejected_call_limit_reached",
     "piv_no_tool_truncated_turns", "piv_truncation_limit_reached", "piv_no_tool_limit_reached",
     "piv_protocol_failure", "piv_committed", "piv_delivery", "piv_score", "piv_result",
     "final_env_response", "workspace",
@@ -3103,6 +3342,9 @@ TESTS = [
     test_three_consecutive_no_tool_turns_end_the_episode,
     test_a_tool_call_resets_the_no_tool_run,
     test_an_unbroken_run_of_truncated_turns_ends_under_the_truncation_limit,
+    test_a_malformed_call_is_rejected_rewritten_and_audited,
+    test_a_malformed_call_does_not_cost_the_episode,
+    test_repeated_malformed_calls_end_the_episode_at_the_bound,
     test_two_per_turn_caps_are_measured_at_exactly_the_same_output_budget,
     test_a_submit_on_the_exhausting_turn_is_still_the_agent_ending_the_episode,
     test_pending_calls_on_the_exhausting_turn_run_and_never_buy_another_request,
