@@ -9,7 +9,9 @@ registry entry rather than over Alpine by name.
 
 What is checked per entry lives in `tests/world_checks.py` — the world
 schema, derivation and the contract door, the golden at 1.0 and complete,
-the untouched original below 1.0 with nothing resolved, the MERGED trap the
+the untouched original below 1.0 with nothing resolved — or, for a task that
+plants nothing, already worth 1.0 and complete with no item state at all —
+the MERGED trap the
 scorer's `shapes & _txn_shape(t)` predicate leaves open, public-only
 identifiability under the shared repair key, leaked private ids, derived
 numbers typed into the authored source, generator name-pool collisions and
@@ -87,7 +89,8 @@ def test_every_registered_world_and_task():
     for warning in warned:
         print(f"      {warning}")
     return check(f"every world/task in REGISTRY ({len(REGISTRY)}) derives, scores its golden 1.0, leaves its original "
-                 f"unresolved, reads back uniquely as the planted repair, and leaks no id or derived literal",
+                 f"unresolved (or, where nothing is planted, already worth 1.0 and complete), reads back uniquely "
+                 f"as the planted repair, and leaks no id or derived literal",
                  not problems, "\n".join(problems))
 
 

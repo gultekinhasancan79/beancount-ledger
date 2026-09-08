@@ -85,8 +85,18 @@ def scorer_facts(env, golden: str) -> dict:
     k = len(env.contract.planted)
     gold = RLA.score_chain(env.contract, golden, 1)
     base = RLA.score_chain(env.contract, original, 2)
+    # With k=0 (the clean-month assurance pack) the untouched-original claim
+    # INVERTS: the opening ledger is not a starting point that leaves items
+    # unresolved, it IS the deliverable. `untouched_as_expected` is the claim
+    # actually made for this task, and it is what `ok` is computed from;
+    # `untouched_unresolved` keeps its old meaning so a receipt archived
+    # before this pack existed still reads the same way.
+    unresolved = (base.get("errors_resolved") == 0.0 and base["outcome"] == "delivered")
+    as_expected = (base["reward"] == 1.0 and bool(base.get("complete")) and base["outcome"] == "delivered") if k == 0         else unresolved
     return {"golden_score": gold["reward"], "golden_complete": bool(gold.get("complete")),
-            "untouched_score": base["reward"], "untouched_unresolved": (base.get("errors_resolved") == 0.0 and base["outcome"] == "delivered"),
+            "untouched_score": base["reward"], "untouched_unresolved": unresolved,
+            "untouched_as_expected": as_expected,
+            "untouched_claim": "already the deliverable (nothing planted)" if k == 0 else "unresolved",
             "planted": k, "targets": list(env.contract.scored_accounts)}
 
 
@@ -127,7 +137,7 @@ def generated_receipt(args_tuple) -> dict:
     rec["exploit_corpus"] = exploit_rec or {"exercised": False, "note": "the nightly corpus runs on the structural sentinels and a rotating shard"}
     rec["secs"] = round(time.time() - t0, 1)
     rec["ok"] = bool(all(rec["gates"].values()) and rec.get("serving_door", {}).get("admitted") and rec["serving_door"].get("id_matches_minted")
-                     and rec.get("scorer", {}).get("golden_score") == 1.0 and rec.get("scorer", {}).get("untouched_unresolved")
+                     and rec.get("scorer", {}).get("golden_score") == 1.0 and rec.get("scorer", {}).get("untouched_as_expected")
                      and (not rec["reward_lattice"]["audited"] or (rec["reward_lattice"]["monotonicity_violations"] == 0
                           and rec["reward_lattice"]["penalty_activations"] == 0 and rec["reward_lattice"]["unexpected_states"] == 0
                           and rec["reward_lattice"]["loop_mismatches"] == 0)))
@@ -145,7 +155,7 @@ def manual_receipt(task_id: str, lattice_rec: dict | None) -> dict:
            "period": task.period.label, "verification": {"problems": [str(p)[:200] for p in problems], "warnings": len(warnings)},
            "public_evidence_sha256": public_evidence_hash(env), "scorer": scorer_facts(env, golden),
            "reward_lattice": lattice_facts(lattice_rec), "secs": round(time.time() - t0, 1)}
-    rec["ok"] = bool(not problems and rec["scorer"]["golden_score"] == 1.0 and rec["scorer"]["untouched_unresolved"]
+    rec["ok"] = bool(not problems and rec["scorer"]["golden_score"] == 1.0 and rec["scorer"]["untouched_as_expected"]
                      and (not rec["reward_lattice"]["audited"] or (rec["reward_lattice"]["monotonicity_violations"] == 0
                           and rec["reward_lattice"]["penalty_activations"] == 0 and rec["reward_lattice"]["unexpected_states"] == 0)))
     return rec
@@ -214,6 +224,8 @@ def main() -> int:
         summary["exploit_exercised"] = sum(1 for r in rows if r.get("exploit_corpus", {}).get("exercised"))
     summary["golden_1_0"] = sum(1 for r in rows if r.get("scorer", {}).get("golden_score") == 1.0)
     summary["untouched_unresolved"] = sum(1 for r in rows if r.get("scorer", {}).get("untouched_unresolved"))
+    summary["untouched_as_claimed"] = sum(1 for r in rows if r.get("scorer", {}).get("untouched_as_expected"))
+    summary["clean_months"] = sorted(r["selector"] for r in rows if r.get("scorer", {}).get("planted") == 0)
     summary["lattice_audited_clean"] = sum(1 for r in rows if r.get("reward_lattice", {}).get("audited")
                                            and r["reward_lattice"]["monotonicity_violations"] == 0 and r["reward_lattice"]["penalty_activations"] == 0
                                            and r["reward_lattice"]["unexpected_states"] == 0)

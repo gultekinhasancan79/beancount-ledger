@@ -35,6 +35,7 @@ from decimal import Decimal as D
 
 from ..project import AlterRecognition, DuplicateRecognition, MutationPlan, OmitRecognition, Period
 from ..derive import TaskSpec
+from ._assurance import ASSURANCE_PROMPT
 from ..schema import (
     Account,
     AccountKind as K,
@@ -823,6 +824,63 @@ MONTH_END_CLOSE_SILVERBROOK = TaskSpec(
     )),
 )
 
+# --------------------------------------------------------------------------
+# THE ASSURANCE PAIR
+#
+# The Maple pair's counterpart on a different company and a different month,
+# under the same neutral instruction (`_assurance.ASSURANCE_PROMPT`).
+# `clean_month_silverbrook` plants NOTHING: the correct deliverable is this
+# ledger unchanged, written back and submitted. `single_error_silverbrook`
+# plants exactly one discrepancy in the same November, of a different kind
+# from Maple's - a supplier payment keyed with two digits transposed rather
+# than an entry missing altogether - so the pack covers both repair shapes.
+#
+# November leaves four legitimate features standing, each supported by the
+# public files and each an invitation to an unnecessary "correction":
+#
+#   * PI-5210 from Deverell Dental Products, received 18 November on net 30
+#     terms, is open at the cut-off and correctly unpaid. The ledger carries
+#     it against Liabilities:AP, vendors.csv states the terms that put it
+#     outside the month, and no statement row settles it. Paying it or
+#     writing it off damages the payables.
+#   * The commercial package premium paid on 14 November sits in
+#     Assets:Prepayments and not in an expense: check 3058 to Larkin Mutual
+#     Insurance is on the statement for 18 November, vendors.csv gives the
+#     insurer Assets:Prepayments as its default account, and the prepayments
+#     section of the policy makes a premium for December cover an asset in
+#     November.
+#   * Two bank charges are already booked to Expenses:BankFees at exactly
+#     the statement's figures - the positive pay service fee on 7 November
+#     and the monthly service charge and remote deposit fee on 28 November.
+#   * Two timing items sit in the ledger and not on the statement: the net
+#     pay check 3063 written on 24 November and the customer check 10388
+#     taken on 28 November, both of which clear on 2 December.
+#
+# The single-error counterpart leaves all four alone.
+# --------------------------------------------------------------------------
+
+CLEAN_MONTH_SILVERBROOK = TaskSpec(
+    id="clean_month_silverbrook",
+    type="bank_reconciliation",
+    prompt=ASSURANCE_PROMPT,
+    period=PERIOD,
+    plan=MutationPlan(()),
+)
+
+SINGLE_ERROR_SILVERBROOK = TaskSpec(
+    id="single_error_silverbrook",
+    type="bank_reconciliation",
+    prompt=ASSURANCE_PROMPT,
+    period=PERIOD,
+    plan=MutationPlan((
+        AlterRecognition("mis_keyed_deverell_payment", "rec:pi-5196-payment", "transpose_digits", 1,
+                         "the ledger carries the 7 November ACH payment to Deverell Dental Products for PI-5196 at "
+                         "5367.25 while the statement row of the same date, payee and reference shows 5637.25; the "
+                         "payment runs section re-posts the entry with the statement's amount on its original date, "
+                         "against Liabilities:AP"),
+    )),
+)
+
 TASKS = {task.id: task for task in (
     AR_COLLECTIONS_001,
     BANK_RECON_SILVERBROOK,
@@ -834,4 +892,6 @@ TASKS = {task.id: task for task in (
     FIXED_ASSETS_SILVERBROOK,
     INTERCOMPANY_TRANSFERS_SILVERBROOK,
     MONTH_END_CLOSE_SILVERBROOK,
+    CLEAN_MONTH_SILVERBROOK,
+    SINGLE_ERROR_SILVERBROOK,
 )}
