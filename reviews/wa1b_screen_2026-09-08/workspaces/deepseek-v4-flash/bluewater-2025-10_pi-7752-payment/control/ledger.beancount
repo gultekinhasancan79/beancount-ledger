@@ -1,0 +1,195 @@
+option "title" "Bluewater Marine Supply - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Due-From-Bluewater-Svc          USD
+2025-01-01 open Assets:Equipment                       USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Insurance                     USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Expenses:Repairs                       USD
+2025-01-01 open Expenses:Salaries                      USD
+2025-01-01 open Expenses:Software                      USD
+2025-01-01 open Expenses:Telecom                       USD
+2025-01-01 open Expenses:Travel                        USD
+2025-01-01 open Expenses:Vehicle                       USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:PayrollTax                 USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-10-01 * "Opening balance" "Carried forward from September close"
+  Assets:Bank:Checking                         47029.60 USD
+  Assets:AR                                    12706.35 USD
+  Assets:Inventory                             41230.00 USD
+  Assets:Equipment                             18650.00 USD
+  Assets:Due-From-Bluewater-Svc                 9500.00 USD
+  Liabilities:AP                              -12140.85 USD
+  Liabilities:SalesTax-Payable                 -2318.46 USD
+  Liabilities:PayrollTax                       -1476.30 USD
+  Equity:Opening                             -113180.34 USD
+
+2025-10-02 * "Quayside Holdings" "October rent, store, warehouse and dock frontage, rent review from 1 October"
+  Expenses:Rent                                 4275.00 USD
+  Assets:Bank:Checking                         -4275.00 USD
+
+2025-10-03 * "Seaforth Cordage and Rigging" "Payment of purchase invoice PI-7752, check 1145"
+  Liabilities:AP                                4618.30 USD
+  Assets:Bank:Checking                         -4618.30 USD
+
+2025-10-06 * "Petrel Paint and Coatings" "Purchase invoice PI-7766 received, antifouling and topside paint"
+  Assets:Inventory                              2475.40 USD
+  Liabilities:AP                               -2475.40 USD
+
+2025-10-06 * "Bluewater Marine Services LLC" "Intercompany funding to Bluewater Marine Services LLC, check 2044"
+  Assets:Due-From-Bluewater-Svc                 2400.00 USD
+  Assets:Bank:Checking                         -2400.00 USD
+
+2025-10-06 * "Helmsight Software" "Chart and inventory software subscription, October, two seats added"
+  Expenses:Software                              236.40 USD
+  Assets:Bank:Checking                          -236.40 USD
+
+2025-10-07 * "Tidewater Boatworks" "Sale SI-2211, anchor rode, fenders and dock lines"
+  Assets:AR                                     4225.77 USD
+  Income:Sales                                 -3912.75 USD
+  Liabilities:SalesTax-Payable                  -313.02 USD
+
+2025-10-07 * "Tidewater Boatworks" "Cost of goods sold on SI-2211"
+  Expenses:COGS                                 2540.00 USD
+  Assets:Inventory                             -2540.00 USD
+
+2025-10-08 * "Nadia Okonkwo" "Expense claim, September customer visits, mileage and ferry fares, check 2045"
+  Expenses:Travel                                412.36 USD
+  Assets:Bank:Checking                          -412.36 USD
+
+2025-10-09 * "Kittiwake Charters" "Customer payment for SI-2198"
+  Assets:Bank:Checking                          6069.60 USD
+  Assets:AR                                    -6069.60 USD
+
+2025-10-10 * "Gullwing Dock Equipment" "Electric pallet stacker for the warehouse, check 2046"
+  Assets:Equipment                              3685.40 USD
+  Assets:Bank:Checking                         -3685.40 USD
+
+2025-10-10 * "Shearwater Telecom" "Store and warehouse phone and internet, October"
+  Expenses:Telecom                               312.75 USD
+  Assets:Bank:Checking                          -312.75 USD
+
+2025-10-13 * "Pelican Point Bank" "Account analysis fee for September"
+  Expenses:BankFees                               35.00 USD
+  Assets:Bank:Checking                           -35.00 USD
+
+2025-10-13 * "Wavecrest Marine Fuel" "Fuel card, delivery van"
+  Expenses:Vehicle                               173.62 USD
+  Assets:Bank:Checking                          -173.62 USD
+
+2025-10-14 * "State Department of Revenue" "September sales tax return, check 1146"
+  Liabilities:SalesTax-Payable                  2318.46 USD
+  Assets:Bank:Checking                         -2318.46 USD
+
+2025-10-15 * "Lighthouse Mutual Insurance" "November hull and liability premium paid in advance, check 2047"
+  Assets:Prepayments                            1962.50 USD
+  Assets:Bank:Checking                         -1962.50 USD
+
+2025-10-15 * "Northstar Marine Electronics" "Purchase invoice PI-7769 received, chartplotters and transducers"
+  Assets:Inventory                              3146.90 USD
+  Liabilities:AP                               -3146.90 USD
+
+2025-10-16 * "Dockside Office Supply" "Printer toner and invoice forms"
+  Expenses:Office                                148.29 USD
+  Assets:Bank:Checking                          -148.29 USD
+
+2025-10-16 * "Kittiwake Charters" "Cost of goods sold on SI-2216"
+  Expenses:COGS                                 4690.00 USD
+  Assets:Inventory                             -4690.00 USD
+
+2025-10-16 * "Tidewater Boatworks" "Customer payment for SI-2206"
+  Assets:Bank:Checking                          1370.67 USD
+  Assets:AR                                    -1370.67 USD
+
+2025-10-16 * "Kittiwake Charters" "Sale SI-2216, outboard spares and safety gear for the charter fleet"
+  Assets:AR                                     7866.72 USD
+  Income:Sales                                 -7284.00 USD
+  Liabilities:SalesTax-Payable                  -582.72 USD
+
+2025-10-17 * "Callum Ferrier" "Expense claim, rigging course travel and lodging, check 2048"
+  Expenses:Travel                                287.90 USD
+  Assets:Bank:Checking                          -287.90 USD
+
+2025-10-17 * "Petrel Paint and Coatings" "Payment of purchase invoice PI-7766"
+  Liabilities:AP                                2475.40 USD
+  Assets:Bank:Checking                         -2475.40 USD
+
+2025-10-20 * "Cormorant Engine Repair" "Test tank pump repaired, outboard service bay"
+  Expenses:Repairs                               264.85 USD
+  Assets:Bank:Checking                          -264.85 USD
+
+2025-10-20 * "Osprey Cove Marina" "Customer check 5528 received for SI-2203"
+  Assets:Bank:Checking                          5266.08 USD
+  Assets:AR                                    -5266.08 USD
+
+2025-10-21 * "Northstar Marine Electronics" "Payment of purchase invoice PI-7758"
+  Liabilities:AP                                2689.45 USD
+  Assets:Bank:Checking                         -2689.45 USD
+
+2025-10-21 * "Bluewater Marine Services LLC" "Intercompany funding to Bluewater Marine Services LLC, check 2049"
+  Assets:Due-From-Bluewater-Svc                 3500.00 USD
+  Assets:Bank:Checking                         -3500.00 USD
+
+2025-10-22 * "Seaforth Cordage and Rigging" "Purchase invoice PI-7773 received, braided dock line and mooring pennants"
+  Assets:Inventory                              2914.60 USD
+  Liabilities:AP                               -2914.60 USD
+
+2025-10-22 * "Puffin Inn and Suites" "Two nights lodging, regional marine trade show"
+  Expenses:Travel                                486.15 USD
+  Assets:Bank:Checking                          -486.15 USD
+
+2025-10-24 * "Osprey Cove Marina" "Cost of goods sold on SI-2219"
+  Expenses:COGS                                 1680.00 USD
+  Assets:Inventory                             -1680.00 USD
+
+2025-10-24 * "Osprey Cove Marina" "Sale SI-2219, antifouling paint and anodes for the winter haul-out"
+  Assets:AR                                     2859.84 USD
+  Income:Sales                                 -2648.00 USD
+  Liabilities:SalesTax-Payable                  -211.84 USD
+
+2025-10-27 * "Tidewater Boatworks" "Customer payment settling SI-2211"
+  Assets:Bank:Checking                          4225.77 USD
+  Assets:AR                                    -4225.77 USD
+
+2025-10-27 * "Marcus Pellerin" "October net pay, check 2050"
+  Expenses:Salaries                             2984.15 USD
+  Assets:Bank:Checking                         -2984.15 USD
+
+2025-10-27 * "Ingrid Solvang" "October net pay, check 2051"
+  Expenses:Salaries                             2647.80 USD
+  Assets:Bank:Checking                         -2647.80 USD
+
+2025-10-27 * "Theo Barrowman" "October net pay, check 2052"
+  Expenses:Salaries                             2312.55 USD
+  Assets:Bank:Checking                         -2312.55 USD
+
+2025-10-28 * "Seaforth Cordage and Rigging" "Payment of purchase invoice PI-7761, check 1147"
+  Liabilities:AP                                3377.85 USD
+  Assets:Bank:Checking                         -3377.85 USD
+
+2025-10-29 * "Federal Revenue Service" "September payroll withholdings deposit, check 2053"
+  Liabilities:PayrollTax                        1476.30 USD
+  Assets:Bank:Checking                         -1476.30 USD
+
+2025-10-30 * "Kittiwake Charters" "Partial payment against SI-2216"
+  Assets:Bank:Checking                          3950.00 USD
+  Assets:AR                                    -3950.00 USD
+
+2025-10-30 * "Osprey Cove Marina" "Customer check 5531 received for SI-2219"
+  Assets:Bank:Checking                          2859.84 USD
+  Assets:AR                                    -2859.84 USD
+
+2025-10-31 * "Pelican Point Bank" "Monthly service charge and check image fees"
+  Expenses:BankFees                               54.00 USD
+  Assets:Bank:Checking                           -54.00 USD

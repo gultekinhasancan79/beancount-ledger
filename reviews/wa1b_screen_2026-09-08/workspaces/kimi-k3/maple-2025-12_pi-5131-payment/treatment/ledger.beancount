@@ -1,0 +1,204 @@
+option "title" "Maple Street Veterinary Clinic - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Due-From-Maple-Equine           USD
+2025-01-01 open Assets:Equipment                       USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Insurance                     USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Expenses:Repairs                       USD
+2025-01-01 open Expenses:Salaries                      USD
+2025-01-01 open Expenses:Software                      USD
+2025-01-01 open Expenses:Telecom                       USD
+2025-01-01 open Expenses:Travel                        USD
+2025-01-01 open Expenses:Vehicle                       USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:PayrollTax                 USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-12-01 * "Kilbride Property Holdings" "December rent and 2025 common-area charge true-up, check 4173"
+  Expenses:Rent                                 3187.25 USD
+  Assets:Bank:Checking                         -3187.25 USD
+
+2025-12-01 * "Opening balance" "Carried forward from November close"
+  Assets:Bank:Checking                         66713.25 USD
+  Assets:AR                                     4429.80 USD
+  Assets:Inventory                             21640.00 USD
+  Assets:Equipment                             48750.00 USD
+  Assets:Due-From-Maple-Equine                  6000.00 USD
+  Liabilities:AP                               -4228.95 USD
+  Liabilities:SalesTax-Payable                  -289.80 USD
+  Liabilities:PayrollTax                       -2214.36 USD
+  Equity:Opening                             -140799.94 USD
+
+2025-12-02 * "Hollybrook Boarding Kennels" "Cost of drugs and consumables on SI-7318"
+  Expenses:COGS                                  610.00 USD
+  Assets:Inventory                              -610.00 USD
+
+2025-12-02 * "Cloudpaw Practice Software" "Practice management software subscription, December, third user added"
+  Expenses:Software                              214.20 USD
+  Assets:Bank:Checking                          -214.20 USD
+
+2025-12-02 * "Hollybrook Boarding Kennels" "Sale SI-7318, kennel vaccination round and flea treatments"
+  Assets:AR                                     2075.80 USD
+  Income:Sales                                 -1940.00 USD
+  Liabilities:SalesTax-Payable                  -135.80 USD
+
+2025-12-03 * "Tallgrass Equestrian Centre" "Client payment settling SI-7311"
+  Assets:Bank:Checking                          3402.60 USD
+  Assets:AR                                    -3402.60 USD
+
+2025-12-03 * "Maple Street Equine Services LLC" "Working capital advance to Maple Street Equine Services LLC, check 6208"
+  Assets:Due-From-Maple-Equine                  5000.00 USD
+  Assets:Bank:Checking                         -5000.00 USD
+
+2025-12-04 * "Fernleigh Laboratory Supplies" "Purchase invoice PI-5145 received, biochemistry reagents and blood tubes"
+  Assets:Inventory                              2264.75 USD
+  Liabilities:AP                               -2264.75 USD
+
+2025-12-04 * "Ashgrove Autoclave Repairs" "Autoclave annual service and pressure test"
+  Expenses:Repairs                               386.75 USD
+  Assets:Bank:Checking                          -386.75 USD
+
+2025-12-05 * "Tallgrass Equestrian Centre" "Sale SI-7319, colic surgery and post-operative care"
+  Assets:AR                                     4879.20 USD
+  Income:Sales                                 -4560.00 USD
+  Liabilities:SalesTax-Payable                  -319.20 USD
+
+2025-12-05 * "Tallgrass Equestrian Centre" "Cost of drugs and consumables on SI-7319"
+  Expenses:COGS                                 1480.00 USD
+  Assets:Inventory                             -1480.00 USD
+
+2025-12-05 * "Summerlee Fuel Cards" "Fuel for the practice vehicle"
+  Expenses:Vehicle                               173.28 USD
+  Assets:Bank:Checking                          -173.28 USD
+
+2025-12-08 * "Orbitline Telecom" "Clinic phone lines and internet, December"
+  Expenses:Telecom                               151.09 USD
+  Assets:Bank:Checking                          -151.09 USD
+
+2025-12-09 * "Hamish Broderick" "Expense claim, relief cover mileage for November farm visits, check 6209"
+  Expenses:Travel                                412.85 USD
+  Assets:Bank:Checking                          -412.85 USD
+
+2025-12-09 * "Bramblewood Animal Rescue" "Client check 2218 settling SI-7313"
+  Assets:Bank:Checking                          1027.20 USD
+  Assets:AR                                    -1027.20 USD
+
+2025-12-10 * "Corbett Veterinary Supplies" "Purchase invoice PI-5142 received, vaccines, anaesthetics and surgical consumables"
+  Assets:Inventory                              3118.72 USD
+  Liabilities:AP                               -3118.72 USD
+
+2025-12-10 * "Lumenvet Imaging Systems" "Dental radiography sensor and generator, check 6210"
+  Assets:Equipment                              7850.00 USD
+  Assets:Bank:Checking                         -7850.00 USD
+
+2025-12-11 * "Corbett Veterinary Supplies" "Payment of purchase invoice PI-5131"
+  Liabilities:AP                                2486.35 USD
+  Assets:Bank:Checking                         -2486.35 USD
+
+2025-12-11 * "Paperbark Stationery Co" "Vaccination record cards and printer toner"
+  Expenses:Office                                 87.42 USD
+  Assets:Bank:Checking                           -87.42 USD
+
+2025-12-12 * "Wattle Creek Bank" "Returned item fee"
+  Expenses:BankFees                               35.00 USD
+  Assets:Bank:Checking                           -35.00 USD
+
+2025-12-15 * "Federal Revenue Service" "Remittance of November payroll withholdings, check 6211"
+  Liabilities:PayrollTax                        2214.36 USD
+  Assets:Bank:Checking                         -2214.36 USD
+
+2025-12-15 * "Shieldstone Mutual Insurance" "Practice insurance premium for January at the renewal rate, check 4174"
+  Assets:Prepayments                             648.90 USD
+  Assets:Bank:Checking                          -648.90 USD
+
+2025-12-16 * "Ingrid Sollund" "Expense claim, practice managers conference travel and hotel, check 6212"
+  Expenses:Travel                                736.40 USD
+  Assets:Bank:Checking                          -736.40 USD
+
+2025-12-17 * "Bramblewood Animal Rescue" "Sale SI-7320, neutering clinic and microchipping"
+  Assets:AR                                     1353.55 USD
+  Income:Sales                                 -1265.00 USD
+  Liabilities:SalesTax-Payable                   -88.55 USD
+
+2025-12-17 * "Bramblewood Animal Rescue" "Cost of drugs and consumables on SI-7320"
+  Expenses:COGS                                  410.00 USD
+  Assets:Inventory                              -410.00 USD
+
+2025-12-18 * "Fernleigh Laboratory Supplies" "Payment of purchase invoice PI-5145, check 6213"
+  Liabilities:AP                                2264.75 USD
+  Assets:Bank:Checking                         -2264.75 USD
+
+2025-12-18 * "Hollybrook Boarding Kennels" "Sale SI-7321, kennel cough boosters and dental scaling"
+  Assets:AR                                     1690.60 USD
+  Income:Sales                                 -1580.00 USD
+  Liabilities:SalesTax-Payable                  -110.60 USD
+
+2025-12-18 * "Hollybrook Boarding Kennels" "Cost of drugs and consumables on SI-7321"
+  Expenses:COGS                                  495.00 USD
+  Assets:Inventory                              -495.00 USD
+
+2025-12-19 * "Tallgrass Equestrian Centre" "Part payment on account against SI-7319"
+  Assets:Bank:Checking                          2500.00 USD
+  Assets:AR                                    -2500.00 USD
+
+2025-12-19 * "State Revenue Department" "November sales tax return, paid online"
+  Liabilities:SalesTax-Payable                   289.80 USD
+  Assets:Bank:Checking                          -289.80 USD
+
+2025-12-22 * "Hollybrook Boarding Kennels" "Client payment settling SI-7318"
+  Assets:Bank:Checking                          2075.80 USD
+  Assets:AR                                    -2075.80 USD
+
+2025-12-22 * "Summerlee Fuel Cards" "Fuel for the practice vehicle"
+  Expenses:Vehicle                               204.61 USD
+  Assets:Bank:Checking                          -204.61 USD
+
+2025-12-22 * "Fernleigh Laboratory Supplies" "Purchase invoice PI-5148 received, urinalysis strips and culture media"
+  Assets:Inventory                              1917.30 USD
+  Liabilities:AP                               -1917.30 USD
+
+2025-12-23 * "Maple Street Equine Services LLC" "Working capital advance to Maple Street Equine Services LLC, check 6214"
+  Assets:Due-From-Maple-Equine                  4750.00 USD
+  Assets:Bank:Checking                         -4750.00 USD
+
+2025-12-23 * "Corbett Veterinary Supplies" "Payment of purchase invoice PI-5136"
+  Liabilities:AP                                1742.60 USD
+  Assets:Bank:Checking                         -1742.60 USD
+
+2025-12-24 * "Rosalind Achterman" "December net pay, check 6215"
+  Expenses:Salaries                             4917.62 USD
+  Assets:Bank:Checking                         -4917.62 USD
+
+2025-12-24 * "Fiona Tremblay" "December net pay, check 6217"
+  Expenses:Salaries                             2506.31 USD
+  Assets:Bank:Checking                         -2506.31 USD
+
+2025-12-24 * "Marcus Oyelaran" "December net pay, check 6216"
+  Expenses:Salaries                             3188.04 USD
+  Assets:Bank:Checking                         -3188.04 USD
+
+2025-12-29 * "Kilbride Property Holdings" "January rent prepaid at the renewed lease rate, check 4175"
+  Assets:Prepayments                            2935.50 USD
+  Assets:Bank:Checking                         -2935.50 USD
+
+2025-12-30 * "Bramblewood Animal Rescue" "Client payment settling SI-7320"
+  Assets:Bank:Checking                          1353.55 USD
+  Assets:AR                                    -1353.55 USD
+
+2025-12-30 * "Hollybrook Boarding Kennels" "Client check 2287 settling SI-7321"
+  Assets:Bank:Checking                          1690.60 USD
+  Assets:AR                                    -1690.60 USD
+
+2025-12-31 * "Wattle Creek Bank" "Monthly service charge and item fees"
+  Expenses:BankFees                               51.25 USD
+  Assets:Bank:Checking                           -51.25 USD

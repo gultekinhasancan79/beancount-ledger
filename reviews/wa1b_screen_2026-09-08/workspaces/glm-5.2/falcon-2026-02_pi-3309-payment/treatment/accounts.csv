@@ -1,0 +1,22 @@
+account,type,description
+Assets:Bank:Checking,asset,Operating checking account held at Tamarind Valley Bank
+Assets:AR,asset,Surveying fees receivable from clients
+Assets:Inventory,asset,Field consumables held in stores - hubs, lath, rebar caps, flagging, paint
+Assets:Prepayments,asset,Amounts paid in advance of the period they relate to
+Assets:Equipment,asset,Survey instruments and field equipment, capitalised when paid for
+Assets:Due-From-Geomatics,asset,Cash advanced to Falcon Ridge Geomatics LLC, the sister company
+Liabilities:AP,liability,Trade payables to suppliers
+Liabilities:SalesTax-Payable,liability,Sales tax collected from clients and owed to the state
+Liabilities:PayrollTax,liability,Withholdings deducted from pay and owed to the revenue agency
+Income:Sales,income,Surveying fees billed to clients
+Expenses:COGS,expense,Field consumables issued to client jobs
+Expenses:Travel,expense,Crew mileage, lodging and meals on out-of-town jobs, reimbursed on expense claims
+Expenses:FieldSupplies,expense,Small field supplies bought on site by crews, reimbursed on expense claims
+Expenses:Vehicle,expense,Fuel and running costs of the survey trucks
+Expenses:BankFees,expense,Bank service charges and transaction fees
+Expenses:Salaries,expense,Net pay of office and crew staff on salary
+Expenses:Software,expense,CAD and survey software subscriptions
+Expenses:Telecom,expense,Crew mobile phones and data plans
+Expenses:Office,expense,Printing, plan copying and office consumables
+Expenses:Repairs,expense,Instrument calibration, servicing and repairs
+Equity:Opening,equity,Opening balance equity

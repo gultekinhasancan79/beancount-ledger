@@ -1,0 +1,23 @@
+vendor,terms,default_account
+Bramblewood Flour Mills,net 30,Assets:Inventory
+Ashgrove Commercial Properties,due on receipt,Expenses:Rent
+Marisol Fentress,monthly payroll,Expenses:Salaries
+Declan Oyelaran,monthly payroll,Expenses:Salaries
+Teodora Vukovic,monthly payroll,Expenses:Salaries
+Hamish Abernathy,monthly payroll,Expenses:Salaries
+Priya Sundaram,monthly payroll,Expenses:Salaries
+Commonwealth Revenue Service,monthly remittance,Liabilities:PayrollTax
+Fallowfield Dairy Cooperative,net 15,Assets:Inventory
+Tessaly Box and Packaging,net 30,Assets:Inventory
+Kettleworth Bakery Equipment,due on receipt,Assets:Equipment
+Millstone Mechanical Services,card on file,Expenses:Repairs
+Stillwater Mutual Insurance,premium in advance,Assets:Prepayments
+Hawthorn Cafe LLC,intercompany,Assets:Due-From-Hawthorn-Cafe
+Commonwealth Sales Tax Bureau,monthly filing,Liabilities:SalesTax-Payable
+Rosalind Achterberg,expense claim,Expenses:Travel
+Callum Petrakis,expense claim,Expenses:Travel
+Fleetfuel Card Services,card on file,Expenses:Vehicle
+Loafline Software,card on file,Expenses:Software
+Skylark Telecom,card on file,Expenses:Telecom
+Paperbark Office Supply,card on file,Expenses:Office
+Tollgate Travel,card on file,Expenses:Travel

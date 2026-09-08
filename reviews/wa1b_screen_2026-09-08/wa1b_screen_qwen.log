@@ -1,0 +1,18 @@
+14 cases passed adjudication; 14 of the pool are eligible
+SCREEN wa1b/screen-1 subject=qwen3.7-max: 2 cases x 1 replicates on qwen3.7-max; cap 40000/40000, contract v3 b16d726ac263
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [05:50<00:00, 350.93s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [05:50<00:00, 350.93s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [05:50<00:00, 350.93s/it, reward=1]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [04:01<00:00, 241.67s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [04:01<00:00, 241.67s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [04:01<00:00, 241.67s/it, reward=1]
+  [ 1/2] wa1b_bluewater-2025-10_pi-7752-payment#r1    trea=1.0/RESOLVED | cont=1.0/RESOLVED 
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [05:53<00:00, 353.15s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [05:53<00:00, 353.15s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [05:53<00:00, 353.15s/it, reward=1]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:48<00:00, 168.00s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:48<00:00, 168.00s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:48<00:00, 168.00s/it, reward=1]
+  [ 2/2] wa1b_maple-2025-12_pi-5131-payment#r1        cont=1.0/RESOLVED | trea=1.0/RESOLVED 
+
+2 pairs in 19 min -> C:\Users\gulte\AppData\Local\Temp\claude\C--Users-gulte-Desktop-PIV\e5af9fd8-5589-401a-8521-18264e0703e0\scratchpad\wa1b_screen.jsonl
+SCREEN qwen3.7-max: 2/2 complete pairs
+  wa1b_bluewater-2025-10_pi-7752-payment       arms=['treatment', 'control'] rewards=[1.0, 1.0] item=['RESOLVED', 'RESOLVED'] OK
+  wa1b_maple-2025-12_pi-5131-payment           arms=['control', 'treatment'] rewards=[1.0, 1.0] item=['RESOLVED', 'RESOLVED'] OK
+exit=0 at 2026-09-08T12:18:05+03:00

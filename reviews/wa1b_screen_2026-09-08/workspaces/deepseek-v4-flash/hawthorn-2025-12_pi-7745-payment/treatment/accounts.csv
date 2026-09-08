@@ -1,0 +1,22 @@
+account,type,description
+Assets:Bank:Checking,asset,Operating checking account held at Sable River Bank
+Assets:AR,asset,Trade receivables from wholesale customers
+Assets:Inventory,asset,Flour, sugar, dairy, packaging and other ingredients on hand
+Assets:Prepayments,asset,Amounts paid in advance of the period they relate to
+Assets:Equipment,asset,Ovens, mixers and other bakery equipment at cost
+Assets:Due-From-Hawthorn-Cafe,asset,Cash advanced to Hawthorn Cafe LLC, the sister company, repayable on demand
+Liabilities:AP,liability,Trade payables to suppliers
+Liabilities:SalesTax-Payable,liability,Sales tax collected from customers and owed to the state
+Liabilities:PayrollTax,liability,Employee withholdings and employer payroll taxes accrued and not yet remitted
+Income:Sales,income,Revenue from wholesale sales of baked goods
+Expenses:COGS,expense,Cost of ingredients consumed in goods sold
+Expenses:Salaries,expense,Net pay to bakery staff
+Expenses:Rent,expense,Bakery premises rent and lease recharges for the period
+Expenses:BankFees,expense,Bank service charges and transaction fees
+Expenses:Software,expense,Ordering platform and other subscriptions
+Expenses:Telecom,expense,Telephone and internet service
+Expenses:Office,expense,Office supplies and consumables
+Expenses:Travel,expense,Staff travel, mileage, fares and meals on bakery business
+Expenses:Vehicle,expense,Fuel and running costs of the delivery van
+Expenses:Repairs,expense,Servicing, parts and repairs to bakery equipment
+Equity:Opening,equity,Opening balance equity

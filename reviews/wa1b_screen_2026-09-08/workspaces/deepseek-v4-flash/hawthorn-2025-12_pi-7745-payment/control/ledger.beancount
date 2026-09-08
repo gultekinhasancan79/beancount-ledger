@@ -1,0 +1,234 @@
+option "title" "Hawthorn Bakery - FY2025"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Due-From-Hawthorn-Cafe          USD
+2025-01-01 open Assets:Equipment                       USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:Office                        USD
+2025-01-01 open Expenses:Rent                          USD
+2025-01-01 open Expenses:Repairs                       USD
+2025-01-01 open Expenses:Salaries                      USD
+2025-01-01 open Expenses:Software                      USD
+2025-01-01 open Expenses:Telecom                       USD
+2025-01-01 open Expenses:Travel                        USD
+2025-01-01 open Expenses:Vehicle                       USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:PayrollTax                 USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-12-01 * "Ashgrove Commercial Properties" "December rent and common-area heating recharge, check 2078"
+  Expenses:Rent                                 2987.50 USD
+  Assets:Bank:Checking                         -2987.50 USD
+
+2025-12-01 * "Tidewell Coffee Roasters" "Cost of goods sold on SI-4139"
+  Expenses:COGS                                 1838.25 USD
+  Assets:Inventory                             -1838.25 USD
+
+2025-12-01 * "Opening balance" "Carried forward from November close"
+  Assets:Bank:Checking                         39322.89 USD
+  Assets:Equipment                             42800.00 USD
+  Assets:AR                                    16712.90 USD
+  Assets:Inventory                              6840.00 USD
+  Liabilities:AP                              -11302.95 USD
+  Liabilities:SalesTax-Payable                 -1001.18 USD
+  Liabilities:PayrollTax                       -5487.62 USD
+  Equity:Opening                              -87884.04 USD
+
+2025-12-01 * "Tidewell Coffee Roasters" "Sale SI-4139, pastries and loaves delivered 17-30 November"
+  Assets:AR                                     4330.10 USD
+  Income:Sales                                 -4085.00 USD
+  Liabilities:SalesTax-Payable                  -245.10 USD
+
+2025-12-02 * "Loafline Software" "Loafline ordering platform, December subscription with the extra user seat"
+  Expenses:Software                              149.00 USD
+  Assets:Bank:Checking                          -149.00 USD
+
+2025-12-02 * "Tidewell Coffee Roasters" "Customer payment for SI-4127"
+  Assets:Bank:Checking                          4367.40 USD
+  Assets:AR                                    -4367.40 USD
+
+2025-12-03 * "Fleetfuel Card Services" "Delivery van fuel, first half of December"
+  Expenses:Vehicle                               214.60 USD
+  Assets:Bank:Checking                          -214.60 USD
+
+2025-12-04 * "Bramblewood Flour Mills" "Purchase invoice PI-7809 received, bread flour and rye"
+  Assets:Inventory                              4932.15 USD
+  Liabilities:AP                               -4932.15 USD
+
+2025-12-04 * "Wintergreen Hotel Kitchens" "Customer check 5517 for SI-4123"
+  Assets:Bank:Checking                          3218.60 USD
+  Assets:AR                                    -3218.60 USD
+
+2025-12-05 * "Rosalind Achterberg" "Expense claim, November customer visits, mileage and meals, check 3142"
+  Expenses:Travel                                312.45 USD
+  Assets:Bank:Checking                          -312.45 USD
+
+2025-12-05 * "Hawthorn Cafe LLC" "Advance to Hawthorn Cafe LLC, fit-out progress payment, check 3143"
+  Assets:Due-From-Hawthorn-Cafe                 4250.00 USD
+  Assets:Bank:Checking                         -4250.00 USD
+
+2025-12-06 * "Skylark Telecom" "Telephone and internet, December"
+  Expenses:Telecom                               163.42 USD
+  Assets:Bank:Checking                          -163.42 USD
+
+2025-12-08 * "Bramblewood Flour Mills" "Payment of purchase invoice PI-7745"
+  Liabilities:AP                                3864.20 USD
+  Assets:Bank:Checking                         -3864.20 USD
+
+2025-12-08 * "Wintergreen Hotel Kitchens" "Sale SI-4143, banquet breads and pastries delivered 24 November-7 December"
+  Assets:AR                                     3455.60 USD
+  Income:Sales                                 -3260.00 USD
+  Liabilities:SalesTax-Payable                  -195.60 USD
+
+2025-12-08 * "Wintergreen Hotel Kitchens" "Cost of goods sold on SI-4143"
+  Expenses:COGS                                 1467.00 USD
+  Assets:Inventory                             -1467.00 USD
+
+2025-12-08 * "Sable River Bank" "Check printing charge"
+  Expenses:BankFees                               36.80 USD
+  Assets:Bank:Checking                           -36.80 USD
+
+2025-12-09 * "Kettleworth Bakery Equipment" "Spiral mixer, 60 quart, capitalised, check 3144"
+  Assets:Equipment                              6480.00 USD
+  Assets:Bank:Checking                         -6480.00 USD
+
+2025-12-09 * "Fallowfield Dairy Cooperative" "Purchase invoice PI-7816 received, butter, cream and eggs"
+  Assets:Inventory                              1937.45 USD
+  Liabilities:AP                               -1937.45 USD
+
+2025-12-10 * "Fallowfield Dairy Cooperative" "Payment of purchase invoice PI-7793"
+  Liabilities:AP                                1782.60 USD
+  Assets:Bank:Checking                         -1782.60 USD
+
+2025-12-10 * "Paperbark Office Supply" "Printer toner and order pads"
+  Expenses:Office                                 87.36 USD
+  Assets:Bank:Checking                           -87.36 USD
+
+2025-12-11 * "Millstone Mechanical Services" "Deck oven door gasket and burner service"
+  Expenses:Repairs                               486.90 USD
+  Assets:Bank:Checking                          -486.90 USD
+
+2025-12-12 * "Tessaly Box and Packaging" "Purchase invoice PI-7824 received, bread bags and cake boxes"
+  Assets:Inventory                              1296.80 USD
+  Liabilities:AP                               -1296.80 USD
+
+2025-12-12 * "Stillwater Mutual Insurance" "January premium, bakery contents and liability cover, check 3145"
+  Assets:Prepayments                             734.60 USD
+  Assets:Bank:Checking                          -734.60 USD
+
+2025-12-15 * "Tidewell Coffee Roasters" "Sale SI-4146, pastries and loaves delivered 1-14 December"
+  Assets:AR                                     4176.40 USD
+  Income:Sales                                 -3940.00 USD
+  Liabilities:SalesTax-Payable                  -236.40 USD
+
+2025-12-15 * "Commonwealth Revenue Service" "November payroll withholdings, monthly deposit, check 2079"
+  Liabilities:PayrollTax                        5487.62 USD
+  Assets:Bank:Checking                         -5487.62 USD
+
+2025-12-15 * "Tidewell Coffee Roasters" "Cost of goods sold on SI-4146"
+  Expenses:COGS                                 1773.00 USD
+  Assets:Inventory                             -1773.00 USD
+
+2025-12-15 * "Tessaly Box and Packaging" "Payment of purchase invoice PI-7769, check 3146"
+  Liabilities:AP                                1148.25 USD
+  Assets:Bank:Checking                         -1148.25 USD
+
+2025-12-16 * "Tidewell Coffee Roasters" "Customer payment for SI-4139"
+  Assets:Bank:Checking                          4330.10 USD
+  Assets:AR                                    -4330.10 USD
+
+2025-12-16 * "Tollgate Travel" "Rail fare and one night's lodging, regional bakery trade fair"
+  Expenses:Travel                                342.80 USD
+  Assets:Bank:Checking                          -342.80 USD
+
+2025-12-17 * "Fleetfuel Card Services" "Delivery van fuel, second half of December"
+  Expenses:Vehicle                               198.35 USD
+  Assets:Bank:Checking                          -198.35 USD
+
+2025-12-18 * "Bramblewood Flour Mills" "Purchase invoice PI-7838 received, pastry flour, sugar and butter"
+  Assets:Inventory                              3395.60 USD
+  Liabilities:AP                               -3395.60 USD
+
+2025-12-18 * "Wintergreen Hotel Kitchens" "Customer check 5533, part payment against SI-4143"
+  Assets:Bank:Checking                          2000.00 USD
+  Assets:AR                                    -2000.00 USD
+
+2025-12-19 * "Commonwealth Sales Tax Bureau" "November sales tax return, check 3147"
+  Liabilities:SalesTax-Payable                  1001.18 USD
+  Assets:Bank:Checking                         -1001.18 USD
+
+2025-12-19 * "Hawthorn Cafe LLC" "Advance to Hawthorn Cafe LLC, December wages funding, check 3148"
+  Assets:Due-From-Hawthorn-Cafe                 3175.00 USD
+  Assets:Bank:Checking                         -3175.00 USD
+
+2025-12-22 * "Bramblewood Flour Mills" "Payment of purchase invoice PI-7781"
+  Liabilities:AP                                4507.90 USD
+  Assets:Bank:Checking                         -4507.90 USD
+
+2025-12-22 * "Callum Petrakis" "Expense claim, milling trade show travel and lodging, check 3149"
+  Expenses:Travel                                587.30 USD
+  Assets:Bank:Checking                          -587.30 USD
+
+2025-12-23 * "Fennimore Street Grocers" "Customer payment for SI-4131"
+  Assets:Bank:Checking                          9126.90 USD
+  Assets:AR                                    -9126.90 USD
+
+2025-12-23 * "Kettleworth Bakery Equipment" "Proofing cabinet, capitalised, check 3150"
+  Assets:Equipment                              2915.75 USD
+  Assets:Bank:Checking                         -2915.75 USD
+
+2025-12-23 * "Fallowfield Dairy Cooperative" "Purchase invoice PI-7851 received, butter, cream and eggs for the holiday run"
+  Assets:Inventory                              2041.15 USD
+  Liabilities:AP                               -2041.15 USD
+
+2025-12-24 * "Fallowfield Dairy Cooperative" "Payment of purchase invoice PI-7816"
+  Liabilities:AP                                1937.45 USD
+  Assets:Bank:Checking                         -1937.45 USD
+
+2025-12-29 * "Wintergreen Hotel Kitchens" "Customer check 5541 settling SI-4143"
+  Assets:Bank:Checking                          1455.60 USD
+  Assets:AR                                    -1455.60 USD
+
+2025-12-30 * "Fennimore Street Grocers" "Cost of goods sold on SI-4152"
+  Expenses:COGS                                 4173.75 USD
+  Assets:Inventory                             -4173.75 USD
+
+2025-12-30 * "Teodora Vukovic" "December net pay, pastry cook, check 2082"
+  Expenses:Salaries                             2876.45 USD
+  Assets:Bank:Checking                         -2876.45 USD
+
+2025-12-30 * "Hamish Abernathy" "December net pay, delivery driver, check 2083"
+  Expenses:Salaries                             2309.70 USD
+  Assets:Bank:Checking                         -2309.70 USD
+
+2025-12-30 * "Marisol Fentress" "December net pay, head baker, check 2080"
+  Expenses:Salaries                             3587.15 USD
+  Assets:Bank:Checking                         -3587.15 USD
+
+2025-12-30 * "Tidewell Coffee Roasters" "Customer payment for SI-4146"
+  Assets:Bank:Checking                          4176.40 USD
+  Assets:AR                                    -4176.40 USD
+
+2025-12-30 * "Fennimore Street Grocers" "Sale SI-4152, December standing order, bread and morning goods"
+  Assets:AR                                     9831.50 USD
+  Income:Sales                                 -9275.00 USD
+  Liabilities:SalesTax-Payable                  -556.50 USD
+
+2025-12-30 * "Priya Sundaram" "December net pay, counter assistant, check 2084"
+  Expenses:Salaries                             1642.30 USD
+  Assets:Bank:Checking                         -1642.30 USD
+
+2025-12-30 * "Declan Oyelaran" "December net pay, baker, check 2081"
+  Expenses:Salaries                             3064.80 USD
+  Assets:Bank:Checking                         -3064.80 USD
+
+2025-12-31 * "Sable River Bank" "Monthly account service charge"
+  Expenses:BankFees                               47.25 USD
+  Assets:Bank:Checking                           -47.25 USD

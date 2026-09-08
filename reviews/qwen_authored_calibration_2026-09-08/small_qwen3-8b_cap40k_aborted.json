@@ -1,0 +1,61 @@
+{
+ "model": "qwen3-8b",
+ "turns": 25,
+ "tokens": 40000,
+ "per_turn_cap": 40000,
+ "base_url": "https://ws-r76rtaa6sn7jqbcr.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+ "tool_schema_fix": false,
+ "production": true,
+ "rows": [
+  {
+   "selector": "bank_recon_001",
+   "k": 2,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> BadRequestError(\"Error code: 400 - {'error': {'code': 'invalid_parameter_error', 'param': None, 'message': 'Range of max_tokens should be [1, 8192]', 'type': 'invalid_request_error'}, 'id': 'chatcmpl-5f4a7887-a14c-9cc4-bf29-81b60a866c46'}\")",
+   "retired": false,
+   "secs": 1,
+   "attempts": 1
+  },
+  {
+   "selector": "bank_recon_ironwood",
+   "k": 3,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> BadRequestError(\"Error code: 400 - {'error': {'code': 'invalid_parameter_error', 'param': None, 'message': 'Range of max_tokens should be [1, 8192]', 'type': 'invalid_request_error'}, 'id': 'chatcmpl-34af67bc-4bf5-9776-8b78-bb285ea90b16'}\")",
+   "retired": false,
+   "secs": 1,
+   "attempts": 1
+  },
+  {
+   "selector": "bank_recon_bluewater",
+   "k": 3,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> BadRequestError(\"Error code: 400 - {'error': {'code': 'invalid_parameter_error', 'param': None, 'message': 'Range of max_tokens should be [1, 8192]', 'type': 'invalid_request_error'}, 'id': 'chatcmpl-1f8ac3b7-fd84-9a70-b707-16e618ad237e'}\")",
+   "retired": false,
+   "secs": 1,
+   "attempts": 1
+  },
+  {
+   "selector": "bank_recon_silverbrook",
+   "k": 3,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> BadRequestError(\"Error code: 400 - {'error': {'code': 'invalid_parameter_error', 'param': None, 'message': 'Range of max_tokens should be [1, 8192]', 'type': 'invalid_request_error'}, 'id': 'chatcmpl-d54c3f68-85bd-9d71-a2f2-6371bdc848d3'}\")",
+   "retired": false,
+   "secs": 1,
+   "attempts": 1
+  },
+  {
+   "selector": "bank_recon_thistle",
+   "k": 3,
+   "profile": "standard",
+   "reward": null,
+   "quarantined": "ModelError() -> BadRequestError(\"Error code: 400 - {'error': {'code': 'invalid_parameter_error', 'param': None, 'message': 'Range of max_tokens should be [1, 8192]', 'type': 'invalid_request_error'}, 'id': 'chatcmpl-3552ae4b-0077-9a79-b427-96a50ea6ba03'}\")",
+   "retired": false,
+   "secs": 1,
+   "attempts": 1
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+vendor,terms,default_account
+Seaforth Cordage and Rigging,net 30,Assets:Inventory
+Northstar Marine Electronics,net 30,Assets:Inventory
+State Department of Revenue,monthly filing,Liabilities:SalesTax-Payable
+Quayside Holdings,due on receipt,Expenses:Rent
+Petrel Paint and Coatings,net 15,Assets:Inventory
+Marcus Pellerin,monthly payroll,Expenses:Salaries
+Ingrid Solvang,monthly payroll,Expenses:Salaries
+Theo Barrowman,monthly payroll,Expenses:Salaries
+Federal Revenue Service,payroll tax deposit,Liabilities:PayrollTax
+Nadia Okonkwo,expense claim,Expenses:Travel
+Callum Ferrier,expense claim,Expenses:Travel
+Wavecrest Marine Fuel,fuel card,Expenses:Vehicle
+Helmsight Software,card on file,Expenses:Software
+Shearwater Telecom,card on file,Expenses:Telecom
+Dockside Office Supply,card on file,Expenses:Office
+Puffin Inn and Suites,card on file,Expenses:Travel
+Gullwing Dock Equipment,due on delivery,Assets:Equipment
+Cormorant Engine Repair,card on file,Expenses:Repairs
+Bluewater Marine Services LLC,intercompany,Assets:Due-From-Bluewater-Svc
+Lighthouse Mutual Insurance,premium in advance,Assets:Prepayments

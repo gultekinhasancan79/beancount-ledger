@@ -1,0 +1,19 @@
+vendor,terms,default_account
+Corbett Veterinary Supplies,net 30,Assets:Inventory
+Shieldstone Mutual Insurance,due on receipt,Assets:Prepayments
+Kilbride Property Holdings,due on receipt,Expenses:Rent
+Fernleigh Laboratory Supplies,net 15,Assets:Inventory
+Rosalind Achterman,monthly payroll,Expenses:Salaries
+Marcus Oyelaran,monthly payroll,Expenses:Salaries
+Fiona Tremblay,monthly payroll,Expenses:Salaries
+Federal Revenue Service,monthly remittance,Liabilities:PayrollTax
+State Revenue Department,monthly filing,Liabilities:SalesTax-Payable
+Hamish Broderick,expense claim,Expenses:Travel
+Ingrid Sollund,expense claim,Expenses:Travel
+Summerlee Fuel Cards,due on receipt,Expenses:Vehicle
+Cloudpaw Practice Software,due on receipt,Expenses:Software
+Orbitline Telecom,due on receipt,Expenses:Telecom
+Paperbark Stationery Co,due on receipt,Expenses:Office
+Lumenvet Imaging Systems,due on receipt,Assets:Equipment
+Ashgrove Autoclave Repairs,due on receipt,Expenses:Repairs
+Maple Street Equine Services LLC,intercompany,Assets:Due-From-Maple-Equine

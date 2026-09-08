@@ -1,0 +1,23 @@
+account,type,description
+Assets:Bank:Checking,asset,Operating checking account held at Wattle Creek Bank
+Assets:AR,asset,Fees receivable from clients on account
+Assets:Inventory,asset,Drugs, vaccines and surgical consumables held for treatment and dispensing
+Assets:Prepayments,asset,Amounts paid in advance of the period they relate to
+Assets:Equipment,asset,Clinical and surgical equipment at cost
+Assets:Due-From-Maple-Equine,asset,Working capital advanced to Maple Street Equine Services LLC
+Liabilities:AP,liability,Trade payables to suppliers
+Liabilities:SalesTax-Payable,liability,Sales tax collected from clients and owed to the state
+Liabilities:PayrollTax,liability,Employee withholdings owed to the Federal Revenue Service
+Income:Sales,income,Fees for treatments, procedures and dispensed medicines
+Expenses:COGS,expense,Cost of drugs and consumables used on treatments
+Expenses:Office,expense,Reception stationery, record cards and printer consumables
+Expenses:Rent,expense,Clinic premises rent for the period
+Expenses:Insurance,expense,Practice insurance premium for the month of cover
+Expenses:BankFees,expense,Bank service charges and transaction fees
+Expenses:Salaries,expense,Net salaries paid to employees
+Expenses:Travel,expense,Mileage, travel and subsistence reimbursed on expense claims
+Expenses:Vehicle,expense,Fuel and running costs of the practice vehicle
+Expenses:Software,expense,Practice management software subscription
+Expenses:Telecom,expense,Clinic phone lines and internet
+Expenses:Repairs,expense,Servicing and repair of clinical equipment
+Equity:Opening,equity,Opening balance equity

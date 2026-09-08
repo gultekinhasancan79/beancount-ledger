@@ -1,0 +1,23 @@
+account,type,description
+Assets:Bank:Checking,asset,Operating checking account held at Pelican Point Bank
+Assets:AR,asset,Trade receivables from customers
+Assets:Inventory,asset,Chandlery stock held for resale
+Assets:Prepayments,asset,Amounts paid in advance of the period they relate to
+Assets:Equipment,asset,Warehouse and dock equipment at cost
+Assets:Due-From-Bluewater-Svc,asset,Intercompany balance due from Bluewater Marine Services LLC
+Liabilities:AP,liability,Trade payables to suppliers
+Liabilities:SalesTax-Payable,liability,Sales tax collected from customers and owed to the state
+Liabilities:PayrollTax,liability,Tax withheld from wages and owed to the Federal Revenue Service
+Income:Sales,income,Revenue from goods sold
+Expenses:COGS,expense,Cost of goods sold
+Expenses:Salaries,expense,Net wages paid to staff
+Expenses:Rent,expense,Store, warehouse and dock frontage rent for the period
+Expenses:BankFees,expense,Bank service charges and transaction fees
+Expenses:Travel,expense,Staff travel, mileage, ferry fares and lodging
+Expenses:Software,expense,Chart and inventory software subscriptions
+Expenses:Telecom,expense,Store and warehouse phone and internet
+Expenses:Office,expense,Office supplies and printed forms
+Expenses:Repairs,expense,Repairs and servicing of equipment owned
+Expenses:Vehicle,expense,Delivery van fuel and running costs
+Expenses:Insurance,expense,Hull and liability insurance for the period
+Equity:Opening,equity,Opening balance equity
