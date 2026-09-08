@@ -139,8 +139,8 @@ def _tool_defs_with_properties():
 # the stop label and nothing else, so a row could not say what cap produced it —
 # the setting the calibration exists to calibrate was the one field it dropped.
 # `piv_request_max_tokens` is the per-turn cap the environment INTENDED for each
-# turn (already clamped to what was left of the episode ceiling), so a row now
-# carries the wire caps rather than the launcher's claim about them; the
+# turn (already clamped to what was left of the episode ceiling) - the request as
+# built, not an observation of what the provider enforced; the
 # truncation and no-tool counters separate "ran out of room" from "stopped
 # calling tools"; `piv_revision` is how many ledgers the agent actually wrote.
 DIAGNOSTIC_STATE_COLUMNS = [
@@ -181,9 +181,13 @@ def run_one(selector: str, args) -> dict:
             chain = f"artifact unavailable: {type(inner).__name__}"
         secret = os.environ.get(args.key_var, "")
         chain = (chain or str(exc)).replace(secret, "***") if secret else (chain or str(exc))
+        # a route that has been withdrawn answers 404 "unavailable for free": that is a
+        # retirement, not a refusal, and a caller must stop the batch rather than retry
+        retired = ("404" in chain and "unavailable" in chain.lower())
         return {"selector": selector, "k": len(env.contract.planted),
                 "profile": "hard" if selector.endswith(":hard") else "standard",
-                "reward": None, "quarantined": chain[:600], "secs": round(time.time() - t0)}
+                "reward": None, "quarantined": chain[:600], "retired": retired,
+                "secs": round(time.time() - t0)}
     out = results["outputs"][0]
     metrics = out.get("metrics") or {}
     usage = out.get("token_usage") or {}
@@ -192,6 +196,10 @@ def run_one(selector: str, args) -> dict:
             "reward": out.get("reward"), "stop": out.get("stop_condition"), "error": (str(out.get("error"))[:160] if out.get("error") else None),
             "turns": metrics.get("num_turns", len(out.get("trajectory") or [])),
             "output_tokens": usage.get("output_tokens", usage.get("completion_tokens")) or 0,
+            # what a free quota actually debits: prompt tokens summed over every turn
+            # (the context is resent each turn), from verifiers' usage tracker
+            "input_tokens": usage.get("input_tokens", usage.get("prompt_tokens")),
+            "final_input_tokens": usage.get("final_input_tokens"),
             "observation_bytes": out.get("piv_observation_bytes"), "phase": out.get("piv_phase"),
             "contract_digest": getattr(env, "_episode_contract_digest", None), "secs": round(time.time() - t0),
             # the arm's own settings, so a row is self-describing and two rows can
@@ -210,7 +218,11 @@ def run_one(selector: str, args) -> dict:
             "budget_deferred": out.get("piv_output_budget_deferred"),
             "ledger_revisions": out.get("piv_revision"), "ledger_receipts": out.get("piv_ledger_receipts"),
             "submitted": out.get("piv_submitted"), "score": out.get("piv_score"),
-            "served_model": args.model, "base_url": args.base_url}
+            # the episode's workspace outlives the rollout; a sidecar reads the final ledger from it
+            "workspace": out.get("workspace"),
+            # what we ASKED the route for. The response's own model identifier is not exposed by
+            # the client this runner drives, so no row may claim to know what was served.
+            "requested_model": args.model, "base_url": args.base_url}
 
 
 def main() -> int:
