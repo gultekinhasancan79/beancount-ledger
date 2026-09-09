@@ -50,6 +50,8 @@ from verifiers.legacy.types import ClientConfig  # noqa: E402
 
 from beancount_ledger import beancount_ledger as env_mod  # noqa: E402
 
+import measure_budget as mb  # noqa: E402 -- reuses candidate_vs_original, the one place the comparison is defined
+
 
 def relax_response_literals() -> None:
     """The OpenAI SDK's response models hold closed literals that some
@@ -153,6 +155,13 @@ DIAGNOSTIC_STATE_COLUMNS = [
     "piv_rejected_calls", "piv_consecutive_rejected_turns",
     # the episode's workspace outlives the rollout; a sidecar reads the final ledger from it
     "workspace",
+    # the last ACCEPTED candidate's own logical-text digest (installed by
+    # `env_response` once it has re-derived and matched the tool's own
+    # attestation), so an episode that ends without a submission -- phase
+    # ACTIVE_CANDIDATE, `submitted=None`, no artifact on disk -- can still
+    # say WHAT was accepted, not just that something was: paired below with
+    # `original_logical_digest` into `candidate_equals_original`.
+    "piv_logical_text_digest",
 ]
 
 
@@ -162,6 +171,11 @@ def run_one(selector: str, args) -> dict:
     env_mod.MAX_TURNS = args.turns                       # the prompt reads it when the environment is built
     env = env_mod.load_environment(selector, timeout_seconds=float(args.timeout),
                                    max_episode_output_tokens=int(args.tokens))
+    # The UNTOUCHED original ledger this episode was served, fixed at world
+    # construction -- captured before the episode runs so `candidate_vs_
+    # original` can answer "did the agent preserve the books" even when the
+    # episode ends with an accepted candidate but no submission.
+    original_ledger_raw = env.public_files[env_mod.LEDGER]
     client = TolerantClient(ClientConfig(client_type="openai_chat_completions", api_key_var=args.key_var,
                                          api_base_url=args.base_url, timeout=float(args.timeout),
                                          connect_timeout=10.0, max_retries=1))
@@ -221,6 +235,17 @@ def run_one(selector: str, args) -> dict:
             "budget_deferred": out.get("piv_output_budget_deferred"),
             "ledger_revisions": out.get("piv_revision"), "ledger_receipts": out.get("piv_ledger_receipts"),
             "submitted": out.get("piv_submitted"), "score": out.get("piv_score"),
+            # `candidate_logical_digest`: the last ACCEPTED candidate's own
+            # digest, present even for an episode that ends with a stored
+            # write but no submission (phase ACTIVE_CANDIDATE) -- the case
+            # `submitted=None` otherwise leaves silent about what, if
+            # anything, was accepted. `original_logical_digest`/
+            # `candidate_equals_original` (from `candidate_vs_original`,
+            # `measure_budget.py`, the one place the comparison is defined):
+            # whether that candidate is textually the untouched original the
+            # episode was served, or `None` when nothing was ever accepted.
+            "candidate_logical_digest": out.get("piv_logical_text_digest"),
+            **mb.candidate_vs_original(out.get("piv_logical_text_digest"), original_ledger_raw, env_mod),
             # the episode's workspace outlives the rollout; a sidecar reads the final ledger from it
             "workspace": out.get("workspace"),
             # what we ASKED the route for. The response's own model identifier is not exposed by

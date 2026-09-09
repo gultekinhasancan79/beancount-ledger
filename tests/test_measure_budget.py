@@ -448,6 +448,112 @@ def test_bind_artifact_defaults_when_state_is_sparse():
 
 
 # --------------------------------------------------------------------------
+# 1b. candidate vs. original — did an UNDELIVERED episode preserve the books?
+#
+# `bind_artifact` reports NO_ARTIFACT for every one of no_write, write_
+# refused, policy_blocked and not_scored, and none of those says what the
+# last accepted candidate actually CONTAINED. `candidate_vs_original`
+# (measure_budget.py) closes that gap: it compares the last accepted
+# candidate's own digest (`piv_logical_text_digest`, `candidate_logical_
+# text_digest` on the row) against the digest of the untouched original
+# ledger this episode was served (`env.public_files[LEDGER]`), through the
+# SAME digest function the environment itself uses for both.
+# --------------------------------------------------------------------------
+
+def test_candidate_vs_original_pure_helper():
+    """The pure helper alone, no episode: equal bytes -> True, different
+    bytes -> False, no candidate at all -> None -- and the original digest
+    is always reported, even when there is no candidate to compare it to."""
+    original_raw = b"2024-01-01 open Assets:Bank\n"
+    same_digest = env_mod.digests_of(original_raw)["logical_text_digest"]
+    different_digest = env_mod.digests_of(b"2024-01-01 open Assets:Other\n")["logical_text_digest"]
+    problems = []
+    r_equal = mb.candidate_vs_original(same_digest, original_raw, env_mod)
+    if r_equal["candidate_equals_original"] is not True:
+        problems.append(f"equal candidate: candidate_equals_original {r_equal['candidate_equals_original']}")
+    if r_equal["original_logical_digest"] != env_mod.digests_of(original_raw)["logical_text_digest"]:
+        problems.append("equal candidate: original_logical_digest does not match the environment's own digest fn")
+    r_diff = mb.candidate_vs_original(different_digest, original_raw, env_mod)
+    if r_diff["candidate_equals_original"] is not False:
+        problems.append(f"differing candidate: candidate_equals_original {r_diff['candidate_equals_original']}")
+    r_none = mb.candidate_vs_original(None, original_raw, env_mod)
+    if r_none["candidate_equals_original"] is not None:
+        problems.append(f"no candidate: candidate_equals_original {r_none['candidate_equals_original']}, want None")
+    if r_none["original_logical_digest"] != r_equal["original_logical_digest"]:
+        problems.append("no candidate: original_logical_digest still must be reported (it needs no candidate)")
+    return check("candidate_vs_original: True on equal digests, False on differing digests, None (never False) "
+                 "when there is no candidate -- and the original's own digest is reported unconditionally",
+                 not problems, "\n".join(problems))
+
+
+def test_candidate_equals_original_true_when_written_candidate_matches_original():
+    """An accepted write that stores back the UNTOUCHED original ledger,
+    never submitted: the exact shape of the reported gap (an episode that
+    ends with an accepted candidate and no delivery on disk) -- and
+    `candidate_equals_original` must say True, because the agent preserved
+    the books even though nothing was ever delivered."""
+    env = env_mod.load_environment()
+    original_text = env.public_files[env_mod.LEDGER].decode("utf-8")
+    turns = [tec.write("w", original_text)] + [tec.calls((f"r{i}", "list_files", {})) for i in range(30)]
+    row = one(turns)
+    problems = []
+    if row["phase"] != env_mod.EpisodePhase.CANDIDATE.value:
+        problems.append(f"phase {row['phase']}; expected an accepted, unsubmitted candidate")
+    if row["submitted"] is not False:
+        problems.append(f"submitted {row['submitted']}")
+    if row.get("candidate_logical_text_digest") is None:
+        problems.append("no candidate digest recorded for an accepted write")
+    if row.get("original_logical_digest") != env_mod.digests_of(env.public_files[env_mod.LEDGER])["logical_text_digest"]:
+        problems.append("original_logical_digest does not match the environment's own digest of the served ledger")
+    if row.get("candidate_equals_original") is not True:
+        problems.append(f"candidate_equals_original {row.get('candidate_equals_original')}; "
+                        "the written candidate IS the original")
+    return check("write back the untouched original, no submit -> ACTIVE_CANDIDATE/unsubmitted with "
+                 "candidate_equals_original=True", not problems, "\n".join(problems))
+
+
+def test_candidate_equals_original_false_when_written_candidate_differs():
+    """An accepted write that stores GOLDEN -- textually different from the
+    served original by construction (it is the REPAIRED ledger) -- must
+    report candidate_equals_original=False, not None: a candidate exists,
+    it merely does not match."""
+    env = env_mod.load_environment()
+    original_raw = env.public_files[env_mod.LEDGER]
+    if GOLDEN.encode("utf-8") == original_raw:
+        return check("write a differing candidate -> candidate_equals_original=False", False,
+                     "test fixture assumption broken: GOLDEN is byte-identical to the served original")
+    row = one([tec.write("w", GOLDEN), tec.submit("s")])
+    problems = []
+    if row["submitted"] is not True:
+        problems.append(f"submitted {row['submitted']}")
+    if row.get("candidate_logical_text_digest") is None:
+        problems.append("no candidate digest recorded for an accepted write")
+    if row.get("candidate_equals_original") is not False:
+        problems.append(f"candidate_equals_original {row.get('candidate_equals_original')}; "
+                        "GOLDEN and the served original differ")
+    return check("write a differing (repaired) candidate, then submit -> candidate_equals_original=False",
+                 not problems, "\n".join(problems))
+
+
+def test_candidate_equals_original_none_when_no_write():
+    """No write at all: there is no candidate to compare, so
+    candidate_equals_original must be None -- never a false "no" -- while
+    original_logical_digest is still reported, because the original is known
+    from world construction whether or not the agent ever touched it."""
+    env = env_mod.load_environment()
+    row = one([tec.submit("s1")])
+    problems = []
+    if row.get("candidate_logical_text_digest") is not None:
+        problems.append("a candidate digest exists for a rollout that never wrote")
+    if row.get("candidate_equals_original") is not None:
+        problems.append(f"candidate_equals_original {row.get('candidate_equals_original')}; want None (no candidate)")
+    if row.get("original_logical_digest") != env_mod.digests_of(env.public_files[env_mod.LEDGER])["logical_text_digest"]:
+        problems.append("original_logical_digest missing or wrong even though the original is always known")
+    return check("no write at all -> candidate_equals_original=None, original_logical_digest still reported",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
 # 2. token_usage["final_*"] semantics, pinned
 # --------------------------------------------------------------------------
 
@@ -6051,6 +6157,10 @@ TESTS = [
     test_write_then_submit_is_bound_submitted_matches_delivery,
     test_two_concurrent_rollouts_each_bind_their_own_artifact,
     test_bind_artifact_defaults_when_state_is_sparse,
+    test_candidate_vs_original_pure_helper,
+    test_candidate_equals_original_true_when_written_candidate_matches_original,
+    test_candidate_equals_original_false_when_written_candidate_differs,
+    test_candidate_equals_original_none_when_no_write,
     test_token_usage_final_fields_are_pinned_and_row_names_them_truthfully,
     test_reasoning_replay_projection_diffs_only_reasoning_content_and_does_not_mutate_input,
     test_compute_budget_accounting_reasons_pure,

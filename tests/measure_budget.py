@@ -1997,6 +1997,43 @@ def bind_artifact(out: dict, env_mod) -> dict:
             "artifact_reason": "ledger.beancount does not match the delivery receipt's artifact digests"}
 
 
+def candidate_vs_original(candidate_logical_digest, original_raw: bytes, env_mod) -> dict:
+    """Whether the last ACCEPTED candidate is textually identical to the
+    UNTOUCHED original ledger this episode was served — the question an
+    undelivered episode otherwise leaves unanswerable: `bind_artifact` above
+    reports NO_ARTIFACT (nothing on the public path, no `delivery.json`) for
+    every one of `no_write`, `write_refused`, `policy_blocked` and
+    `not_scored`, and none of those carries what the accepted candidate's
+    CONTENT actually was — so "the agent preserved the books" and "the agent
+    altered the books but never got to submit" were, until this function,
+    the same row.
+
+    `original_raw` must be the SERVED public ledger bytes — `env.public_
+    files[env_mod.LEDGER]`, fixed at world construction, the same bytes
+    `Environment._workspace` writes into a fresh workspace before any tool
+    call runs — hashed through `env_mod.digests_of`, the ONE digest function
+    the environment itself uses for both the original mount and every
+    `write_ledger`/`submit` receipt (`beancount_ledger.py`'s `digests_of`,
+    `logical_text`, `_domain_digest`). Never a bespoke hash here: a
+    from-scratch digest would not be comparable to `candidate_logical_
+    digest`, which the environment computed with that same function.
+
+    `candidate_logical_digest` is the caller's own `piv_logical_text_digest`
+    (installed by `env_response` from the raw bytes on disk at the moment of
+    the last ACCEPTED write, after independently re-deriving and matching
+    the tool's own attestation — see `beancount_ledger.py`'s `env_response`,
+    `for key in expected: state[f"piv_{key}"] = expected[key]`), or `None`
+    when no write was ever accepted.
+
+    `candidate_equals_original` is `None` exactly when there is no candidate
+    to compare — an episode that never wrote anything must never report a
+    false "no" for a comparison it cannot make.
+    """
+    original_logical_digest = env_mod.digests_of(original_raw)["logical_text_digest"]
+    equals = None if candidate_logical_digest is None else (candidate_logical_digest == original_logical_digest)
+    return {"original_logical_digest": original_logical_digest, "candidate_equals_original": equals}
+
+
 def breakdown(selector: str, delivered: str) -> dict:
     """The scorer's own account of the delivered ledger, through the harness
     that the adversary pass uses (real loop, real contract). Only ever
@@ -2520,6 +2557,12 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
                 block_id: str | None = None, permutation_index: int | None = None,
                 arm_position: int | None = None, window_ledger=None) -> dict:
     env = env_mod.load_environment(selector)
+    # The UNTOUCHED original ledger this episode was served, fixed at world
+    # construction and unaffected by anything the agent does later --
+    # captured here, once, so `candidate_vs_original` below can answer
+    # "did the agent preserve the books" even for an episode that never
+    # delivered anything.
+    original_ledger_raw = env.public_files[env_mod.LEDGER]
     # The SERVED public task id, read from the serving door's own dataset
     # BEFORE the rollout runs, so it is on the row even when the provider
     # fails and the row is quarantined (the exact-cell check
@@ -2768,6 +2811,14 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # distinguishes "what this rollout wrote" across concurrent rollouts.
         "candidate_logical_text_digest": out.get("piv_logical_text_digest"),
         "candidate_stored_bytes_digest": out.get("piv_stored_bytes_digest"),
+        # `original_logical_digest`/`candidate_equals_original`: whether the
+        # last accepted candidate above is textually the untouched original
+        # this episode was served -- the one thing NO_ARTIFACT/not_scored
+        # rows (an accepted write, no delivery) could not say before. See
+        # `candidate_vs_original`'s own docstring for why the comparison is
+        # safe (same digest function on both sides) and why it is `None`
+        # rather than `False` when nothing was ever written.
+        **candidate_vs_original(out.get("piv_logical_text_digest"), original_ledger_raw, env_mod),
         "prompt_tokens": prompt,
         "completion_tokens": done,
         "total_tokens": total,
