@@ -600,6 +600,174 @@ def test_a_legacy_row_gains_no_register_keys():
 
 
 # --------------------------------------------------------------------------
+# 1c. CONTRACT PROVENANCE — a row must state the contract it actually ran
+#
+# The register binding above was only half of the family's side of the
+# instrument. The other half is what every row CLAIMS about the contract
+# behind it, and it was legacy-only in three places at once:
+#
+#   `episode_contract_digest_declared`  `env_mod.episode_contract_digest(ceiling)`
+#                                       — the module function DEFAULTS to the
+#                                       legacy profile, so a family cell
+#                                       declared the legacy view. It is also
+#                                       what a QUARANTINED cell falls back to,
+#                                       and `schedule_arms.contract_
+#                                       expectations` admits rows on that
+#                                       field — so a quarantined family cell
+#                                       was admitted or rejected against a
+#                                       contract it never ran.
+#   `episode_contract_version`          `EPISODE_CONTRACT_VERSION`, the legacy
+#                                       module constant, permanently 4 — every
+#                                       family row archived "contract 4" next
+#                                       to a contract-5 digest.
+#   `prompt_schema_digest`              computed once from an UNSELECTED
+#                                       default environment, on the written
+#                                       claim that the tool surface is fixed.
+#                                       The family serves SEVEN tools and a
+#                                       different system prompt; the claim was
+#                                       false and the six-tool digest was
+#                                       stamped on family rows.
+#
+# All three now resolve on the environment the cell actually loaded. These
+# tests hold both sides: the family row says 5, and the legacy row is
+# byte-for-byte the row it always was.
+# --------------------------------------------------------------------------
+
+def test_a_family_row_states_the_contract_it_actually_ran():
+    """Contract 5, the cash-application profile, and the family's own digest
+    in BOTH digest fields — never the legacy view.
+
+    `episode_contract_digest_declared` is the one asserted hardest: it is
+    computed BEFORE `evaluate` and is therefore exactly what a QUARANTINED
+    family cell (which produces no state at all) carries into the archive and
+    into `contract_expectations`' admission test. It is checked here against
+    the package's own resolved view at this cell's ceiling, so a regression
+    that silently reintroduces the module-level default is named.
+    """
+    row = family([CAR.deliver(register=CAR.case()["register"]), CAR.submit()])
+    problems = []
+    want_digest = env_mod.episode_contract_digest(0, env_mod.PROFILE_CASH_APPLICATION)
+    want_version = env_mod.episode_contract_version(env_mod.PROFILE_CASH_APPLICATION)
+    if row.get("reward") != 1.0:
+        problems.append(f"reward {row.get('reward')}; this must be the golden family rollout")
+    if row.get("episode_contract_version") != want_version:
+        problems.append(f"episode_contract_version {row.get('episode_contract_version')!r}, "
+                        f"not {want_version} — the family runs contract 5")
+    if row.get("episode_contract_profile") != env_mod.PROFILE_CASH_APPLICATION:
+        problems.append(f"episode_contract_profile {row.get('episode_contract_profile')!r}")
+    for field in ("episode_contract_digest", "episode_contract_digest_declared"):
+        if row.get(field) != want_digest:
+            problems.append(f"{field} {row.get(field)!r}, not the family view {want_digest!r}")
+    legacy_digest = env_mod.episode_contract_digest(0, env_mod.PROFILE_LEGACY)
+    if want_digest == legacy_digest:
+        problems.append("the two profiles resolve the same digest; this test proves nothing")
+    if row.get("prompt_schema_digest") == mb.compute_prompt_schema_digest(env_mod):
+        problems.append("a family row carries the LEGACY six-tool prompt_schema_digest")
+    return check("a cash-application row states contract 5, its own profile and the family contract digest "
+                 "in both digest fields — the declared one included, which is all a quarantined cell has",
+                 not problems, "\n".join(problems))
+
+
+def test_a_legacy_row_states_contract_4_exactly_as_before():
+    """The other side: a legacy row's three provenance fields are the values
+    every archived legacy row already carries. `episode_contract_digest`
+    resolved through the env rather than the module function must be the SAME
+    number for the legacy profile, or the family work moved rows that were
+    measured months ago."""
+    row = one([tec.write(), tec.submit()])
+    problems = []
+    want_digest = env_mod.episode_contract_digest(0, env_mod.PROFILE_LEGACY)
+    if want_digest != env_mod.episode_contract_digest(0):
+        problems.append("the module-level default is no longer the legacy view")
+    if row.get("episode_contract_version") != env_mod.EPISODE_CONTRACT_VERSION:
+        problems.append(f"episode_contract_version {row.get('episode_contract_version')!r}, "
+                        f"not {env_mod.EPISODE_CONTRACT_VERSION}")
+    if row.get("episode_contract_profile") != env_mod.PROFILE_LEGACY:
+        problems.append(f"episode_contract_profile {row.get('episode_contract_profile')!r}")
+    for field in ("episode_contract_digest", "episode_contract_digest_declared"):
+        if row.get(field) != want_digest:
+            problems.append(f"{field} {row.get(field)!r}, not {want_digest!r}")
+    if row.get("prompt_schema_digest") != mb.compute_prompt_schema_digest(env_mod):
+        problems.append("a legacy row no longer carries the unselected-default prompt_schema_digest that "
+                        "every archived legacy row was stamped with")
+    return check("a legacy row still states contract 4, the legacy profile, the legacy digest in both "
+                 "fields and the unchanged prompt_schema_digest", not problems, "\n".join(problems))
+
+
+def test_the_prompt_schema_digest_is_resolved_per_profile():
+    """The retracted claim, held as a test. `compute_prompt_schema_digest`'s
+    docstring asserted the tool surface was fixed at six tools and that an
+    unselected default environment was therefore representative of any cell.
+    The family falsifies it: seven tools, a different system prompt, a
+    different digest. Passing no env still answers for the legacy profile,
+    which is what `tests/stamp_contract_digest.py` backfills archived rows
+    with."""
+    legacy_env = env_mod.load_environment()
+    family_env = env_mod.load_environment("cash_application_001")
+    problems = []
+    if len(legacy_env.tool_defs) == len(family_env.tool_defs):
+        problems.append(f"both profiles expose {len(legacy_env.tool_defs)} tools; the premise is gone")
+    default = mb.compute_prompt_schema_digest(env_mod)
+    if mb.compute_prompt_schema_digest(env_mod, env=legacy_env) != default:
+        problems.append("the legacy env's digest is not the unselected default's — archived rows moved")
+    if mb.compute_prompt_schema_digest(env_mod, env=family_env) == default:
+        problems.append("the family env resolves the legacy digest; the profile is not being read")
+    if mb.row_prompt_schema_digests([{"prompt_schema_digest": "b"}, {"prompt_schema_digest": "a"},
+                                     {"prompt_schema_digest": "a"}, {}]) != "a, b":
+        problems.append("the run summary does not report every digest its rows carry, deduplicated")
+    return check("the prompt/tool-schema digest is resolved per PROFILE — six tools for legacy (unchanged, "
+                 "and what the unselected default answers), seven for the family",
+                 not problems, "\n".join(problems))
+
+
+def test_a_sealed_schedule_names_the_profile_its_digest_resolves_under():
+    """The mirror of the same defect on the SCHEDULE side. The sealed contract
+    carries ONE `expected_episode_contract_digest` and `contract_expectations`
+    admits every row against it, so it must be resolved under the profile the
+    schedule's selectors actually serve — and a schedule that mixes profiles
+    must be refused outright rather than sealed under one of them.
+
+    The startup witness rechecks it under the SEALED profile: a contract-5
+    seal must verify green, and the same seal relabelled `legacy` must be
+    named as a mismatch rather than silently confirmed."""
+    problems = []
+    if SA.sealed_episode_profile([]) != env_mod.PROFILE_LEGACY:
+        problems.append("an empty selector list is not the legacy profile")
+    if SA.sealed_episode_profile(["train:1"]) != env_mod.PROFILE_LEGACY:
+        problems.append("train:1 does not resolve the legacy profile")
+    if SA.sealed_episode_profile(["cash_application_001"]) != env_mod.PROFILE_CASH_APPLICATION:
+        problems.append("cash_application_001 does not resolve the cash-application profile")
+    try:
+        SA.sealed_episode_profile(["train:1", "cash_application_001"])
+        problems.append("a schedule mixing episode profiles was sealed instead of refused")
+    except SystemExit:
+        pass
+    stanza = {
+        "max_episode_output_tokens": 40_000,
+        "episode_contract_profile": env_mod.PROFILE_CASH_APPLICATION,
+        "expected_episode_contract_digest":
+            env_mod.episode_contract_digest(40_000, env_mod.PROFILE_CASH_APPLICATION),
+        "episode_contract_version": env_mod.episode_contract_version(env_mod.PROFILE_CASH_APPLICATION),
+    }
+    named = {r["field"] for r in SW.failures(
+        SW.witness(_sealed_schedule(selectors=["cash_application_001"], contract=dict(stanza)),
+                   check_task_ids=False, check_tree=False))}
+    for field in ("expected_episode_contract_digest", "episode_contract_version"):
+        if field in named:
+            problems.append(f"a correct contract-5 seal was flagged on {field}")
+    mislabelled = dict(stanza, episode_contract_profile=env_mod.PROFILE_LEGACY)
+    named = {r["field"] for r in SW.failures(
+        SW.witness(_sealed_schedule(selectors=["cash_application_001"], contract=mislabelled),
+                   check_task_ids=False, check_tree=False))}
+    for field in ("expected_episode_contract_digest", "episode_contract_version"):
+        if field not in named:
+            problems.append(f"a seal relabelled legacy was confirmed anyway; {field} not flagged")
+    return check("the sealed schedule names the episode profile its digest resolves under, refuses a "
+                 "mixed-profile schedule, and the startup witness rechecks under that profile",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
 # 1b. candidate vs. original — did an UNDELIVERED episode preserve the books?
 #
 # `bind_artifact` reports NO_ARTIFACT for every one of no_write, write_
@@ -6313,6 +6481,10 @@ TESTS = [
     test_a_family_rollout_binds_both_deliverables,
     test_a_family_rollout_reports_an_absent_and_a_rejected_register,
     test_a_legacy_row_gains_no_register_keys,
+    test_a_family_row_states_the_contract_it_actually_ran,
+    test_a_legacy_row_states_contract_4_exactly_as_before,
+    test_the_prompt_schema_digest_is_resolved_per_profile,
+    test_a_sealed_schedule_names_the_profile_its_digest_resolves_under,
     test_candidate_vs_original_pure_helper,
     test_candidate_equals_original_true_when_written_candidate_matches_original,
     test_candidate_equals_original_false_when_written_candidate_differs,

@@ -279,16 +279,32 @@ def witness(schedule: dict, *, root: Path | None = None, check_task_ids: bool = 
     arms = sorted(contract.get("arm_contract") or {})
     _check(results, "arm_contract", contract.get("arm_contract"), SA.arm_contract(arms))
 
-    # 4. The episode contract, at the ceiling this schedule pins.
+    # 4. The episode contract, at the ceiling this schedule pins AND under the
+    #    profile it sealed. Two profiles resolve two different contract views
+    #    (legacy -> 4, cash_application -> 5), and the module-level default
+    #    answers for the legacy one whatever was asked, so rechecking without
+    #    the profile would "confirm" a cash-application seal against a view it
+    #    never ran. A schedule sealed before the profile field existed is
+    #    legacy by construction, which is exactly what the fallback says.
     ceiling = contract.get("max_episode_output_tokens")
+    profile = contract.get("episode_contract_profile") or getattr(env_mod, "PROFILE_LEGACY", "legacy")
     actual_episode = None
     try:
-        actual_episode = (env_mod.episode_contract_digest(ceiling) if ceiling is not None
-                          else env_mod.episode_contract_digest())
+        actual_episode = (env_mod.episode_contract_digest(ceiling, profile) if ceiling is not None
+                          else env_mod.episode_contract_digest(
+                              env_mod.MAX_EPISODE_OUTPUT_TOKENS, profile))
     except Exception as exc:                                               # noqa: BLE001
         actual_episode = f"unavailable: {type(exc).__name__}: {exc}"
     _check(results, "expected_episode_contract_digest",
            contract.get("expected_episode_contract_digest"), actual_episode)
+    if contract.get("episode_contract_version") is not None:
+        actual_version = None
+        try:
+            actual_version = env_mod.episode_contract_version(profile)
+        except Exception as exc:                                           # noqa: BLE001
+            actual_version = f"unavailable: {type(exc).__name__}: {exc}"
+        _check(results, "episode_contract_version",
+               contract.get("episode_contract_version"), actual_version)
 
     # 5. The replay contract, per arm, under the libraries installed HERE.
     versions = mb_mod.library_versions()
