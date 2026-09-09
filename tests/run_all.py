@@ -33,6 +33,7 @@ SUITES = [
     ("test_graph", "the world graph as production authority: projection, derivation, identity, oracles"),
     ("test_worlds", "every hand-authored world/task: derivable, golden 1.0, original unresolved (or already 1.0 where nothing is planted), identifiable, no merged trap, no leaked ids or derived literals"),
     ("test_clean_month", "the clean-month assurance pack: one neutral instruction over two clean months and their single-error counterparts; unchanged delivers 1.0, invented corrections are penalised"),
+    ("test_legacy_freeze", "the legacy freeze: the 95 shipped tasks' public bytes, task-contract and golden digests, the candidate/1 scorer bytes and the contract-4 episode view, pinned against a checked-in fixture"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),
