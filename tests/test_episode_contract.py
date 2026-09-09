@@ -2022,15 +2022,72 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
 # 3e. the episode contract has its own identity
 # --------------------------------------------------------------------------
 
-#: The pinned episode-contract digest. It covers the system prompt, the tool
-#: names/descriptions/schemas the framework generates, the observation modes
-#: and envelope, the phase machine, the stop conditions in priority order, the
-#: budgets and the pending-call rule, and every public nudge or refusal.
+#: The pinned episode-contract digests, ONE PER RESOLVED VIEW. Each covers
+#: the system prompt, the tool names/descriptions/schemas the framework
+#: generates, the observation modes and envelope, the phase machine, the stop
+#: conditions in priority order, the budgets and the pending-call rule, and
+#: every public nudge or refusal — of the view an episode of that profile
+#: actually ran under (spec section 3, "Two resolved views behind a
+#: dispatcher"; round 12 answer §2). Two rollouts share a digest exactly when
+#: they saw the same tools, files and rules.
+#:
+#: The LEGACY value is contract 4's and DOES NOT MOVE: the 95 shipped tasks
+#: were measured under it, and `tests/test_legacy_freeze.py` pins the same
+#: bytes from the other side.
 EPISODE_CONTRACT_DIGEST = "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866"
+#: Contract 5, the cash-application family's view: seven tools, eleven
+#: observed files, the second deliverable, the register's own phase machine,
+#: the three engines and the composition rule. Re-pinned when the family's
+#: contract changes, exactly as the legacy literal is.
+EPISODE_CONTRACT_DIGEST_CASH_APPLICATION = "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f"
+
+#: The parameter of every contract-identity check below:
+#: (profile, task id, pinned digest, declared version, declared shape).
+#: PARAMETERISED rather than duplicated into per-profile branches — the
+#: review's instruction — so a check added for one profile is a check added
+#: for both, and a check that silently applies to only one cannot exist.
+CONTRACT_PROFILES = (
+    (env_mod.PROFILE_LEGACY, "bank_recon_001", EPISODE_CONTRACT_DIGEST, 4, "piv.episode-contract/2"),
+    (env_mod.PROFILE_CASH_APPLICATION, "cash_application_001",
+     EPISODE_CONTRACT_DIGEST_CASH_APPLICATION, 5, "piv.episode-contract/3"),
+)
+
+_FAMILY_CASE: dict = {}
+
+
+def family_case() -> tuple:
+    """(golden ledger, golden register JSON) for `cash_application_001`.
+
+    Derived once through the production door, and the register is the same
+    `golden_document` the scoring suite builds from the truth — so a family
+    turn here delivers exactly what `application/1` scores 1.0.
+    """
+    if not _FAMILY_CASE:
+        from beancount_ledger.graph.derive import derive_contract
+        from beancount_ledger.graph.worlds import CASH_APPLICATION_REGISTRY
+        import test_cash_application_scoring as CA
+        world, task = CASH_APPLICATION_REGISTRY["cash_application_001"]
+        _bundle, inputs = derive_contract(world, task)
+        _FAMILY_CASE["ledger"] = inputs.golden_text
+        _FAMILY_CASE["register"] = json.dumps(CA.golden_document(inputs.application))
+    return _FAMILY_CASE["ledger"], _FAMILY_CASE["register"]
+
+
+def deliver_turns(profile: str) -> list:
+    """The shortest DELIVERING script for a profile: write what that profile
+    is asked for, then submit. The family writes both artifacts in one turn,
+    which is legal — the per-turn rule is one call per WRITE TOOL."""
+    if profile == env_mod.PROFILE_LEGACY:
+        return [write(), submit()]
+    ledger, register = family_case()
+    return [calls(("w", "write_ledger", {"content": ledger}),
+                  ("a", "write_cash_application", {"content": register})),
+            submit()]
 
 
 def test_the_episode_contract_digest_is_pinned():
-    """A rollout's observation and termination rules have an identity.
+    """A rollout's observation and termination rules have an identity — one
+    per PROFILE, and this walks both.
 
     `public_task_id` binds the public files and the task prompt;
     `task_contract_digest` binds the scorer's normative view. Neither notices
@@ -2040,57 +2097,72 @@ def test_the_episode_contract_digest_is_pinned():
     This is the pin that makes such a change loud.
     """
     problems = []
-    if env_mod.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
-        problems.append(f"the episode contract changed: bump EPISODE_CONTRACT_VERSION and re-pin "
-                        f"(now {env_mod.episode_contract_digest()}, pinned {EPISODE_CONTRACT_DIGEST})")
-    if env_mod.EPISODE_CONTRACT_VERSION != 4:
-        problems.append(f"EPISODE_CONTRACT_VERSION is {env_mod.EPISODE_CONTRACT_VERSION}; re-pin the digest")
-    view = env_mod.episode_contract()
-    if view.get("system_prompt") != env_mod.SYSTEM_PROMPT:
-        problems.append("the contract view does not carry the exact system prompt")
+    for profile, task_id, pinned, version, schema in CONTRACT_PROFILES:
+        live_digest = env_mod.episode_contract_digest(profile=profile)
+        if live_digest != pinned:
+            problems.append(f"{profile}: the episode contract changed: bump the version and re-pin "
+                            f"(now {live_digest}, pinned {pinned})")
+        if env_mod.episode_contract_version(profile) != version:
+            problems.append(f"{profile}: version is {env_mod.episode_contract_version(profile)}, not {version}; "
+                            f"re-pin the digest")
+        if env_mod.episode_contract_schema(profile) != schema:
+            problems.append(f"{profile}: shape is {env_mod.episode_contract_schema(profile)!r}, not {schema!r}")
+        view = env_mod.episode_contract(profile=profile)
+        if view.get("system_prompt") != env_mod.system_prompt(profile=profile):
+            problems.append(f"{profile}: the contract view does not carry the exact system prompt")
+        if view.get("version") != version or view.get("schema") != schema:
+            problems.append(f"{profile}: the view's own version/schema disagree with the dispatcher")
 
-    # the tool schemas are the framework's, not a hand-kept copy: the view's
-    # tools must equal a live environment's advertised tool_defs
-    env = load_environment()
-    live = [{"name": t.name, "description": t.description or "", "parameters": t.parameters,
-             "strict": bool(t.strict)} for t in env.tool_defs]
-    if view.get("tools") != live:
-        problems.append("the contract's tool definitions are not the ones the environment advertises")
+        # the tool schemas are the framework's, not a hand-kept copy: the view's
+        # tools must equal a live environment's advertised tool_defs
+        env = load_environment(task_id)
+        live = [{"name": t.name, "description": t.description or "", "parameters": t.parameters,
+                 "strict": bool(t.strict)} for t in env.tool_defs]
+        if view.get("tools") != live:
+            problems.append(f"{profile}: the contract's tool definitions are not the ones the environment advertises")
+        if env.profile != profile:
+            problems.append(f"{task_id} resolved to profile {env.profile!r}, not {profile!r}")
 
-    # the stop conditions, with the priorities `@vf.stop` recorded — names
-    # alone would let an edited priority that preserves the order pass
-    live_stops = [(c.__name__, getattr(c, "stop_priority", 0)) for c in env._stop_conditions]
-    if [tuple(row) for row in env_mod.STOP_CONDITION_PRIORITY] != live_stops:
-        problems.append(f"STOP_CONDITION_PRIORITY {list(env_mod.STOP_CONDITION_PRIORITY)} "
-                        f"is not the live order/priority {live_stops}")
+        # the stop conditions, with the priorities `@vf.stop` recorded — names
+        # alone would let an edited priority that preserves the order pass
+        live_stops = [(c.__name__, getattr(c, "stop_priority", 0)) for c in env._stop_conditions]
+        if [tuple(row) for row in env_mod.STOP_CONDITION_PRIORITY] != live_stops:
+            problems.append(f"{profile}: STOP_CONDITION_PRIORITY {list(env_mod.STOP_CONDITION_PRIORITY)} "
+                            f"is not the live order/priority {live_stops}")
 
-    # every rollout and every batch carries it
-    state = {}
-    env._workspace(state)
-    if state.get("piv_episode_contract_digest") != EPISODE_CONTRACT_DIGEST:
-        problems.append(f"the rollout does not carry the digest: {state.get('piv_episode_contract_digest')!r}")
-    # ...including a rollout that never calls a tool and so never builds a
-    # workspace: that is `setup_state`'s whole job, and without this witness
-    # the override could be deleted with every other test still passing
-    bare, _client, raised = run([narrated(), narrated(), narrated()],
-                                state_columns=["piv_episode_contract_digest", "workspace"])
-    if raised is not None:
-        problems.append(f"the no-tool route raised {type(raised).__name__}")
-    else:
-        out = (bare["outputs"] or [{}])[0]
-        if out.get("workspace"):
-            problems.append("the no-tool route built a workspace; the witness is not about setup_state")
-        if out.get("piv_episode_contract_digest") != EPISODE_CONTRACT_DIGEST:
-            problems.append("a rollout that never called a tool carries no contract digest: "
-                            f"{out.get('piv_episode_contract_digest')!r}")
-    results, _client, raised = run([write(), submit()])
-    if raised is not None:
-        problems.append(f"evaluate raised {type(raised).__name__}")
-    else:
-        stamped = (results["metadata"] or {}).get("piv_episode_contract")
-        if stamped != {"version": env_mod.EPISODE_CONTRACT_VERSION, "digest": EPISODE_CONTRACT_DIGEST,
-                       "max_episode_output_tokens": env_mod.MAX_EPISODE_OUTPUT_TOKENS}:
-            problems.append(f"the batch metadata does not carry the contract: {stamped}")
+        # every rollout and every batch carries it
+        state = {}
+        env._workspace(state)
+        if state.get("piv_episode_contract_digest") != pinned:
+            problems.append(f"{profile}: the rollout does not carry the digest: "
+                            f"{state.get('piv_episode_contract_digest')!r}")
+        # ...including a rollout that never calls a tool and so never builds a
+        # workspace: that is `setup_state`'s whole job, and without this witness
+        # the override could be deleted with every other test still passing
+        bare, _client, raised = run([narrated(), narrated(), narrated()], env=load_environment(task_id),
+                                    state_columns=["piv_episode_contract_digest", "workspace"])
+        if raised is not None:
+            problems.append(f"{profile}: the no-tool route raised {type(raised).__name__}")
+        else:
+            out = (bare["outputs"] or [{}])[0]
+            if out.get("workspace"):
+                problems.append(f"{profile}: the no-tool route built a workspace; the witness is not about "
+                                f"setup_state")
+            if out.get("piv_episode_contract_digest") != pinned:
+                problems.append(f"{profile}: a rollout that never called a tool carries no contract digest: "
+                                f"{out.get('piv_episode_contract_digest')!r}")
+        results, _client, raised = run(deliver_turns(profile), env=load_environment(task_id))
+        if raised is not None:
+            problems.append(f"{profile}: evaluate raised {type(raised).__name__}")
+        else:
+            stamped = (results["metadata"] or {}).get("piv_episode_contract")
+            if stamped != {"version": version, "digest": pinned,
+                           "max_episode_output_tokens": env_mod.MAX_EPISODE_OUTPUT_TOKENS}:
+                problems.append(f"{profile}: the batch metadata does not carry the contract: {stamped}")
+    if EPISODE_CONTRACT_DIGEST == EPISODE_CONTRACT_DIGEST_CASH_APPLICATION:
+        problems.append("the two resolved views share one digest; they promise different tools and files")
+    if env_mod.EPISODE_CONTRACT_VERSION != 4 or env_mod.EPISODE_CONTRACT_SCHEMA != "piv.episode-contract/2":
+        problems.append("the module's legacy constants moved; contract 4 is preserved for the 95 shipped tasks")
 
     # ...and the RELEASE MANIFEST is deliberately NOT bound to it. It was,
     # and the binding was unsound: `load_environment` admits
@@ -2111,11 +2183,13 @@ def test_the_episode_contract_digest_is_pinned():
         if leaked in versions:
             problems.append(f"the release manifest binds {leaked} again; it cannot preflight a ceiling "
                             "it does not choose")
-    if EPISODE_CONTRACT_DIGEST in {str(v) for v in versions.values()}:
-        problems.append("the episode digest reached the manifest under another key")
-    return check("the episode contract digest is pinned, equals the framework's own tool schemas and the "
-                 "live stop order, is carried by every rollout and every batch — and is NOT in the "
-                 "release manifest's versions(), which binds world semantics only",
+    for _profile, _task_id, pinned, _version, _schema in CONTRACT_PROFILES:
+        if pinned in {str(v) for v in versions.values()}:
+            problems.append(f"the {_profile} episode digest reached the manifest under another key")
+    return check("BOTH resolved episode contracts are pinned and distinct, each equals the framework's own "
+                 "tool schemas and the live stop order for its own profile, each is carried by every rollout "
+                 "and every batch of that profile — and neither is in the release manifest's versions(), "
+                 "which binds world semantics only",
                  not problems, "\n".join(problems))
 
 
@@ -2223,26 +2297,32 @@ def test_the_prompt_and_the_digest_follow_the_ceiling_actually_served():
     so the row itself is checked, not just `env.system_prompt`.
     """
     problems = []
-    default = load_environment()
-    small = load_environment(max_episode_output_tokens=8_000)
 
     def row_prompt(env):
         return env.dataset[0]["prompt"][0]["content"]
 
-    for label, env, needle, absent in (
-        ("default", default, "ceiling of 40,000 completion tokens", "8,000 completion tokens"),
-        ("8K", small, "ceiling of 8,000 completion tokens", "40,000 completion tokens"),
-    ):
-        if needle not in env.system_prompt:
-            problems.append(f"{label}: env.system_prompt does not state {needle!r}")
-        if needle not in row_prompt(env):
-            problems.append(f"{label}: the dataset row the model is sent does not state {needle!r}")
-        if absent in row_prompt(env):
-            problems.append(f"{label}: the prompt still states {absent!r}")
-    if default.episode_contract_digest() == small.episode_contract_digest():
-        problems.append("two ceilings share one contract digest")
-    if default.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
-        problems.append("the default env's digest is not the pinned one")
+    # Parameterised over the two profiles: the ceiling is disclosed and bound
+    # the same way under contract 4 and contract 5, and each profile's
+    # DEFAULT-ceiling digest is its own pinned one.
+    for profile, task_id, pinned, _version, _schema in CONTRACT_PROFILES:
+        default = load_environment(task_id)
+        small = load_environment(task_id, max_episode_output_tokens=8_000)
+        for label, env, needle, absent in (
+            ("default", default, "ceiling of 40,000 completion tokens", "8,000 completion tokens"),
+            ("8K", small, "ceiling of 8,000 completion tokens", "40,000 completion tokens"),
+        ):
+            if needle not in env.system_prompt:
+                problems.append(f"{profile}/{label}: env.system_prompt does not state {needle!r}")
+            if needle not in row_prompt(env):
+                problems.append(f"{profile}/{label}: the dataset row the model is sent does not state {needle!r}")
+            if absent in row_prompt(env):
+                problems.append(f"{profile}/{label}: the prompt still states {absent!r}")
+        if default.episode_contract_digest() == small.episode_contract_digest():
+            problems.append(f"{profile}: two ceilings share one contract digest")
+        if default.episode_contract_digest() != pinned:
+            problems.append(f"{profile}: the default env's digest is not the pinned one")
+    default = load_environment()
+    small = load_environment(max_episode_output_tokens=8_000)
 
     # the setter path, which is how the measurement arms set it
     later = load_environment()
@@ -2670,6 +2750,9 @@ ALLOWED_LITERALS = {
     "piv_rejected_calls", "piv_consecutive_rejected_turns", "piv_rejected_call_limit_reached",
     "piv_no_tool_truncated_turns", "piv_truncation_limit_reached", "piv_no_tool_limit_reached",
     "piv_protocol_failure", "piv_committed", "piv_delivery", "piv_score", "piv_result",
+    # the cash-application family's own state keys, on the same footing
+    "piv_family", "piv_application_digest",
+    "piv_submitted_application_digest", "piv_submitted_application_phase",
     "final_env_response", "workspace",
     "digest", "turn", "revision", "?", "logical_text_digest",
 }

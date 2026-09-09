@@ -19,6 +19,7 @@ the episode is what keeps that affordable.
 from __future__ import annotations
 
 import contextvars
+import dataclasses
 import enum
 import hashlib
 import inspect
@@ -66,7 +67,18 @@ from .candidate.committed import (
 from .candidate.normalise import Accepted, EvaluationFailure, ProtocolFailure, parse_once
 from .candidate.canonical import canonical_decimal
 from .candidate.normalise import MAX_BYTES
-from .graph.derive import DerivationError, derive_contract
+from .candidate.application import (
+    APPLICATION_ENGINE_ID,
+    APPLICATION_SCHEMA,
+    ApplicationOutcome,
+    ApplicationRejected,
+    ParsedApplication,
+    canonical_text as application_canonical_text,
+    parse_application,
+    score_application,
+)
+from .candidate.composite import COMPOSITE_ENGINE_ID, CompositeOutcome, compose
+from .graph.derive import ApplicationInputs, DerivationError, derive_contract
 from .graph.project import ProjectionError
 from .graph.worlds import REGISTRY
 
@@ -210,12 +222,62 @@ PUBLIC_FILES = (
 )
 MUTABLE_PUBLIC_FILE = LEDGER
 
-# The two names the episode contract turns on, as constants rather than
-# literals scattered through the loop: exactly one tool mutates the world and
-# exactly one tool ends the episode. A test pins both against `tool_map`, so
-# a second write door or a second terminal door cannot appear by accident.
+# The cash-application family's three extra evidence files (spec section 2).
+# `PUBLIC_FILES` stays the base eight the 95 shipped tasks read; an episode of
+# the family reads the eleven, and the INSTANCE tuple (`public_file_names`,
+# stamped on the rollout as `piv_public_files`) is what the read tools, the
+# seeding, the verification and the manifest index consult. The register the
+# agent writes, `cash_application.json`, is in NEITHER list: it is write-only
+# (spec section 3, "Write-only, and why") — no manifest row, no read_file, no
+# grep, no list_files entry.
+EXTRA_PUBLIC_FILES = ("open_items.csv", "remittance_advice.csv", "credit_notes.csv")
+APPLICATION_FILE = "cash_application.json"
+
+# The episode PROFILE: which resolved observation-and-termination contract an
+# episode runs under. `legacy` is contract 4 — six tools, eight files, the
+# view the 95 shipped tasks were preflighted and measured under, byte for
+# byte; `cash_application` is contract 5 — the seventh tool, the eleven files
+# and the second deliverable. A profile is inferred from the derived inputs
+# (a task whose contract carries `ApplicationInputs` is of the family) and
+# never declared by a caller, so no legacy agent can be served a contract
+# promising a tool it does not have.
+PROFILE_LEGACY = "legacy"
+PROFILE_CASH_APPLICATION = "cash_application"
+PROFILES = (PROFILE_LEGACY, PROFILE_CASH_APPLICATION)
+
+
+def public_file_names(profile: str = PROFILE_LEGACY) -> tuple:
+    """The public files an episode of `profile` observes, in manifest order."""
+    if profile == PROFILE_LEGACY:
+        return PUBLIC_FILES
+    if profile == PROFILE_CASH_APPLICATION:
+        return PUBLIC_FILES + EXTRA_PUBLIC_FILES
+    raise ValueError(f"unknown episode profile {profile!r}")
+
+
+def episode_profile(inputs) -> str:
+    """The profile the derived contract inputs call for."""
+    return PROFILE_CASH_APPLICATION if getattr(inputs, "application", None) is not None else PROFILE_LEGACY
+
+
+# The names the episode contract turns on, as constants rather than literals
+# scattered through the loop: the tools that mutate the world and the one
+# tool that ends the episode. A test pins them against `tool_map`, so a
+# further write door or a second terminal door cannot appear by accident.
+# `WRITE_TOOL` is the ledger's door and the only write door of the legacy
+# profile; `APPLICATION_TOOL` is the family's second door; `WRITE_TOOLS` is
+# what the per-turn rule (one call per write tool per turn) and the commit
+# recognition in `env_response` iterate.
 WRITE_TOOL = "write_ledger"
+APPLICATION_TOOL = "write_cash_application"
+WRITE_TOOLS = (WRITE_TOOL, APPLICATION_TOOL)
 TERMINAL_TOOL = "submit"
+
+# The register's own envelope (spec section 3): refused before storage, in
+# UTF-8 bytes and logical lines, like the ledger's. A golden register is
+# under 2,000 bytes; 16,000 is the bounded-reply cap and eight times that.
+APPLICATION_ENVELOPE_BYTES = 16_000
+APPLICATION_ENVELOPE_LINES = 400
 
 
 class EpisodePhase(enum.StrEnum):
@@ -255,6 +317,80 @@ def episode_phase(state) -> EpisodePhase:
     if state is None:
         return EpisodePhase.NO_CANDIDATE
     return EpisodePhase(state.get("piv_phase", EpisodePhase.NO_CANDIDATE))
+
+
+class ApplicationPhase(enum.StrEnum):
+    """The cash-application artifact's own phase, `state["piv_application_phase"]`.
+
+    A SECOND, INDEPENDENT machine (spec section 3): it never moves the ledger
+    phase machine above and the ledger phase never moves it. `submit` is
+    accepted from the ledger's ACTIVE_CANDIDATE whatever this reads, and
+    binds the exact latest revision of the register — accepted, rejected or
+    absent — because a submission without an application is legal (it
+    scores `A = 0`). Exactly one tool moves it, `write_cash_application`,
+    and only when it STORED something: a stored replacement supersedes the
+    previous revision unconditionally, an invalid one included (REJECTED,
+    `A = 0`, no fallback to an earlier accepted revision); a request refused
+    before storage — not text, over the envelope, outside the family —
+    leaves the phase and the previous revision exactly as they were.
+    """
+
+    #: nothing stored yet
+    NONE = "NONE"
+    #: the latest stored revision parsed as a valid `piv.cash-application/1`
+    CANDIDATE = "CANDIDATE"
+    #: the latest stored revision was refused by the application's parse boundary
+    REJECTED = "REJECTED"
+
+
+def application_phase(state) -> ApplicationPhase:
+    if state is None:
+        return ApplicationPhase.NONE
+    return ApplicationPhase(state.get("piv_application_phase", ApplicationPhase.NONE))
+
+
+@dataclasses.dataclass(frozen=True)
+class FamilyContract:
+    """What a cash-application rollout carries beside the ledger contract
+    (`state["piv_family"]`, stamped by the environment and read by the
+    write tool, `submit` and `score_core`): the truth register
+    `application/1` scores against, the expected closing balances the two
+    tie-breaks read, and the digest of the scoring environment they were
+    minted with, so a commitment made under another environment cannot be
+    scored against this truth. Absent for a legacy rollout, whose reward is
+    `L` exactly as today."""
+
+    application: ApplicationInputs
+    expected_balances: tuple
+    environment_digest: str
+
+
+@dataclasses.dataclass(frozen=True)
+class CommittedApplication:
+    """The register's commitment, installed by `env_response` once it has
+    recomputed the write attestation from the bytes on disk — the register's
+    `piv_committed`. One frozen object per stored revision: the receipt
+    identity, the three digests the attestation carried, and the parse
+    outcome the tool produced from the same snapshot. A REJECTED outcome is
+    a commitment too: the latest stored revision supersedes whatever came
+    before it, and `score_core` scores it as `A = 0`."""
+
+    rollout_id: str
+    revision: int
+    submitted_text_digest: str
+    stored_bytes_digest: str
+    logical_text_digest: str
+    outcome: object                  # ParsedApplication | ApplicationRejected
+
+    @property
+    def accepted(self) -> bool:
+        return isinstance(self.outcome, ParsedApplication)
+
+    @property
+    def digests(self) -> dict:
+        return {"submitted_text_digest": self.submitted_text_digest,
+                "stored_bytes_digest": self.stored_bytes_digest,
+                "logical_text_digest": self.logical_text_digest}
 
 
 # --------------------------------------------------------------------------
@@ -511,8 +647,9 @@ BUDGET_SUSPICIOUS_CODES = (BUDGET_USAGE_IMPLAUSIBLE,)
 CHARS_PER_TOKEN_FLOOR = 8
 
 
-def system_prompt(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) -> str:
-    """The prompt for an episode served under THIS output ceiling.
+def system_prompt(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS,
+                  profile: str = PROFILE_LEGACY) -> str:
+    """The prompt for an episode served under THIS output ceiling and profile.
 
     A function rather than a constant because the ceiling is not a constant:
     `load_environment(max_episode_output_tokens=…)` and
@@ -526,7 +663,26 @@ def system_prompt(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) ->
     With the ceiling disabled (<= 0) there IS no token budget to disclose, so
     the ceiling sentences are dropped rather than stated as zero; the turn
     budget is unconditional.
+
+    The `cash_application` profile adds ONE paragraph — the second
+    deliverable, its tool, that it cannot be read back, and that a
+    submission without it scores zero (spec section 3, "the added
+    system-prompt sentence"). The legacy text is byte-identical to contract
+    4's: the paragraph is inserted, not the surrounding text edited.
     """
+    if profile not in PROFILES:
+        raise ValueError(f"unknown episode profile {profile!r}")
+    application = ""
+    if profile == PROFILE_CASH_APPLICATION:
+        application = (
+            f"This task also asks for a cash application register. Write it with "
+            f"{APPLICATION_TOOL} as one complete `piv.cash-application/1` JSON document (the tool "
+            f"description gives the schema); it is stored as {APPLICATION_FILE} but cannot be read "
+            "back, so keep your own copy and rewrite it whole to change it. Each write replaces the "
+            "previous register, a rejected write included. submit delivers the ledger and the "
+            "register as last written; a submission whose register is missing or was refused scores "
+            "zero, however good the ledger.\n\n"
+        )
     # THE DELIVERY RULE, in the agent's words. The old
     # wording — "submit by turn 24" — reads as a precondition for delivery,
     # and it is not one: every non-protocol ending scores the last committed
@@ -571,7 +727,7 @@ exactly as it stands. Do not invent accounts that are not in the chart.
 
 You may call run_beancount at any time to check that the ledger still loads.
 
-{budget}
+{application}{budget}
 
 The episode also ends after {MAX_CONSECUTIVE_NO_TOOL_TURNS} consecutive turns \
 without a tool call — including an unbroken run of turns cut off at the \
@@ -617,10 +773,21 @@ def _clip(text: str, limit: int = MAX_TOOL_OUTPUT_LINES) -> str:
     return _clip_bytes(text)
 
 
+def _public_names(state=None) -> tuple:
+    """The public file names of THIS rollout: the instance tuple the
+    environment stamped on the state (`piv_public_files`, eight or eleven),
+    or the module's legacy eight for a direct call with no rollout context.
+    `cash_application.json` is in neither, by construction."""
+    if state is None:
+        state = _PIV_STATE.get()
+    names = state.get("piv_public_files") if isinstance(state, dict) else None
+    return tuple(names) if names else PUBLIC_FILES
+
+
 def list_files(workspace: str = "") -> str:
     """List the files available to you, with their size in lines."""
     rows = []
-    for name in PUBLIC_FILES:
+    for name in _public_names():
         raw = _read_public(workspace, name)
         if raw is None:
             # A declared public file that is missing or not plain is a
@@ -652,17 +819,27 @@ def ledger_envelope_breach(raw: bytes) -> str | None:
     return None
 
 
-def _verify_public_world(workspace: str) -> None:
+def _verify_public_world(workspace: str, names: tuple | None = None) -> None:
     """Every declared public file must exist as a plain readable file, and
     the ledger must fit the envelope a single whole read is sized for.
 
     An over-envelope ledger is a world we should not have built: the read
     tool would hand the whole thing back. Refusing here makes that an
     evaluator failure at workspace construction — never a rollout that
-    silently observed a narrower or an unaffordable world.
+    silently observed a narrower or an unaffordable world. `names` is the
+    instance tuple (eight or eleven); the legacy eight when not given.
+
+    `names` IS the manifest here, so the read goes through the containment
+    door rather than `_public_file`'s manifest lookup: this runs while the
+    workspace is being built, before `piv_public_files` is on the state and
+    before the state is bound to `_PIV_STATE`, so the manifest the tools
+    consult would still read the module's legacy eight and the family's three
+    extra files would be reported missing. The verified-handle check — plain
+    regular file, same volume and file index across the open — is the same
+    one either door makes.
     """
-    for name in PUBLIC_FILES:
-        raw = _read_public(workspace, name)
+    for name in (names or PUBLIC_FILES):
+        raw = _read_workspace_file(workspace, name)
         if raw is None:
             raise RuntimeError(f"declared public file is not readable: {name}")
         if name == LEDGER:
@@ -833,8 +1010,17 @@ def _public_file(workspace: str, name: str) -> Path | None:
     regular file (`_plain`) that still resolves inside the workspace. The
     caller opens the returned path and re-checks the open handle.
     """
-    if not isinstance(name, str) or name not in PUBLIC_FILES:
+    if not isinstance(name, str) or name not in _public_names():
         return None
+    return _contained_file(workspace, name)
+
+
+def _contained_file(workspace: str, name: str) -> Path | None:
+    """The plain regular file `name` names directly under the resolved
+    workspace, or None. Containment only — no manifest check — so this is
+    the door for the evaluator's OWN files in the workspace (the register the
+    agent wrote, which is deliberately not public); the read tools go
+    through `_public_file`, which adds the manifest check in front."""
     root = Path(workspace).resolve()
     target = root / name
     if not _is_plain_file(target):
@@ -875,6 +1061,24 @@ def _read_public(workspace: str, name: str) -> bytes | None:
     target = _public_file(workspace, name)
     if target is None:
         return None
+    return _read_verified(target)
+
+
+def _read_workspace_file(workspace: str, name: str) -> bytes | None:
+    """Bytes of one of the evaluator's own files in the workspace
+    (`cash_application.json`), through the same verified-handle door as a
+    public read but WITHOUT the manifest check: the register is not public,
+    and this is how the commit recognition and the scorer read it back."""
+    target = _contained_file(workspace, name)
+    if target is None:
+        return None
+    return _read_verified(target)
+
+
+def _read_verified(target: Path) -> bytes | None:
+    """Check the entry (`lstat`), open, then prove the handle IS that entry
+    (`fstat`: plain, and the same volume + file index) before consuming a
+    byte."""
     try:
         before = os.lstat(target)
         if not _plain(before):
@@ -911,7 +1115,7 @@ def grep(pattern: str, path: str = "", workspace: str = "") -> str:
             return READ_NO_SUCH_FILE.format(path=path)
         names = [path]
     else:
-        names = list(PUBLIC_FILES)
+        names = list(_public_names())
     hits = []
     for name in names:
         raw = _read_public(workspace, name)
@@ -1052,6 +1256,102 @@ def write_ledger(content: str, workspace: str = "") -> str:
     return json.dumps(attestation, sort_keys=True) + "\n" + _public_report(outcome)
 
 
+def application_envelope_breach(raw: bytes) -> str | None:
+    """Why this register is outside its envelope, or None. UTF-8 bytes and
+    logical lines, like `ledger_envelope_breach`; consulted by the write
+    door only, since the register is never read back."""
+    if len(raw) > APPLICATION_ENVELOPE_BYTES:
+        return f"{len(raw)} bytes > APPLICATION_ENVELOPE_BYTES {APPLICATION_ENVELOPE_BYTES}"
+    lines = len(logical_text(raw).splitlines())
+    if lines > APPLICATION_ENVELOPE_LINES:
+        return f"{lines} lines > APPLICATION_ENVELOPE_LINES {APPLICATION_ENVELOPE_LINES}"
+    return None
+
+
+def _application_report(outcome) -> str:
+    """What the model is told about a register's parse: the accepted
+    figures, or the refusal with at most `MAX_REJECTION_LABELS` findings
+    (`ApplicationRejected.__str__` is that bound). Never a parser exception."""
+    if isinstance(outcome, ParsedApplication):
+        receipts, invoices, credit_notes = outcome.counts
+        return APPLICATION_ACCEPTED.format(receipts=receipts, invoices=invoices, credit_notes=credit_notes)
+    if isinstance(outcome, ApplicationRejected):
+        return APPLICATION_REFUSED.format(labels=str(outcome))
+    raise RuntimeError(f"application parse boundary failed: {outcome}")
+
+
+def write_cash_application(content: str, workspace: str = "") -> str:
+    """Write the complete cash application register and check that it parses.
+
+    The register is one JSON object of schema piv.cash-application/1 with
+    exactly four members. "schema" is the string "piv.cash-application/1".
+    "receipts" lists one object per statement receipt from a customer, with
+    "receipt_id" (the statement date, a colon, the statement reference, for
+    example 2026-04-10:GR PAYRUN 0410), "applied" and "written_off" (lists
+    of {"invoice_id", "amount"} items) and "unapplied_amount". "credit_notes"
+    lists one object per credit note, with "credit_note_id", "applied" (the
+    same items) and "unapplied_amount". "closing_open_items" lists one object
+    per invoice, zero balances included, with "invoice_id", "customer",
+    "period_basis" (the balance entering the period), "applied_total",
+    "credited", "written_off" and "remaining". Every amount is a string with
+    two decimals; a receipt or credit note may carry "notes" of at most 200
+    characters; any other key is refused. The file replaces the previous
+    register whole, a refused register included, and it cannot be read back.
+
+    Args:
+        content: The complete register as JSON text. This replaces the existing one.
+    """
+    # The same terminal guard `write_ledger` carries: the direct-call safety
+    # net only, since `call_tool` refuses every call after an accepted submit
+    # before any body runs.
+    state = _PIV_STATE.get()
+    if episode_phase(state) is EpisodePhase.TERMINAL:
+        return WRITE_AFTER_SUBMIT
+    # Outside the family there is no register to write and nothing is
+    # stored. Unreachable through the tool door of a legacy episode (the
+    # tool is not on that profile's surface, so `call_tool` answers
+    # PUBLIC_TOOL_ERROR); the defensive answer of the importable function.
+    family = state.get("piv_family") if isinstance(state, dict) else None
+    if type(family) is not FamilyContract:
+        return APPLICATION_NOT_REQUESTED
+    if not isinstance(content, str):
+        return APPLICATION_NOT_TEXT
+    try:
+        raw_in = content.encode("utf-8", errors="strict")
+    except UnicodeEncodeError:
+        return APPLICATION_NOT_TEXT
+    if application_envelope_breach(raw_in) is not None:
+        # Never stored: the previous revision, its phase and its digest are
+        # exactly as they were (spec section 3, "Application lifecycle").
+        return APPLICATION_TOO_LARGE
+    root = Path(workspace).resolve()
+    target = root / APPLICATION_FILE
+    if os.path.lexists(target) and not _is_plain_file(target):
+        raise RuntimeError("application target is not a plain regular file")
+    _write_replace(root, target, raw_in)
+    raw = _read_workspace_file(workspace, APPLICATION_FILE)   # one snapshot; both file digests derive from it
+    if raw is None:
+        raise RuntimeError("the application is not a readable file after commit")
+    digests = digests_of(raw, submitted=content)
+    attestation = {
+        "schema": APPLICATION_ATTESTATION_SCHEMA,
+        "profiles": DIGEST_PROFILES,
+        "committed": True,
+        **digests,
+    }
+    # Parse ONCE, from the snapshot the digests describe, against the
+    # family's truth (which supplies the evidence's credit-note grosses and
+    # nothing else). The outcome is handed to `env_response` as pending
+    # state keyed by those digests; a STORED replacement supersedes the
+    # previous revision whatever the parse made of it.
+    outcome = parse_application(logical_text(raw), family.application)
+    state["piv_pending_application"] = {"digests": digests, "outcome": outcome}
+    state["piv_application_phase"] = (ApplicationPhase.CANDIDATE if isinstance(outcome, ParsedApplication)
+                                      else ApplicationPhase.REJECTED)
+    state["piv_application_digest"] = digests["logical_text_digest"]
+    return json.dumps(attestation, sort_keys=True) + "\n" + _application_report(outcome)
+
+
 def submit(workspace: str = "") -> str:
     """End the episode. The ledger as last written is final.
 
@@ -1083,7 +1383,7 @@ def submit(workspace: str = "") -> str:
         # TURN_AFTER_SUBMIT, because a receipt would assert an acceptance that
         # did not happen. Kept for the direct-call door, where idempotence is
         # the property that matters.
-        return submit_receipt(state.get("piv_submitted_digest"))
+        return submit_receipt(state.get("piv_submitted_digest"), _application_binding(state))
     if phase in (EpisodePhase.NO_CANDIDATE, EpisodePhase.REJECTED):
         if state is not None:
             state["piv_submit_refused"] = state.get("piv_submit_refused", 0) + 1
@@ -1095,36 +1395,84 @@ def submit(workspace: str = "") -> str:
     digest = state.get("piv_candidate_digest")
     state["piv_phase"] = EpisodePhase.TERMINAL
     state["piv_submitted_digest"] = digest
-    return submit_receipt(digest)
+    if type(state.get("piv_family")) is FamilyContract:
+        # The family binds BOTH artifacts at this instant: the exact latest
+        # revision of the register — accepted, rejected or absent — beside
+        # the ledger's. A submission without an application is legal and
+        # scores `A = 0`; it is not refused and not silently upgraded to an
+        # earlier accepted revision.
+        state["piv_submitted_application_digest"] = state.get("piv_application_digest")
+        state["piv_submitted_application_phase"] = application_phase(state).value
+    return submit_receipt(digest, _application_binding(state))
 
 
-def submit_receipt(digest) -> str:
+def _application_binding(state) -> str | None:
+    """The register as `submit` bound it, in the receipt's words; None for
+    the legacy profile, whose receipt names the ledger alone."""
+    if not isinstance(state, dict) or type(state.get("piv_family")) is not FamilyContract:
+        return None
+    bound = ApplicationPhase(state.get("piv_submitted_application_phase", ApplicationPhase.NONE))
+    digest = state.get("piv_submitted_application_digest")
+    if bound is ApplicationPhase.CANDIDATE:
+        return APPLICATION_BOUND_ACCEPTED.format(digest=digest_short(digest))
+    if bound is ApplicationPhase.REJECTED:
+        return APPLICATION_BOUND_REJECTED.format(digest=digest_short(digest))
+    return APPLICATION_BOUND_ABSENT
+
+
+def submit_receipt(digest, application: str | None = None) -> str:
     """The accepted-submit reply: the fixed sentence plus the bound hash.
 
     The digest is of the agent's OWN candidate text — the same
     `logical_text_digest` the commit attestation already handed back — so
     naming it leaks nothing and makes the binding checkable from the
-    transcript alone.
+    transcript alone. The family's receipt names the bound register too
+    (`_application_binding`), for the same reason.
     """
-    return SUBMIT_DELIVERING.format(accepted=SUBMIT_ACCEPTED, digest=digest_short(digest))
+    if application is None:
+        return SUBMIT_DELIVERING.format(accepted=SUBMIT_ACCEPTED, digest=digest_short(digest))
+    return SUBMIT_DELIVERING_WITH_APPLICATION.format(accepted=SUBMIT_ACCEPTED, digest=digest_short(digest),
+                                                     application=application)
 
 
 #: The tool surface, in the order the environment adds it, and the argument
 #: every tool takes and no agent ever sees. Declared once so the environment's
 #: constructor and `public_tool_defs()` (which the episode contract digest
-#: binds) cannot advertise different surfaces.
+#: binds) cannot advertise different surfaces. `PUBLIC_TOOLS` is the legacy
+#: profile's six — contract 4, unchanged; `CASH_APPLICATION_TOOLS` is the
+#: family's seven, the register's write door between the ledger's and the
+#: terminal tool. `write_cash_application` is kept OFF the legacy surface
+#: entirely: a legacy episode that calls it is answered PUBLIC_TOOL_ERROR by
+#: `call_tool`, like any name it does not advertise.
 PUBLIC_TOOLS = (list_files, read_file, grep, run_beancount, write_ledger, submit)
+CASH_APPLICATION_TOOLS = (list_files, read_file, grep, run_beancount, write_ledger, write_cash_application, submit)
+PROFILE_TOOLS = {PROFILE_LEGACY: PUBLIC_TOOLS, PROFILE_CASH_APPLICATION: CASH_APPLICATION_TOOLS}
 HIDDEN_TOOL_ARGS = ("workspace",)
 
+
+def public_tools(profile: str = PROFILE_LEGACY) -> tuple:
+    """The tool functions an episode of `profile` advertises, in order."""
+    if profile not in PROFILE_TOOLS:
+        raise ValueError(f"unknown episode profile {profile!r}")
+    return PROFILE_TOOLS[profile]
+
+
 #: The tools that SEND the agent world content, and so spend the observation
-#: budget: everything that is not the one write door or the one terminal door.
-#: Derived rather than typed, so a seventh tool is an observing tool by
-#: default — the fail-closed direction for a cost bound.
-OBSERVING_TOOLS = tuple(t.__name__ for t in PUBLIC_TOOLS
-                        if t.__name__ not in (WRITE_TOOL, TERMINAL_TOOL))
+#: budget: everything that is not a write door or the terminal door. Derived
+#: by subtraction over the WIDEST surface rather than typed, so an eighth
+#: tool is an observing tool by default — the fail-closed direction for a
+#: cost bound. The same four names under both profiles: a write tool's reply
+#: still COUNTS toward the budget (`_count_reply` adds every reply's bytes),
+#: it is only never REFUSED by it.
+OBSERVING_TOOLS = tuple(t.__name__ for t in CASH_APPLICATION_TOOLS
+                        if t.__name__ not in WRITE_TOOLS + (TERMINAL_TOOL,))
 
 
 WRITE_ATTESTATION_SCHEMA = "piv.write/2"
+#: The register's write attestation: the same three domain digests under the
+#: same profiles, a schema of its own so a reply can never attest the other
+#: artifact's bytes (spec section 3).
+APPLICATION_ATTESTATION_SCHEMA = "piv.write-cash-application/1"
 PARTITION_SCHEMA = "piv.partition/1"
 
 # Three digests, three domains. `piv.write/1` carried one `algorithm` label,
@@ -1201,13 +1549,15 @@ def is_full_digest(value) -> bool:
     return isinstance(value, str) and len(value) == 64 and set(value) <= _HEX64
 
 
-def parse_attestation(content) -> dict | None:
+def parse_attestation(content, schema: str = WRITE_ATTESTATION_SCHEMA) -> dict | None:
     """The attestation, or None if the reply is not a valid one.
 
     Strict: exact schema string, the exact per-field digest profiles,
     `committed is True`, all three digests present as full 64-hex SHA-256
     strings. A reply that merely starts with a familiar word is not an
-    attestation — text-prefix matching was itself a lenient parser.
+    attestation — text-prefix matching was itself a lenient parser. The
+    ledger's schema by default; `APPLICATION_ATTESTATION_SCHEMA` reads the
+    register's, and neither ever reads the other's.
     """
     if not isinstance(content, str):
         return None
@@ -1216,7 +1566,7 @@ def parse_attestation(content) -> dict | None:
         data = json.loads(first)
     except (ValueError, TypeError):
         return None
-    if not isinstance(data, dict) or data.get("schema") != WRITE_ATTESTATION_SCHEMA:
+    if not isinstance(data, dict) or data.get("schema") != schema:
         return None
     if data.get("committed") is not True:
         return None
@@ -1273,6 +1623,38 @@ EPISODE_CONTRACT_VERSION = 4
 #: find keys it does not know, so the SHAPE has a new name as well as the
 #: content having a new version.
 EPISODE_CONTRACT_SCHEMA = "piv.episode-contract/2"
+#: 5 / piv.episode-contract/3: the CASH-APPLICATION profile's contract (spec
+#: section 3, "Contract 5"). Contract 4 is PRESERVED for the 95 shipped
+#: tasks — `episode_contract()` with no profile is the legacy view, byte for
+#: byte, and its pinned digest does not move — and the family gets a view of
+#: its own behind the dispatcher: the seventh tool `write_cash_application`,
+#: `WRITE_TOOLS` in place of the single `write_tool`, the eleven public files
+#: as the instance tuple with read rules for the three new ones, the second
+#: deliverable's envelope and lifecycle under `deliverables`, the register's
+#: own phase machine and the family's rows of the ledger's, submit's
+#: two-artifact binding, the three engines and the composition rule under
+#: `scoring`, every new reply string, and the added system-prompt paragraph.
+#: A SHAPE bump, not a version bump alone: a reader of /2 would find
+#: top-level keys it does not know (`family`, `deliverables`, `scoring`) and
+#: `episode.write_tools` where it expected `episode.write_tool`.
+EPISODE_CONTRACT_VERSION_CASH_APPLICATION = 5
+EPISODE_CONTRACT_SCHEMA_CASH_APPLICATION = "piv.episode-contract/3"
+
+
+def episode_contract_version(profile: str = PROFILE_LEGACY) -> int:
+    if profile == PROFILE_LEGACY:
+        return EPISODE_CONTRACT_VERSION
+    if profile == PROFILE_CASH_APPLICATION:
+        return EPISODE_CONTRACT_VERSION_CASH_APPLICATION
+    raise ValueError(f"unknown episode profile {profile!r}")
+
+
+def episode_contract_schema(profile: str = PROFILE_LEGACY) -> str:
+    if profile == PROFILE_LEGACY:
+        return EPISODE_CONTRACT_SCHEMA
+    if profile == PROFILE_CASH_APPLICATION:
+        return EPISODE_CONTRACT_SCHEMA_CASH_APPLICATION
+    raise ValueError(f"unknown episode profile {profile!r}")
 
 #: The phase machine as DATA, so the digest binds the transitions rather than a
 #: prose table that can drift from the code. `(from, event, to, reply)`; the
@@ -1302,6 +1684,35 @@ PHASE_TRANSITIONS = (
     ("ACTIVE_REJECTED", "submit", "ACTIVE_REJECTED", "SUBMIT_LAST_CANDIDATE_REFUSED"),
     ("TERMINAL", "any call, later turn", "TERMINAL", "TURN_AFTER_SUBMIT"),
     ("TERMINAL", "any call, same list after submit", "TERMINAL", "TURN_AFTER_SUBMIT"),
+)
+
+#: The family's rows of the LEDGER phase machine: `write_cash_application`
+#: from every ledger phase, and it never moves the ledger phase — stored and
+#: accepted, stored and refused, or not stored, the ledger phase is where it
+#: was. The rows sit between the legacy ACTIVE rows and the TERMINAL rows,
+#: which cover the seventh tool like every other call after submit.
+APPLICATION_WRITE_EVENTS = (
+    ("write_cash_application:stored,boundary accepted", "write-cash-application attestation"),
+    ("write_cash_application:stored,boundary refused", "write-cash-application attestation"),
+    ("write_cash_application:not stored", "APPLICATION_NOT_TEXT | APPLICATION_TOO_LARGE"),
+)
+PHASE_TRANSITIONS_CASH_APPLICATION = (
+    tuple(row for row in PHASE_TRANSITIONS if row[0] != "TERMINAL")
+    + tuple((phase, event, phase, reply)
+            for phase in ("ACTIVE_NO_CANDIDATE", "ACTIVE_CANDIDATE", "ACTIVE_REJECTED")
+            for event, reply in APPLICATION_WRITE_EVENTS)
+    + tuple(row for row in PHASE_TRANSITIONS if row[0] == "TERMINAL")
+)
+
+#: The REGISTER's own phase machine (`ApplicationPhase`), as data, walked by
+#: `test_episode_contract` through the real tool. Only a STORED write moves
+#: it; a refused-before-storage request leaves it alone from every phase; a
+#: stored invalid replacement moves it to REJECTED from every phase — there
+#: is no fallback to an earlier accepted revision.
+APPLICATION_PHASE_TRANSITIONS = tuple(
+    (phase, event, target, reply)
+    for phase in ("NONE", "CANDIDATE", "REJECTED")
+    for (event, reply), target in zip(APPLICATION_WRITE_EVENTS, ("CANDIDATE", "REJECTED", phase))
 )
 
 #: Every stop condition the rollout can end under, highest priority first, with
@@ -1341,9 +1752,9 @@ def _advertise_parameterless(params: dict) -> None:
             params.pop("required")
 
 
-def public_tool_defs() -> list:
+def public_tool_defs(profile: str = PROFILE_LEGACY) -> list:
     """The tool definitions AS THE FRAMEWORK GENERATES THEM, without an
-    environment instance.
+    environment instance — six for the legacy profile, seven for the family.
 
     `StatefulToolEnv.add_tool` builds each `vf.Tool` from
     `convert_func_to_tool_def(filter_signature(tool, args_to_skip))` and then
@@ -1353,21 +1764,23 @@ def public_tool_defs() -> list:
     `tool_defs` — so the digest binds the schema the model is actually shown,
     including anything a `verifiers` upgrade changes about it.
 
-    Memoised, and returned as fresh dicts. Building six schemas costs ~10 ms
-    (griffe parses the docstrings, pydantic emits the JSON schema) and this is
-    called once per rollout and once per `episode_contract()`. The tool
-    functions are module-level and cannot change within a process; a caller
-    that mutates a returned `parameters` dict must not be able to poison the
-    cache, hence the copy.
+    Memoised per profile, and returned as fresh dicts. Building six schemas
+    costs ~10 ms (griffe parses the docstrings, pydantic emits the JSON
+    schema) and this is called once per rollout and once per
+    `episode_contract()`. The tool functions are module-level and cannot
+    change within a process; a caller that mutates a returned `parameters`
+    dict must not be able to poison the cache, hence the copy.
     """
-    global _PUBLIC_TOOL_DEFS
-    if _PUBLIC_TOOL_DEFS is not None:
-        return [t.model_copy(deep=True) for t in _PUBLIC_TOOL_DEFS]
+    if profile not in PROFILES:
+        raise ValueError(f"unknown episode profile {profile!r}")
+    cached = _PUBLIC_TOOL_DEFS.get(profile)
+    if cached is not None:
+        return [t.model_copy(deep=True) for t in cached]
     from verifiers.legacy.envs.stateful_tool_env import filter_signature
     from verifiers.legacy.utils.tool_utils import convert_func_to_tool_def
 
     defs = []
-    for tool in PUBLIC_TOOLS:
+    for tool in public_tools(profile):
         tool_def = convert_func_to_tool_def(filter_signature(tool, list(HIDDEN_TOOL_ARGS)))
         params = tool_def.parameters
         for arg in HIDDEN_TOOL_ARGS:
@@ -1385,15 +1798,37 @@ def public_tool_defs() -> list:
             params.pop("$defs")
         _advertise_parameterless(params)
         defs.append(tool_def)
-    _PUBLIC_TOOL_DEFS = defs
+    _PUBLIC_TOOL_DEFS[profile] = defs
     return [t.model_copy(deep=True) for t in defs]
 
 
-_PUBLIC_TOOL_DEFS: list | None = None
+_PUBLIC_TOOL_DEFS: dict = {}
 
 
-def episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) -> dict:
-    """The complete observation-and-termination contract, as plain data.
+def episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS,
+                     profile: str = PROFILE_LEGACY) -> dict:
+    """The complete observation-and-termination contract, as plain data —
+    the DISPATCHER over the episode profile (spec section 3, "Two resolved
+    views behind a dispatcher").
+
+    `legacy` returns contract 4's view exactly as before this dispatcher
+    existed — version 4, shape `piv.episode-contract/2`, the module
+    `PUBLIC_FILES`, six tools — so the 95 shipped tasks' pinned digest does
+    not move; `cash_application` returns contract 5's. The digests pinned
+    are of the RESOLVED views, one per profile, rather than one digest over
+    a dispatch specification: two rollouts share a digest exactly when they
+    saw the same tools, files and rules, which is what makes comparison and
+    compatibility direct.
+    """
+    if profile == PROFILE_LEGACY:
+        return _legacy_episode_contract(max_episode_output_tokens)
+    if profile == PROFILE_CASH_APPLICATION:
+        return _cash_application_episode_contract(max_episode_output_tokens)
+    raise ValueError(f"unknown episode profile {profile!r}")
+
+
+def _legacy_episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) -> dict:
+    """Contract 4: the complete observation-and-termination contract, as plain data.
 
     Everything here is PUBLIC — it is either shown to the model or derivable
     from what is shown — so the view carries no world, no task and no secret,
@@ -1521,14 +1956,143 @@ def episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS)
     }
 
 
-def model_facing_messages() -> tuple:
+def _cash_application_episode_contract(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) -> dict:
+    """Contract 5, shape `piv.episode-contract/3`: the family's resolved view.
+
+    Built FROM the legacy view and restated where the family differs, so a
+    rule the family leaves alone (the whole-read semantics, the budgets, the
+    stop conditions, the malformed-call policy) cannot drift between the two
+    contracts by being typed twice. What is restated, and why each is here
+    (spec section 3, "Contract 5"): the seven tool schemas; `WRITE_TOOLS`,
+    the terminal tool and the observing derivation; the eleven public files
+    as the instance tuple with the read rule of each; the two deliverables —
+    the ledger's tool, file and envelope, and the register's tool, schema,
+    envelope, write-only status, optionality at submit and requirement for
+    `complete`; the phase table with the seventh tool's outcomes from every
+    ledger phase and the register's own machine; submit's two-artifact
+    binding and the application lifecycle; the three engines and the
+    composition rule; every new reply string; the added system-prompt
+    paragraph.
+    """
+    view = _legacy_episode_contract(max_episode_output_tokens)
+    profile = PROFILE_CASH_APPLICATION
+    view["schema"] = EPISODE_CONTRACT_SCHEMA_CASH_APPLICATION
+    view["version"] = EPISODE_CONTRACT_VERSION_CASH_APPLICATION
+    view["family"] = profile
+    view["system_prompt"] = system_prompt(max_episode_output_tokens, profile)
+    view["tools"] = [
+        {"name": t.name, "description": t.description or "",
+         "parameters": t.parameters, "strict": bool(t.strict)}
+        for t in public_tool_defs(profile)
+    ]
+    observation = view["observation"]
+    names = public_file_names(profile)
+    observation["public_files"] = list(names)
+    observation["file_read_modes"] = {name: ("whole" if name == LEDGER else "sliced") for name in names}
+    observation["extra_public_files"] = list(EXTRA_PUBLIC_FILES)
+    observation["extra_public_files_semantics"] = (
+        "open_items.csv, remittance_advice.csv and credit_notes.csv are read exactly as the other "
+        "non-ledger files: numbered slices through read_file, literal search through grep, a row "
+        "in list_files; they are never written"
+    )
+    observation["write_only_files"] = [APPLICATION_FILE]
+    observation["write_only_semantics"] = (
+        "cash_application.json is the agent's own answer and is NOT a public file: no manifest row, "
+        "no read_file, no grep, no list_files entry; write_cash_application replaces it whole"
+    )
+    observation["observation_budget_semantics"] = (
+        "each reply is counted in UTF-8 bytes as it is produced; once the episode total "
+        "reaches max_episode_observation_bytes every observing tool "
+        "(list_files, read_file, grep, run_beancount) is answered OBSERVATION_BUDGET_SPENT "
+        "and reads nothing, while write_ledger, write_cash_application and submit continue to "
+        "work; a write tool's reply still counts toward the total and its generated argument "
+        "consumes output tokens"
+    )
+    observation["application_attestation_schema"] = APPLICATION_ATTESTATION_SCHEMA
+    episode = view["episode"]
+    episode.pop("write_tool")
+    episode["write_tools"] = list(WRITE_TOOLS)
+    episode["one_call_per_write_tool_per_turn"] = (
+        "at most one write_ledger call and at most one write_cash_application call per assistant "
+        "turn, counted per tool: a second write_ledger answers TURN_MULTI_WRITE, a second "
+        "write_cash_application answers TURN_MULTI_APPLICATION, and in either case the whole turn "
+        "executes nothing"
+    )
+    episode["transitions"] = [list(row) for row in PHASE_TRANSITIONS_CASH_APPLICATION]
+    episode["application_phases"] = [p.value for p in ApplicationPhase]
+    episode["application_transitions"] = [list(row) for row in APPLICATION_PHASE_TRANSITIONS]
+    episode["accepted_submit"] = (
+        "submit is accepted only from ACTIVE_CANDIDATE, whatever the application phase; it binds "
+        "the stored ledger candidate's logical_text_digest AND the exact latest revision of the "
+        "register — accepted, rejected or absent — once, names both in its receipt, freezes the "
+        "workspace, and every later call — in a later turn OR later in the same call list — is "
+        "answered TURN_AFTER_SUBMIT with no tool body executed"
+    )
+    episode["application_lifecycle"] = (
+        "a STORED write_cash_application supersedes the previous register unconditionally, an "
+        "invalid one included (phase REJECTED, its digest binds the rejected bytes, A = 0, no "
+        "fallback to an earlier accepted revision); a request refused BEFORE storage — not text, "
+        "over the envelope, or outside the family — leaves the previous revision and its phase "
+        "intact; the register never moves the ledger phase and the ledger never moves the "
+        "register's; every non-protocol ending scores the last committed revision of EACH artifact"
+    )
+    view["deliverables"] = {
+        "ledger": {"tool": WRITE_TOOL, "file": LEDGER, "envelope_bytes": LEDGER_ENVELOPE_BYTES,
+                   "envelope_lines": LEDGER_ENVELOPE_LINES, "attestation_schema": WRITE_ATTESTATION_SCHEMA},
+        "cash_application": {
+            "tool": APPLICATION_TOOL, "file": APPLICATION_FILE, "schema": APPLICATION_SCHEMA,
+            "max_bytes": APPLICATION_ENVELOPE_BYTES, "max_lines": APPLICATION_ENVELOPE_LINES,
+            "attestation_schema": APPLICATION_ATTESTATION_SCHEMA,
+            "write_only": True, "optional_at_submit": True, "required_for_complete": True,
+            "one_write_tool_call_per_turn": True,
+        },
+    }
+    view["scoring"] = {
+        "engines": ["candidate/1", APPLICATION_ENGINE_ID, COMPOSITE_ENGINE_ID],
+        "composition": (
+            "total = L x A quantised to six places half-even AFTER the product, L being candidate/1's "
+            "total over the last committed ledger revision (0 when non-renderable or never committed) "
+            "and A application/1's over the last committed register revision (0 when absent or "
+            "rejected); a submission without a register is legal, scores 0, and reports L "
+            "diagnostically with no composite credit"
+        ),
+        "complete": (
+            "L complete, the register delivered, A = 1.000000 and no penalty label; total = 1 if and "
+            "only if complete"
+        ),
+        "ledger_score_metric": METRIC_LEDGER_SCORE,
+        "application_score_metric": METRIC_APPLICATION_SCORE,
+    }
+    view["messages"] = {name: value for name, value in model_facing_messages(profile)}
+    return view
+
+
+def model_facing_messages(profile: str = PROFILE_LEGACY) -> tuple:
     """Every model-facing string this module can emit, as (name, value).
 
     ONE list, consulted by `episode_contract()` and by the test that walks the
     tool sources: a template that is not here is a reply the digest cannot
     see, and a template here that no function formats is a claim the contract
     makes and the code does not keep. Both halves are checked.
+
+    The legacy profile's list is contract 4's, unchanged; the family's is
+    that list plus the register's replies — a superset, since nothing the
+    family adds changes an existing reply.
     """
+    if profile not in PROFILES:
+        raise ValueError(f"unknown episode profile {profile!r}")
+    family = () if profile == PROFILE_LEGACY else (
+        ("APPLICATION_NOT_REQUESTED", APPLICATION_NOT_REQUESTED),
+        ("APPLICATION_NOT_TEXT", APPLICATION_NOT_TEXT),
+        ("APPLICATION_TOO_LARGE", APPLICATION_TOO_LARGE),
+        ("APPLICATION_ACCEPTED", APPLICATION_ACCEPTED),
+        ("APPLICATION_REFUSED", APPLICATION_REFUSED),
+        ("TURN_MULTI_APPLICATION", TURN_MULTI_APPLICATION),
+        ("SUBMIT_DELIVERING_WITH_APPLICATION", SUBMIT_DELIVERING_WITH_APPLICATION),
+        ("APPLICATION_BOUND_ACCEPTED", APPLICATION_BOUND_ACCEPTED),
+        ("APPLICATION_BOUND_REJECTED", APPLICATION_BOUND_REJECTED),
+        ("APPLICATION_BOUND_ABSENT", APPLICATION_BOUND_ABSENT),
+    )
     return (
         ("PUBLIC_TOOL_ERROR", PUBLIC_TOOL_ERROR),
         ("TURN_MULTI_WRITE", TURN_MULTI_WRITE),
@@ -1560,7 +2124,7 @@ def model_facing_messages() -> tuple:
         ("REPORT_LOADS_CLEANLY", REPORT_LOADS_CLEANLY),
         ("REPORT_FINDINGS_HEADER", REPORT_FINDINGS_HEADER),
         ("REPORT_FINDING", REPORT_FINDING),
-    )
+    ) + family
 
 
 def _response_says_something(response) -> bool:
@@ -1670,8 +2234,11 @@ def _restated(prompt, previous: str, current: str):
     return [{**head, "content": current}, *prompt[1:]]
 
 
-def episode_contract_digest(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS) -> str:
-    """SHA-256 over the canonical JSON of `episode_contract()`, 64 hex.
+def episode_contract_digest(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_TOKENS,
+                            profile: str = PROFILE_LEGACY) -> str:
+    """SHA-256 over the canonical JSON of `episode_contract()`, 64 hex — of
+    the RESOLVED view of `profile` (the legacy view by default, so the
+    no-argument form is the legacy answer and its pin does not move).
 
     One value that answers "which observation and termination rules did this
     rollout run under?". `public_task_id` binds the public FILES and the
@@ -1693,7 +2260,7 @@ def episode_contract_digest(max_episode_output_tokens: int = MAX_EPISODE_OUTPUT_
     experiment comparability does. So the manifest identifies the WORLD and
     this identifies the EPISODE, per rollout, where the ceiling is known.
     """
-    payload = json.dumps(episode_contract(max_episode_output_tokens), sort_keys=True,
+    payload = json.dumps(episode_contract(max_episode_output_tokens, profile), sort_keys=True,
                          ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(b"piv:episode-contract:v1\0" + payload).hexdigest()
 
@@ -1755,7 +2322,8 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
     hide the slip inside an ordinary bad score instead of naming it.
     """
 
-    def __init__(self, partial_batches: bool = False, contract=None, public_files=None, **kwargs):
+    def __init__(self, partial_batches: bool = False, contract=None, public_files=None,
+                 profile: str = PROFILE_LEGACY, application=None, **kwargs):
         # `stop_errors` defaults to [] in the framework, which means an
         # exception inside a tool is formatted with `str(e)` back to the model
         # and the rollout simply continues — no error state, the final reward
@@ -1764,7 +2332,17 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         # leaks exception text to the model.
         if contract is None:
             raise InitializationFailure(["the environment requires a LoadedEnvironment contract"])
-        if not isinstance(public_files, dict) or set(public_files) != set(PUBLIC_FILES) \
+        if profile not in PROFILES:
+            raise InitializationFailure([f"unknown episode profile {profile!r}"])
+        # The profile and the family's truth are one decision: a
+        # cash-application environment without the register's truth could
+        # advertise a tool it cannot answer, and a legacy environment WITH one
+        # would score a second artifact its contract never promised.
+        if (profile == PROFILE_CASH_APPLICATION) != (type(application) is ApplicationInputs):
+            raise InitializationFailure([f"profile {profile!r} and application inputs "
+                                         f"{type(application).__name__} do not agree"])
+        names = public_file_names(profile)
+        if not isinstance(public_files, dict) or set(public_files) != set(names) \
                 or not all(isinstance(v, bytes) for v in public_files.values()):
             raise InitializationFailure(["the environment requires the projected public files, exactly the manifest"])
         kwargs.setdefault("stop_errors", [PIVEvaluatorFailed])
@@ -1772,19 +2350,29 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         super().__init__(tools=[], **kwargs)
         self.partial_batches = partial_batches
         self.contract = contract
+        self.profile = profile
+        self.public_file_names = tuple(names)         # the INSTANCE tuple: eight, or eleven for the family
         self.public_files = dict(public_files)
-        for tool in PUBLIC_TOOLS:
+        self.family = (FamilyContract(application=application, expected_balances=tuple(contract.expected_balances),
+                                      environment_digest=contract.environment_digest)
+                       if profile == PROFILE_CASH_APPLICATION else None)
+        for tool in public_tools(profile):
             self.add_tool(tool, args_to_skip=list(HIDDEN_TOOL_ARGS))
         for tool_def in self.tool_defs:
             _advertise_parameterless(tool_def.parameters)
-        # The episode contract's two named doors, checked here rather than
-        # only in a test: `env_response` recognises a commit by WRITE_TOOL and
-        # the rollout ends on TERMINAL_TOOL, so a tool renamed out from under
-        # either name would silently stop ending episodes or stop advancing
-        # revisions. Refuse to build such an environment at all.
-        missing = [n for n in (WRITE_TOOL, TERMINAL_TOOL) if n not in self.tool_map]
+        # The episode contract's named doors, checked here rather than only
+        # in a test: `env_response` recognises a commit by the write tools'
+        # names and the rollout ends on TERMINAL_TOOL, so a tool renamed out
+        # from under a name would silently stop ending episodes or stop
+        # advancing revisions. Refuse to build such an environment at all —
+        # and refuse the register's door on the legacy surface, where the
+        # contract promises six tools.
+        required = (WRITE_TOOL, TERMINAL_TOOL) + ((APPLICATION_TOOL,) if self.family else ())
+        missing = [n for n in required if n not in self.tool_map]
         if missing:
             raise InitializationFailure([f"the tool surface is missing {missing}"])
+        if not self.family and APPLICATION_TOOL in self.tool_map:
+            raise InitializationFailure([f"{APPLICATION_TOOL} is on the legacy tool surface"])
 
     async def call_tool(self, tool_name, tool_args, tool_call_id, **kwargs):
         """Owned tools: reclassify before the framework can mislabel, and
@@ -1907,8 +2495,8 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         contract it actually ran under rather than the default one.
         """
         super().set_max_total_completion_tokens(max_total_completion_tokens)
-        prompt = system_prompt(max_total_completion_tokens)
-        self._episode_contract_digest = episode_contract_digest(max_total_completion_tokens)
+        prompt = system_prompt(max_total_completion_tokens, self.profile)
+        self._episode_contract_digest = episode_contract_digest(max_total_completion_tokens, self.profile)
         previous, self.system_prompt = self.system_prompt, prompt
         if previous != prompt:
             for name in ("dataset", "eval_dataset"):
@@ -1977,8 +2565,9 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         loud in one place and invisible in none.
         """
         if "piv_episode_contract_digest" not in state:
-            state["piv_episode_contract_version"] = EPISODE_CONTRACT_VERSION
+            state["piv_episode_contract_version"] = episode_contract_version(self.profile)
             state["piv_episode_contract_digest"] = self.episode_contract_digest()
+            state["piv_episode_profile"] = self.profile
         state.setdefault("piv_library_versions", library_versions())
         state.setdefault("piv_turn", 0)
         state.setdefault("piv_complete_reads", 0)
@@ -1991,7 +2580,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         digest = getattr(self, "_episode_contract_digest", None)
         if digest is None:
             digest = self._episode_contract_digest = episode_contract_digest(
-                self.max_total_completion_tokens)
+                self.max_total_completion_tokens, self.profile)
         return digest
 
     def _workspace(self, state) -> str:
@@ -2007,12 +2596,20 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
                 # Seeded from the graph's projection, never from a directory:
                 # the bytes the agent reads are the bytes the contract was
                 # derived from, by construction.
-                for name, data in self.public_files.items():
-                    (Path(workspace) / name).write_bytes(data)
-                _verify_public_world(workspace)
+                for name in self.public_file_names:
+                    (Path(workspace) / name).write_bytes(self.public_files[name])
+                _verify_public_world(workspace, self.public_file_names)
             except Exception as exc:  # a world we could not construct is ours, not the agent's
                 raise record_evaluator_failure(state, "world", exc)
             state["workspace"] = workspace
+            # The instance tuple the read tools consult for THIS rollout, and
+            # — for the family — the truth the register is parsed and scored
+            # against. Evaluator-owned state, like `piv_committed`.
+            state["piv_public_files"] = list(self.public_file_names)
+            if self.family is not None:
+                state["piv_family"] = self.family
+                state["piv_application_revision"] = 0
+                state["piv_application_phase"] = ApplicationPhase.NONE
             # ATTEMPT identity, minted here and nowhere else. A workspace path
             # is an adequate correlation key but not an identity: paths get
             # reused, canonicalised, and outlive rollouts. The UUID is what
@@ -2648,6 +3245,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             state["piv_consecutive_rejected_turns"] = 0
         ids = [getattr(c, "id", None) for c in calls]
         writes = [c for c in calls if getattr(c, "name", None) == WRITE_TOOL]
+        application_writes = [c for c in calls if getattr(c, "name", None) == APPLICATION_TOOL]
         if len(set(ids)) != len(ids):
             # Two calls sharing an id cannot be answered: providers require
             # one tool result per call occurrence, and one reply per distinct
@@ -2677,6 +3275,16 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             state["piv_turns_rejected"] = state.get("piv_turns_rejected", 0) + 1
             return self._seal_if_budget_spent(state, self._count_observation(
                 state, [ToolMessage(role="tool", content=TURN_MULTI_WRITE, tool_call_id=i or "") for i in ids]))
+        if len(application_writes) > 1:
+            # One call per WRITE TOOL per turn, counted per tool: two register
+            # writes would race for `cash_application.json` exactly as two
+            # ledger writes would for the ledger, and the refusal names the
+            # tool that was doubled. (Both doubled: the ledger's refusal
+            # above answers, since nothing executes either way.)
+            state["piv_turns_rejected"] = state.get("piv_turns_rejected", 0) + 1
+            return self._seal_if_budget_spent(state, self._count_observation(
+                state, [ToolMessage(role="tool", content=TURN_MULTI_APPLICATION, tool_call_id=i or "")
+                        for i in ids]))
 
         rejected = self._count_observation(state, [
             ToolMessage(role="tool", content=PUBLIC_TOOL_ERROR, tool_call_id=getattr(c, "id", None) or "")
@@ -2725,7 +3333,13 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         by_id = {getattr(c, "id", None): c for c in calls}
         for message in tool_messages:
             call = by_id.get(getattr(message, "tool_call_id", None))
-            if call is None or getattr(call, "name", None) != WRITE_TOOL:
+            if call is None or getattr(call, "name", None) not in WRITE_TOOLS:
+                continue
+            if getattr(call, "name", None) == APPLICATION_TOOL:
+                # The register's commit recognition: the same shape as the
+                # ledger's below, over its own attestation schema, its own
+                # pending slot and its own commitment.
+                self._commit_application(call, message, state)
                 continue
             attestation = parse_attestation(getattr(message, "content", ""))
             if attestation is None:
@@ -2795,6 +3409,72 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
             # which is a worse transcript than simply stopping.
             state["final_env_response"] = tool_messages
         return self._seal_if_budget_spent(state, tool_messages)
+
+    @staticmethod
+    def _commit_application(call, message, state) -> None:
+        """Install the register's commitment from one `write_cash_application`
+        reply, or do nothing when the reply is not an attestation.
+
+        A well-formed receipt proves the tool CLAIMED a commit. Every digest
+        is recomputed from trusted inputs before it is believed — the
+        argument the framework actually passed, the bytes actually on disk,
+        the text the parser actually read — and a mismatch is a tool
+        regression, an evaluator failure, never an agent outcome. The parse
+        outcome the tool left in `piv_pending_application` must be keyed to
+        exactly those digests. The commitment is one frozen object installed
+        in one assignment, and it supersedes the previous one whatever the
+        parse made of the new bytes: a stored invalid replacement is
+        REJECTED and scores `A = 0` (spec section 3, "Application
+        lifecycle").
+        """
+        attestation = parse_attestation(getattr(message, "content", ""), schema=APPLICATION_ATTESTATION_SCHEMA)
+        if attestation is None:
+            return  # not a commit (a refusal, a rejected call, tool error text)
+        if type(state.get("piv_family")) is not FamilyContract:
+            raise record_evaluator_failure(state, "application-attestation",
+                                           RuntimeError("a register was attested outside the family"))
+        try:
+            submitted = json.loads(getattr(call, "arguments", "") or "{}").get("content", "")
+            raw = (Path(state["workspace"]) / APPLICATION_FILE).read_bytes()  # one snapshot
+            expected = digests_of(raw, submitted=submitted)
+        except Exception as exc:
+            raise record_evaluator_failure(state, "application-attestation", exc)
+        mismatch = {k: (attestation[k], v) for k, v in expected.items() if attestation[k] != v}
+        if mismatch:
+            raise record_evaluator_failure(
+                state, "application-attestation",
+                RuntimeError(f"application receipt disagrees with trusted inputs on {sorted(mismatch)}"))
+        pending = state.pop("piv_pending_application", None)
+        if pending is None or pending.get("digests") != expected:
+            raise record_evaluator_failure(
+                state, "application-attestation", RuntimeError("no parse outcome for the committed register bytes"))
+        outcome = pending["outcome"]
+        if not isinstance(outcome, (ParsedApplication, ApplicationRejected)):
+            raise record_evaluator_failure(
+                state, "application-commit",
+                RuntimeError(f"application boundary returned {type(outcome).__name__}: {outcome}"))
+        revision = state.get("piv_application_revision", 0) + 1
+        # The earlier commitment and any delivery made over it are
+        # invalidated before the new one is installed: a publication from a
+        # previous finalisation cannot describe this revision of the register.
+        state.pop("piv_committed_application", None)
+        state.pop("piv_delivery", None)
+        state.pop("piv_application_delivery", None)
+        state.pop("piv_score", None)
+        state.pop("piv_result", None)
+        state.pop("piv_ledger_result", None)
+        state.pop("piv_application_result", None)
+        try:
+            manifest = Path(state["workspace"]) / PUBLICATION_FILE
+            if os.path.lexists(manifest):
+                os.unlink(manifest)          # no manifest may describe a superseded revision
+        except Exception as exc:
+            raise record_evaluator_failure(state, "application-commit", exc)
+        state["piv_committed_application"] = CommittedApplication(
+            rollout_id=state.get("piv_rollout_id", "?"), revision=revision, outcome=outcome, **expected)
+        state["piv_application_revision"] = revision
+        for key in expected:
+            state[f"piv_application_{key}"] = expected[key]
 
     @staticmethod
     def _record_malformed_calls(calls, state) -> list:
@@ -3012,7 +3692,7 @@ class BeancountLedgerEnv(vf.StatefulToolEnv):
         # Which observation and termination rules this batch ran under: two
         # batches sharing a task id but not this pair are not one condition.
         metadata["piv_episode_contract"] = {
-            "version": EPISODE_CONTRACT_VERSION,
+            "version": episode_contract_version(self.profile),
             "digest": self.episode_contract_digest(),
             "max_episode_output_tokens": self.max_total_completion_tokens,
         }
@@ -3399,6 +4079,15 @@ METRIC_OBSERVATION_BYTES = "piv/observation_bytes"     # every reply the environ
 METRIC_COMPLETE_READS = "piv/complete_reads"           # ledger reads that returned content, not a receipt
 METRIC_LEDGER_RECEIPTS = "piv/ledger_receipts"         # complete reads answered "unchanged" instead
 METRIC_OBSERVATION_REFUSED = "piv/observation_refused"  # calls refused with the observation budget spent
+# The cash-application family's two component scores, reported beside the
+# composite reward and never weighted into it. `L` is DIAGNOSTIC: the spec
+# keeps a submission without a register legal and its composite reward zero,
+# so the ledger's own progress has to be visible somewhere or the run says
+# only "0" about an episode that repaired every entry. `A` is the register's
+# own score. Both are 0.0 on a legacy rollout, which has no register and
+# whose reward already IS `L`.
+METRIC_LEDGER_SCORE = "piv/ledger_score"               # candidate/1's total, diagnostic only
+METRIC_APPLICATION_SCORE = "piv/application_score"     # application/1's total, diagnostic only
 
 STATUS_SEMANTICS = (
     "piv_status is EVALUATOR validity: VALID means every attempted rollout was "
@@ -3665,6 +4354,9 @@ def score_core(state) -> float:
         raise RuntimeError(f"piv_committed holds {type(committed).__name__}, not a minted outcome")
     if committed.receipt.rollout_id != state.get("piv_rollout_id"):
         raise RuntimeError("the commitment belongs to another rollout")
+    family = state.get("piv_family")
+    if family is not None and type(family) is not FamilyContract:
+        raise RuntimeError(f"piv_family holds {type(family).__name__}, not a family contract")
     workspace = state.get("workspace", "")
     delivery = state.get("piv_delivery")
     if delivery is not None:
@@ -3688,11 +4380,143 @@ def score_core(state) -> float:
             variant, rendered = OUTCOME_DELIVERED, render_committed(committed).encode("utf-8")
         else:
             variant, rendered = OUTCOME_POLICY_BLOCKED, None
-    delivery = _publish(workspace, committed, raw, rendered, variant, total, result_digest, completion)
+    # The family's second half. `result` above is the LEDGER's outcome and
+    # stays exactly what `candidate/1` produced; what the rollout is scored
+    # on becomes the composite, and the ledger outcome survives inside it as
+    # `composite.ledger` so `L` is still reportable.
+    application, register = None, None
+    if family is not None:
+        application_result, register = _score_application_half(state, family, result)
+        composite = compose(result, application_result)
+        composite.verify()
+        application = ApplicationDelivery.of(state, application_result, composite, register)
+        result, total, result_digest = composite, composite.total, composite.result_digest
+        completion = "complete" if composite.complete else "incomplete"
+    delivery = _publish(workspace, committed, raw, rendered, variant, total, result_digest, completion,
+                        application=application, register=register)
     state["piv_delivery"] = delivery
+    state["piv_application_delivery"] = application
     state["piv_result"] = result
     state["piv_score"] = float(total)
     return state["piv_score"]
+
+
+def _score_application_half(state, family, ledger_result):
+    """`application/1` over the LAST COMMITTED revision of the register, and
+    the canonical bytes `_publish` will publish for it.
+
+    A non-protocol ending scores the last committed revision of EACH
+    artifact, which is why this reads `piv_committed_application` rather than
+    the workspace: the file on disk is whatever the agent last stored, and a
+    write refused before storage never became a revision at all. Absent — a
+    submission that filed no register, which is legal — and REJECTED — a
+    stored replacement the parse boundary refused, which supersedes any
+    earlier accepted revision — both score `A = 0`, named apart by
+    `APPLICATION_ABSENT` / `APPLICATION_REJECTED`.
+
+    The commitment is checked by exact runtime type and by episode, the same
+    two guards `score_core` puts on the ledger's: `piv_committed_application`
+    is a mutable dict key like any other.
+    """
+    committed = state.get("piv_committed_application")
+    if committed is not None:
+        if type(committed) is not CommittedApplication:
+            raise RuntimeError(f"piv_committed_application holds {type(committed).__name__}, not a commitment")
+        if committed.rollout_id != state.get("piv_rollout_id"):
+            raise RuntimeError("the register commitment belongs to another rollout")
+    parsed = committed.outcome if committed is not None else None
+    outcome = score_application(parsed, family.application, expected_balances=family.expected_balances)
+    outcome.verify()
+    if ledger_result is not None and ledger_result.environment_digest != family.environment_digest:
+        raise RuntimeError("the ledger commitment was scored under another environment than the family's truth")
+    register = application_canonical_text(parsed).encode("utf-8") if type(parsed) is ParsedApplication else None
+    return outcome, register
+
+
+#: `delivery.json`'s `application` member: the register's half of the
+#: publication, present only on a cash-application rollout. A member of the
+#: SAME file rather than a second manifest, because a score and the artifacts
+#: it was computed over must be readable as one record — and a nested member
+#: rather than more top-level keys, because `DeliveryReceipt` (frozen with
+#: `candidate/1`) reads the top level by exact key set, so the legacy
+#: manifest's bytes are unchanged to the byte and a legacy reader that knows
+#: nothing about registers still parses the family's.
+APPLICATION_DELIVERY_KEY = "application"
+APPLICATION_DELIVERY_SCHEMA = "piv.delivery-application/1"
+
+
+@dataclasses.dataclass(frozen=True)
+class ApplicationDelivery:
+    """What was delivered for the register, beside the ledger's receipt: the
+    revision and status of the last committed revision, BOTH digests of the
+    bytes the agent stored, both digests of the canonical register published
+    at the public path (or NO_ARTIFACT when none was), `application/1`'s
+    canonical document digest, and the two scores with their result digests
+    — `A` on its own and the composite the rollout was actually rewarded."""
+
+    revision: int
+    status: str                          # delivered | rejected | absent
+    submitted_stored_bytes_digest: str   # of the bytes the agent stored, or NO_ARTIFACT
+    submitted_logical_text_digest: str
+    artifact_stored_bytes_digest: str    # of the canonical register published, or NO_ARTIFACT
+    artifact_logical_text_digest: str
+    canonical_digest: str                # application/1's canonical document digest; "" unless delivered
+    application_score: str               # canonical decimal
+    application_result_digest: str
+    composite_score: str                 # canonical decimal — the rollout's reward
+    composite_result_digest: str
+
+    @classmethod
+    def of(cls, state, application, composite, register: bytes | None) -> "ApplicationDelivery":
+        committed = state.get("piv_committed_application")
+        stored = committed.digests if committed is not None else None
+        artifact = digests_of(register) if register is not None else None
+        return cls(
+            revision=state.get("piv_application_revision", 0),
+            status=application.status,
+            submitted_stored_bytes_digest=stored["stored_bytes_digest"] if stored else NO_ARTIFACT,
+            submitted_logical_text_digest=stored["logical_text_digest"] if stored else NO_ARTIFACT,
+            artifact_stored_bytes_digest=artifact["stored_bytes_digest"] if artifact else NO_ARTIFACT,
+            artifact_logical_text_digest=artifact["logical_text_digest"] if artifact else NO_ARTIFACT,
+            canonical_digest=application.application_digest,
+            application_score=canonical_decimal(application.total),
+            application_result_digest=application.result_digest,
+            composite_score=canonical_decimal(composite.total),
+            composite_result_digest=composite.result_digest,
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema": APPLICATION_DELIVERY_SCHEMA, **dataclasses.asdict(self)}
+
+    @classmethod
+    def from_dict(cls, data) -> "ApplicationDelivery":
+        expected = {"schema"} | {f.name for f in dataclasses.fields(cls)}
+        if not isinstance(data, dict) or set(data) != expected \
+                or data.get("schema") != APPLICATION_DELIVERY_SCHEMA:
+            raise RuntimeError("the publication manifest's application block is not of the expected schema")
+        return cls(**{k: v for k, v in data.items() if k != "schema"})
+
+
+def _publication_bytes(delivery: DeliveryReceipt, application) -> bytes:
+    """The manifest as it is written. With no register the bytes are exactly
+    `DeliveryReceipt.to_json()` — the legacy file, unchanged."""
+    if application is None:
+        return delivery.to_json().encode("utf-8")
+    payload = json.loads(delivery.to_json())
+    payload[APPLICATION_DELIVERY_KEY] = application.to_dict()
+    return json.dumps(payload, sort_keys=True).encode("utf-8")
+
+
+def _read_publication(text: str):
+    """(DeliveryReceipt, ApplicationDelivery | None) from the manifest on
+    disk. The register's member is split off before `DeliveryReceipt`, whose
+    `from_json` reads the top level by exact key set, ever sees the text."""
+    data = json.loads(text)
+    if not isinstance(data, dict):
+        raise RuntimeError("the publication manifest is not an object")
+    block = data.pop(APPLICATION_DELIVERY_KEY, None)
+    delivery = DeliveryReceipt.from_json(json.dumps(data, sort_keys=True))
+    return delivery, (ApplicationDelivery.from_dict(block) if block is not None else None)
 
 
 def _refinalise(workspace: str, committed, delivery, state) -> float:
@@ -3713,9 +4537,14 @@ def _refinalise(workspace: str, committed, delivery, state) -> float:
     manifest_path = Path(workspace).resolve() / PUBLICATION_FILE
     if not _is_plain_file(manifest_path):
         raise RuntimeError("the publication manifest is missing at re-finalisation")
-    published = DeliveryReceipt.from_json(manifest_path.read_text(encoding="utf-8"))
+    published, published_application = _read_publication(manifest_path.read_text(encoding="utf-8"))
     if published != delivery:
         raise RuntimeError("the publication manifest does not match the delivery receipt")
+    application_delivery = state.get("piv_application_delivery")
+    if published_application != application_delivery:
+        raise RuntimeError("the publication manifest's register block does not match the delivery")
+    if (application_delivery is not None) != (type(state.get("piv_family")) is FamilyContract):
+        raise RuntimeError("a register was published for an episode with no family, or the other way round")
     if delivery.renderable:
         raw = _read_public(workspace, LEDGER)
         if raw is None:
@@ -3729,7 +4558,52 @@ def _refinalise(workspace: str, committed, delivery, state) -> float:
     # The recorded RESULT, not only the number: a deeply immutable typed
     # outcome whose canonical bytes reproduce the digest the receipt binds.
     result = state.get("piv_result")
-    if type(committed) is ProtocolRejected:
+    if application_delivery is not None:
+        # The family's recorded result is the COMPOSITE; the ledger's own
+        # outcome is inside it, and is checked against this commitment
+        # exactly as it is below.
+        if type(result) is not CompositeOutcome:
+            raise RuntimeError("the recorded result is not a CompositeOutcome")
+        result.verify()
+        if result.result_digest != delivery.score_result_digest:
+            raise RuntimeError("the recorded composite result does not match the delivery receipt")
+        if canonical_decimal(result.total) != delivery.score:
+            raise RuntimeError("the recorded total does not match the delivery receipt")
+        if ("complete" if result.complete else "incomplete") != delivery.completion:
+            raise RuntimeError("the recorded completion status does not match the delivery receipt")
+        if type(committed) is ProtocolRejected:
+            if result.ledger is not None:
+                raise RuntimeError("a rejected ledger was composed as a scored one")
+        else:
+            ledger = result.ledger
+            if type(ledger) is not ScoreOutcome:
+                raise RuntimeError("the composite carries no candidate/1 outcome for a scored ledger")
+            ledger.verify()
+            if ledger.environment_digest != committed.environment_digest \
+                    or ledger.reward_input_digest != committed.reward_input_digest \
+                    or ledger.evaluation_receipt_digest != committed.evaluation_receipt_digest:
+                raise RuntimeError("the recorded score result belongs to another commitment or another rollout")
+        application = result.application
+        if type(application) is not ApplicationOutcome:
+            raise RuntimeError("the composite carries no application/1 outcome for a family rollout")
+        application.verify()
+        if application.result_digest != application_delivery.application_result_digest \
+                or canonical_decimal(application.total) != application_delivery.application_score \
+                or application.status != application_delivery.status:
+            raise RuntimeError("the recorded application result does not match the published register block")
+        if application_delivery.artifact_stored_bytes_digest == NO_ARTIFACT:
+            if os.path.lexists(Path(workspace).resolve() / APPLICATION_FILE):
+                raise RuntimeError("a register is at the public path although none was delivered")
+        else:
+            stored = _read_workspace_file(workspace, APPLICATION_FILE)
+            if stored is None:
+                raise RuntimeError("the delivered register is missing at re-finalisation")
+            now = digests_of(stored)
+            if (now["stored_bytes_digest"], now["logical_text_digest"]) != (
+                    application_delivery.artifact_stored_bytes_digest,
+                    application_delivery.artifact_logical_text_digest):
+                raise RuntimeError("the delivered register no longer matches the publication")
+    elif type(committed) is ProtocolRejected:
         if result is not None or rejection_result_digest(committed) != delivery.score_result_digest:
             raise RuntimeError("the recorded rejection result does not match the delivery receipt")
     else:
@@ -3753,13 +4627,15 @@ def _refinalise(workspace: str, committed, delivery, state) -> float:
 
 
 def _publish(workspace: str, committed, submitted: bytes, rendered: bytes | None, variant: str, total: Decimal,
-             result_digest: str, completion: str) -> DeliveryReceipt:
+             result_digest: str, completion: str, application=None, register: bytes | None = None) -> DeliveryReceipt:
     """The publication transaction. Order: audit copy of the received bytes
     (bounded, exclusive), then the public path — the canonical artifact
     replaced atomically and re-hashed through the verified-handle door, or
-    REMOVED when the revision has no artifact — then the current-revision
-    manifest, atomically, as the commit point. Any failure before the
-    manifest leaves no manifest, so no reader can pair a score with a file."""
+    REMOVED when the revision has no artifact — then, for the family, the
+    canonical REGISTER at its own public path under the same rule, and
+    finally the current-revision manifest, atomically, as the commit point.
+    Any failure before the manifest leaves no manifest, so no reader can pair
+    a score with a file."""
     root = Path(workspace).resolve()
     receipt = committed.receipt
     _archive_submission(receipt.rollout_id, receipt.committed_revision, submitted)
@@ -3777,6 +4653,23 @@ def _publish(workspace: str, committed, submitted: bytes, rendered: bytes | None
         if os.path.lexists(target):
             os.unlink(target)                        # no current ledger, and the public path says so
         stored = logical = NO_ARTIFACT
+    if application is not None:
+        # The register is published in the SAME canonical form the scorer
+        # read — applications summed by invoice, records in id order — so
+        # what is on disk beside the score is the document that was scored
+        # and not the agent's formatting of it. A rejected or absent
+        # register leaves nothing at the path, exactly as a non-renderable
+        # ledger does.
+        app_target = root / APPLICATION_FILE
+        if os.path.lexists(app_target) and not _is_plain_file(app_target):
+            raise RuntimeError("register target is not a plain regular file at delivery")
+        if register is not None:
+            _write_replace(root, app_target, register)
+            after = _read_workspace_file(workspace, APPLICATION_FILE)
+            if after is None or after != register:
+                raise RuntimeError("the delivered register does not match what was canonicalised")
+        elif os.path.lexists(app_target):
+            os.unlink(app_target)
     delivery = DeliveryReceipt(
         rollout_id=receipt.rollout_id, committed_revision=receipt.committed_revision, outcome=variant,
         input_stored_bytes_digest=receipt.stored_bytes_digest, input_logical_text_digest=receipt.logical_text_digest,
@@ -3785,7 +4678,7 @@ def _publish(workspace: str, committed, submitted: bytes, rendered: bytes | None
         artifact_stored_bytes_digest=stored, artifact_logical_text_digest=logical,
         score=canonical_decimal(total),
     ).with_digest()
-    _write_replace(root, root / PUBLICATION_FILE, delivery.to_json().encode("utf-8"))
+    _write_replace(root, root / PUBLICATION_FILE, _publication_bytes(delivery, application))
     return delivery
 
 
@@ -4096,6 +4989,12 @@ LEDGER_UNCHANGED_RECEIPT = (
 READ_OVER_ENVELOPE = ("read rejected: the stored ledger is outside the observation envelope and was "
                       "not returned; write a ledger inside the envelope with write_ledger")
 TURN_MULTI_WRITE = "turn rejected: at most one write_ledger call per turn; nothing was written"
+#: The register's own multi-write refusal. Counted PER TOOL: `TURN_MULTI_WRITE`
+#: names `write_ledger`, so a doubled `write_cash_application` needs a reply
+#: that names the tool the agent actually doubled (spec section 3). Like the
+#: ledger's, the whole turn executes nothing.
+TURN_MULTI_APPLICATION = ("turn rejected: at most one write_cash_application call per turn; "
+                          "nothing was written")
 TURN_DUPLICATE_ID = ("turn rejected: duplicate tool call ids cannot be answered; "
                      "nothing was executed and the rollout ends here")
 # The nudge. Fixed text, selected by code, identical for every task: it names
@@ -4149,6 +5048,43 @@ WRITE_NOT_TEXT = "write rejected: content is not valid Unicode text; nothing was
 MAX_WRITE_BYTES = LEDGER_ENVELOPE_BYTES
 WRITE_TOO_LARGE = (f"write rejected: the ledger must stay within the {MAX_WRITE_BYTES}-byte, "
                    f"{LEDGER_ENVELOPE_LINES}-line observation envelope; nothing was written")
+
+# --------------------------------------------------------------------------
+# the register's replies (cash-application profile only)
+#
+# Every one of them is hoisted here, beside the ledger's, so
+# `model_facing_messages(PROFILE_CASH_APPLICATION)` — and therefore contract
+# 5's digest — binds the exact text the agent is answered with. Not one of
+# them names a world, an amount or a document: they name the tool, the rule
+# and the one way forward, exactly as the ledger's do.
+# --------------------------------------------------------------------------
+
+#: The defensive answer outside the family. `write_cash_application` is not on
+#: the legacy tool surface at all, so a legacy episode that calls it is
+#: answered PUBLIC_TOOL_ERROR by `call_tool` and never reaches the body; this
+#: is what a DIRECT call to the importable function gets.
+APPLICATION_NOT_REQUESTED = ("cash application rejected: this task has no cash application to file; "
+                             "nothing was written")
+APPLICATION_NOT_TEXT = "cash application rejected: content is not valid Unicode text; nothing was written"
+#: Refused BEFORE storage, so the previous revision and its phase are exactly
+#: as they were (spec section 3, "Application lifecycle").
+APPLICATION_TOO_LARGE = (f"cash application rejected: the register must stay within "
+                         f"{APPLICATION_ENVELOPE_BYTES} bytes and {APPLICATION_ENVELOPE_LINES} lines; "
+                         f"nothing was written")
+#: What a STORED register is answered with. Both outcomes supersede the
+#: previous revision; the refusal is a stored, REJECTED revision scoring
+#: A = 0, not an unstored request.
+APPLICATION_ACCEPTED = ("cash application accepted: {receipts} receipts, {invoices} invoices, "
+                        "{credit_notes} credit notes")
+APPLICATION_REFUSED = "cash application refused: {labels}"
+#: The family's accepted-submit receipt: the ledger's sentence and hash, then
+#: what the register was bound as. `submit` binds the EXACT latest revision,
+#: and a submission without a register is legal and scores A = 0 — so the
+#: absent case has a receipt of its own rather than silence.
+SUBMIT_DELIVERING_WITH_APPLICATION = "{accepted}; delivering logical text {digest}; {application}"
+APPLICATION_BOUND_ACCEPTED = "cash application bound at {digest}"
+APPLICATION_BOUND_REJECTED = "cash application bound at {digest}, refused by the register protocol"
+APPLICATION_BOUND_ABSENT = "no cash application was filed"
 
 # The rollout state, visible to `call_tool` (which the framework calls without
 # it) for the duration of one `env_response`. A context variable so concurrent
@@ -4266,16 +5202,26 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
     CONSTRUCTION of an environment are separable — `load_environment` is
     admission plus this, and the preflight's offline phase is this alone.
     Every audit below is unconditional either way.
+
+    The EPISODE PROFILE is resolved here and nowhere else, from the derived
+    contract itself: a world that minted `ApplicationInputs` is a
+    cash-application episode (eleven public files, seven tools, contract 5,
+    the composite reward) and every other world is legacy (eight files, six
+    tools, contract 4, `L`). Nothing about the profile is passed in, so a
+    caller cannot ask for the family's tool surface over a world that has no
+    register to score, or serve a family world under the legacy contract.
     """
     # Every audit runs here, once, before any submission is accepted, and a
     # failure is a typed InitializationFailure — never a candidate score, a
     # cache entry or a trajectory. Only after they pass is the immutable
     # environment snapshot minted.
     contract = load_contract(inputs)
+    profile = episode_profile(inputs)
+    manifest = public_file_names(profile)
     public_files = dict(inputs.public_files)
-    if set(public_files) != set(PUBLIC_FILES):
+    if set(public_files) != set(manifest):
         raise InitializationFailure([f"the projection does not produce exactly the public manifest: "
-                                     f"{sorted(set(public_files) ^ set(PUBLIC_FILES))}"])
+                                     f"{sorted(set(public_files) ^ set(manifest))}"])
     # The observation envelope, checked BEFORE the environment exists. The
     # ledger is read whole in one call; a world whose ledger does not fit is
     # not served at all, rather than served and then failed per rollout at
@@ -4543,14 +5489,38 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
 
     observation_refused.__name__ = METRIC_OBSERVATION_REFUSED
 
+    def ledger_score(state, **_kwargs) -> float:
+        """Zero-weight: `L`, `candidate/1`'s own total, on a family rollout.
+
+        The spec keeps a submission without a register legal and its
+        composite reward zero, and requires `L` to be REPORTED
+        DIAGNOSTICALLY rather than credited — this is where it is reported.
+        Read from the recorded composite, so it is the number the reward was
+        actually composed from and not a second scoring. 0.0 on a legacy
+        rollout, whose reward already is `L`."""
+        result = state.get("piv_result")
+        return float(result.ledger_total) if type(result) is CompositeOutcome else 0.0
+
+    ledger_score.__name__ = METRIC_LEDGER_SCORE
+
+    def application_score(state, **_kwargs) -> float:
+        """Zero-weight: `A`, `application/1`'s total, on a family rollout.
+        0.0 for an absent or rejected register — and 0.0 on a legacy
+        rollout, which has no register at all."""
+        result = state.get("piv_result")
+        return float(result.application_total) if type(result) is CompositeOutcome else 0.0
+
+    application_score.__name__ = METRIC_APPLICATION_SCORE
+
     rubric = vf.Rubric(
         funcs=[ledger_reward, evaluator_failed, protocol_failed, training_eligible_monitor,
                submitted, no_tool_turns, no_tool_limit, no_tool_truncated,
                truncation_limit, rejected_calls, rejected_call_limit,
                turn_cap_no_submit, turn_cap_submit_unexecuted, submit_refused,
                output_budget_exhausted, budget_accounting_invalid, budget_accounting_suspicious,
-               observation_bytes, complete_reads, ledger_receipts, observation_refused],
-        weights=[1.0] + [0.0] * 20,
+               observation_bytes, complete_reads, ledger_receipts, observation_refused,
+               ledger_score, application_score],
+        weights=[1.0] + [0.0] * 22,
     )
 
     # The per-episode output ceiling is the environment's, not the caller's
@@ -4577,6 +5547,8 @@ def environment_from_inputs(inputs, **kwargs) -> vf.Environment:
         max_turns=MAX_TURNS,
         contract=contract,
         public_files=public_files,
+        profile=profile,
+        application=inputs.application,
         **kwargs,
     )
     env.set_max_total_completion_tokens(int(ceiling))

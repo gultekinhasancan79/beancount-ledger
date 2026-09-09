@@ -22,8 +22,10 @@ requires-python = ">=3.11,<3.14"          # verifiers 0.3.1 admits 3.11-3.13
 # `state["piv_library_versions"]`, and `tests/test_entrypoints.py` fails when
 # the installed versions differ from these pins — so a bump is loud in exactly
 # one place and silent in none. Bumping means: change the pin, re-run the
-# battery, re-pin `EPISODE_CONTRACT_DIGEST` if it moved, and treat any moved
-# digest as a new measurement condition.
+# battery, re-pin BOTH `EPISODE_CONTRACT_DIGEST` and
+# `EPISODE_CONTRACT_DIGEST_CASH_APPLICATION` if they moved (one resolved
+# view per episode profile), and treat any moved digest as a new
+# measurement condition.
 dependencies = [
     "verifiers==0.3.1",
     "openai==3.5.0",

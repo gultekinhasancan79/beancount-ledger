@@ -239,12 +239,34 @@ def test_the_tool_surface_is_what_we_think_it_is():
     mutating = [n for n in names if n in ("write_ledger",)]
     if len(mutating) != 1:
         problems.append(f"{len(mutating)} mutating tools")
+    # THE SEVENTH TOOL, and only where the contract promises it. The
+    # cash-application family advertises `write_cash_application` beside the
+    # six; the legacy surface does not have it at all, so a legacy episode
+    # that names it is answered like any name the environment never had. It
+    # writes ONE fixed filename, exactly as `write_ledger` does, so the
+    # severity claim above is unchanged by its existence.
+    family = env.load_environment("cash_application_001")
+    family_names = set(family.tool_map)
+    if family_names != names | {"write_cash_application"}:
+        problems.append(f"the family tool surface is {sorted(family_names)}")
+    if len(family.tool_defs) != 7:
+        problems.append(f"{len(family.tool_defs)} tool definitions advertised to a family episode")
+    if "write_cash_application" in names:
+        problems.append("the seventh tool is on the legacy surface")
+    if env.WRITE_TOOLS != ("write_ledger", "write_cash_application"):
+        problems.append(f"WRITE_TOOLS moved: {env.WRITE_TOOLS}")
+    application_body = source.split("def write_cash_application", 1)[-1].split("\ndef ", 1)[0]
+    if "root / APPLICATION_FILE" not in application_body or "/ path" in application_body:
+        problems.append("write_cash_application does not target the one fixed filename")
+    if 'APPLICATION_FILE = "cash_application.json"' not in source:
+        problems.append("the fixed register name is gone")
     submit_body = source.split("def submit", 1)[-1].split("\ndef ", 1)[0]
     for needle in ("open(", "mkstemp", "os.replace", "unlink", "_read_public"):
         if needle in submit_body:
             problems.append(f"the terminal tool touches {needle}")
     return check(
-        "six tools; one fixed write name writing one fixed filename; one terminal name that touches no file",
+        "six tools on the legacy surface and seven on the family's; each write name writes one fixed filename; "
+        "one terminal name that touches no file",
         not problems, "\n".join(problems),
     )
 
@@ -277,12 +299,21 @@ def test_read_tools_grant_only_the_manifest():
     key = (env.HERE / "tasks" / "bank_recon_001.json").resolve()
     problems = []
 
-    # the manifest is exactly the world, and the answer key is not in it
+    # the manifest is exactly the world, and the answer key is not in it.
+    # PER INSTANCE now: the manifest a rollout's read tools consult is the
+    # environment's own tuple — the legacy eight, which are the mounted
+    # `WORLD_DIR`, or the family's eleven — and the module constant is the
+    # legacy default the direct-call door falls back to.
     world = {p.name for p in env.WORLD_DIR.iterdir() if p.is_file()}
-    if set(env.PUBLIC_FILES) != world:
+    legacy_instance = env.load_environment()
+    if set(env.PUBLIC_FILES) != world or set(legacy_instance.public_file_names) != world:
         problems.append(f"manifest != world dir: {set(env.PUBLIC_FILES) ^ world}")
-    if any(name.endswith(".json") for name in env.PUBLIC_FILES):
-        problems.append("a task file is in the manifest")
+    family_instance = env.load_environment("cash_application_001")
+    if set(family_instance.public_file_names) != world | set(env.EXTRA_PUBLIC_FILES):
+        problems.append(f"the family manifest is {sorted(family_instance.public_file_names)}")
+    for manifest in (env.PUBLIC_FILES, legacy_instance.public_file_names, family_instance.public_file_names):
+        if any(name.endswith(".json") for name in manifest):
+            problems.append(f"a task file is in the manifest {sorted(manifest)}")
 
     # an undeclared file created inside the workspace is invisible
     (Path(ws) / "receipt.json").write_text('{"expected_balances": 1}', encoding="utf-8")
@@ -385,6 +416,84 @@ def test_read_tools_grant_only_the_manifest():
         "read tools grant exactly the manifest: paths, undeclared files, swap-at-open, junction, hard link, ADS, case all denied",
         not problems, "\n".join(problems),
     )
+
+
+def test_the_family_loads_and_its_register_is_write_only():
+    """`cash_application_001` is a served id like any other, and the register
+    it asks for is INVISIBLE to every read tool.
+
+    The observation surface is deliberately the evidence pack plus the
+    ledger (spec section 3, "Write-only, and why"): the register is the
+    agent's own answer, and reading it back would spend a bounded
+    observation budget on a second copy of bytes the agent just generated.
+    So `cash_application.json` has no manifest row, no `list_files` entry, no
+    `read_file` and no `grep` — checked here with the file ACTUALLY ON DISK,
+    written through the real tool, so this is invisibility rather than
+    absence.
+    """
+    import shutil
+    import tempfile
+    from beancount_ledger import beancount_ledger as env
+
+    problems = []
+    instance = env.load_environment("cash_application_001")
+    if instance.profile != env.PROFILE_CASH_APPLICATION:
+        problems.append(f"the family id resolved to profile {instance.profile!r}")
+    if len(instance.public_files) != 11:
+        problems.append(f"{len(instance.public_files)} public files mounted, not eleven")
+
+    # a real rollout workspace, and a register really written into it
+    state = {}
+    workspace = instance._workspace(state)
+    token = env._PIV_STATE.set(state)
+    try:
+        reply = env.write_cash_application('{"schema": "piv.cash-application/1"}', workspace=workspace)
+        if env.APPLICATION_FILE not in {p.name for p in Path(workspace).iterdir()}:
+            problems.append("write_cash_application did not store the register")
+        if "cash application" not in reply:
+            problems.append(f"the write reply is {reply[:80]!r}")
+        listed = env.list_files(workspace=workspace)
+        if env.APPLICATION_FILE in listed:
+            problems.append("list_files shows the register")
+        if len(listed.strip().splitlines()) != 11:
+            problems.append(f"list_files shows {len(listed.strip().splitlines())} rows, not eleven")
+        for probe in (env.APPLICATION_FILE, "./" + env.APPLICATION_FILE, env.APPLICATION_FILE.upper()):
+            got = env.read_file(probe, workspace=workspace)
+            if not got.startswith("no such file"):
+                problems.append(f"read_file({probe!r}) -> {got[:60]!r}")
+        hits = env.grep("piv.cash-application", workspace=workspace)
+        if env.APPLICATION_FILE in hits or "piv.cash-application/1" in hits:
+            problems.append(f"grep reached the register: {hits[:120]!r}")
+        got = env.grep("piv.cash-application", path=env.APPLICATION_FILE, workspace=workspace)
+        if not got.startswith("no such file"):
+            problems.append(f"grep(path=register) -> {got[:60]!r}")
+        # ...and the three extra evidence files ARE readable, so the test is
+        # about the register and not about a deny-all workspace
+        for name in env.EXTRA_PUBLIC_FILES:
+            if name not in listed:
+                problems.append(f"{name} is missing from list_files")
+            if env.read_file(name, workspace=workspace).startswith("no such file"):
+                problems.append(f"{name} is not readable")
+    finally:
+        env._PIV_STATE.reset(token)
+        shutil.rmtree(workspace, ignore_errors=True)
+
+    # the legacy surface has no register door at all
+    legacy_state = {}
+    legacy = env.load_environment()
+    legacy_workspace = legacy._workspace(legacy_state)
+    token = env._PIV_STATE.set(legacy_state)
+    try:
+        if env.write_cash_application("{}", workspace=legacy_workspace) != env.APPLICATION_NOT_REQUESTED:
+            problems.append("a legacy workspace accepted a register")
+        if (Path(legacy_workspace) / env.APPLICATION_FILE).exists():
+            problems.append("a register was stored on a legacy rollout")
+    finally:
+        env._PIV_STATE.reset(token)
+        shutil.rmtree(legacy_workspace, ignore_errors=True)
+    return check("cash_application_001 loads through the real door with eleven public files and seven tools, "
+                 "and the register it asks for is invisible to list_files, read_file and grep while the three "
+                 "new evidence files are not", not problems, "\n".join(problems))
 
 
 def test_grep_is_literal_and_bounded_in_time():
@@ -1765,6 +1874,7 @@ TESTS = [
     test_safe_parse_actually_is_the_door,
     test_the_trap_itself_works,
     test_read_tools_grant_only_the_manifest,
+    test_the_family_loads_and_its_register_is_write_only,
     test_grep_is_literal_and_bounded_in_time,
     test_a_broken_world_is_our_failure_not_a_narrower_observation,
     test_the_ledger_is_observed_whole_and_the_others_in_slices,

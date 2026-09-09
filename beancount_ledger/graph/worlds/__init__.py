@@ -53,13 +53,18 @@ del _module, _task_id, _task
 
 # The cash-application family: five variants of one company-month
 # (`_bowline.py`), each projecting eleven public files and deriving the
-# truth register `application/1` scores against. Authored, checked and
-# held to gates (l), (m) and (n) here; NOT in `REGISTRY` yet, because the
-# serving door mounts exactly the eight legacy files
-# (`beancount_ledger.load_environment` refuses any other set) until the
-# environment step of the spec's implementation order adds the second
-# deliverable, the seventh tool and the contract-5 profile — that step
-# moves these five into `REGISTRY`.
+# truth register `application/1` scores against. Authored, checked and held
+# to gates (l), (m) and (n) in step 4; REGISTERED here now that the
+# environment step has landed — the serving door resolves the episode
+# profile from the derived inputs (`episode_profile`), mounts eleven public
+# files instead of eight, advertises the seventh tool and scores the second
+# deliverable. They load exactly like every other hand-authored id, with no
+# evaluator secret and no manifest: `load_environment("cash_application_001")`
+# and the rest.
+#
+# `CASH_APPLICATION_REGISTRY` stays as its own mapping beside `REGISTRY`, so
+# a test can name the family without pattern-matching on task ids, and so
+# the legacy 95 remain enumerable as `REGISTRY` minus this.
 from . import (  # noqa: E402
     bowline_2026_04_c1,
     bowline_2026_04_c2,
@@ -76,10 +81,17 @@ CASH_APPLICATION_MODULES = (
     bowline_2026_04_c5,   # cash_application_005  a credit exceeding the invoice's remaining balance
 )
 
+#: The 95 shipped ids, frozen at the moment before the family joins them:
+#: `tests/test_legacy_freeze.py` and `tests/test_worlds.py` read this to say
+#: "the legacy surface" without listing ninety-five strings.
+LEGACY_TASK_IDS = tuple(REGISTRY)
+
 CASH_APPLICATION_REGISTRY: dict = {}
 for _module in CASH_APPLICATION_MODULES:
     for _task_id, _task in _module.TASKS.items():
         if _task_id in REGISTRY or _task_id in CASH_APPLICATION_REGISTRY:
             raise RuntimeError(f"task id {_task_id!r} is registered twice (second time by {_module.__name__})")
-        CASH_APPLICATION_REGISTRY[_task_id] = (_module.WORLD, _task)
-del _module, _task_id, _task
+        _entry = (_module.WORLD, _task)
+        CASH_APPLICATION_REGISTRY[_task_id] = _entry
+        REGISTRY[_task_id] = _entry
+del _module, _task_id, _task, _entry

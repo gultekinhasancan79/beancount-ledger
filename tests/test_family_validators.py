@@ -74,7 +74,11 @@ for _path in (str(ROOT), str(ROOT / "tests")):
 from beancount_ledger.graph import cash_application as CA  # noqa: E402
 from beancount_ledger.graph import identify as ID  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
-from beancount_ledger.graph.worlds import CASH_APPLICATION_MODULES, REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import (  # noqa: E402
+    CASH_APPLICATION_MODULES,
+    LEGACY_TASK_IDS,
+    REGISTRY,
+)
 
 from repair_keys import master_names, planted_key  # noqa: E402
 from world_checks import _family_gates, check_derived, check_world_task, decoded_public  # noqa: E402
@@ -293,7 +297,11 @@ def test_the_mechanism_and_its_limits():
 def test_no_shipped_task_prints_a_payment_reference():
     problems = []
     roles: dict = {}
-    for task_id in sorted(REGISTRY):
+    # The 95 SHIPPED ids, which is `LEGACY_TASK_IDS` now that the family is
+    # served out of the same `REGISTRY`: the claim is about the manifested
+    # worlds, and the five cases print the payment-reference syntax by
+    # design (that is what makes them identifiable).
+    for task_id in sorted(LEGACY_TASK_IDS):
         world, task = REGISTRY[task_id]
         _, inputs = derive_contract(world, task)
         public = decoded_public(inputs)
@@ -456,8 +464,8 @@ def test_verify_world_and_the_world_battery_accept_the_five():
                     or "1 of 1 task(s) clean" not in result.stdout:
                 problems.append(f"case {n}: verify_world exit {result.returncode}\n{result.stdout[-800:]}\n{result.stderr[-400:]}")
     source = (ROOT / "tests" / "test_worlds.py").read_text(encoding="utf-8")
-    if "CASH_APPLICATION_REGISTRY" not in source or "registered = {**REGISTRY, **CASH_APPLICATION_REGISTRY}" not in source:
-        problems.append("tests/test_worlds.py does not walk CASH_APPLICATION_REGISTRY beside REGISTRY")
+    if "CASH_APPLICATION_REGISTRY" not in source or "registered = dict(REGISTRY)" not in source:
+        problems.append("tests/test_worlds.py does not walk the family beside the legacy ids")
     # and through the same function the battery calls, with warnings only
     for n in range(1, 6):
         module, world, task, *_ = case(n)

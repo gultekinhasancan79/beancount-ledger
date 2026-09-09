@@ -92,6 +92,7 @@ from beancount_ledger.graph.project import MutationPlan, project  # noqa: E402
 from beancount_ledger.graph.worlds import (  # noqa: E402
     CASH_APPLICATION_MODULES,
     CASH_APPLICATION_REGISTRY,
+    LEGACY_TASK_IDS,
     REGISTRY,
     WORLD_MODULES,
     _bowline as B,
@@ -259,9 +260,15 @@ def test_the_family_is_five_variants_of_one_company_month():
         problems.append(f"world ids {[m.WORLD.id for m in CASH_APPLICATION_MODULES]}")
     if sorted(CASH_APPLICATION_REGISTRY) != [f"cash_application_{n:03d}" for n in range(1, 6)]:
         problems.append(f"task ids {sorted(CASH_APPLICATION_REGISTRY)}")
-    if set(CASH_APPLICATION_REGISTRY) & set(REGISTRY) or len(REGISTRY) != 95:
-        problems.append(f"the legacy registry carries {len(REGISTRY)} tasks and shares "
-                        f"{sorted(set(CASH_APPLICATION_REGISTRY) & set(REGISTRY))}")
+    # The five are served ids like any other now, so what has to hold is
+    # that they did not DISPLACE any of the 95: the legacy surface is
+    # `LEGACY_TASK_IDS` (the registry as it stood before the family joined),
+    # it still holds 95 ids, and none of them is a family id.
+    if len(LEGACY_TASK_IDS) != 95 or set(CASH_APPLICATION_REGISTRY) & set(LEGACY_TASK_IDS):
+        problems.append(f"the legacy surface carries {len(LEGACY_TASK_IDS)} tasks and shares "
+                        f"{sorted(set(CASH_APPLICATION_REGISTRY) & set(LEGACY_TASK_IDS))}")
+    if set(REGISTRY) != set(LEGACY_TASK_IDS) | set(CASH_APPLICATION_REGISTRY):
+        problems.append("REGISTRY is not the 95 legacy ids plus the five family ids")
     worlds = [m.WORLD for m in CASH_APPLICATION_MODULES]
     tasks = [t for _, t in CASH_APPLICATION_REGISTRY.values()]
     shared = ("title", "currency", "bank_account", "bank_party_id", "accounts", "parties", "documents",
