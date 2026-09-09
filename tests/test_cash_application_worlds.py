@@ -34,8 +34,13 @@ What is witnessed:
   * gate (l): the register entering the period ties to the opening entry on
     the public bytes and the truth alike, and refuses when it does not;
   * gate (n): a receipt narration may carry the genuine payment reference;
-    an application instruction, an invoice no document ties to the payment
-    and an invented credit note are refused, in narrations and advice notes;
+    an application instruction — with or without an amount — an invoice no
+    PUBLIC document ties to the payment (an advice-less receipt's authored
+    lines are not one, even when rung (3) reaches them) and an invented
+    credit note are refused, in narrations and advice notes;
+  * U12 is a warning, not a gate: a deduction of exactly 25.00 and an
+    advice line on a zero-balance invoice pass every world gate and carry a
+    `WARN:` line, so a world at the spec's own boundary passes verify_world;
   * every other world gate (`world_checks`: schema, derivation, golden 1.0,
     original unresolved, the merged trap, leaked ids, derived literals, name
     pools, policy headings) passes for all five; gate (f), scoped to the
@@ -508,19 +513,35 @@ def test_gate_n_the_narration_rule():
         found = narration_problems(text, tied, notes, "t")
         if found:
             problems.append(f"{text!r} refused: {found}")
-    refused = ("apply 1,830.00 to SI-3102", "1830.00 to SI-3102 and 1890.00 to SI-3104",
-               "SI-3102 is to be posted at 1830.00", "allocate 1830.00 against SI-3102",
-               "Customer payment for SI-3100", "after application of CN-9999")
-    for text in refused:
-        if not narration_problems(text, tied, notes, "t"):
+    # an APPLICATION INSTRUCTION directs money to an id, with or without an
+    # amount: the spec's "apply 1,830.00 to SI-3102" is an instance, not the
+    # definition. Every id below is tied, so the instruction is the only
+    # refusal each can earn.
+    all_tied = frozenset({"SI-3101", "SI-3102", "SI-3104"})
+    instructions = ("apply 1,830.00 to SI-3102", "1830.00 to SI-3102 and 1890.00 to SI-3104",
+                    "SI-3102 is to be posted at 1830.00", "allocate 1830.00 against SI-3102",
+                    "SI-3102 at 1830.00 is to be posted",
+                    "Applied to SI-3101 in full and the balance to SI-3102",
+                    "Customer payment, apply to SI-3101 then SI-3102",
+                    "2400 to SI-3101 and 1500 to SI-3102", "$1,830 against SI-3102",
+                    "the remainder to SI-3104", "SI-3104 in full", "post SI-3102", "SI-3102 matched")
+    for text in instructions:
+        found = narration_problems(text, all_tied, notes, "t")
+        if not any("application instruction" in p for p in found):
+            problems.append(f"{text!r} not refused as an instruction: {found}")
+    for text, why in (("Customer payment for SI-3100", "no public document ties"),
+                      ("after application of CN-9999", "not a credit note")):
+        if not any(why in p for p in narration_problems(text, tied, notes, "t")):
             problems.append(f"{text!r} allowed")
     # through the world gate: an instruction in R3's memo fails Case 1 with gate (n)
     module, world, task, *_ = case(1)
-    r3 = dataclasses.replace(module.R3, memo="Customer payment; apply 1830.00 to SI-3102 and 1890.00 to SI-3104")
-    bad = B.world("bowline-2026-04-c1", B.april_events(B.r1(), module.CN_0412, r3))
-    found, _ = check_world_task(bad, task)
-    if not any("gate (n)" in p and "application instruction" in p for p in found):
-        problems.append(f"an instruction in the receipt narration passed the world gate: {found[:2]}")
+    for memo in ("Customer payment; apply 1830.00 to SI-3102 and 1890.00 to SI-3104",
+                 "Customer payment, apply to SI-3102 then SI-3104"):
+        r3 = dataclasses.replace(module.R3, memo=memo)
+        bad = B.world("bowline-2026-04-c1", B.april_events(B.r1(), module.CN_0412, r3))
+        found, _ = check_world_task(bad, task)
+        if not any("gate (n)" in p and "application instruction" in p for p in found):
+            problems.append(f"an instruction in the receipt narration passed the world gate: {memo!r} {found[:2]}")
     r3 = dataclasses.replace(module.R3, memo="Customer payment for SI-3100")
     bad = B.world("bowline-2026-04-c1", B.april_events(B.r1(), module.CN_0412, r3))
     found, _ = check_world_task(bad, task)
@@ -532,9 +553,76 @@ def test_gate_n_the_narration_rule():
     found, _ = check_world_task(bad, task)
     if not any("gate (n)" in p and "advice note" in p for p in found):
         problems.append(f"an instruction in an advice note passed the world gate: {found[:2]}")
+    # `tied` is what the PUBLIC documents tie: a receipt with no advice ties
+    # nothing beyond its statement reference, whatever the authored lines
+    # say. Case 2's R3 re-referenced to a pay-run number, its lines exactly
+    # what rung (3) reaches (SI-3100 300.00, SI-3102 1,830.00), so gate (m)
+    # passes — and its narration naming SI-3102 is refused all the same.
+    module2, _, task2, *_ = case(2)
+    r3 = dataclasses.replace(module2.R3, bank_reference="GR PAYRUN 0428", memo="Customer payment for SI-3102",
+                             lines=(S.ReceiptLine("doc:si-3100", D("300.00"), True),
+                                    S.ReceiptLine("doc:si-3102", D("1830.00"), False)))
+    unadviced = B.world("bowline-2026-04-c2", B.april_events(B.r1(), module2.CN_0412, r3))
+    found, _ = check_world_task(unadviced, task2)
+    if any("gate (m)" in p for p in found):
+        problems.append(f"rung (3) does not reach the re-referenced R3; the fixture is wrong: {found[:2]}")
+    if not any("gate (n)" in p and "SI-3102" in p and "no public document ties" in p for p in found):
+        problems.append(f"an invoice only the authored lines of an advice-less receipt name passed the world "
+                        f"gate: {found[:3]}")
+    # the same receipt with the reference naming the invoice is allowed
+    r3 = dataclasses.replace(r3, bank_reference="SI-3102 SI-3100")
+    referenced = B.world("bowline-2026-04-c2", B.april_events(B.r1(), module2.CN_0412, r3))
+    found, _ = check_world_task(referenced, task2)
+    if any("gate (n)" in p for p in found):
+        problems.append(f"a narration naming an invoice the statement reference quotes was refused: {found[:2]}")
     return check("gate (n): a genuine payment reference, the credit-note note and the write-off narration are "
-                 "allowed; an application instruction, an untied invoice and an invented credit note are refused "
-                 "in narrations and advice notes, and the world gate names them", not problems, "\n".join(problems))
+                 "allowed; an application instruction with or without an amount, an untied invoice and an "
+                 "invented credit note are refused in narrations and advice notes, the world gate names them, "
+                 "and an advice-less receipt's authored lines tie nothing", not problems, "\n".join(problems))
+
+
+def test_u12_warnings_are_warnings_not_gates():
+    """Spec section 5, U12: a deduction of exactly 25.00 and an advice line
+    on a zero-balance invoice are WARN, not refusals, and section 7 has
+    25.00 "written off with the U12 warning". A world at the spec's own
+    boundary passes every world gate and carries the warning; the truth
+    writes the 25.00 off and closes where Case 3 closes."""
+    problems = []
+    module, _, task, *_ = case(3)
+    # Case 3 with SI-3104's deduction at the tolerance: R3 3,655.00
+    lines = (module.R3.lines[0], dataclasses.replace(module.R3.lines[1], amount=D("1865.00"), deduction=D("25.00")))
+    r3 = dataclasses.replace(module.R3, amount=D("3655.00"), lines=lines)
+    boundary = B.world("bowline-2026-04-c3", B.april_events(B.r1(), module.CN_0412, r3))
+    found, warnings = check_world_task(boundary, task)
+    if found:
+        problems.append(f"the 25.00 boundary world does not pass verify_world: {found[:3]}")
+    if not any(w.startswith("WARN:") and "WARN_DEDUCTION_AT_TOLERANCE" in w for w in warnings):
+        problems.append(f"no U12 warning for the deduction of exactly 25.00: {warnings}")
+    _, inputs = derive_contract(boundary, task)
+    r3_truth = inputs.application.receipt("2026-04-28:GR PAYRUN 0428")
+    if r3_truth[5] != (("SI-3104", D("25.00")),) or inputs.application.closing_ar != D("3310.00"):
+        problems.append(f"the truth does not write 25.00 off: {r3_truth[5]}, closing {inputs.application.closing_ar}")
+    public = {k: v.decode("utf-8") if isinstance(v, bytes) else v for k, v in inputs.public_files}
+    app = CA.fold(public, **kw(task))
+    if app.receipt("2026-04-28:GR PAYRUN 0428").written_off != (("SI-3104", D("25.00")),):
+        problems.append(f"the public fold does not write 25.00 off: {app.receipt('2026-04-28:GR PAYRUN 0428')}")
+    # a zero-cash line on an invoice R1 already closed: informational, warned, moves nothing
+    module1, _, task1, *_ = case(1)
+    lines = module1.R3.lines + (S.ReceiptLine("doc:si-3101", D("0.00"), False, D("0.00"), "settled on the 10 April run"),)
+    r3 = dataclasses.replace(module1.R3, lines=lines)
+    zero = B.world("bowline-2026-04-c1", B.april_events(B.r1(), module1.CN_0412, r3))
+    found, warnings = check_world_task(zero, task1)
+    other = [p for p in found if "the public evidence is AMBIGUOUS" not in p and "not the planted one" not in p]
+    if other:
+        problems.append(f"the zero-balance line world fails a gate other than the pinned (f): {other[:3]}")
+    if not any(w.startswith("WARN:") and "WARN_LINE_ON_ZERO_BALANCE" in w for w in warnings):
+        problems.append(f"no U12 warning for the advice line on a zero-balance invoice: {warnings}")
+    _, inputs = derive_contract(zero, task1)
+    if inputs.application.application_key() != case(1)[4].application.application_key():
+        problems.append("the informational zero line moved the truth")
+    return check("U12 is WARN, not a gate: the 25.00 deduction and the zero-balance advice line pass every world "
+                 "gate with a WARN: line, the truth and the public fold write the 25.00 off, and the zero line "
+                 "moves nothing", not problems, "\n".join(problems))
 
 
 def test_the_plants_are_the_spec_s():
@@ -864,6 +952,7 @@ TESTS = [
     test_gate_m_the_public_fold_over_actual_bytes_equals_the_truth,
     test_gate_l_the_register_ties_to_the_opening_entry,
     test_gate_n_the_narration_rule,
+    test_u12_warnings_are_warnings_not_gates,
     test_the_plants_are_the_spec_s,
     test_bank_date_posting_holds_independently_of_the_plant,
     test_cheque_sign_and_movement_extensions,

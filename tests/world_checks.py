@@ -63,7 +63,7 @@ from beancount_ledger.graph import identify as ID  # noqa: E402
 from beancount_ledger.graph import project as PJ  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.policy import POLICY_SECTIONS, is_cash_application_world, movement_of, required_sections  # noqa: E402
-from beancount_ledger.graph.schema import AppliedReceipt, CreditNote, check_world  # noqa: E402
+from beancount_ledger.graph.schema import AppliedReceipt, check_world  # noqa: E402
 
 from repair_keys import master_names, planted_key  # noqa: E402  (tests/repair_keys.py)
 
@@ -498,7 +498,9 @@ def check_world_task(world, task, source_path=None):
     # (l), (m), (n): the cash-application family's own gates, on a world the
     # family is inferred from. A legacy world runs none of them.
     if is_cash_application_world(world):
-        problems.extend(_family_gates(world, task, bundle, inputs, public, where))
+        family_problems, family_warnings = _family_gates(world, task, bundle, inputs, public, where)
+        problems.extend(family_problems)
+        warnings.extend(family_warnings)
 
     return problems, warnings
 
@@ -507,20 +509,46 @@ def check_world_task(world, task, source_path=None):
 # the cash-application family's gates (spec section 5 and 8)
 # --------------------------------------------------------------------------
 
-#: An APPLICATION INSTRUCTION in a narration or an advice note: a verb of
-#: application with an amount and an invoice or credit-note id, or an amount
-#: directed "to"/"against" an id. A genuine payment reference is not one, and
-#: neither is "after application of CN-0412" or "written off under the cash
-#: application policy": no amount is directed anywhere by either.
+#: An APPLICATION INSTRUCTION in a narration or an advice note: a directive
+#: of money to an invoice or credit-note id, WITH OR WITHOUT an amount — a
+#: verb of application in the same clause as an id ("apply to SI-3101 then
+#: SI-3102", "SI-3102 is to be posted at 1830.00"), an amount sent "to" or
+#: "against" an id ("2400 to SI-3101", "apply 1,830.00 to SI-3102"), a
+#: residue sent to an id ("the balance to SI-3102"), or an id "in full". The
+#: spec's "apply 1,830.00 to SI-3102" is an instance of the rule, not its
+#: definition. A genuine payment reference is not an instruction, and neither
+#: is "after application of CN-0412" or "written off under the cash
+#: application policy": nothing is directed anywhere by either.
+_VERB = (r"(?:apply|applied|applying|allocate|allocated|allocating|allocation|post|posted|posting|"
+         r"book|booked|booking|match|matched|matching|offset|offsetting)")
+_ID = r"(?:SI|CN)-\d+"
+_TO = r"(?:to|against|on|onto|toward|towards)"
+_AMOUNT = r"(?<![-\w.])(?:\$\s*|USD\s*)?\d[\d,]*(?:\.\d+)?"      # never the digits of an id
+_CLAUSE = r"(?:[^.;\n]|(?<=\d)\.(?=\d)){0,80}?"                   # a decimal point is not a clause end
 _INSTRUCTION = re.compile(
-    r"\b(?:apply|applied|allocate|allocated|allocation|post|posted|book|booked|match|matched)\b[^.;\n]{0,60}?"
-    r"\b\d[\d,]*\.\d{2}\b[^.;\n]{0,60}?\b(?:SI|CN)-\d+\b"
-    r"|\b(?:SI|CN)-\d+\b[^.;\n]{0,60}?\b(?:apply|applied|allocate|allocated|post|posted|book|booked)\b"
-    r"[^.;\n]{0,60}?\b\d[\d,]*\.\d{2}\b"
-    r"|\b\d[\d,]*\.\d{2}\b\s+(?:to|against|on)\s+(?:SI|CN)-\d+\b",
+    rf"\b{_VERB}\b{_CLAUSE}\b{_ID}\b"
+    rf"|\b{_ID}\b{_CLAUSE}\b{_VERB}\b"
+    rf"|{_AMOUNT}\s+{_TO}\s+{_ID}\b"
+    rf"|\b(?:balance|remainder|remaining|rest|residue|excess)\b{_CLAUSE}\b{_TO}\s+{_ID}\b"
+    rf"|\b{_ID}\b\s+in\s+full\b",
     re.IGNORECASE)
 _INVOICE_TOKEN = re.compile(r"\bSI-\d+\b")
 _CREDIT_TOKEN = re.compile(r"\bCN-\d+\b")
+
+
+def public_ties(ev, receipt_id: str) -> frozenset:
+    """The invoices the PUBLIC documents tie to one payment (U10): the ids
+    its statement row's reference quotes, and the lines of the advice the
+    evidence BINDS to that row. A receipt with no advice ties nothing beyond
+    its reference, whatever the author typed in `AppliedReceipt.lines` —
+    those are not a public document then, even when policy rung (3) reaches
+    exactly them and gate (m) passes."""
+    receipt = next((r for r in ev.receipts if r.receipt_id == receipt_id), None)
+    if receipt is None:
+        return frozenset()
+    advice = ev.advice_for(receipt)
+    return frozenset(set(_INVOICE_TOKEN.findall(receipt.reference))
+                     | ({line.invoice_id for line in advice.lines} if advice is not None else set()))
 
 
 def narration_problems(text: str, tied: frozenset, credit_notes: frozenset, label: str) -> list:
@@ -540,11 +568,18 @@ def narration_problems(text: str, tied: frozenset, credit_notes: frozenset, labe
     return out
 
 
-def _family_gates(world, task, bundle, inputs, public, where) -> list:
+def _family_gates(world, task, bundle, inputs, public, where) -> tuple:
+    """Returns `(problems, warnings)`. A `WARN_*` the public evidence or the
+    public fold raises — U12's deduction of exactly the tolerance or advice
+    line on a zero-balance invoice, an advice bound to no row — is a
+    WARNING here too, never a gate: section 7 has a 25.00 deduction "written
+    off with the U12 warning", so a world at the spec's own boundary must
+    pass `verify_world`. Refusals (`REFUSE_*`) remain problems."""
     problems: list = []
+    warnings: list = []
     truth = inputs.application
     if truth is None:
-        return [f"{where}: a cash-application world derived no ApplicationInputs"]
+        return [f"{where}: a cash-application world derived no ApplicationInputs"], warnings
     kw = dict(bank_account=world.bank_account, period_start=task.period.start, period_end=task.period.end)
     receivables = truth.receivables_account
     expected = dict(inputs.expected_balances)
@@ -555,9 +590,9 @@ def _family_gates(world, task, bundle, inputs, public, where) -> list:
     try:
         ev = CA.read_evidence(public, **kw)
     except CA.Refusal as exc:
-        return problems + [f"{where}: gate (l): the public evidence refuses: {exc}"]
+        return problems + [f"{where}: gate (l): the public evidence refuses: {exc}"], warnings
     except Exception as exc:
-        return problems + [f"{where}: gate (l): read_evidence raised {type(exc).__name__}: {exc}"]
+        return problems + [f"{where}: gate (l): read_evidence raised {type(exc).__name__}: {exc}"], warnings
     carried = dict(world.opening.carried).get(receivables, Decimal("0"))
     if ev.opening_ar != carried or truth.opening_ar != carried:
         problems.append(f"{where}: gate (l): opening receivables read {ev.opening_ar} (public) / {truth.opening_ar} "
@@ -568,7 +603,7 @@ def _family_gates(world, task, bundle, inputs, public, where) -> list:
         problems.append(f"{where}: gate (l): open_items.csv reads {public_register}, the truth's register is "
                         f"{truth.opening_register}")
     for warning in ev.warnings:
-        problems.append(f"{where}: gate (l): the public evidence warns: {warning}")
+        warnings.append(f"WARN: {where}: the public evidence warns: {warning}")
 
     # (m) the public fold over the ACTUAL projected bytes equals the truth
     # folded from the authored facts, under a key built independently on
@@ -578,9 +613,9 @@ def _family_gates(world, task, bundle, inputs, public, where) -> list:
     try:
         app = CA.fold(public, **kw)
     except CA.Refusal as exc:
-        return problems + [f"{where}: gate (m): the public fold refuses: {exc}"]
+        return problems + [f"{where}: gate (m): the public fold refuses: {exc}"], warnings
     except Exception as exc:
-        return problems + [f"{where}: gate (m): the public fold raised {type(exc).__name__}: {exc}"]
+        return problems + [f"{where}: gate (m): the public fold raised {type(exc).__name__}: {exc}"], warnings
     if CA.application_key(app) != truth.application_key():
         left = dict(_key_rows(CA.application_key(app)))
         right = dict(_key_rows(truth.application_key()))
@@ -591,11 +626,12 @@ def _family_gates(world, task, bundle, inputs, public, where) -> list:
         problems.append(f"{where}: gate (m): closing AR public {app.closing_ar} / truth {truth.closing_ar} against "
                         f"the expected ledger's {expected.get(receivables)} (U8)")
     for warning in app.warnings:
-        problems.append(f"{where}: gate (m): the public fold warns: {warning}")
+        if warning not in ev.warnings:                   # the fold repeats the evidence's own
+            warnings.append(f"WARN: {where}: the public fold warns: {warning}")
     golden = parse_once(inputs.golden_text)
     original = parse_once(inputs.original_text)
     if not isinstance(golden, Accepted) or not isinstance(original, Accepted):
-        return problems + [f"{where}: gate (m): the ledgers do not parse"]
+        return problems + [f"{where}: gate (m): the ledgers do not parse"], warnings
     def shaped(text_parsed, date, payee, shape):
         return [t for t in text_parsed.submission.directives if isinstance(t, ParsedTransaction)
                 and t.date == date and (t.payee or "") == payee and frozenset(K._txn_shape(t)) == shape]
@@ -633,15 +669,19 @@ def _family_gates(world, task, bundle, inputs, public, where) -> list:
 
     # (n) the narration rule (U10): a receipt or write-off narration may carry
     # the genuine payment reference; it may not carry an application
-    # instruction or name an invoice no public document ties to that payment.
-    # The same rule governs advice notes.
-    credit_numbers = frozenset(e.number for e in world.events if isinstance(e, CreditNote))
+    # instruction or name an invoice no PUBLIC document ties to that payment
+    # — the statement row's reference and the advice the evidence binds to
+    # it, read off the projected bytes, not the authored lines. The same rule
+    # governs advice notes.
+    credit_numbers = frozenset(c.credit_note_id for c in ev.credit_notes)
+    receipt_of_event = {r[8]: r[0] for r in truth.receipts}
     for event in world.events:
         if not isinstance(event, AppliedReceipt):
             continue
-        tied = frozenset({world.document(line.invoice_id).number for line in event.lines}
-                         | set(_INVOICE_TOKEN.findall(event.bank_reference)))
         slug = event.id.split(":", 1)[1]
+        if event.id not in receipt_of_event:
+            problems.append(f"{where}: gate (n): the truth derived no statement receipt for {event.id}")
+        tied = public_ties(ev, receipt_of_event.get(event.id, ""))
         for rec in bundle.recognitions:
             if rec.event_id == event.id:
                 problems.extend(f"{where}: gate (n): {p}" for p in narration_problems(
@@ -649,7 +689,7 @@ def _family_gates(world, task, bundle, inputs, public, where) -> list:
         for i, line in enumerate(event.lines, 1):
             problems.extend(f"{where}: gate (n): {p}" for p in narration_problems(
                 line.note, tied, credit_numbers, f"advice note {slug} line {i} {line.note!r}"))
-    return problems
+    return problems, warnings
 
 
 def _key_rows(key: tuple):
