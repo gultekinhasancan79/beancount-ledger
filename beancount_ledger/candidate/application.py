@@ -23,15 +23,36 @@ nothing (an informational zero-cash advice line, mirrored, is not a
 defect). Then five accounting identities, each over every invoice or note:
 
     application.row_identity        remaining != period_basis - applied_total - credited - written_off,
-                                    or any negative amount anywhere
+                                    or any negative amount anywhere — read on the RAW entries, before
+                                    the summing: [1600.00, -100.00] against one invoice is a negative
+                                    amount, never a 1500.00 application
     application.applied_identity    the receipts' cash applications to an invoice do not sum to that
-                                    invoice's applied_total (an application naming an invoice with no
-                                    row included)
-    application.credit_identity     the credit applications to an invoice do not sum to its credited
+                                    invoice's applied_total, or an applied item names an invoice with
+                                    no row
+    application.credit_identity     the credit applications to an invoice do not sum to its credited,
+                                    or a credit application names an invoice with no row
     application.writeoff_identity   the receipts' write-offs against an invoice do not sum to its
                                     written_off, or a written_off item names an invoice with no row
     application.credit_conservation a credit note in the evidence has sum(applied) + unapplied_amount
                                     != its gross amount
+
+The three "names an invoice with no row" clauses are read on the ids the
+raw entries NAME, a zero amount included: the summing drops a zero-total
+entry from the canonical document, so an id it names must either have a
+row (where an invented id is priced by `fabricated_invoice`) or reject —
+no id leaves the document unpriced, and the canonical digest alone decides
+the score. `-0.00` is a well-formed two-place decimal equal to zero; it is
+read as zero at the door and every zero is rendered `0.00`, so two
+accounting-identical documents have one canonical digest.
+
+Declared bounds beyond the spec's text (engineering choices, so the
+canonical document and the tool's reply stay printable and bounded): an
+id or a customer name is a non-empty string of at most `MAX_ID_CHARS` /
+`MAX_TEXT_CHARS` characters carrying no control character (the evidence
+carries none, so one could only ever be fabricated); `notes` is any JSON
+string of at most `MAX_NOTES_CHARS` characters, exactly the spec's rule;
+each list holds at most `MAX_RECORDS` entries (the tool's 16,000-byte
+envelope is far below it).
 
 An internally contradictory register is a REJECTED ARTIFACT, not a priced
 one: `ApplicationRejected` carries the labels, the scorer answers
@@ -164,10 +185,10 @@ STATUS_ABSENT = "absent"
 STATUS_REJECTED = "rejected"
 STATUSES = (STATUS_DELIVERED, STATUS_ABSENT, STATUS_REJECTED)
 
-MAX_NOTES_CHARS = 200
-MAX_ID_CHARS = 120
-MAX_TEXT_CHARS = 200
-MAX_RECORDS = 500                      # per list; the tool's 16,000-byte envelope is far below this
+MAX_NOTES_CHARS = 200                  # the spec's rule: notes <= 200 characters
+MAX_ID_CHARS = 120                     # declared bound: receipt / credit-note / invoice ids
+MAX_TEXT_CHARS = 200                   # declared bound: a row's customer name
+MAX_RECORDS = 500                      # declared bound per list; the tool's 16,000-byte envelope is far below this
 MAX_REJECTION_LABELS = 5               # the tool's reply quotes at most this many
 
 SCORE_SCALE = Decimal("0.000001")
@@ -185,7 +206,9 @@ def _scale(value: Decimal) -> Decimal:
 
 
 def _money(value: Decimal) -> str:
-    return f"{value.quantize(_CENT):.2f}"
+    """Two places; every zero is `0.00` (a `-0.00` sum or input is zero)."""
+    value = value.quantize(_CENT)
+    return f"{_ZERO if not value else value:.2f}"
 
 
 # --------------------------------------------------------------------------
@@ -422,6 +445,9 @@ class _Findings:
         return ApplicationRejected(tuple(self.labels), tuple(self.details))
 
 
+_RAW_APPLIED = "applied"               # a receipt's cash applications
+_RAW_WRITTEN_OFF = "written_off"       # a receipt's write-offs
+_RAW_CREDITED = "credit applied"       # a credit note's applications
 _TOP_KEYS = ("schema", "receipts", "credit_notes", "closing_open_items")
 _RECEIPT_KEYS = ("receipt_id", "applied", "written_off", "unapplied_amount")
 _CREDIT_KEYS = ("credit_note_id", "applied", "unapplied_amount")
@@ -469,9 +495,8 @@ def _notes(record: dict, where: str, findings: _Findings):
     if "notes" not in record:
         return None
     value = record["notes"]
-    if not _clean_text(value) or len(value) > MAX_NOTES_CHARS:
-        findings.fail(REJECT_SCHEMA, f"{where}: notes must be a printable string of at most {MAX_NOTES_CHARS} "
-                                     f"characters")
+    if not isinstance(value, str) or len(value) > MAX_NOTES_CHARS:
+        findings.fail(REJECT_SCHEMA, f"{where}: notes must be a string of at most {MAX_NOTES_CHARS} characters")
         return None
     return value
 
@@ -480,7 +505,8 @@ def _amount(value, where: str, findings: _Findings):
     if not isinstance(value, str) or not _AMOUNT.match(value):
         findings.fail(REJECT_NOT_DECIMAL, f"{where} is not a two-place decimal string: {value!r}")
         return None
-    return Decimal(value)
+    amount = Decimal(value)
+    return _ZERO if not amount else amount          # "-0.00" is zero, and rendered as such
 
 
 def _list(value, where: str, findings: _Findings):
@@ -494,7 +520,10 @@ def _list(value, where: str, findings: _Findings):
 
 
 def _items(value, where: str, findings: _Findings):
-    """`applied` / `written_off`: a list of {invoice_id, amount}, canonicalised."""
+    """`applied` / `written_off`: a list of {invoice_id, amount}, validated
+    entry by entry and returned RAW, in document order — the identities
+    read the raw entries (a negative, an id named with a zero amount) and
+    the record carries `_canonical_items` of them."""
     entries = _list(value, where, findings)
     if entries is None:
         return None
@@ -507,7 +536,7 @@ def _items(value, where: str, findings: _Findings):
         amount = _amount(item["amount"], f"{label}.amount", findings)
         if invoice_id is not None and amount is not None:
             out.append((invoice_id, amount))
-    return _canonical_items(out)
+    return out
 
 
 def _canonical_items(items) -> tuple:
@@ -543,6 +572,7 @@ def parse_application(text: str, truth: ApplicationInputs) -> ParsedApplication 
     if data["schema"] != APPLICATION_SCHEMA:
         findings.fail(REJECT_SCHEMA, f"schema is {data['schema']!r}, not {APPLICATION_SCHEMA!r}")
     receipts, credit_notes, register = [], [], []
+    raw_items = []          # (column, owner id, raw entries): what the identities read before the summing
     entries = _list(data["receipts"], "receipts", findings)
     for i, record in enumerate(entries or ()):
         where = f"receipts[{i}]"
@@ -554,7 +584,10 @@ def parse_application(text: str, truth: ApplicationInputs) -> ParsedApplication 
         unapplied = _amount(record["unapplied_amount"], f"{where}.unapplied_amount", findings)
         notes = _notes(record, where, findings)
         if None not in (receipt_id, applied, written_off, unapplied):
-            receipts.append(ReceiptRecord(receipt_id, applied, written_off, unapplied, notes))
+            receipts.append(ReceiptRecord(receipt_id, _canonical_items(applied), _canonical_items(written_off),
+                                          unapplied, notes))
+            raw_items.append((_RAW_APPLIED, receipt_id, applied))
+            raw_items.append((_RAW_WRITTEN_OFF, receipt_id, written_off))
     entries = _list(data["credit_notes"], "credit_notes", findings)
     for i, record in enumerate(entries or ()):
         where = f"credit_notes[{i}]"
@@ -565,7 +598,8 @@ def parse_application(text: str, truth: ApplicationInputs) -> ParsedApplication 
         unapplied = _amount(record["unapplied_amount"], f"{where}.unapplied_amount", findings)
         notes = _notes(record, where, findings)
         if None not in (credit_note_id, applied, unapplied):
-            credit_notes.append(CreditNoteRecord(credit_note_id, applied, unapplied, notes))
+            credit_notes.append(CreditNoteRecord(credit_note_id, _canonical_items(applied), unapplied, notes))
+            raw_items.append((_RAW_CREDITED, credit_note_id, applied))
     entries = _list(data["closing_open_items"], "closing_open_items", findings)
     for i, record in enumerate(entries or ()):
         where = f"closing_open_items[{i}]"
@@ -596,17 +630,17 @@ def parse_application(text: str, truth: ApplicationInputs) -> ParsedApplication 
         return findings.rejection()
 
     # ---- the five identities -----------------------------------------------
-    for r in receipts:
-        for invoice_id, amount in r.applied + r.written_off:
+    # "any negative amount" is read on the RAW entries, before the summing: a negative masked by a
+    # positive sibling against the same invoice is a negative amount, not a smaller application
+    for column, owner, entries in raw_items:
+        for invoice_id, amount in entries:
             if amount < 0:
-                findings.fail(REJECT_ROW_IDENTITY, f"{r.receipt_id}: {invoice_id} carries a negative amount {amount}")
+                findings.fail(REJECT_ROW_IDENTITY, f"{owner}: {column} carries a negative amount {amount} against "
+                                                   f"{invoice_id}")
+    for r in receipts:
         if r.unapplied < 0:
             findings.fail(REJECT_ROW_IDENTITY, f"{r.receipt_id}: unapplied_amount is negative")
     for c in credit_notes:
-        for invoice_id, amount in c.applied:
-            if amount < 0:
-                findings.fail(REJECT_ROW_IDENTITY,
-                              f"{c.credit_note_id}: {invoice_id} carries a negative amount {amount}")
         if c.unapplied < 0:
             findings.fail(REJECT_ROW_IDENTITY, f"{c.credit_note_id}: unapplied_amount is negative")
     rows = {w.invoice_id: w for w in register}
@@ -617,24 +651,25 @@ def parse_application(text: str, truth: ApplicationInputs) -> ParsedApplication 
             findings.fail(REJECT_ROW_IDENTITY,
                           f"{w.invoice_id}: remaining {w.remaining} is not period_basis {w.period_basis} - "
                           f"applied_total {w.applied_total} - credited {w.credited} - written_off {w.written_off}")
+    # the sums are read on the RAW entries too (equal to the canonical sums, which only drop zero
+    # totals), and so are the ids each column NAMES — a zero amount included, so an entry naming an
+    # invoice with no row is refused whatever it applies and no id leaves the document unpriced
     applied_by, written_off_by, credited_by = Counter(), Counter(), Counter()
-    for r in receipts:
-        for invoice_id, amount in r.applied:
-            applied_by[invoice_id] += amount
-        for invoice_id, amount in r.written_off:
-            written_off_by[invoice_id] += amount
-    for c in credit_notes:
-        for invoice_id, amount in c.applied:
-            credited_by[invoice_id] += amount
-    for invoice_id in sorted(set(rows) | set(applied_by) | set(written_off_by) | set(credited_by)):
+    named = {_RAW_APPLIED: set(), _RAW_WRITTEN_OFF: set(), _RAW_CREDITED: set()}
+    sums = {_RAW_APPLIED: applied_by, _RAW_WRITTEN_OFF: written_off_by, _RAW_CREDITED: credited_by}
+    for column, _owner, entries in raw_items:
+        for invoice_id, amount in entries:
+            sums[column][invoice_id] += amount
+            named[column].add(invoice_id)
+    for invoice_id in sorted(set(rows) | named[_RAW_APPLIED] | named[_RAW_WRITTEN_OFF] | named[_RAW_CREDITED]):
         w = rows.get(invoice_id)
         if w is None:
-            if invoice_id in applied_by:
-                findings.fail(REJECT_APPLIED_IDENTITY, f"a receipt applies cash to {invoice_id}, which has no row")
-            if invoice_id in credited_by:
-                findings.fail(REJECT_CREDIT_IDENTITY, f"a credit note is applied to {invoice_id}, which has no row")
-            if invoice_id in written_off_by:
-                findings.fail(REJECT_WRITEOFF_IDENTITY, f"a write-off names {invoice_id}, which has no row")
+            if invoice_id in named[_RAW_APPLIED]:
+                findings.fail(REJECT_APPLIED_IDENTITY, f"a receipt's applied names {invoice_id}, which has no row")
+            if invoice_id in named[_RAW_CREDITED]:
+                findings.fail(REJECT_CREDIT_IDENTITY, f"a credit note's applied names {invoice_id}, which has no row")
+            if invoice_id in named[_RAW_WRITTEN_OFF]:
+                findings.fail(REJECT_WRITEOFF_IDENTITY, f"a written_off item names {invoice_id}, which has no row")
             continue
         if applied_by.get(invoice_id, _ZERO) != w.applied_total:
             findings.fail(REJECT_APPLIED_IDENTITY, f"{invoice_id}: the receipts apply {applied_by.get(invoice_id, _ZERO)}"

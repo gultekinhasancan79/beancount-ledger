@@ -24,8 +24,12 @@ witnessed here, every figure to the six places the spec states:
     (a violated identity REJECTS; it is never a label on a scored file),
     duplicate member names and keys refused, canonicalisation by invoice
     (split entries, zero entries and reordering are the same answer with
-    the same digest), and a rejected or absent artifact scoring `A = 0`
-    with its state and `total = 0`;
+    the same digest), negatives refused on the RAW entries before the
+    summing (a negative masked by a positive sibling, an invented id whose
+    entries sum to zero), an entry naming an invoice with no row refused
+    whatever its amount, `-0.00` read as zero with one canonical digest,
+    and a rejected or absent artifact scoring `A = 0` with its state and
+    `total = 0`;
   * fractions quantised to six places BEFORE weighting and the total
     after — (i) is 0.266666, not the 0.266667 the other order gives;
   * monotonicity of the composite under the worked example and under
@@ -559,12 +563,22 @@ def test_s7_fabricated_ids():
                 problems=problems)
     if dict(out.components) != {"receipts_exact": ONE, "register_exact": ONE, "credit_exact": ONE}:
         problems.append(f"a perfect register with an invented note lost a channel: {out.components}")
-    # an invented invoice inside a receipt's application, with a row so the identities hold
+    # an invented invoice inside a receipt's application with a ZERO amount: the id it names has no row, so
+    # the boundary refuses it (applied_identity) — the summing never carries an id out of the document unpriced
     applied = document(truth, [R1_ADVICED, R2_ADVICED,
                                rec(R3, [("SI-3102", "1830.00"), ("SI-3104", "1890.00"), ("SI-3199", "0.00")])],
                        [CN_ON_3102], rows=golden["closing_open_items"])
-    if score(1, applied).total != ONE:
-        problems.append("a zero application to an invented id is not canonicalised away")
+    why = rejected_with(applied, truth, "application.applied_identity")
+    if why:
+        problems.append(f"a zero application to an invented id with no row was not refused: {why}")
+    # with a row for it the row is the invented id, priced once: 0.60, the zero line canonicalised away
+    applied_with_row = json.loads(json.dumps(applied))
+    applied_with_row["closing_open_items"].append(row("SI-3199", GANNET, "0.00", "0.00", "0.00", "0.00", "0.00"))
+    out = score(1, applied_with_row)
+    if out.total != D("0.600000") or out.penalties != (("fabricated_invoice", "SI-3199"),) \
+            or dict(out.receipt_states)[R3] is not A.RECEIPT_EXACT:
+        problems.append(f"a zero application to an invented id with a row: {out.total} {out.penalties} "
+                        f"{dict(out.receipt_states)[R3]}")
     priced_receipts = [R1_ADVICED, R2_ADVICED,
                        rec(R3, [("SI-3102", "1830.00"), ("SI-3104", "1880.00"), ("SI-3199", "10.00")])]
     priced = document(truth, priced_receipts, [CN_ON_3102],
@@ -705,6 +719,14 @@ def test_parse_boundary_rejections_by_label():
         problems.append(f"the golden with a note is not accepted: {parsed}")
     elif parsed.canonical_document()["receipts"][0].get("notes") != "per RA-0410-GR; SI-3100 withheld by customer":
         problems.append("the canonical document drops the note")
+    # notes are the spec's rule and nothing stricter: any JSON string of at most 200 characters, a newline included
+    multiline = edited(golden, ("credit_notes", 0, "notes"), "line one\nline two\ttabbed")
+    parsed = parse(multiline, truth)
+    if not isinstance(parsed, A.ParsedApplication) or parsed.credit_notes[0].notes != "line one\nline two\ttabbed":
+        problems.append(f"a note with a newline is refused: {parsed}")
+    exact = edited(golden, ("receipts", 0, "notes"), "x" * 200)
+    if not isinstance(parse(exact, truth), A.ParsedApplication):
+        problems.append("a 200-character note is refused")
     covered = {label for _doc, label in fixtures.values()}
     for label in A.REJECTION_LABELS:
         if label not in covered and label not in A.IDENTITY_LABELS:     # the identities have their own test
@@ -836,6 +858,95 @@ def test_canonicalisation_by_invoice():
     return check("canonicalisation by invoice: split applications, mirrored zero lines, reordered records and a split "
                  "credit are one canonical document with one digest and A = 1; a duplicate invoice LINE is still "
                  "rejected; the identities read the summed amounts", not problems, "\n".join(problems))
+
+
+def test_negatives_are_refused_before_the_summing_and_negative_zero_is_zero():
+    """Spec section 3: `row_identity` rejects on "any negative amount". The
+    summing by invoice must not launder one — [1600.00, -100.00] against
+    one invoice is a negative amount, never a 1500.00 application — and an
+    invented id whose entries sum to zero does not vanish. An entry naming
+    an invoice with no row is refused whatever its amount, a zero included.
+    "-0.00" is a two-place decimal equal to zero: read as zero, rendered
+    0.00, one canonical digest for two accounting-identical documents."""
+    problems = []
+    inputs, env, truth = case(1)
+    golden = golden_document(truth)
+    reference = parse(golden, truth)
+    r1 = next(i for i, r in enumerate(golden["receipts"]) if r["receipt_id"] == R1)
+    r3 = next(i for i, r in enumerate(golden["receipts"]) if r["receipt_id"] == R3)
+    masked = {
+        "applied 1600.00 + -100.00 (sums to the row's 1500.00)": (
+            edited(golden, ("receipts", r1, "applied"),
+                   items([("SI-3101", "2400.00"), ("SI-3102", "1600.00"), ("SI-3102", "-100.00")])),
+            ("application.row_identity",)),
+        "written_off 5.00 + -5.00 (sums to zero)": (
+            edited(golden, ("receipts", r1, "written_off"), items([("SI-3102", "5.00"), ("SI-3102", "-5.00")])),
+            ("application.row_identity",)),
+        "credit applied 300.00 + -30.00 (sums to the row's 270.00 and conserves the gross)": (
+            edited(golden, ("credit_notes", 0, "applied"), items([("SI-3102", "300.00"), ("SI-3102", "-30.00")])),
+            ("application.row_identity",)),
+        "an invented id whose entries sum to zero (5.00 + -5.00 on SI-3199)": (
+            edited(golden, ("receipts", r3, "applied"),
+                   golden["receipts"][r3]["applied"] + items([("SI-3199", "5.00"), ("SI-3199", "-5.00")])),
+            ("application.row_identity", "application.applied_identity")),
+        "a single negative entry": (
+            edited(golden, ("receipts", r1, "applied"), golden["receipts"][r1]["applied"] + items([("SI-3100", "-1.00")])),
+            ("application.row_identity", "application.applied_identity")),
+        "a negative row column": (
+            edited(edited(golden, ("closing_open_items", 0, "credited"), "-1.00"), ("closing_open_items", 0, "remaining"),
+                   "301.00"),
+            ("application.row_identity", "application.credit_identity")),
+    }
+    for name, (doc, labels) in masked.items():
+        why = rejected_with(doc, truth, *labels)
+        if why:
+            problems.append(f"{name}: {why}")
+            continue
+        out = A.score_application(parse(doc, truth), truth, expected_balances=env.expected_balances)
+        if out.total != ZERO or out.application_states != (A.APPLICATION_REJECTED,) or out.penalties:
+            problems.append(f"{name}: the rejected file was priced: {out.as_dict()}")
+    # a zero-amount entry naming an invoice with no row: refused by the column's identity, never dropped
+    orphans = {
+        "a zero applied entry naming an invoice with no row": (
+            edited(golden, ("receipts", r3, "applied"), golden["receipts"][r3]["applied"] + items([("SI-3199", "0.00")])),
+            "application.applied_identity"),
+        "a zero written_off item naming an invoice with no row": (
+            edited(golden, ("receipts", r3, "written_off"), items([("SI-3199", "0.00")])),
+            "application.writeoff_identity"),
+        "a zero credit application naming an invoice with no row": (
+            edited(golden, ("credit_notes", 0, "applied"), golden["credit_notes"][0]["applied"] + items([("SI-3199", "0.00")])),
+            "application.credit_identity"),
+    }
+    for name, (doc, label) in orphans.items():
+        why = rejected_with(doc, truth, label)
+        if why:
+            problems.append(f"{name}: {why}")
+    # negative zero: accepted, read as zero, rendered 0.00, the golden's digest, A = 1
+    zeros = {
+        "-0.00 as a row's applied_total": edited(golden, ("closing_open_items", 0, "applied_total"), "-0.00"),
+        "-0.00 as a receipt's unapplied_amount": edited(golden, ("receipts", r1, "unapplied_amount"), "-0.00"),
+        "-0.00 as a credit note's unapplied_amount": edited(golden, ("credit_notes", 0, "unapplied_amount"), "-0.00"),
+        "-0.00 as a zero line against a rowed invoice": edited(
+            golden, ("receipts", r1, "applied"), golden["receipts"][r1]["applied"] + items([("SI-3100", "-0.00")])),
+    }
+    for name, doc in zeros.items():
+        parsed = parse(doc, truth)
+        if not isinstance(parsed, A.ParsedApplication):
+            problems.append(f"{name}: rejected {parsed}")
+            continue
+        if parsed.canonical_digest != reference.canonical_digest or A.canonical_text(parsed) != A.canonical_text(reference):
+            problems.append(f"{name}: a different canonical document")
+        if "-0.00" in A.canonical_text(parsed):
+            problems.append(f"{name}: the canonical text renders a negative zero")
+        out = A.score_application(parsed, truth, expected_balances=env.expected_balances)
+        if out.total != ONE or out.application_digest != reference.canonical_digest:
+            problems.append(f"{name}: A = {out.total}")
+    if "-0.00" in A.canonical_text(reference):
+        problems.append("the golden's canonical text renders a negative zero")
+    return check("negatives are refused on the RAW entries before the summing (masked in applied, written_off and a "
+                 "credit's applied; an invented id summing to zero; a single entry; a row column), a zero entry "
+                 "naming an invoice with no row is refused by its column's identity, and -0.00 is zero: accepted, "
+                 "rendered 0.00, the golden's digest, A = 1", not problems, "\n".join(problems))
 
 
 # --------------------------------------------------------------------------
@@ -1080,6 +1191,8 @@ def test_penalty_vocabulary_and_prices_are_the_declared_ones():
         problems.append("engine ids or schema moved")
     if A.MAX_NOTES_CHARS != 200 or A.STATUSES != ("delivered", "absent", "rejected"):
         problems.append("notes limit or status vocabulary moved")
+    if (A.MAX_ID_CHARS, A.MAX_TEXT_CHARS, A.MAX_RECORDS) != (120, 200, 500):
+        problems.append("the declared bounds (ids 120, customer 200, 500 records per list) moved")
     return check("the declared engineering choices: channels 0.50 / 0.30 / 0.20, three fabrications at -0.40, "
                  "receipt_identity -0.20, ar_tie_break -0.30, writeoff_tie_break -0.20; engine ids application/1 "
                  "and composite/1; schema piv.cash-application/1", not problems, "\n".join(problems))
@@ -1103,6 +1216,7 @@ TESTS = [
     test_parse_boundary_rejections_by_label,
     test_the_five_identities_are_enforced_on_submissions_as_on_goldens,
     test_canonicalisation_by_invoice,
+    test_negatives_are_refused_before_the_summing_and_negative_zero_is_zero,
     test_the_composite_is_monotone_and_complete_iff_one,
     test_a_legacy_task_composes_to_its_ledger_score,
     test_the_scorer_reads_expected_balances_and_refuses_a_truth_that_disagrees,
