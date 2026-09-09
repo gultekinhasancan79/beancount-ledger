@@ -4437,10 +4437,21 @@ def _score_application_half(state, family, ledger_result):
 #: publication, present only on a cash-application rollout. A member of the
 #: SAME file rather than a second manifest, because a score and the artifacts
 #: it was computed over must be readable as one record — and a nested member
-#: rather than more top-level keys, because `DeliveryReceipt` (frozen with
-#: `candidate/1`) reads the top level by exact key set, so the legacy
-#: manifest's bytes are unchanged to the byte and a legacy reader that knows
-#: nothing about registers still parses the family's.
+#: rather than more top-level keys, so that a LEGACY manifest's bytes are
+#: unchanged to the byte: `DeliveryReceipt` (frozen with `candidate/1`)
+#: reads the top level by exact key set, and no legacy rollout ever gains a
+#: key.
+#:
+#: That exact-key-set rule cuts BOTH ways, and the first version of this
+#: comment got the second half wrong. `DeliveryReceipt.from_json()` RAISES
+#: on a family manifest — the extra `application` key is not in its expected
+#: set — so a reader that knows nothing about registers does NOT parse the
+#: family's file; it must pop this key first. That is what `_read_publication`
+#: below is for, and why every reader of `delivery.json` in this tree (the
+#: scorer's `_read_publication`, and `tests/measure_budget.bind_artifact`)
+#: goes through it rather than through `DeliveryReceipt.from_json`. The
+#: false claim was not free: while it stood, the M2 measurement instrument
+#: read every cash-application rollout as ARTIFACT_MISMATCH.
 APPLICATION_DELIVERY_KEY = "application"
 APPLICATION_DELIVERY_SCHEMA = "piv.delivery-application/1"
 

@@ -89,7 +89,7 @@ from beancount_ledger.candidate.normalise import Accepted, ProtocolFailure, pars
 from beancount_ledger.graph.generate import DEFAULT_PROFILE, HARD_PROFILE  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.mint import GENERATOR_VERSION, mint  # noqa: E402
-from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import LEGACY_TASK_IDS, REGISTRY  # noqa: E402
 
 BIG_JUMP = 0.25
 PENALTY_LISTS = ("collateral_damage", "removed_or_altered", "fabricated", "merged_events", "undocumented", "plug_accounts")
@@ -377,7 +377,7 @@ def main() -> int:
     parser.add_argument("--eval", type=int, default=10)
     parser.add_argument("--hard", type=int, default=10)
     parser.add_argument("--selectors", nargs="*", default=None, help="explicit selectors instead of the ranges")
-    parser.add_argument("--manual", action="store_true", help="audit every hand-authored task in the registry instead of the ranges")
+    parser.add_argument("--manual", action="store_true", help="audit the 95 legacy hand-authored tasks instead of the ranges")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--loop-sample", type=int, default=2, help="subsets per world also sent through the real loop (0 = none)")
     parser.add_argument("--json", type=Path, default=None)
@@ -385,7 +385,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.manual:
-        selectors = sorted(REGISTRY)
+        # The 95 legacy ids, not all 100. The lattice this audits is
+        # `candidate/1`'s, and a cash-application task's reward is
+        # `composite/1`'s `L x A` over two artifacts — sweeping the five
+        # here would attest the ledger half as if it were the task's score.
+        selectors = sorted(LEGACY_TASK_IDS)
     else:
         selectors = args.selectors or ([f"train:{i}" for i in range(args.train)] + [f"eval:{i}" for i in range(args.eval)]
                                        + [f"train:{i}:hard" for i in range(args.hard)])

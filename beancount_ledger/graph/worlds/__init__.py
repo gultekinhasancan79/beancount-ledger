@@ -95,3 +95,18 @@ for _module in CASH_APPLICATION_MODULES:
         CASH_APPLICATION_REGISTRY[_task_id] = _entry
         REGISTRY[_task_id] = _entry
 del _module, _task_id, _task, _entry
+
+# `LEGACY_TASK_IDS = tuple(REGISTRY)` above is a SNAPSHOT taken at a point in
+# this module's import order, and a snapshot is only as good as the ordering
+# that produced it: a legacy world module imported BELOW the family block
+# would land in `REGISTRY` and in nothing else, silently scoped as neither
+# legacy nor family. That is caught here, at import, rather than by whichever
+# suite happens to notice the count — the legacy surface is exactly 95 ids,
+# `REGISTRY` is exactly those plus the family's, and the two never overlap.
+if len(LEGACY_TASK_IDS) != 95 or set(REGISTRY) != set(LEGACY_TASK_IDS) | set(CASH_APPLICATION_REGISTRY) \
+        or set(LEGACY_TASK_IDS) & set(CASH_APPLICATION_REGISTRY):
+    raise RuntimeError(
+        f"the task registry is mis-scoped: {len(LEGACY_TASK_IDS)} legacy ids (95 expected), "
+        f"{len(CASH_APPLICATION_REGISTRY)} family ids, {len(REGISTRY)} in total. Every legacy world "
+        f"module must be imported ABOVE the cash-application block, so the LEGACY_TASK_IDS snapshot "
+        f"sees it.")

@@ -14,11 +14,12 @@ What is witnessed:
 
   * the family is five variants of one company-month, inferred from the
     events (no field on `World` or `TaskSpec`), with the world and task ids
-    the spec names, one shared prompt, and none of them in the legacy
-    `REGISTRY` (the serving door mounts eight files until the environment
-    step) — the 95 shipped tasks are untouched and the ten shipped worlds'
-    graph digests are the frozen ones, while dropping a role pair from a
-    family world moves its digest;
+    the spec names, one shared prompt, and — since step 6 put them in
+    `REGISTRY` beside the shipped ids — none of them DISPLACING a legacy
+    one: the legacy surface is `LEGACY_TASK_IDS`, still 95, disjoint from
+    the five, and `REGISTRY` is exactly the union. The 95 shipped tasks are
+    untouched and the ten shipped worlds' graph digests are the frozen ones,
+    while dropping a role pair from a family world moves its digest;
   * the projected pack is the spec's, byte for byte where the spec prints
     it: Case 1's three files, Case 5's credit note, Case 2's absent advice,
     the manifest rows, the write-off account, the addendum in the statement

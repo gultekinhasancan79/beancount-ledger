@@ -1918,6 +1918,65 @@ def compute_prompt_schema_digest(env_mod) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def bind_register(workspace, delivery_path, env_mod) -> dict:
+    """The SECOND deliverable's binding, on the same footing as the ledger's
+    and under its own key names, for a cash-application rollout.
+
+    Returns `{}` — no keys at all — unless `delivery.json` exists, parses and
+    carries the `application` member the scorer writes only for the family.
+    So a legacy row is byte-for-byte the row it was before the family
+    existed, and a family row always says what became of the register.
+
+    Keys: `application` in {"BOUND", "ARTIFACT_MISMATCH", "NO_ARTIFACT"},
+    `application_reason` (None when BOUND; the receipt's own status word
+    when NO_ARTIFACT), `application_status` and `application_revision` from
+    the receipt, and the register's own digests when BOUND.
+
+    Like the ledger's half, this compares what is ON DISK at the public path
+    against the digests the SCORER recorded — it never re-derives, re-parses
+    or re-canonicalises the register. `_publish` writes the canonical
+    register at `APPLICATION_FILE` and removes the path when there is
+    nothing to publish, so a file present with a NO_ARTIFACT receipt (or
+    absent with a published one) is a real inconsistency and is reported as
+    a mismatch rather than smoothed over.
+
+    The one thing it cannot see: a manifest that exists but does not parse
+    is `{}` here, because nothing in it says whether the rollout was a
+    family rollout at all. `bind_artifact` reports that manifest loudly on
+    its own arm for every phase except REJECTED, where it has never read the
+    manifest.
+    """
+    if not workspace or not Path(delivery_path).is_file():
+        return {}
+    try:
+        _delivery, application = env_mod._read_publication(
+            Path(delivery_path).read_text(encoding="utf-8"))
+    except Exception:                                                            # noqa: BLE001
+        return {}
+    if application is None:
+        return {}
+    row = {"application_status": application.status, "application_revision": application.revision}
+    path = Path(workspace) / env_mod.APPLICATION_FILE
+    if application.artifact_stored_bytes_digest == env_mod.NO_ARTIFACT:
+        if path.exists():
+            return {**row, "application": "ARTIFACT_MISMATCH",
+                    "application_reason": f"{env_mod.APPLICATION_FILE} is on disk but the receipt "
+                                          f"published no register"}
+        return {**row, "application": "NO_ARTIFACT", "application_reason": application.status}
+    if not path.is_file():
+        return {**row, "application": "ARTIFACT_MISMATCH",
+                "application_reason": f"the receipt published a register but {env_mod.APPLICATION_FILE} "
+                                      f"is missing"}
+    now = env_mod.digests_of(path.read_bytes())                                  # the env's own digest function
+    if (now["stored_bytes_digest"], now["logical_text_digest"]) != (
+            application.artifact_stored_bytes_digest, application.artifact_logical_text_digest):
+        return {**row, "application": "ARTIFACT_MISMATCH",
+                "application_reason": f"{env_mod.APPLICATION_FILE} does not match the receipt's register digests"}
+    return {**row, "application": "BOUND", "application_reason": None,
+            "application_stored_bytes_digest": now["stored_bytes_digest"],
+            "application_logical_text_digest": now["logical_text_digest"]}
+
+
 def bind_artifact(out: dict, env_mod) -> dict:
     """Bind THIS rollout's delivered artifact from its own state — never by
     scanning the temp directory (`newest_workspace()` is gone).
@@ -1936,6 +1995,11 @@ def bind_artifact(out: dict, env_mod) -> dict:
     `artifact_reason` (None when BOUND), `rollout_id`, `revision`, `phase`,
     `submitted`, `workspace`, and — when BOUND — the artifact's own digests
     (equal to `piv_delivery`'s by construction of the match).
+
+    `artifact` is the LEDGER's binding, under contract 4 and contract 5
+    alike. A cash-application rollout has a second deliverable, and its
+    binding rides along in the `application*` keys `bind_register` above
+    builds — absent entirely on a legacy row.
 
     NO_ARTIFACT reasons: `no_write` (phase ACTIVE_NO_CANDIDATE — nothing was
     ever stored), `write_refused` (phase ACTIVE_REJECTED — the last stored
@@ -1963,16 +2027,29 @@ def bind_artifact(out: dict, env_mod) -> dict:
     }
     if not workspace or phase == env_mod.EpisodePhase.NO_CANDIDATE.value:
         return {**result, "artifact": "NO_ARTIFACT", "artifact_reason": "no_write"}
+    delivery_path = Path(workspace) / "delivery.json"
+    # The register's binding is computed from the SAME manifest, before the
+    # ledger's phase can short-circuit, so a family rollout whose ledger was
+    # refused still says what became of its second deliverable.
+    result = {**result, **bind_register(workspace, delivery_path, env_mod)}
     if phase == env_mod.EpisodePhase.REJECTED.value:
         return {**result, "artifact": "NO_ARTIFACT", "artifact_reason": "write_refused"}
     # ACTIVE_CANDIDATE or TERMINAL: the last stored write was accepted. What,
     # if anything, was delivered is read from the scorer's OWN receipt, never
     # re-derived here.
-    delivery_path = Path(workspace) / "delivery.json"
     if not delivery_path.is_file():
         return {**result, "artifact": "NO_ARTIFACT", "artifact_reason": "not_scored"}
     try:
-        delivery = env_mod.DeliveryReceipt.from_json(delivery_path.read_text(encoding="utf-8"))
+        # Through the SCORER'S OWN reader, never `DeliveryReceipt.from_json`
+        # directly. A cash-application manifest carries an extra top-level
+        # `application` member and `DeliveryReceipt` (frozen with
+        # `candidate/1`) reads the top level by EXACT KEY SET, so the frozen
+        # reader raises on every family manifest — which this function then
+        # swallowed into "ARTIFACT_MISMATCH: delivery.json unreadable",
+        # recording a perfect 1.0 family rollout as a failed binding.
+        # `_read_publication` pops that member first and hands back both
+        # halves; a legacy manifest reads identically either way.
+        delivery, _application = env_mod._read_publication(delivery_path.read_text(encoding="utf-8"))
         delivery.verify()
     except Exception as exc:                                                     # noqa: BLE001
         return {**result, "artifact": "ARTIFACT_MISMATCH",

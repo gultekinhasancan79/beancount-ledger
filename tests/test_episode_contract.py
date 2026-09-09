@@ -2718,7 +2718,14 @@ def test_tool_call_arguments_are_counted_in_the_plausibility_floor():
 #: structural separator or a non-model-facing key/encoding, and is justified.
 MODEL_FACING_FUNCTIONS = ("_clip", "_clip_bytes", "list_files", "read_file", "_whole_ledger_reply",
                           "grep", "_public_report", "run_beancount", "write_ledger", "submit",
-                          "submit_receipt")
+                          "submit_receipt",
+                          # contract 5's own door and its report. Left out when the
+                          # seventh tool landed, which was the same hole one rung
+                          # further along: a reply written inline in
+                          # `write_cash_application` or `_application_report` would
+                          # have reached the model without ever entering the view or
+                          # either digest.
+                          "write_cash_application", "_application_report")
 #: The environment METHODS that also emit model-facing text. They were left
 #: out of the first version of this scan, and that was a hole with the same
 #: shape as the one the hoist closed: a reply written inline in
@@ -2753,6 +2760,7 @@ ALLOWED_LITERALS = {
     # the cash-application family's own state keys, on the same footing
     "piv_family", "piv_application_digest",
     "piv_submitted_application_digest", "piv_submitted_application_phase",
+    "piv_application_phase", "piv_pending_application",
     "final_env_response", "workspace",
     "digest", "turn", "revision", "?", "logical_text_digest",
 }
@@ -2819,28 +2827,50 @@ def test_every_model_facing_reply_is_a_bound_constant():
     import inspect
 
     problems = []
-    view = env_mod.episode_contract()
-    messages = view.get("messages") or {}
-    named = dict(env_mod.model_facing_messages())
-    if set(messages) != set(named):
-        problems.append(f"the view's messages are not model_facing_messages(): "
-                        f"{sorted(set(messages) ^ set(named))}")
-    for name, value in named.items():
-        if messages.get(name) != value:
-            problems.append(f"{name} in the view is not the constant: {messages.get(name)!r}")
+    # PARAMETERISED over the two resolved views, not run on the legacy
+    # default alone: contract 5 adds ten model-facing constants of its own,
+    # and on the default they got neither the "it is in the view" arm nor
+    # the "mutating it moves the digest" arm.
+    named_by_profile = {}
+    for profile, _task_id, _pinned, _version, _schema in CONTRACT_PROFILES:
+        view = env_mod.episode_contract(profile=profile)
+        messages = view.get("messages") or {}
+        named = dict(env_mod.model_facing_messages(profile))
+        named_by_profile[profile] = named
+        if set(messages) != set(named):
+            problems.append(f"{profile}: the view's messages are not model_facing_messages(): "
+                            f"{sorted(set(messages) ^ set(named))}")
+        for name, value in named.items():
+            if messages.get(name) != value:
+                problems.append(f"{profile}: {name} in the view is not the constant: {messages.get(name)!r}")
 
-    # 1. mutating ANY of them moves the digest — one at a time, restored after
-    baseline = env_mod.episode_contract_digest()
-    for name in named:
-        original = getattr(env_mod, name)
-        try:
-            setattr(env_mod, name, original + " ")
-            if env_mod.episode_contract_digest() == baseline:
-                problems.append(f"changing {name} does not move the episode contract digest")
-        finally:
-            setattr(env_mod, name, original)
-    if env_mod.episode_contract_digest() != baseline:
-        problems.append("the digest did not come back after the mutations")
+    # 1. mutating ANY of them moves ITS OWN profile's digest — one at a time,
+    # restored after — and a constant that is NOT on the legacy surface must
+    # leave the legacy digest exactly where it is, because the 95 shipped
+    # tasks were measured under it and family text may not perturb it.
+    baselines = {profile: env_mod.episode_contract_digest(profile=profile)
+                 for profile in named_by_profile}
+    legacy_named = named_by_profile[env_mod.PROFILE_LEGACY]
+    for profile, named in named_by_profile.items():
+        for name in named:
+            original = getattr(env_mod, name)
+            try:
+                setattr(env_mod, name, original + " ")
+                if env_mod.episode_contract_digest(profile=profile) == baselines[profile]:
+                    problems.append(f"{profile}: changing {name} does not move that profile's "
+                                    f"episode contract digest")
+                if name not in legacy_named and env_mod.episode_contract_digest(
+                        profile=env_mod.PROFILE_LEGACY) != baselines[env_mod.PROFILE_LEGACY]:
+                    problems.append(f"changing {name}, which is not on the legacy surface, moved the "
+                                    f"LEGACY contract digest")
+            finally:
+                setattr(env_mod, name, original)
+    for profile, baseline in baselines.items():
+        if env_mod.episode_contract_digest(profile=profile) != baseline:
+            problems.append(f"{profile}: the digest did not come back after the mutations")
+    named = dict(legacy_named)
+    for profile_named in named_by_profile.values():
+        named.update(profile_named)   # the UNION: every constant either view names
 
     # ...and the SCAN ITSELF is not vacuous: a function that inlines a reply
     # must be caught (as an f-string part, which is how one would be written),
@@ -2906,8 +2936,19 @@ def test_every_model_facing_reply_is_a_bound_constant():
                  "REPORT_REJECTED", "REPORT_LOADS_CLEANLY", "REPORT_FINDINGS_HEADER", "REPORT_FINDING",
                  "LIST_FILES_ROW", "SUBMIT_DELIVERING", "LEDGER_UNCHANGED_RECEIPT",
                  "READ_OVER_ENVELOPE"):
-        if name not in named:
+        if name not in legacy_named:
             problems.append(f"{name} is not in model_facing_messages()")
+    # ...and contract 5's ten, named here so the seventh tool's replies are
+    # listed by this test rather than merely swept up by the union.
+    cash_named = named_by_profile[env_mod.PROFILE_CASH_APPLICATION]
+    for name in ("APPLICATION_NOT_REQUESTED", "APPLICATION_NOT_TEXT", "APPLICATION_TOO_LARGE",
+                 "APPLICATION_ACCEPTED", "APPLICATION_REFUSED", "TURN_MULTI_APPLICATION",
+                 "SUBMIT_DELIVERING_WITH_APPLICATION", "APPLICATION_BOUND_ACCEPTED",
+                 "APPLICATION_BOUND_REJECTED", "APPLICATION_BOUND_ABSENT"):
+        if name not in cash_named:
+            problems.append(f"{name} is not in model_facing_messages(PROFILE_CASH_APPLICATION)")
+        if name in legacy_named:
+            problems.append(f"{name} is a family reply but the LEGACY listing names it")
     return check("every model-facing reply is a named constant, every constant is in the canonical "
                  "contract view (mutating one moves the digest), and no model-facing function carries a "
                  "reply literal of its own", not problems, "\n".join(problems))

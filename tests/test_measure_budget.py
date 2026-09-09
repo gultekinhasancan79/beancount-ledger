@@ -448,6 +448,158 @@ def test_bind_artifact_defaults_when_state_is_sparse():
 
 
 # --------------------------------------------------------------------------
+# 1a. the SECOND deliverable — a cash-application rollout binds too
+#
+# Every check above runs on a legacy task, and that was the hole. A
+# cash-application rollout's `delivery.json` carries an extra top-level
+# `application` member; `DeliveryReceipt` (frozen with `candidate/1`) reads
+# the top level by EXACT KEY SET, so the frozen reader RAISES on it — and
+# `bind_artifact` swallowed that exception into
+# "ARTIFACT_MISMATCH: delivery.json unreadable". A perfect 1.0 family
+# rollout was therefore recorded by this instrument as a failed binding: a
+# false failure diagnosis, silent, in the instrument round 12 answer §6
+# names for the very next measurement. These three tests are the family's
+# side of section 1.
+# --------------------------------------------------------------------------
+
+import test_cash_application_route as CAR  # noqa: E402
+
+
+class _FamilyEnvModShim(_DefaultEnvModShim):
+    """`_DefaultEnvModShim` with the family's task: `load_environment` builds
+    `cash_application_001` (contract 5, seven tools, two deliverables)
+    whatever selector it is handed. Nothing else changes, so these rows go
+    through exactly the `one_rollout` the legacy rows above do."""
+
+    def load_environment(self, selector=None):
+        return env_mod.load_environment("cash_application_001")
+
+
+FAMILY_SHIM = _FamilyEnvModShim()
+
+
+def family(turns, selector="family:0") -> dict:
+    return one(turns, selector=selector, env_shim=FAMILY_SHIM)
+
+
+def test_a_family_rollout_binds_both_deliverables():
+    """The golden ledger AND the golden register, through the real door:
+    both bind, and the register's digests are cross-checked against the
+    `application` member of the manifest the scorer published — read back
+    with the scorer's own reader, not this test's arithmetic.
+
+    The regression is pinned from the other side too: the FROZEN
+    `DeliveryReceipt.from_json` must still RAISE on this very file. That is
+    not a defect — it is the exact-key-set rule that keeps a legacy
+    manifest's bytes unchanged — and it is precisely why every reader of
+    `delivery.json` must go through `_read_publication`. If someone ever
+    makes the frozen reader tolerant, this assertion says so out loud
+    instead of letting the instrument quietly depend on it.
+    """
+    row = family([CAR.deliver(register=CAR.case()["register"]), CAR.submit()])
+    problems = []
+    if row.get("reward") != 1.0:
+        problems.append(f"reward {row.get('reward')}; the golden pair must score 1.0")
+    if row["artifact"] != "BOUND" or row.get("artifact_reason") is not None:
+        problems.append(f"artifact {row['artifact']}/{row.get('artifact_reason')}")
+    if row.get("application") != "BOUND" or row.get("application_reason") is not None:
+        problems.append(f"application {row.get('application')}/{row.get('application_reason')}")
+    if (row.get("application_status"), row.get("application_revision")) != ("delivered", 1):
+        problems.append(f"the receipt says {row.get('application_status')} at revision "
+                        f"{row.get('application_revision')}")
+    manifest = Path(row["workspace"]) / env_mod.PUBLICATION_FILE
+    text = manifest.read_text(encoding="utf-8")
+    _delivery, application = env_mod._read_publication(text)
+    if application is None:
+        problems.append("the family manifest carries no register half")
+    else:
+        if (row.get("application_stored_bytes_digest"), row.get("application_logical_text_digest")) != (
+                application.artifact_stored_bytes_digest, application.artifact_logical_text_digest):
+            problems.append("the bound register digests are not the receipt's own")
+        published = (Path(row["workspace"]) / env_mod.APPLICATION_FILE).read_bytes()
+        if env_mod.digests_of(published)["logical_text_digest"] != application.artifact_logical_text_digest:
+            problems.append("the register on the public path is not the one the receipt names")
+    try:
+        env_mod.DeliveryReceipt.from_json(text)
+        problems.append("the FROZEN DeliveryReceipt.from_json now parses a family manifest; the reason "
+                        "bind_artifact must use _read_publication has changed and this test must be revisited")
+    except Exception:                                                            # noqa: BLE001 — the expected refusal
+        pass
+    return check("a cash-application rollout binds BOTH deliverables: ledger BOUND, register BOUND against "
+                 "the scorer's own receipt — through _read_publication, which the frozen "
+                 "DeliveryReceipt.from_json still refuses", not problems, "\n".join(problems))
+
+
+def test_a_family_rollout_reports_an_absent_and_a_rejected_register():
+    """The two undelivered register states, each on its own row and each
+    distinguished from the other — the whole point of reporting the second
+    deliverable rather than only the ledger.
+
+      absent    the agent filed no register at all
+      rejected  a valid register was SUPERSEDED by an invalid one; the
+                lifecycle scores the last committed revision, so there is
+                no fallback to the good one and nothing is published
+
+    In both, the ledger is perfect and BOUND, so a row that reported only
+    the ledger would show these as indistinguishable successes.
+    """
+    problems = []
+    absent = family([CAR.deliver(register=None), CAR.submit()], selector="family:absent")
+    if absent["artifact"] != "BOUND":
+        problems.append(f"absent row: ledger {absent['artifact']}/{absent.get('artifact_reason')}")
+    if (absent.get("application"), absent.get("application_reason")) != ("NO_ARTIFACT", "absent"):
+        problems.append(f"absent row: application {absent.get('application')}/"
+                        f"{absent.get('application_reason')}")
+    if absent.get("application_revision") != 0:
+        problems.append(f"absent row: revision {absent.get('application_revision')}")
+    if (Path(absent["workspace"]) / env_mod.APPLICATION_FILE).exists():
+        problems.append("absent row: a register is on the public path")
+    rejected = family([CAR.deliver(register=CAR.case()["register"]),
+                       CAR.write_register("x", CAR.case()["invalid"]), CAR.submit()],
+                      selector="family:rejected")
+    if rejected["artifact"] != "BOUND":
+        problems.append(f"rejected row: ledger {rejected['artifact']}/{rejected.get('artifact_reason')}")
+    if (rejected.get("application"), rejected.get("application_reason")) != ("NO_ARTIFACT", "rejected"):
+        problems.append(f"rejected row: application {rejected.get('application')}/"
+                        f"{rejected.get('application_reason')}")
+    if rejected.get("application_revision") != 2:
+        problems.append(f"rejected row: revision {rejected.get('application_revision')}")
+    if (Path(rejected["workspace"]) / env_mod.APPLICATION_FILE).exists():
+        problems.append("rejected row: the superseded good register is still on the public path")
+    if rejected.get("reward") != 0.0 or absent.get("reward") != 0.0:
+        problems.append(f"rewards {absent.get('reward')} / {rejected.get('reward')}; both must be 0 "
+                        f"(total = L x A)")
+    return check("a family row tells an ABSENT register from a REJECTED one, both with the ledger BOUND and "
+                 "the reward 0 — and neither leaves a register on the public path",
+                 not problems, "\n".join(problems))
+
+
+def test_a_legacy_row_gains_no_register_keys():
+    """The other half of the same property: contract 4's row is exactly the
+    row it was before the family existed. No `application*` key appears on
+    it, and its `delivery.json` is still, to the byte, what
+    `DeliveryReceipt.to_json()` writes — so a legacy archive stays readable
+    by a reader that knows nothing about registers."""
+    row = one([tec.write(), tec.submit()])
+    problems = []
+    stray = sorted(k for k in row if k.startswith("application"))
+    if stray:
+        problems.append(f"a legacy row carries register keys: {stray}")
+    if row["artifact"] != "BOUND":
+        problems.append(f"artifact {row['artifact']}/{row.get('artifact_reason')}")
+    manifest = Path(row["workspace"]) / env_mod.PUBLICATION_FILE
+    text = manifest.read_text(encoding="utf-8")
+    receipt = env_mod.DeliveryReceipt.from_json(text)     # the FROZEN reader, unaided
+    if receipt.to_json() != text:
+        problems.append("a legacy delivery.json is no longer exactly DeliveryReceipt.to_json()")
+    _delivery, application = env_mod._read_publication(text)
+    if application is not None:
+        problems.append("a legacy manifest grew a register half")
+    return check("a legacy row gains no register keys and its delivery.json is still byte-for-byte what the "
+                 "frozen DeliveryReceipt writes", not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
 # 1b. candidate vs. original — did an UNDELIVERED episode preserve the books?
 #
 # `bind_artifact` reports NO_ARTIFACT for every one of no_write, write_
@@ -6157,6 +6309,10 @@ TESTS = [
     test_write_then_submit_is_bound_submitted_matches_delivery,
     test_two_concurrent_rollouts_each_bind_their_own_artifact,
     test_bind_artifact_defaults_when_state_is_sparse,
+    # the second deliverable: the family binds, and the legacy row does not move
+    test_a_family_rollout_binds_both_deliverables,
+    test_a_family_rollout_reports_an_absent_and_a_rejected_register,
+    test_a_legacy_row_gains_no_register_keys,
     test_candidate_vs_original_pure_helper,
     test_candidate_equals_original_true_when_written_candidate_matches_original,
     test_candidate_equals_original_false_when_written_candidate_differs,

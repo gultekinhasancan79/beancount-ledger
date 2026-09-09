@@ -65,7 +65,7 @@ from beancount_ledger.beancount_ledger import LEDGER, InitializationFailure, loa
 from beancount_ledger.graph import manifest as MF  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.mint import GENERATOR_VERSION  # noqa: E402
-from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import LEGACY_TASK_IDS, REGISTRY  # noqa: E402
 import preflight_manifest as PF  # noqa: E402
 import reward_lattice_audit as RLA  # noqa: E402
 from world_checks import check_world_task  # noqa: E402
@@ -203,7 +203,14 @@ def main() -> int:
 
     rows = []
     if args.manual:
-        for task_id in sorted(REGISTRY):
+        # `LEGACY_TASK_IDS`, not `REGISTRY`: this receipt's header declares
+        # `"engine": "candidate/1"`, and that is the ledger's engine alone.
+        # A cash-application task is rewarded `composite/1`'s `L x A`, so a
+        # row scored here under `candidate/1` would report `L` as though it
+        # were the reward. The five family ids get their own attestation
+        # when one is built; until then they are out of this sweep by name
+        # rather than by accident.
+        for task_id in sorted(LEGACY_TASK_IDS):
             rows.append(manual_receipt(task_id, lattice.get(task_id)))
     else:
         selectors = args.selectors or ([f"train:{i}" for i in range(args.train)] + [f"eval:{i}" for i in range(args.eval)]
