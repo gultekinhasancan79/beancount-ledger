@@ -254,3 +254,203 @@ def readings_for(state: str) -> tuple:
 def note_for(state: str) -> str:
     """The mapping's justification, or the exclusion argument."""
     return STATE_CONTRACT[state][1]
+
+
+# --------------------------------------------------------------------------
+# the cash-application state catalogue (candidate/application.py)
+# --------------------------------------------------------------------------
+
+# `application/1` classifies the REGISTER an agent delivers beside its
+# ledger. Its closed universe is `application.APPLICATION_STATES`. The
+# question asked of it is the one asked of the ledger scorer above: for
+# every state the register scorer can reach, which PUBLIC DOCUMENT decides
+# the fact behind it — so an agent reading the evidence pack can name the
+# defect — and where none does, why. The authorities are the public files
+# of the family (spec section 5): the fold `graph/cash_application.py`
+# reconstructs the truth register from exactly these, so a state mapped to
+# an authority is a state the public fold could have avoided.
+
+AUTHORITY_ADVICE = "remittance_advice.csv"             # rung (1): the customer's advice, bound to the payment
+AUTHORITY_REFERENCE = "bank_statement.csv:reference"   # rung (2): the invoices the statement reference quotes
+AUTHORITY_STATEMENT = "bank_statement.csv"             # the receipt's existence, date, amount and remitter
+AUTHORITY_POLICY = "policy.md"                         # rung (3), the credit rule, the tolerance, the unapplied rule
+AUTHORITY_OPEN_ITEMS = "open_items.csv"                # the carried invoices, their customer and period basis
+AUTHORITY_LEDGER = "ledger.beancount"                  # the in-period sales: invoice, customer, gross
+AUTHORITY_CREDIT_NOTES = "credit_notes.csv"            # the credit notes: id, invoice, gross
+AUTHORITY_CUSTOMERS = "customers.csv"                  # the customer names a row must print
+
+APPLICATION_AUTHORITIES = (AUTHORITY_ADVICE, AUTHORITY_REFERENCE, AUTHORITY_STATEMENT, AUTHORITY_POLICY,
+                           AUTHORITY_OPEN_ITEMS, AUTHORITY_LEDGER, AUTHORITY_CREDIT_NOTES, AUTHORITY_CUSTOMERS)
+
+# state -> (authorities, note). `authorities` empty means EXCLUDED and the
+# note is the exclusion argument. Order is `application.APPLICATION_STATES`.
+APPLICATION_STATE_CONTRACT: dict = {
+
+    # ---- receipts ----------------------------------------------------------
+    "RECEIPT_EXACT": ((AUTHORITY_ADVICE, AUTHORITY_REFERENCE, AUTHORITY_POLICY),
+                      "The record's canonical applied mapping, write-offs and unapplied residue all equal the "
+                      "truth. Which authority decided the receipt is the fold's first rung that reached it: the "
+                      "advice bound to the payment, else the invoices the statement reference quotes, else the "
+                      "policy's oldest-first rule — all public."),
+
+    "RECEIPT_CONTRADICTS_ADVICE": ((AUTHORITY_ADVICE,),
+                                   "The receipt has a remittance advice bound to it (customer, payment reference "
+                                   "and amount agree) and the record applies cash to a different SET of invoices "
+                                   "than the advice's lines name. The advice is the first authority and it is "
+                                   "public, so the defect is named by a document the agent holds."),
+
+    "RECEIPT_CONTRADICTS_REFERENCE": ((AUTHORITY_REFERENCE, AUTHORITY_POLICY),
+                                      "No advice belongs to the payment; the statement reference quotes invoice "
+                                      "numbers and the record's invoice set is not what rung (2) reaches — the "
+                                      "named invoices in invoice-date order, then number, each up to its open "
+                                      "balance, any remainder by rung (3). Both the reference and the ordering "
+                                      "sentence are public."),
+
+    "RECEIPT_WRONG_INVOICES": ((AUTHORITY_POLICY,),
+                               "Neither an advice nor a reference names invoices for this payment, so rung (3) "
+                               "decides — the customer's open invoices oldest first by invoice date, then number "
+                               "— and the record's invoice set is not that. The rule is printed in policy.md; "
+                               "no case exercises it and a fixture does."),
+
+    "RECEIPT_WRONG_AMOUNT": ((AUTHORITY_ADVICE, AUTHORITY_REFERENCE, AUTHORITY_POLICY),
+                             "The record names exactly the invoices the authority names and splits the cash among "
+                             "them differently: an advice line's amount, or rung (2)'s each-up-to-its-open-balance "
+                             "order, misread. Diagnosed as an amount defect, not as wrong invoices, because the "
+                             "destinations are right."),
+
+    "RECEIPT_WRONG_WRITEOFF": ((AUTHORITY_ADVICE, AUTHORITY_POLICY),
+                               "The applications are right and the receipt's written_off mapping is not: a "
+                               "shortfall the advice marks settled and the policy's tolerance writes off was not, "
+                               "or one above the tolerance (or without a settlement flag) was. The flag, the "
+                               "deduction and the 25.00 threshold are all public."),
+
+    "RECEIPT_WRONG_UNAPPLIED": ((AUTHORITY_ADVICE, AUTHORITY_STATEMENT, AUTHORITY_POLICY),
+                                "Applications and write-offs are right and the unapplied residue is not: the part "
+                                "of the payment the advice does not name, which the policy leaves unapplied rather "
+                                "than carrying to the lower rungs, is the statement amount less the advice's "
+                                "lines — two public figures."),
+
+    "RECEIPT_MISSING": ((AUTHORITY_STATEMENT,),
+                        "The statement shows a customer credit — ACH IN or CHECK naming a customer of "
+                        "customers.csv — and the register carries no record with its date:reference key. The "
+                        "row is public; the receipt_id is formed from it alone."),
+
+    "RECEIPT_FABRICATED": ((AUTHORITY_STATEMENT,),
+                           "A record whose receipt_id matches no customer-credit row of the statement. The "
+                           "statement is the only source of receipts, it is public, and an id it does not print "
+                           "is an id no evidence carries — priced as fabricated_receipt."),
+
+    # ---- invoices ----------------------------------------------------------
+    "INVOICE_EXACT": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_LEDGER),
+                      "The row equals the truth on customer, period_basis and the four outcome columns. The "
+                      "customer and period basis come from open_items.csv for a carried invoice and from the "
+                      "in-period sale entry for one raised in the month; the outcome columns are the fold of the "
+                      "receipts and credit notes over them."),
+
+    "INVOICE_WRONG_CUSTOMER": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_LEDGER, AUTHORITY_CUSTOMERS),
+                               "The row names a customer other than the invoice's: open_items.csv prints the "
+                               "customer of a carried invoice, the sale entry's payee names it for an in-month "
+                               "one, and customers.csv is the list of names. All three are public."),
+
+    "INVOICE_WRONG_BASIS": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_LEDGER),
+                            "The row's period_basis is not the balance entering the period — typically the "
+                            "face value (original_amount) printed for a part-paid carried invoice instead of its "
+                            "open_balance, or a net amount instead of the sale's gross. Both columns of "
+                            "open_items.csv and the sale's receivables debit are public."),
+
+    "INVOICE_INEXACT": ((AUTHORITY_ADVICE, AUTHORITY_REFERENCE, AUTHORITY_CREDIT_NOTES, AUTHORITY_POLICY),
+                        "Customer and period basis are right and an outcome column is not: applied_total, "
+                        "credited, written_off or remaining. The row is the fold of every receipt and credit "
+                        "note over the invoice, so the defect is one of the receipt or credit-note defects above "
+                        "seen from the invoice's side."),
+
+    "INVOICE_MISSING": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_LEDGER),
+                        "An invoice of the register — a carried row of open_items.csv or an in-period sale of "
+                        "the ledger — has no closing_open_items entry. Every invoice is listed, zero rows "
+                        "included, so an absent row is an absent invoice."),
+
+    "INVOICE_FABRICATED": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_LEDGER),
+                           "An invoice id in no register row and no in-period sale: nothing public carries it. "
+                           "Priced as fabricated_invoice wherever it appears — a row, a receipt's application or "
+                           "a credit note's — because an id no evidence carries is the same offence anywhere."),
+
+    # ---- credit notes ------------------------------------------------------
+    "CREDIT_EXACT": ((AUTHORITY_CREDIT_NOTES, AUTHORITY_POLICY),
+                     "The record's canonical applied mapping and unapplied residue equal the truth: the note's "
+                     "invoice, gross and date are in credit_notes.csv and the credit policy — up to the named "
+                     "invoice's open balance, excess by invoice date then number, remainder unapplied — is in "
+                     "policy.md."),
+
+    "CREDIT_WRONG_INVOICES": ((AUTHORITY_CREDIT_NOTES, AUTHORITY_POLICY),
+                              "The record applies the note to an invoice the truth does not credit at all: the "
+                              "wrong invoice, or the wrong customer's. The note names its invoice in "
+                              "credit_notes.csv and the policy names where any excess goes."),
+
+    "CREDIT_WRONG_SPLIT": ((AUTHORITY_CREDIT_NOTES, AUTHORITY_POLICY),
+                           "Every invoice the record names is one the truth credits, and the amounts or the "
+                           "unapplied residue differ — the excess held unapplied instead of routed, the note "
+                           "applied in full to an invoice whose open balance is smaller. Distinguished from "
+                           "naming the wrong invoice; the split rule is public."),
+
+    "CREDIT_MISSING": ((AUTHORITY_CREDIT_NOTES,),
+                       "A credit note of credit_notes.csv has no record. The file is public and the note's "
+                       "gross must be conserved somewhere — applied or unapplied — so an ignored note cannot "
+                       "hide inside applied_total either; the register's credited column is separate."),
+
+    "CREDIT_FABRICATED": ((AUTHORITY_CREDIT_NOTES,),
+                          "A record whose credit_note_id matches no credit note of the evidence. It has no gross "
+                          "to conserve, so the conservation identity does not reach it; it is priced as "
+                          "fabricated_credit_note instead, the same price as any invented id."),
+
+    # ---- the ties ----------------------------------------------------------
+    "AR_TIE_OK": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_STATEMENT, AUTHORITY_CREDIT_NOTES),
+                  "sum(remaining) - sum(unapplied_amount), receipts and credit notes alike, equals the expected "
+                  "closing receivables: the opening register plus the in-period sales less the statement's "
+                  "customer credits, the credit notes' gross and the write-offs — every term public."),
+
+    "AR_TIE_CONTRADICTS": ((AUTHORITY_OPEN_ITEMS, AUTHORITY_STATEMENT, AUTHORITY_CREDIT_NOTES),
+                           "The register does not roll forward to the closing receivables the public evidence "
+                           "determines. Not a degenerate test: Case 5's golden carries a 30.00 unapplied residue "
+                           "and ties at sum(remaining) - 30.00, so a register on the wrong side of the tie is one "
+                           "that dropped or invented a movement."),
+
+    "WRITEOFF_TIE_OK": ((AUTHORITY_ADVICE, AUTHORITY_POLICY),
+                        "The rows' written_off column sums to the period's write-off movement, which the advice "
+                        "flags and deductions together with the policy's tolerance determine. The receipts' "
+                        "written_off items are held equal to this column by the writeoff_identity at the parse "
+                        "boundary, so the tie reads one number."),
+
+    "WRITEOFF_TIE_CONTRADICTS": ((AUTHORITY_ADVICE, AUTHORITY_POLICY),
+                                 "The rows write off more or less than the advice and the tolerance authorise: "
+                                 "a shortfall above 25.00 written off, a settled one at or below it left open, or "
+                                 "a deduction the advice never claimed. Neither always-write-off nor "
+                                 "never-write-off reproduces both of a case's deductions."),
+
+    # ---- the artifact ------------------------------------------------------
+    "APPLICATION_ABSENT": ((),
+                           "EXCLUDED: no register was delivered. That is a state of the SUBMISSION — the tool was "
+                           "never called, or its last stored revision was refused before storage — and no public "
+                           "document can exhibit it. A submission without an application stays legal and scores "
+                           "A = 0, the ledger reported diagnostically with no composite credit."),
+
+    "APPLICATION_REJECTED": ((),
+                             "EXCLUDED: the last stored register failed the parse boundary — schema, decimals, a "
+                             "duplicated member or key, or one of the five accounting identities — and is a "
+                             "rejected artifact, not a priced one. Internal contradiction is a property of the "
+                             "delivered bytes; the evidence pack has no reading for a file that disagrees with "
+                             "itself."),
+}
+
+APPLICATION_MAPPED_STATES = tuple(state for state, (authorities, _note) in APPLICATION_STATE_CONTRACT.items()
+                                  if authorities)
+APPLICATION_EXCLUDED_STATES = tuple(state for state, (authorities, _note) in APPLICATION_STATE_CONTRACT.items()
+                                    if not authorities)
+
+
+def authorities_for(state: str) -> tuple:
+    """The public documents that decide an application state; empty when excluded."""
+    return APPLICATION_STATE_CONTRACT[state][0]
+
+
+def application_note_for(state: str) -> str:
+    return APPLICATION_STATE_CONTRACT[state][1]
