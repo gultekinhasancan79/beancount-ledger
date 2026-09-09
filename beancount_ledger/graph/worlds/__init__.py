@@ -50,3 +50,36 @@ for _module in WORLD_MODULES:
             raise RuntimeError(f"task id {_task_id!r} is registered twice (second time by {_module.__name__})")
         REGISTRY[_task_id] = (_module.WORLD, _task)
 del _module, _task_id, _task
+
+# The cash-application family: five variants of one company-month
+# (`_bowline.py`), each projecting eleven public files and deriving the
+# truth register `application/1` scores against. Authored, checked and
+# held to gates (l), (m) and (n) here; NOT in `REGISTRY` yet, because the
+# serving door mounts exactly the eight legacy files
+# (`beancount_ledger.load_environment` refuses any other set) until the
+# environment step of the spec's implementation order adds the second
+# deliverable, the seventh tool and the contract-5 profile — that step
+# moves these five into `REGISTRY`.
+from . import (  # noqa: E402
+    bowline_2026_04_c1,
+    bowline_2026_04_c2,
+    bowline_2026_04_c3,
+    bowline_2026_04_c4,
+    bowline_2026_04_c5,
+)
+
+CASH_APPLICATION_MODULES = (
+    bowline_2026_04_c1,   # cash_application_001  canonical minimum
+    bowline_2026_04_c2,   # cash_application_002  advice missing for R3; the reference names the invoices
+    bowline_2026_04_c3,   # cash_application_003  short-pays both sides of the tolerance; the write-off omitted
+    bowline_2026_04_c4,   # cash_application_004  short-pays both sides of the tolerance; R3 transposed
+    bowline_2026_04_c5,   # cash_application_005  a credit exceeding the invoice's remaining balance
+)
+
+CASH_APPLICATION_REGISTRY: dict = {}
+for _module in CASH_APPLICATION_MODULES:
+    for _task_id, _task in _module.TASKS.items():
+        if _task_id in REGISTRY or _task_id in CASH_APPLICATION_REGISTRY:
+            raise RuntimeError(f"task id {_task_id!r} is registered twice (second time by {_module.__name__})")
+        CASH_APPLICATION_REGISTRY[_task_id] = (_module.WORLD, _task)
+del _module, _task_id, _task

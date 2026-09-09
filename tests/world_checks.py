@@ -57,12 +57,13 @@ from beancount_ledger.candidate import committed as K  # noqa: E402
 from beancount_ledger.candidate.canonical import canonical_decimal  # noqa: E402
 from beancount_ledger.candidate.normalise import Accepted, parse_once  # noqa: E402
 from beancount_ledger.candidate.schema import ParsedTransaction  # noqa: E402
+from beancount_ledger.graph import cash_application as CA  # noqa: E402
 from beancount_ledger.graph import content as C  # noqa: E402
 from beancount_ledger.graph import identify as ID  # noqa: E402
 from beancount_ledger.graph import project as PJ  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
-from beancount_ledger.graph.policy import POLICY_SECTIONS, movement_of  # noqa: E402
-from beancount_ledger.graph.schema import check_world  # noqa: E402
+from beancount_ledger.graph.policy import POLICY_SECTIONS, is_cash_application_world, movement_of, required_sections  # noqa: E402
+from beancount_ledger.graph.schema import AppliedReceipt, CreditNote, check_world  # noqa: E402
 
 from repair_keys import master_names, planted_key  # noqa: E402  (tests/repair_keys.py)
 
@@ -193,12 +194,15 @@ def check_world_task(world, task, source_path=None):
         problems.append(f"{where}: schema.check_world: {problem}")
 
     # (j) the policy document the agent reads must carry every heading the
-    # accounting rules cite. `project()` enforces this too, but as a
+    # accounting rules THIS world exercises cite — the legacy eight always,
+    # the cash-application family's two when an event of theirs is authored
+    # (`policy.required_sections`). `project()` enforces this too, but as a
     # ProjectionError inside derive_contract; saying it here names the
     # missing heading and the rule that wanted it.
-    for section in sorted(set(POLICY_SECTIONS.values())):
+    required = required_sections(world)
+    for section in sorted(set(required.values())):
         if section not in world.policy_text:
-            rules = ", ".join(sorted(r for r, s in POLICY_SECTIONS.items() if s == section))
+            rules = ", ".join(sorted(r for r, s in required.items() if s == section))
             problems.append(f"{where}: policy text lacks the heading {section!r}, cited by the {rules} rule(s)")
 
     if problems:
@@ -355,6 +359,12 @@ def check_world_task(world, task, source_path=None):
     # reading, and that reading must be the planted one under the shared
     # repair key (truth side `derive.planted_key`, checker side
     # `identify.repair_key`, two independent projections).
+    #
+    # SCOPED to the bank-evidenced plants: `identify.py` reconciles bank
+    # movements and is not taught the cash-application family's files, so a
+    # planted write-off — a recognition with no bank leg, established by the
+    # advice plus the policy — is not something it can read. Gate (m) below
+    # validates that plant instead (amount, invoice, date, customer, shape).
     verdict = None
     try:
         verdict = ID.check_identifiable(public, bank_account=world.bank_account,
@@ -363,7 +373,8 @@ def check_world_task(world, task, source_path=None):
         problems.append(f"{where}: check_identifiable raised {type(exc).__name__}: {exc}")
     if verdict is not None:
         names = master_names(public)
-        want = sorted(planted_key(p, names, bank_account=world.bank_account) for p in inputs.planted)
+        bank_evidenced = [p for p in inputs.planted if any(a == world.bank_account for a, _ in p.required)]
+        want = sorted(planted_key(p, names, bank_account=world.bank_account) for p in bank_evidenced)
         got = sorted(ID.repair_key(r) for r in verdict.repairs)
         status = "unique" if verdict.unique else f"AMBIGUOUS ({verdict.readings} readings)"
         if not verdict.unique:
@@ -404,6 +415,12 @@ def check_world_task(world, task, source_path=None):
                 value = getattr(event, attr, None)
                 if isinstance(value, Decimal):
                     authored.add(abs(value))
+            # an advice line's cash and claimed deduction are authored facts
+            # too: the 20.00 the policy writes off IS the 20.00 the customer
+            # claimed, not a derived literal
+            for line in getattr(event, "lines", ()):
+                authored.add(abs(line.amount))
+                authored.add(abs(line.deduction))
         authored |= {abs(v) for _, v in world.opening.carried}
         authored.add(abs(world.bank_opening.balance))
         authored |= {abs(d.gross) for d in world.documents if d.gross is not None}
@@ -478,7 +495,167 @@ def check_world_task(world, task, source_path=None):
                                 f"day(s) ({event_a.id} clearing {mov_a.cleared_on}, {event_b.id} clearing "
                                 f"{mov_b.cleared_on}); a missing entry and a wrong amount become two readings")
 
+    # (l), (m), (n): the cash-application family's own gates, on a world the
+    # family is inferred from. A legacy world runs none of them.
+    if is_cash_application_world(world):
+        problems.extend(_family_gates(world, task, bundle, inputs, public, where))
+
     return problems, warnings
+
+
+# --------------------------------------------------------------------------
+# the cash-application family's gates (spec section 5 and 8)
+# --------------------------------------------------------------------------
+
+#: An APPLICATION INSTRUCTION in a narration or an advice note: a verb of
+#: application with an amount and an invoice or credit-note id, or an amount
+#: directed "to"/"against" an id. A genuine payment reference is not one, and
+#: neither is "after application of CN-0412" or "written off under the cash
+#: application policy": no amount is directed anywhere by either.
+_INSTRUCTION = re.compile(
+    r"\b(?:apply|applied|allocate|allocated|allocation|post|posted|book|booked|match|matched)\b[^.;\n]{0,60}?"
+    r"\b\d[\d,]*\.\d{2}\b[^.;\n]{0,60}?\b(?:SI|CN)-\d+\b"
+    r"|\b(?:SI|CN)-\d+\b[^.;\n]{0,60}?\b(?:apply|applied|allocate|allocated|post|posted|book|booked)\b"
+    r"[^.;\n]{0,60}?\b\d[\d,]*\.\d{2}\b"
+    r"|\b\d[\d,]*\.\d{2}\b\s+(?:to|against|on)\s+(?:SI|CN)-\d+\b",
+    re.IGNORECASE)
+_INVOICE_TOKEN = re.compile(r"\bSI-\d+\b")
+_CREDIT_TOKEN = re.compile(r"\bCN-\d+\b")
+
+
+def narration_problems(text: str, tied: frozenset, credit_notes: frozenset, label: str) -> list:
+    """Gate (n) / U10 on one narration or advice note: no application
+    instruction; every invoice it names is one a public document ties to
+    that payment (`tied`); every credit note it names exists."""
+    out = []
+    hit = _INSTRUCTION.search(text or "")
+    if hit:
+        out.append(f"{label} carries an application instruction: {hit.group(0)!r}")
+    for token in sorted(set(_INVOICE_TOKEN.findall(text or ""))):
+        if token not in tied:
+            out.append(f"{label} names {token}, which no public document ties to that payment")
+    for token in sorted(set(_CREDIT_TOKEN.findall(text or ""))):
+        if token not in credit_notes:
+            out.append(f"{label} names {token}, which is not a credit note in the evidence")
+    return out
+
+
+def _family_gates(world, task, bundle, inputs, public, where) -> list:
+    problems: list = []
+    truth = inputs.application
+    if truth is None:
+        return [f"{where}: a cash-application world derived no ApplicationInputs"]
+    kw = dict(bank_account=world.bank_account, period_start=task.period.start, period_end=task.period.end)
+    receivables = truth.receivables_account
+    expected = dict(inputs.expected_balances)
+
+    # (l) the register entering the period ties to the opening entry, read
+    # off the PROJECTED BYTES by the public fold (U7), and row for row is the
+    # register the truth derived from the documents and the March receipts.
+    try:
+        ev = CA.read_evidence(public, **kw)
+    except CA.Refusal as exc:
+        return problems + [f"{where}: gate (l): the public evidence refuses: {exc}"]
+    except Exception as exc:
+        return problems + [f"{where}: gate (l): read_evidence raised {type(exc).__name__}: {exc}"]
+    carried = dict(world.opening.carried).get(receivables, Decimal("0"))
+    if ev.opening_ar != carried or truth.opening_ar != carried:
+        problems.append(f"{where}: gate (l): opening receivables read {ev.opening_ar} (public) / {truth.opening_ar} "
+                        f"(truth) against the opening entry's {carried}")
+    public_register = tuple((i.invoice_id, i.customer, i.invoice_date, i.due_date, i.face_value, i.period_basis)
+                            for i in ev.invoices if i.source == "register")
+    if public_register != truth.opening_register:
+        problems.append(f"{where}: gate (l): open_items.csv reads {public_register}, the truth's register is "
+                        f"{truth.opening_register}")
+    for warning in ev.warnings:
+        problems.append(f"{where}: gate (l): the public evidence warns: {warning}")
+
+    # (m) the public fold over the ACTUAL projected bytes equals the truth
+    # folded from the authored facts, under a key built independently on
+    # each side; closing AR ties to the expected ledger's receivables; and
+    # every write-off the truth makes is a separate entry of the expected
+    # ledger with that amount, invoice, date, customer and shape.
+    try:
+        app = CA.fold(public, **kw)
+    except CA.Refusal as exc:
+        return problems + [f"{where}: gate (m): the public fold refuses: {exc}"]
+    except Exception as exc:
+        return problems + [f"{where}: gate (m): the public fold raised {type(exc).__name__}: {exc}"]
+    if CA.application_key(app) != truth.application_key():
+        left = dict(_key_rows(CA.application_key(app)))
+        right = dict(_key_rows(truth.application_key()))
+        moved = sorted(k for k in set(left) | set(right) if left.get(k) != right.get(k))
+        problems.append(f"{where}: gate (m): the public fold and the truth disagree on "
+                        + "; ".join(f"{k}: public {left.get(k)} vs truth {right.get(k)}" for k in moved[:6]))
+    if app.closing_ar != expected.get(receivables) or truth.closing_ar != expected.get(receivables):
+        problems.append(f"{where}: gate (m): closing AR public {app.closing_ar} / truth {truth.closing_ar} against "
+                        f"the expected ledger's {expected.get(receivables)} (U8)")
+    for warning in app.warnings:
+        problems.append(f"{where}: gate (m): the public fold warns: {warning}")
+    golden = parse_once(inputs.golden_text)
+    original = parse_once(inputs.original_text)
+    if not isinstance(golden, Accepted) or not isinstance(original, Accepted):
+        return problems + [f"{where}: gate (m): the ledgers do not parse"]
+    def shaped(text_parsed, date, payee, shape):
+        return [t for t in text_parsed.submission.directives if isinstance(t, ParsedTransaction)
+                and t.date == date and (t.payee or "") == payee and frozenset(K._txn_shape(t)) == shape]
+    for receipt in truth.receipts:
+        receipt_id, date, customer, _amount, _applied, offs, _unapplied, _rid, event_id, rec_id = receipt
+        total = sum((amount for _, amount in offs), Decimal("0"))
+        shape = _pairs(((truth.write_off_account, total), (receivables, -total)))
+        entries = shaped(golden, date, customer, shape) if offs else []
+        if offs and len(entries) != 1:
+            problems.append(f"{where}: gate (m): the expected ledger carries {len(entries)} write-off entries for "
+                            f"{receipt_id} ({date}, {customer}, {sorted(shape)}), not one")
+        elif offs:
+            named = set(_INVOICE_TOKEN.findall(entries[0].narration))
+            written = {invoice_id for invoice_id, _ in offs}
+            if named != written:
+                problems.append(f"{where}: gate (m): the write-off entry for {receipt_id} names {sorted(named)}, "
+                                f"the register writes off {sorted(written)}")
+        if not offs and any(t for t in golden.submission.directives if isinstance(t, ParsedTransaction)
+                            and t.date == date and (t.payee or "") == customer
+                            and truth.write_off_account in {a for a, _ in K._txn_shape(t)}):
+            problems.append(f"{where}: gate (m): the expected ledger writes something off for {receipt_id} and "
+                            f"the register writes off nothing")
+        planted = [p for p in inputs.planted if p.recognition_id == rec_id + "-writeoff"]
+        for p in planted:
+            if p.kind != "omit" or p.date != date or _pairs(p.required) != shape or p.must_be_payee != (customer,):
+                problems.append(f"{where}: gate (m): the planted write-off {p.id} ({p.kind}, {p.date}, "
+                                f"{p.required}, {p.must_be_payee}) is not the register's ({date}, {sorted(shape)}, "
+                                f"{customer})")
+            if offs and shaped(original, date, customer, shape):
+                problems.append(f"{where}: gate (m): the write-off {p.id} is planted as omitted and the opening "
+                                f"ledger still carries it")
+        if offs and not planted and not shaped(original, date, customer, shape):
+            problems.append(f"{where}: gate (m): the write-off for {receipt_id} is not planted, yet the opening "
+                            f"ledger lacks it")
+
+    # (n) the narration rule (U10): a receipt or write-off narration may carry
+    # the genuine payment reference; it may not carry an application
+    # instruction or name an invoice no public document ties to that payment.
+    # The same rule governs advice notes.
+    credit_numbers = frozenset(e.number for e in world.events if isinstance(e, CreditNote))
+    for event in world.events:
+        if not isinstance(event, AppliedReceipt):
+            continue
+        tied = frozenset({world.document(line.invoice_id).number for line in event.lines}
+                         | set(_INVOICE_TOKEN.findall(event.bank_reference)))
+        slug = event.id.split(":", 1)[1]
+        for rec in bundle.recognitions:
+            if rec.event_id == event.id:
+                problems.extend(f"{where}: gate (n): {p}" for p in narration_problems(
+                    rec.narration, tied, credit_numbers, f"the narration of {rec.id} {rec.narration!r}"))
+        for i, line in enumerate(event.lines, 1):
+            problems.extend(f"{where}: gate (n): {p}" for p in narration_problems(
+                line.note, tied, credit_numbers, f"advice note {slug} line {i} {line.note!r}"))
+    return problems
+
+
+def _key_rows(key: tuple):
+    for section, rows in key:
+        for row in rows:
+            yield f"{section} {row[0]}", row[1:]
 
 
 # --------------------------------------------------------------------------

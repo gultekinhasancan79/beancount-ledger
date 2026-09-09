@@ -21,6 +21,7 @@ from ..candidate.canonical import canonical_decimal
 from ..candidate.normalise import Accepted, parse_once
 from itertools import combinations
 
+from .policy import SHORT_PAY_TOLERANCE, credit_note_amounts, is_cash_application_world
 from .project import (
     ARCHIVE_VIEW,
     EXPECTED_LEDGER_VIEW,
@@ -37,7 +38,7 @@ from .project import (
     project,
     check_bundle,
 )
-from .schema import DocumentKind, World
+from .schema import AppliedReceipt, CreditNote, CustomerReceipt, DocumentKind, Sale, World
 
 _DERIVED_TOKEN = object()
 
@@ -136,6 +137,72 @@ class TrapSpec:
     narration: str
 
 
+APPLICATION_TRUTH_SCHEMA = "piv.application-truth/1"
+
+
+@dataclass(frozen=True)
+class ApplicationInputs:
+    """The TRUTH register of the cash-application family, folded from the
+    authored `AppliedReceipt` lines and `CreditNote`s through the policy's
+    rules — the register `application/1` scores against. Minted beside
+    `ContractInputs` by `derive_contract` for a family world and absent
+    otherwise, so a legacy task's contract view does not change.
+
+    Everything here is a fold of authored facts under the published policy;
+    nothing is typed. `application_key()` is the truth side of gate (m): the
+    same order-free tuple `graph.cash_application.application_key` builds
+    from the PUBLIC fold, implemented here independently (the `planted_key`
+    / `repair_key` pattern) so a common-mode fault in either projection
+    shows up as a mismatch rather than hiding in both.
+    """
+
+    receivables_account: str
+    write_off_account: str
+    tolerance: Decimal
+    opening_ar: Decimal
+    closing_ar: Decimal
+    opening_register: tuple      # ((invoice_id, customer, invoice_date, due_date, face_value, open_balance), ...)
+    invoices: tuple              # ((invoice_id, customer, invoice_date, period_basis, source), ...)
+    receipts: tuple              # ((receipt_id, date, customer, amount, applied, written_off, unapplied,
+                                 #   remittance_id, event_id, recognition_id), ...) in fold order
+    credit_notes: tuple          # ((credit_note_id, date, customer, gross, applied, unapplied, event_id), ...)
+    register: tuple              # ((invoice_id, customer, period_basis, applied_total, credited, written_off,
+                                 #   remaining), ...) by invoice_id
+
+    def application_key(self) -> tuple:
+        receipts = tuple(sorted((r[0], tuple(sorted(r[4])), tuple(sorted(r[5])), r[6]) for r in self.receipts))
+        credits = tuple(sorted((c[0], tuple(sorted(c[4])), c[5]) for c in self.credit_notes))
+        rows = tuple(sorted(self.register))
+        return (("receipts", receipts), ("credit_notes", credits), ("register", rows))
+
+    def receipt(self, receipt_id: str) -> tuple:
+        return next(r for r in self.receipts if r[0] == receipt_id)
+
+    def row(self, invoice_id: str) -> tuple:
+        return next(r for r in self.register if r[0] == invoice_id)
+
+    def view(self) -> dict:
+        """The normative declared data the task contract digest binds for
+        the family: every quantity `application/1` reads."""
+        def pairs(items):
+            return [[invoice_id, amount] for invoice_id, amount in items]
+        return {
+            "schema": APPLICATION_TRUTH_SCHEMA,
+            "receivables_account": self.receivables_account, "write_off_account": self.write_off_account,
+            "tolerance": self.tolerance, "opening_ar": self.opening_ar, "closing_ar": self.closing_ar,
+            "opening_register": [list(r) for r in self.opening_register],
+            "invoices": [list(r) for r in self.invoices],
+            "receipts": [{"receipt_id": r[0], "date": r[1], "customer": r[2], "amount": r[3],
+                          "applied": pairs(r[4]), "written_off": pairs(r[5]), "unapplied_amount": r[6],
+                          "remittance_id": r[7]} for r in self.receipts],
+            "credit_notes": [{"credit_note_id": c[0], "date": c[1], "customer": c[2], "gross": c[3],
+                              "applied": pairs(c[4]), "unapplied_amount": c[5]} for c in self.credit_notes],
+            "closing_open_items": [{"invoice_id": w[0], "customer": w[1], "period_basis": w[2],
+                                    "applied_total": w[3], "credited": w[4], "written_off": w[5],
+                                    "remaining": w[6]} for w in self.register],
+        }
+
+
 @dataclass(frozen=True)
 class ContractInputs:
     task_id: str
@@ -157,6 +224,7 @@ class ContractInputs:
     view_digests: tuple
     public_files: tuple        # ((name, bytes), ...)
     _mint: object = field(default=None, repr=False, compare=False)
+    application: object = None    # ApplicationInputs for the cash-application family; None otherwise
 
     def __post_init__(self):
         if self._mint is not _DERIVED_TOKEN:
@@ -165,7 +233,7 @@ class ContractInputs:
 
     def contract_view(self) -> dict:
         """The normative declared data the task contract digest binds."""
-        return {
+        view = {
             "id": self.task_id, "type": self.task_type, "prompt": self.prompt,
             "period": {"start": self.period.start, "end": self.period.end},
             "world_id": self.world_id, "currency": self.currency,
@@ -181,6 +249,11 @@ class ContractInputs:
             "graph_digest": self.graph_digest, "mutation_plan_digest": self.mutation_plan_digest,
             "view_digests": [list(x) for x in self.view_digests],
         }
+        # Present only for the family: a legacy task's view — and therefore
+        # its pinned task-contract digest — does not move.
+        if self.application is not None:
+            view["application"] = self.application.view()
+        return view
 
     def legacy_task_view(self) -> dict:
         """The shape of the archived task file's normative keys, for the
@@ -195,6 +268,226 @@ class ContractInputs:
             "traps": [{"id": t.id, "narration": t.narration} for t in self.traps],
             "allowed_accounts": list(self.allowed_accounts),
         }
+
+
+# --------------------------------------------------------------------------
+# the truth register of the cash-application family
+# --------------------------------------------------------------------------
+
+_ZERO = Decimal("0.00")
+
+
+def _q2(value: Decimal) -> Decimal:
+    return Decimal(value).quantize(Decimal("0.01"))
+
+
+def _terms_days(terms) -> int:
+    import re
+    match = re.search(r"net\s+(\d+)", terms or "", re.IGNORECASE)
+    return int(match.group(1)) if match else 0
+
+
+def _due(issued: str, terms) -> str:
+    from datetime import date, timedelta
+    return (date.fromisoformat(issued) + timedelta(days=_terms_days(terms))).isoformat()
+
+
+def derive_application(world: World, bundle: Bundle, roles) -> ApplicationInputs:
+    """Fold the authored facts into the truth register, independently of the
+    projector's helpers and of the public fold. Refuses, as a
+    `DerivationError`, every authoring slip the spec's U-table puts on the
+    truth side: a line on a closed, foreign, unknown or not-yet-raised
+    invoice, a line above the open balance, a settled line whose cash and
+    deduction do not close the invoice, a deduction without a settlement, an
+    advice whose lines exceed its payment; and the two ties — the register
+    entering the period to the opening entry (gate (l), U7) and the register
+    leaving it to the expected ledger's receivables (U8)."""
+    period = bundle.period
+    receivables = roles.receivables
+    tolerance = SHORT_PAY_TOLERANCE
+
+    def posting_date(e) -> str:
+        return e.settlement.cleared_on if isinstance(e, AppliedReceipt) else e.date
+
+    # the balance each sales invoice carries into the period ---------------
+    prior: dict = {}
+    for e in world.events:
+        if posting_date(e) >= period.start:
+            continue
+        if isinstance(e, CustomerReceipt):
+            prior[e.invoice_id] = prior.get(e.invoice_id, _ZERO) + e.amount
+        elif isinstance(e, AppliedReceipt):
+            claimed: dict = {}
+            for line in e.lines:
+                prior[line.invoice_id] = prior.get(line.invoice_id, _ZERO) + line.amount
+                settles, deduction = claimed.get(line.invoice_id, (False, _ZERO))
+                claimed[line.invoice_id] = (settles or line.settles, deduction + line.deduction)
+            for invoice_id, (settles, deduction) in claimed.items():
+                if settles and _ZERO < deduction <= tolerance:
+                    prior[invoice_id] = prior.get(invoice_id, _ZERO) + deduction
+        elif isinstance(e, CreditNote):
+            prior[e.invoice_id] = prior.get(e.invoice_id, _ZERO) + credit_note_amounts(e)[1]
+
+    invoices: dict = {}          # number -> (customer, invoice_date, basis, doc id)
+    opening_register = []
+    for d in sorted(world.documents, key=lambda d: (d.issued, d.number)):
+        if d.kind is not DocumentKind.SALES_INVOICE or d.issued >= period.start:
+            continue
+        open_balance = _q2(d.gross - prior.get(d.id, _ZERO))
+        if open_balance < 0:
+            raise DerivationError(f"{d.number}: applications before the period exceed its face value")
+        if open_balance == 0:
+            continue
+        party = world.party(d.party_id)
+        opening_register.append((d.number, party.name, d.issued, _due(d.issued, party.terms), _q2(d.gross),
+                                 open_balance))
+        invoices[d.number] = (party.name, d.issued, open_balance, d.id)
+    opening_ar = sum((row[5] for row in opening_register), _ZERO)
+    carried = dict(world.opening.carried).get(receivables, _ZERO)
+    if opening_ar != carried:
+        raise DerivationError(f"REFUSE_REGISTER_DOES_NOT_TIE: the register entering the period totals "
+                              f"{opening_ar}, the opening entry's {receivables} {carried}")
+    for e in sorted((e for e in world.events if isinstance(e, Sale) and period.contains(e.date)),
+                    key=lambda e: (e.date, e.id)):
+        d = world.document(e.invoice_id)
+        if d.number in invoices:
+            raise DerivationError(f"REFUSE_SALE_WITHOUT_UNIQUE_NUMBER: {d.number} is raised in the period and "
+                                  f"already in the register")
+        invoices[d.number] = (world.party(e.party_id).name, e.date, _q2(d.gross), d.id)
+    by_doc = {doc_id: number for number, (_, _, _, doc_id) in invoices.items()}
+
+    remaining = {n: basis for n, (_, _, basis, _) in invoices.items()}
+    applied = {n: _ZERO for n in invoices}
+    credited = {n: _ZERO for n in invoices}
+    written_off = {n: _ZERO for n in invoices}
+
+    def open_by_date(customer: str, date: str, exclude=()) -> list:
+        return sorted((n for n, (c, invoice_date, _, _) in invoices.items()
+                       if c == customer and invoice_date <= date and remaining[n] > 0 and n not in exclude),
+                      key=lambda n: (invoices[n][1], n))
+
+    # the period's events, in application order ------------------------------
+    movements = {m.event_id: m for m in bundle.movements}
+    events = []
+    for e in world.events:
+        if isinstance(e, CustomerReceipt) and period.contains(e.date):
+            raise DerivationError(f"{e.id}: a cash-application world applies every in-period receipt through "
+                                  f"an AppliedReceipt; a single-invoice CustomerReceipt has no register row")
+        if isinstance(e, CreditNote) and period.contains(e.date):
+            events.append((e.date, 0, e.number, e))
+        if isinstance(e, AppliedReceipt) and period.contains(e.settlement.cleared_on):
+            events.append((e.settlement.cleared_on, 1, e.id, e))      # statement order: (cleared_on, event id)
+    events.sort(key=lambda t: t[:3])
+
+    receipts, credits = [], []
+    for date, kind, _, e in events:
+        customer = world.party(e.party_id).name
+        if kind == 0:
+            named = by_doc.get(e.invoice_id)
+            if named is None or invoices[named][0] != customer:
+                raise DerivationError(f"REFUSE_FOREIGN_OR_UNKNOWN_INVOICE: {e.number} names {e.invoice_id}")
+            if invoices[named][1] > date:
+                raise DerivationError(f"REFUSE_FOREIGN_OR_UNKNOWN_INVOICE: {e.number} is dated before {named}")
+            tax, gross = credit_note_amounts(e)
+            left = gross
+            lines = []
+            take = min(left, remaining[named])       # a paid invoice takes none: all of it routes as excess
+            if take > 0:
+                lines.append((named, take))
+                remaining[named] -= take
+                credited[named] += take
+                left -= take
+            for other in open_by_date(customer, date, exclude=(named,)):
+                if left <= 0:
+                    break
+                take = min(left, remaining[other])
+                lines.append((other, take))
+                remaining[other] -= take
+                credited[other] += take
+                left -= take
+            credits.append((e.number, date, customer, gross, tuple(lines), _q2(left), e.id))
+            continue
+        movement = movements[e.id]
+        receipt_id = f"{movement.cleared_on}:{movement.reference}"
+        groups: dict = {}
+        for line in e.lines:
+            groups.setdefault(line.invoice_id, []).append(line)
+        lines, offs = [], []
+        paid_total = _ZERO
+        for doc_id, group in groups.items():
+            number = by_doc.get(doc_id)
+            label = f"{e.id} line on {doc_id}"
+            if number is None or invoices[number][0] != customer:
+                raise DerivationError(f"REFUSE_FOREIGN_OR_UNKNOWN_INVOICE: {label} names an invoice that is not "
+                                      f"{customer}'s or not in the register")
+            if invoices[number][1] > date:
+                raise DerivationError(f"REFUSE_FOREIGN_OR_UNKNOWN_INVOICE: {label}: {number} is raised after the "
+                                      f"application date {date}")
+            paid = sum((l.amount for l in group), _ZERO)
+            deduction = sum((l.deduction for l in group), _ZERO)
+            settles = any(l.settles for l in group)
+            if any(l.deduction > 0 and not l.settles for l in group):
+                raise DerivationError(f"REFUSE_LINE_CONTRADICTS_REGISTER: {label} claims a deduction without settling")
+            open_ = remaining[number]
+            if open_ == 0 and (paid > 0 or deduction > 0):
+                raise DerivationError(f"REFUSE_FOREIGN_OR_UNKNOWN_INVOICE: {label}: {number} is already closed")
+            if paid > open_:
+                raise DerivationError(f"REFUSE_LINE_CONTRADICTS_REGISTER: {label} pays {paid} against {open_}")
+            if settles and paid + deduction != open_:
+                raise DerivationError(f"REFUSE_LINE_CONTRADICTS_REGISTER: {label} settles with {paid} + {deduction} "
+                                      f"against an open balance of {open_}")
+            paid_total += paid
+            if paid == 0 and deduction == 0 and not settles:
+                continue                              # an informational statement of dispute
+            if paid > 0:
+                lines.append((number, paid))
+                remaining[number] -= paid
+                applied[number] += paid
+            if settles and _ZERO < deduction <= tolerance:
+                offs.append((number, deduction))
+                remaining[number] -= deduction
+                written_off[number] += deduction
+        if paid_total > e.amount:
+            raise DerivationError(f"REFUSE_LINE_CONTRADICTS_REGISTER: {e.id}'s lines total {paid_total}, above "
+                                  f"its payment of {e.amount}")
+        receipts.append((receipt_id, date, customer, _q2(e.amount), tuple(lines), tuple(offs),
+                         _q2(e.amount - paid_total), e.remittance_id, e.id, f"rec:{e.id.split(':', 1)[1]}"))
+
+    register = tuple((n, invoices[n][0], invoices[n][2], _q2(applied[n]), _q2(credited[n]), _q2(written_off[n]),
+                      _q2(remaining[n])) for n in sorted(invoices))
+    unapplied = sum((r[6] for r in receipts), _ZERO) + sum((c[5] for c in credits), _ZERO)
+    closing_ar = _q2(sum((row[6] for row in register), _ZERO) - unapplied)
+    expected_ar = dict(bundle.expected_balances).get(receivables, _ZERO)
+    if closing_ar != expected_ar:
+        raise DerivationError(f"the truth register closes at {closing_ar}, the expected ledger's {receivables} at "
+                              f"{expected_ar}; a projector or derivation defect (U8)")
+    # The policy's write-off recognitions must be exactly the register's
+    # write-offs: one per receipt that writes something off, on the receipt's
+    # date, payee the customer, legs (write-off account +d, receivables -d)
+    # with d the receipt's written-off total.
+    for r in receipts:
+        rec_id = r[9] + "-writeoff"
+        matching = [rec for rec in bundle.recognitions if rec.id == rec_id]
+        total = sum((amount for _, amount in r[5]), _ZERO)
+        if not r[5]:
+            if matching:
+                raise DerivationError(f"{rec_id}: the policy writes off {matching[0].net_on(receivables)} and the "
+                                      f"register nothing")
+            continue
+        if not matching:
+            raise DerivationError(f"{rec_id}: the register writes off {total} and the policy has no recognition")
+        rec = matching[0]
+        legs = tuple(sorted((l.account, _q2(l.amount)) for l in rec.legs))
+        want = tuple(sorted(((roles.small_balance_write_offs, total), (receivables, -total))))
+        if rec.date != r[1] or rec.payee != r[2] or legs != want:
+            raise DerivationError(f"{rec_id}: the policy's write-off ({rec.date}, {rec.payee}, {legs}) is not the "
+                                  f"register's ({r[1]}, {r[2]}, {want})")
+    return ApplicationInputs(
+        receivables_account=receivables, write_off_account=roles.small_balance_write_offs, tolerance=tolerance,
+        opening_ar=_q2(opening_ar), closing_ar=closing_ar, opening_register=tuple(opening_register),
+        invoices=tuple((n, c, d, basis, "register" if n in {row[0] for row in opening_register} else "sale")
+                       for n, (c, d, basis, _) in sorted(invoices.items())),
+        receipts=tuple(receipts), credit_notes=tuple(credits), register=register)
 
 
 def derive_contract(world: World, task: TaskSpec) -> tuple[Bundle, ContractInputs]:
@@ -331,6 +624,10 @@ def derive_contract(world: World, task: TaskSpec) -> tuple[Bundle, ContractInput
             traps.append(TrapSpec(f"outstanding_check_{number}" if number else f"outstanding_{mov.id.split(':', 1)[1]}",
                                   rec.id, mov.id, rec.date, mov.cleared_on, mov.amount, rec.narration))
     closing = Decimal(statement.text.splitlines()[-1].split(",")[-1])
+    application = None
+    if is_cash_application_world(world):
+        from .policy import Roles
+        application = derive_application(world, bundle, Roles(**dict(world.roles)))
     inputs = ContractInputs(
         task_id=task.id, task_type=task.type, prompt=task.prompt, period=task.period,
         world_id=world.id, currency=world.currency,
@@ -341,6 +638,7 @@ def derive_contract(world: World, task: TaskSpec) -> tuple[Bundle, ContractInput
         view_digests=bundle.view_digests(),
         public_files=tuple(sorted(bundle.public_files().items())),
         _mint=_DERIVED_TOKEN,
+        application=application,
     )
     return bundle, inputs
 

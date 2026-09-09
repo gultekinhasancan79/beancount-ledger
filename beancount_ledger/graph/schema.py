@@ -65,6 +65,7 @@ class DocumentKind(Enum):
     SALES_INVOICE = "sales_invoice"
     PURCHASE_INVOICE = "purchase_invoice"
     CHEQUE = "cheque"
+    CREDIT_NOTE = "credit_note"
 
 
 class Rail(Enum):
@@ -162,6 +163,62 @@ class CustomerReceipt:
 
 
 @dataclass(frozen=True)
+class ReceiptLine:
+    """One line of a customer's remittance advice, as the customer wrote it:
+    the invoice named, the cash the customer says it applies to it, whether
+    the customer treats the invoice as closed, and the shortfall it claims
+    when it does. A zero-cash line that settles nothing and claims nothing
+    is an informational statement of dispute, kept because the customer
+    sent it. What the books do about a claimed deduction is the policy's
+    decision, never typed here."""
+
+    invoice_id: str
+    amount: Decimal
+    settles: bool = False
+    deduction: Decimal = Decimal("0.00")
+    note: str = ""
+
+
+@dataclass(frozen=True)
+class AppliedReceipt:
+    """A customer receipt applied to several invoices — the cash-application
+    family's receipt. `date` is the customer's date (the advice date, or the
+    cheque date); the bank's date is `settlement.cleared_on`, and the
+    policy posts the receipt on the bank's date. `bank_reference` is what an
+    ACH row prints in the statement's reference column; a cheque row prints
+    the cheque number. `lines` are the remittance advice when `remittance_id`
+    names one, and the authored application the public policy must reach on
+    its own when it does not (gate (m) checks that it does)."""
+
+    id: str
+    date: str
+    party_id: str
+    amount: Decimal
+    settlement: Settlement
+    memo: str
+    bank_reference: str
+    lines: tuple                  # (ReceiptLine, ...) in advice order
+    remittance_id: str = ""       # "" when no advice accompanies the payment
+
+
+@dataclass(frozen=True)
+class CreditNote:
+    """A credit note issued against a sales invoice: reverses the sale and
+    its tax on its date, and is applied in the register under the credit
+    policy (to the invoice it names up to its open balance, any excess to
+    the customer's other open invoices, any remainder held)."""
+
+    id: str
+    date: str
+    party_id: str
+    invoice_id: str
+    number: str
+    net: Decimal
+    tax_rate: Decimal
+    memo: str
+
+
+@dataclass(frozen=True)
 class VendorPayment:
     id: str
     date: str
@@ -205,8 +262,17 @@ class BankFee:
     memo: str
 
 
-Event = Sale | Purchase | CustomerReceipt | VendorPayment | ExpensePayment | Prepayment | BankFee
-EVENT_KINDS = (Sale, Purchase, CustomerReceipt, VendorPayment, ExpensePayment, Prepayment, BankFee)
+Event = (Sale | Purchase | CustomerReceipt | AppliedReceipt | CreditNote | VendorPayment | ExpensePayment
+         | Prepayment | BankFee)
+EVENT_KINDS = (Sale, Purchase, CustomerReceipt, AppliedReceipt, CreditNote, VendorPayment, ExpensePayment,
+               Prepayment, BankFee)
+
+
+def claims_deduction(world) -> bool:
+    """Whether any authored advice line claims a deduction: the one condition
+    under which the small-balance write-off role is required of a world."""
+    return any(isinstance(e, AppliedReceipt) and any(line.deduction > 0 for line in e.lines)
+               for e in world.events)
 
 
 @dataclass(frozen=True)
@@ -341,9 +407,12 @@ def check_world(world: World) -> list[str]:
     elif world.account(world.bank_account).kind is not AccountKind.ASSET:
         problems.append("the bank account is not an asset")
     roles = dict(world.roles)
-    from .policy import ROLES   # the policy declares what it needs; the world says which account plays it
+    from .policy import OPTIONAL_ROLES, ROLES   # the policy declares what it needs; the world says which account plays it
+    deduction_claimed = claims_deduction(world)
     for role in ROLES:
         if role not in roles:
+            if role in OPTIONAL_ROLES and not deduction_claimed:
+                continue        # required only of a world whose advice lines claim a deduction
             problems.append(f"role {role!r} has no account")
         elif roles[role] not in names:
             problems.append(f"role {role!r} names {roles[role]}, which is not in the chart")
@@ -422,7 +491,7 @@ def check_world(world: World) -> list[str]:
                     problems.append(f"{what}: {settlement.cheque_id} is not a cheque")
             if settlement.cleared_on < e.date:
                 problems.append(f"{what}: cleared before it happened")
-            if isinstance(e, CustomerReceipt) and settlement.rail not in (Rail.ACH_IN, Rail.CHEQUE):
+            if isinstance(e, (CustomerReceipt, AppliedReceipt)) and settlement.rail not in (Rail.ACH_IN, Rail.CHEQUE):
                 problems.append(f"{what}: a customer receipt cannot arrive by {settlement.rail.value}")
             if isinstance(e, (VendorPayment, ExpensePayment, Prepayment)) and settlement.rail not in (Rail.ACH_OUT, Rail.CHEQUE, Rail.CARD):
                 problems.append(f"{what}: a payment cannot leave by {settlement.rail.value}")
@@ -436,9 +505,59 @@ def check_world(world: World) -> list[str]:
         if isinstance(e, (Purchase, VendorPayment)) and e.invoice_id in doc_ids \
                 and world.document(e.invoice_id).kind is not DocumentKind.PURCHASE_INVOICE:
             problems.append(f"{what}: {e.invoice_id} is not a purchase invoice")
-        if isinstance(e, CustomerReceipt) and e.invoice_id in doc_ids \
+        if isinstance(e, (CustomerReceipt, CreditNote)) and e.invoice_id in doc_ids \
                 and world.document(e.invoice_id).kind is not DocumentKind.SALES_INVOICE:
             problems.append(f"{what}: {e.invoice_id} is not a sales invoice")
+        if isinstance(e, AppliedReceipt):
+            if party_id in party_ids and world.party(party_id).role is not PartyRole.CUSTOMER:
+                problems.append(f"{what}: {party_id} is not a customer")
+            if settlement is not None and settlement.rail is Rail.ACH_IN and not e.bank_reference.strip():
+                problems.append(f"{what}: an ACH receipt prints a bank reference; none is authored")
+            if not isinstance(e.lines, tuple) or not e.lines:
+                problems.append(f"{what}: an applied receipt names at least one advice line")
+                continue
+            total = Decimal("0")
+            for i, line in enumerate(e.lines, 1):
+                where = f"{what}.lines[{i}]"
+                if not isinstance(line, ReceiptLine):
+                    problems.append(f"{where}: {type(line).__name__} is not a ReceiptLine")
+                    continue
+                strings(line, where)
+                if not isinstance(line.settles, bool):
+                    problems.append(f"{where}: settles is not a bool")
+                if line.amount < 0 or line.deduction < 0:
+                    problems.append(f"{where}: a negative amount or deduction")
+                if line.deduction > 0 and not line.settles:
+                    problems.append(f"{where}: claims a deduction of {line.deduction} without settling the invoice")
+                if line.invoice_id not in doc_ids:
+                    problems.append(f"{where}: document {line.invoice_id} unknown")
+                    continue
+                invoice = world.document(line.invoice_id)
+                if invoice.kind is not DocumentKind.SALES_INVOICE:
+                    problems.append(f"{where}: {line.invoice_id} is not a sales invoice")
+                if invoice.party_id != party_id:
+                    problems.append(f"{where}: {line.invoice_id} belongs to another party")
+                if invoice.issued > e.date:
+                    problems.append(f"{where}: {line.invoice_id} is raised {invoice.issued}, after the receipt's "
+                                    f"date {e.date}")
+                total += line.amount
+            if total > e.amount:
+                problems.append(f"{what}: the advice lines total {total}, above the receipt of {e.amount}")
+        if isinstance(e, CreditNote):
+            if not (Decimal("0") <= e.tax_rate <= Decimal("1")):
+                problems.append(f"{what}: tax rate {e.tax_rate} is not a rate")
+            if e.net <= 0:
+                problems.append(f"{what}: net must be positive")
+            if not re.match(r"^[A-Z]{1,4}-\d{2,8}$", e.number):
+                problems.append(f"{what}: number {e.number!r} is not of the form CN-nnnn")
+            if any(d.number == e.number for d in world.documents) or any(
+                    isinstance(o, CreditNote) and o is not e and o.number == e.number for o in world.events):
+                problems.append(f"{what}: number {e.number} collides with another document or credit note")
+            if party_id in party_ids and world.party(party_id).role is not PartyRole.CUSTOMER:
+                problems.append(f"{what}: {party_id} is not a customer")
+            if e.invoice_id in doc_ids and world.document(e.invoice_id).issued > e.date:
+                problems.append(f"{what}: {e.invoice_id} is raised {world.document(e.invoice_id).issued}, after "
+                                f"the credit note's date {e.date}")
         if isinstance(e, (ExpensePayment, Prepayment)) and party_id in party_ids:
             party = world.party(party_id)
             if party.role is not PartyRole.VENDOR or party.default_account is None:
