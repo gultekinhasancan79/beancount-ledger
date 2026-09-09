@@ -43,11 +43,12 @@ What is witnessed:
     `WARN:` line, so a world at the spec's own boundary passes verify_world;
   * every other world gate (`world_checks`: schema, derivation, golden 1.0,
     original unresolved, the merged trap, leaked ids, derived literals, name
-    pools, policy headings) passes for all five; gate (f), scoped to the
-    bank-evidenced plants, passes for Case 3 and is PINNED as the spec's
-    open implementation risk for the four cases whose altered R3 sits two
-    days before the cut-off — see `test_gate_f_status` — until step 4
-    resolves it in `identify.py`;
+    pools, policy headings, plant coverage) passes for all five; gate (f),
+    scoped to the bank-evidenced plants, reads every case uniquely as the
+    planted repairs — the spec's open implementation risk (section 8) was
+    resolved in step 4 by the payment-reference syntax in `identify.py`
+    (`_payment_reference_words`: the ACH addendum is an instrument), which
+    `tests/test_family_validators.py` pins mechanism by mechanism;
   * the plants are the spec's: R2 omitted in every case on the bank's date,
     R3 transposed with the stated parameters to the stated as-found amounts,
     the write-off omitted alone in Case 3 and booked in Case 4;
@@ -301,40 +302,35 @@ def test_the_family_is_five_variants_of_one_company_month():
                  "field added, none in the legacy registry of 95", not problems, "\n".join(problems))
 
 
-def test_every_gate_but_identifiability_passes_and_case_3_passes_all():
+def test_every_gate_passes_for_all_five():
     problems = []
     for n in range(1, 6):
         module, world, task, *_ = case(n)
         found, warnings = check_world_task(world, task, source_path=WORLDS_DIR / f"{module.__name__.rsplit('.', 1)[1]}.py")
-        gate_f = [p for p in found if "the public evidence is AMBIGUOUS" in p or "public reading is not the planted one" in p]
-        other = [p for p in found if p not in gate_f]
-        problems += [f"case {n}: {p}" for p in other]
-        if n == 3 and gate_f:
-            problems += [f"case 3: {p[:300]}" for p in gate_f]
+        problems += [f"case {n}: {p}" for p in found]
         for w in warnings:
             print(f"      case {n}: {w[:200]}")
         # the shared module is scanned for derived literals too
         found_shared, _ = check_world_task(world, task, source_path=WORLDS_DIR / "_bowline.py")
         problems += [f"case {n} (_bowline.py): {p}" for p in found_shared
                      if "appears as" in p and "literal" in p]
-    return check("every world gate — schema, derivation, golden 1.0, original unresolved, merged trap, private ids, "
-                 "derived literals (the case module and _bowline.py), name pools, headings, and the family's (l), "
-                 "(m), (n) — passes for all five; Case 3 also passes scoped gate (f)", not problems, "\n".join(problems))
+    return check("every world gate — schema, derivation, golden 1.0, original unresolved, merged trap, scoped (f), "
+                 "private ids, derived literals (the case module and _bowline.py), name pools, headings, the "
+                 "family's (l), (m), (n) and plant coverage — passes for all five", not problems, "\n".join(problems))
 
 
-def test_gate_f_status():
-    """Gate (f), scoped to the bank-evidenced plants. Case 3's R3 is booked
-    correctly and the checker reads the month uniquely as the planted R2
-    omission. In Cases 1, 2, 4 and 5 the altered R3 is dated two days before
-    the cut-off and `identify.py` classifies its reference (`GR PAYRUN 0428`,
-    `SI-3104 SI-3102`) as REF_UNKNOWN, so the checker admits a second
-    reading in which the mis-keyed entry is a deposit in transit and the row
-    an unrecorded receipt. That is the spec's declared open implementation
-    risk (section 8), owned by step 4; it is PINNED here as exactly that —
-    two readings, the in-transit alternative — so that its resolution (a
-    payment-reference syntax in `identify.py`, or a policy-aware rule that a
-    receipt posted on the bank's date is never in transit) moves this test
-    deliberately rather than silently."""
+def test_gate_f_reads_every_case_as_the_planted_repairs():
+    """Gate (f), scoped to the bank-evidenced plants, after step 4. The
+    spec's open implementation risk (section 8) was real: with `GR PAYRUN
+    0428` and `SI-3104 SI-3102` read as UNKNOWN references, the mis-keyed
+    R3 two days before the cut-off admitted a second reading — the row an
+    unrecorded receipt, the entry a deposit in transit — in Cases 1, 2, 4
+    and 5. Step 4 chose the first of the spec's two fixes: the reference
+    syntax gained the payment reference (`identify._payment_reference_words`,
+    an INSTRUMENT, since a document role never prunes), so the entry that
+    quotes the addendum is its row's alteration and never in transit. Every
+    case now reads uniquely as exactly its planted bank-evidenced repairs;
+    the mechanism itself is pinned in `tests/test_family_validators.py`."""
     problems = []
     for n in range(1, 6):
         _, world, task, _, inputs, public = case(n)
@@ -343,20 +339,17 @@ def test_gate_f_status():
                                         bank_account=BANK)
                          for p in inputs.planted if any(a == BANK for a, _ in p.required))
         read = sorted(ID.repair_key(r) for r in verdict.repairs)
-        if n == 3:
-            if not verdict.unique or verdict.readings != 1 or planted != read:
-                problems.append(f"case 3: {verdict.unique} {verdict.readings} planted {planted} read {read}")
-            continue
-        if verdict.unique:
-            problems.append(f"case {n}: the checker now reads uniquely ({read}); step 4's resolution has landed — "
-                            f"move this pin to assert the planted reading")
-        elif verdict.readings != 2 or "timing difference" not in verdict.reason:
-            problems.append(f"case {n}: {verdict.readings} readings, reason {verdict.reason[:200]!r}")
-        elif read != planted[:1] or not read or read[0][0] != "missing_entry":
-            problems.append(f"case {n}: the common reading is {read}, not the R2 omission")
-    return check("gate (f): Case 3 unique and planted; Cases 1, 2, 4, 5 pinned at two readings (the mis-keyed R3 "
-                 "two days before the cut-off admits an in-transit alternative under an unknown reference) — the "
-                 "spec's open risk, owned by step 4", not problems, "\n".join(problems))
+        if not verdict.unique or verdict.readings != 1 or planted != read:
+            problems.append(f"case {n}: unique {verdict.unique}, {verdict.readings} readings, planted {planted}, "
+                            f"read {read}: {verdict.reason[:300]}")
+        if verdict.matched != (4 if n == 3 else 3):
+            problems.append(f"case {n}: {verdict.matched} rows matched, not {4 if n == 3 else 3}")
+        kinds = sorted(r.kind for r in verdict.repairs)
+        if kinds != (["missing_entry"] if n == 3 else ["missing_entry", "wrong_amount"]):
+            problems.append(f"case {n}: repair kinds {kinds}")
+    return check("gate (f): every case reads uniquely, with one reading, as exactly its planted bank-evidenced "
+                 "repairs — R2 missing on the bank's date in all five, R3 mis-keyed in Cases 1, 2, 4 and 5 — "
+                 "the spec's open risk resolved by the payment-reference syntax", not problems, "\n".join(problems))
 
 
 def test_the_projected_pack_is_the_spec_s():
@@ -651,9 +644,8 @@ def test_u12_warnings_are_warnings_not_gates():
     r3 = dataclasses.replace(module1.R3, lines=lines)
     zero = B.world("bowline-2026-04-c1", B.april_events(B.r1(), module1.CN_0412, r3))
     found, warnings = check_world_task(zero, task1)
-    other = [p for p in found if "the public evidence is AMBIGUOUS" not in p and "not the planted one" not in p]
-    if other:
-        problems.append(f"the zero-balance line world fails a gate other than the pinned (f): {other[:3]}")
+    if found:
+        problems.append(f"the zero-balance line world fails a world gate: {found[:3]}")
     if not any(w.startswith("WARN:") and "WARN_LINE_ON_ZERO_BALANCE" in w for w in warnings):
         problems.append(f"no U12 warning for the advice line on a zero-balance invoice: {warnings}")
     _, inputs = derive_contract(zero, task1)
@@ -985,8 +977,8 @@ def test_gate_o_on_the_actual_bytes():
 
 TESTS = [
     test_the_family_is_five_variants_of_one_company_month,
-    test_every_gate_but_identifiability_passes_and_case_3_passes_all,
-    test_gate_f_status,
+    test_every_gate_passes_for_all_five,
+    test_gate_f_reads_every_case_as_the_planted_repairs,
     test_the_projected_pack_is_the_spec_s,
     test_gate_m_the_public_fold_over_actual_bytes_equals_the_truth,
     test_gate_l_the_register_ties_to_the_opening_entry,

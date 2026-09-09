@@ -34,6 +34,18 @@ reads unambiguously to a human (a printed amount that occurs once, movements
 of one party spread apart); they are prefixed "WARN:" and are advisory,
 because the hand-authored layer is allowed to be deliberately harder than the
 generator's draw as long as the identifiability GATE still passes.
+
+EVERY PLANT IS COVERED BY AN EXPLICIT VALIDATOR (spec section 8, step 4). A
+planted item is either bank-evidenced — its recognition has a leg on the
+bank account, and gate (f) requires the public-only checker to read it back
+as exactly the planted repair — or a write-off, which gate (m) validates
+through the public cash-application fold: the fold's own written-off line
+fixes the amount, the invoice, the date, the customer and the posting shape
+the planted repair must carry, and the expected and opening ledgers are
+held to it. A planted item that is neither is reported as uncovered and
+fails the world: nothing may be planted that no public reading establishes.
+`check_derived` runs every gate past derivation over already-derived contract
+inputs, so a test can hand the gates a tampered `inputs` and watch them fire.
 """
 
 from __future__ import annotations
@@ -67,8 +79,8 @@ from beancount_ledger.graph.schema import AppliedReceipt, check_world  # noqa: E
 
 from repair_keys import master_names, planted_key  # noqa: E402  (tests/repair_keys.py)
 
-__all__ = ["check_world_task", "summarize", "score_text", "decoded_public",
-           "generator_name_pools", "PRIVATE_ID"]
+__all__ = ["check_world_task", "check_derived", "summarize", "score_text", "decoded_public",
+           "generator_name_pools", "narration_problems", "public_ties", "PRIVATE_ID"]
 
 # The same shape `test_graph.PRIVATE_ID` scans for, plus `mut:` (the
 # projector's provenance prefix for an altered entry's observation).
@@ -209,12 +221,35 @@ def check_world_task(world, task, source_path=None):
         problems.append(f"{where}: the world does not project; the derivation-dependent checks did not run")
         return problems, warnings
 
-    # (b) derivation, the contract door, and the observation envelope.
+    # (b) derivation ...
     try:
         bundle, inputs = derive_contract(world, task)
     except Exception as exc:
         problems.append(f"{where}: derive_contract failed: {type(exc).__name__}: {exc}")
         return problems, warnings
+    found, warned = check_derived(world, task, bundle, inputs, source_path=source_path)
+    return problems + found, warnings + warned
+
+
+def check_derived(world, task, bundle, inputs, source_path=None):
+    """Every gate past derivation — (b) the contract door onwards — over
+    contract inputs that have ALREADY been derived from `world` and `task`.
+
+    `check_world_task` calls this after `derive_contract`; a test calls it
+    directly with a tampered `inputs` (a re-dated golden entry, a planted
+    shape that is not the fold's, an advice edited on the public bytes) to
+    see the gate that owns the tampering fire, which no authored world can
+    show because every authored world derives consistently by construction.
+    Returns `(problems, warnings)` like `check_world_task`.
+    """
+    problems: list = []
+    warnings: list = []
+    where = f"{world.id}/{task.id}"
+    #: planted item ids an explicit validator has asserted (gate (f) for a
+    #: bank-evidenced plant, gate (m) for a write-off); the rest is reported
+    covered: set = set()
+
+    # ... the contract door, and the observation envelope.
     try:
         env = K.load_contract(inputs)
     except Exception as exc:
@@ -365,6 +400,11 @@ def check_world_task(world, task, source_path=None):
     # planted write-off — a recognition with no bank leg, established by the
     # advice plus the policy — is not something it can read. Gate (m) below
     # validates that plant instead (amount, invoice, date, customer, shape).
+    # The family's altered and omitted receipts ARE bank-evidenced, and the
+    # checker reads them through the payment-reference syntax
+    # (`identify._payment_reference_words`): the addendum the bank prints on
+    # an ACH credit is an instrument, so the mis-keyed entry that quotes it is
+    # its row's alteration and never a deposit in transit.
     verdict = None
     try:
         verdict = ID.check_identifiable(public, bank_account=world.bank_account,
@@ -388,6 +428,9 @@ def check_world_task(world, task, source_path=None):
         elif verdict.ambiguities:
             warnings.append(f"WARN: {where}: the checker reports unexplained rows even though the reading is the "
                             f"planted one: {list(verdict.ambiguities)[:4]}")
+        # what gate (f) compared is what it covers, whether or not it agreed:
+        # a disagreement is reported above, an uncovered plant below
+        covered |= {p.id for p in bank_evidenced}
 
     # (g) no private id in any public byte. The graph's node ids are the
     # evaluator's vocabulary; a leaked one hands the agent the join it is
@@ -498,9 +541,21 @@ def check_world_task(world, task, source_path=None):
     # (l), (m), (n): the cash-application family's own gates, on a world the
     # family is inferred from. A legacy world runs none of them.
     if is_cash_application_world(world):
-        family_problems, family_warnings = _family_gates(world, task, bundle, inputs, public, where)
+        family_problems, family_warnings, family_covered = _family_gates(world, task, bundle, inputs, public, where)
         problems.extend(family_problems)
         warnings.extend(family_warnings)
+        covered |= family_covered
+
+    # (p) every plant is covered by an explicit validator. A planted item
+    # that is neither bank-evidenced (gate (f)) nor a write-off the public
+    # fold establishes (gate (m)) is one no public reading validates, and it
+    # fails the world by name rather than passing because no gate looked.
+    for p in inputs.planted:
+        if p.id not in covered:
+            problems.append(f"{where}: the planted item {p.id} ({p.kind} of {p.recognition_id}, {p.date}, "
+                            f"{list(p.required)}) is covered by no explicit validator: it has no leg on "
+                            f"{world.bank_account} for gate (f) and is not a write-off the public fold "
+                            f"establishes for gate (m)")
 
     return problems, warnings
 
@@ -594,17 +649,20 @@ def narration_problems(text: str, tied: frozenset, credit_notes: frozenset, labe
 
 
 def _family_gates(world, task, bundle, inputs, public, where) -> tuple:
-    """Returns `(problems, warnings)`. A `WARN_*` the public evidence or the
-    public fold raises — U12's deduction of exactly the tolerance or advice
-    line on a zero-balance invoice, an advice bound to no row — is a
-    WARNING here too, never a gate: section 7 has a 25.00 deduction "written
-    off with the U12 warning", so a world at the spec's own boundary must
-    pass `verify_world`. Refusals (`REFUSE_*`) remain problems."""
+    """Returns `(problems, warnings, covered)` — `covered` being the ids of
+    the planted write-offs gate (m) validated through the public fold. A
+    `WARN_*` the public evidence or the public fold raises — U12's deduction
+    of exactly the tolerance or advice line on a zero-balance invoice, an
+    advice bound to no row — is a WARNING here too, never a gate: section 7
+    has a 25.00 deduction "written off with the U12 warning", so a world at
+    the spec's own boundary must pass `verify_world`. Refusals (`REFUSE_*`)
+    remain problems."""
     problems: list = []
     warnings: list = []
+    covered: set = set()
     truth = inputs.application
     if truth is None:
-        return [f"{where}: a cash-application world derived no ApplicationInputs"], warnings
+        return [f"{where}: a cash-application world derived no ApplicationInputs"], warnings, covered
     kw = dict(bank_account=world.bank_account, period_start=task.period.start, period_end=task.period.end)
     receivables = truth.receivables_account
     expected = dict(inputs.expected_balances)
@@ -615,9 +673,9 @@ def _family_gates(world, task, bundle, inputs, public, where) -> tuple:
     try:
         ev = CA.read_evidence(public, **kw)
     except CA.Refusal as exc:
-        return problems + [f"{where}: gate (l): the public evidence refuses: {exc}"], warnings
+        return problems + [f"{where}: gate (l): the public evidence refuses: {exc}"], warnings, covered
     except Exception as exc:
-        return problems + [f"{where}: gate (l): read_evidence raised {type(exc).__name__}: {exc}"], warnings
+        return problems + [f"{where}: gate (l): read_evidence raised {type(exc).__name__}: {exc}"], warnings, covered
     carried = dict(world.opening.carried).get(receivables, Decimal("0"))
     if ev.opening_ar != carried or truth.opening_ar != carried:
         problems.append(f"{where}: gate (l): opening receivables read {ev.opening_ar} (public) / {truth.opening_ar} "
@@ -632,15 +690,24 @@ def _family_gates(world, task, bundle, inputs, public, where) -> tuple:
 
     # (m) the public fold over the ACTUAL projected bytes equals the truth
     # folded from the authored facts, under a key built independently on
-    # each side; closing AR ties to the expected ledger's receivables; and
-    # every write-off the truth makes is a separate entry of the expected
-    # ledger with that amount, invoice, date, customer and shape.
+    # each side; closing AR ties to the expected ledger's receivables (U8);
+    # and every WRITE-OFF is validated through the public checker — the
+    # fold's own written-off lines, never the truth's and never closing AR
+    # alone. The receipt's statement row establishes the receipt's amount
+    # and date and nothing more; the advice plus the policy establish the
+    # write-off (spec section 8), so the repair is held to what the fold
+    # reads off those public bytes: its AMOUNT (the fold's shortfall), its
+    # INVOICE (named in the entry's narration and the plant's), its DATE
+    # (the receipt's bank date), its CUSTOMER (payee) and its POSTING SHAPE
+    # (the write-off account against receivables). A compensating pair of
+    # errors that ties the control account — R3 restated by 20.00 and the
+    # write-off booked at 40.00 — fails here although closing AR agrees.
     try:
         app = CA.fold(public, **kw)
     except CA.Refusal as exc:
-        return problems + [f"{where}: gate (m): the public fold refuses: {exc}"], warnings
+        return problems + [f"{where}: gate (m): the public fold refuses: {exc}"], warnings, covered
     except Exception as exc:
-        return problems + [f"{where}: gate (m): the public fold raised {type(exc).__name__}: {exc}"], warnings
+        return problems + [f"{where}: gate (m): the public fold raised {type(exc).__name__}: {exc}"], warnings, covered
     if CA.application_key(app) != truth.application_key():
         left = dict(_key_rows(CA.application_key(app)))
         right = dict(_key_rows(truth.application_key()))
@@ -656,41 +723,80 @@ def _family_gates(world, task, bundle, inputs, public, where) -> tuple:
     golden = parse_once(inputs.golden_text)
     original = parse_once(inputs.original_text)
     if not isinstance(golden, Accepted) or not isinstance(original, Accepted):
-        return problems + [f"{where}: gate (m): the ledgers do not parse"], warnings
-    def shaped(text_parsed, date, payee, shape):
-        return [t for t in text_parsed.submission.directives if isinstance(t, ParsedTransaction)
-                and t.date == date and (t.payee or "") == payee and frozenset(K._txn_shape(t)) == shape]
-    for receipt in truth.receipts:
-        receipt_id, date, customer, _amount, _applied, offs, _unapplied, _rid, event_id, rec_id = receipt
+        return problems + [f"{where}: gate (m): the ledgers do not parse"], warnings, covered
+    write_off_account = truth.write_off_account
+    # the account itself is the world's role, and it must be public: the
+    # chart the agent reads types it as an expense
+    chart = {r["account"]: r["type"] for r in csv.DictReader(io.StringIO(public.get(PJ.ACCOUNTS_VIEW, "")))}
+    if chart.get(write_off_account) != "expense":
+        problems.append(f"{where}: gate (m): {PJ.ACCOUNTS_VIEW} does not carry the write-off account "
+                        f"{write_off_account} as an expense ({chart.get(write_off_account)!r})")
+
+    def entries_of(parsed):
+        return [t for t in parsed.submission.directives if isinstance(t, ParsedTransaction)]
+
+    def shaped(parsed, date, payee, shape):
+        return [t for t in entries_of(parsed)
+                if t.date == date and (t.payee or "") == payee and frozenset(K._txn_shape(t)) == shape]
+
+    write_off_plants = {p.id: p for p in inputs.planted if any(a == write_off_account for a, _ in p.required)}
+    established: list = []                       # (date, payee, shape) the public fold writes off
+    for r in app.receipts:
+        offs = tuple(sorted(r.written_off))
+        if not offs:
+            continue
         total = sum((amount for _, amount in offs), Decimal("0"))
-        shape = _pairs(((truth.write_off_account, total), (receivables, -total)))
-        entries = shaped(golden, date, customer, shape) if offs else []
-        if offs and len(entries) != 1:
+        shape = _pairs(((write_off_account, total), (receivables, -total)))
+        written = {invoice_id for invoice_id, _ in offs}
+        established.append((r.date, r.customer, shape))
+        label = f"{r.receipt_id} ({r.date}, {r.customer}, {sorted(shape)}, on {sorted(written)})"
+        # the expected ledger: one separate entry with the fold's amount,
+        # date, customer and shape, naming the fold's invoice(s)
+        entries = shaped(golden, r.date, r.customer, shape)
+        if len(entries) != 1:
             problems.append(f"{where}: gate (m): the expected ledger carries {len(entries)} write-off entries for "
-                            f"{receipt_id} ({date}, {customer}, {sorted(shape)}), not one")
-        elif offs:
+                            f"{label}, not one; the public fold writes off {[(i, _money(a)) for i, a in offs]}")
+        else:
             named = set(_INVOICE_TOKEN.findall(entries[0].narration))
-            written = {invoice_id for invoice_id, _ in offs}
             if named != written:
-                problems.append(f"{where}: gate (m): the write-off entry for {receipt_id} names {sorted(named)}, "
-                                f"the register writes off {sorted(written)}")
-        if not offs and any(t for t in golden.submission.directives if isinstance(t, ParsedTransaction)
-                            and t.date == date and (t.payee or "") == customer
-                            and truth.write_off_account in {a for a, _ in K._txn_shape(t)}):
-            problems.append(f"{where}: gate (m): the expected ledger writes something off for {receipt_id} and "
-                            f"the register writes off nothing")
-        planted = [p for p in inputs.planted if p.recognition_id == rec_id + "-writeoff"]
-        for p in planted:
-            if p.kind != "omit" or p.date != date or _pairs(p.required) != shape or p.must_be_payee != (customer,):
-                problems.append(f"{where}: gate (m): the planted write-off {p.id} ({p.kind}, {p.date}, "
-                                f"{p.required}, {p.must_be_payee}) is not the register's ({date}, {sorted(shape)}, "
-                                f"{customer})")
-            if offs and shaped(original, date, customer, shape):
+                problems.append(f"{where}: gate (m): the write-off entry for {r.receipt_id} names {sorted(named)}, "
+                                f"the public fold writes off {sorted(written)}")
+        # the plant, if this write-off is planted: an omission of exactly the
+        # fold's entry, naming the fold's invoice(s), absent from the opening
+        # ledger; otherwise the opening ledger already carries the entry
+        plants = [p for p in write_off_plants.values()
+                  if p.date == r.date and _pairs(p.required) == shape and p.must_be_payee == (r.customer,)]
+        if len(plants) > 1:
+            problems.append(f"{where}: gate (m): {len(plants)} planted items claim the write-off for {label}")
+        for p in plants:
+            covered.add(p.id)
+            if p.kind != "omit":
+                problems.append(f"{where}: gate (m): the planted write-off {p.id} is a {p.kind}, not an omission; "
+                                f"the write-off is planted by omitting the entry the policy makes")
+            named = set(_INVOICE_TOKEN.findall(p.narration))
+            if named != written:
+                problems.append(f"{where}: gate (m): the planted write-off {p.id} names {sorted(named)} in its "
+                                f"narration, the public fold writes off {sorted(written)}")
+            if shaped(original, r.date, r.customer, shape):
                 problems.append(f"{where}: gate (m): the write-off {p.id} is planted as omitted and the opening "
                                 f"ledger still carries it")
-        if offs and not planted and not shaped(original, date, customer, shape):
-            problems.append(f"{where}: gate (m): the write-off for {receipt_id} is not planted, yet the opening "
-                            f"ledger lacks it")
+        if not plants and not shaped(original, r.date, r.customer, shape):
+            problems.append(f"{where}: gate (m): the write-off for {label} is not planted, yet the opening ledger "
+                            f"lacks it")
+    # every write-off posting the expected ledger makes is one the fold
+    # establishes: nothing else may reach the write-off account
+    for t in entries_of(golden):
+        shape = frozenset(K._txn_shape(t))
+        if write_off_account in {a for a, _ in shape} and (t.date, t.payee or "", shape) not in established:
+            problems.append(f"{where}: gate (m): the expected ledger carries the write-off {_label(t)} "
+                            f"{sorted(shape)}, which the public fold does not establish (it writes off "
+                            f"{[(r.receipt_id, [(i, _money(a)) for i, a in r.written_off]) for r in app.receipts if r.written_off]})")
+    # and every planted write-off is one the fold establishes
+    for p in write_off_plants.values():
+        if p.id not in covered:
+            problems.append(f"{where}: gate (m): the planted write-off {p.id} ({p.kind}, {p.date}, {list(p.required)}, "
+                            f"{p.must_be_payee}) is not a write-off the public evidence establishes; the fold "
+                            f"writes off {[(r.receipt_id, [(i, _money(a)) for i, a in r.written_off]) for r in app.receipts if r.written_off]}")
 
     # (n) the narration rule (U10): a receipt or write-off narration may carry
     # the genuine payment reference; it may not carry an application
@@ -714,7 +820,7 @@ def _family_gates(world, task, bundle, inputs, public, where) -> tuple:
         for i, line in enumerate(event.lines, 1):
             problems.extend(f"{where}: gate (n): {p}" for p in narration_problems(
                 line.note, tied, credit_numbers, f"advice note {slug} line {i} {line.note!r}"))
-    return problems, warnings
+    return problems, warnings, covered
 
 
 def _key_rows(key: tuple):
