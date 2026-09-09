@@ -511,26 +511,51 @@ def check_world_task(world, task, source_path=None):
 
 #: An APPLICATION INSTRUCTION in a narration or an advice note: a directive
 #: of money to an invoice or credit-note id, WITH OR WITHOUT an amount — a
-#: verb of application in the same clause as an id ("apply to SI-3101 then
-#: SI-3102", "SI-3102 is to be posted at 1830.00"), an amount sent "to" or
-#: "against" an id ("2400 to SI-3101", "apply 1,830.00 to SI-3102"), a
+#: verb of application or settlement in the same clause as an id ("apply to
+#: SI-3101 then SI-3102", "SI-3102 is to be posted at 1830.00", "SI-3102
+#: settled", "pay SI-3102"), an amount sent "to" or "against" an id ("2400
+#: to SI-3101", "apply 1,830.00 to SI-3102"), an amount standing next to an
+#: id in any punctuation ("SI-3102 1830.00", "SI-3102: 1830.00", "SI-3104
+#: (1890.00)", "1830.00 for SI-3102", "credit SI-3102 with 1830.00"), a
+#: sequence over invoices ("SI-3102 then SI-3104", "SI-3102 first"), a
 #: residue sent to an id ("the balance to SI-3102"), or an id "in full". The
 #: spec's "apply 1,830.00 to SI-3102" is an instance of the rule, not its
-#: definition. A genuine payment reference is not an instruction, and neither
-#: is "after application of CN-0412" or "written off under the cash
-#: application policy": nothing is directed anywhere by either.
+#: definition. A genuine payment reference is not an instruction ("GR PAYRUN
+#: 0428", "SI-3104 SI-3102", "check 2291 for SI-3103": a cheque, run or
+#: reference number is not an amount), and neither is "after application of
+#: CN-0412" or "written off under the cash application policy": nothing is
+#: directed anywhere by either.
 _VERB = (r"(?:apply|applied|applying|allocate|allocated|allocating|allocation|post|posted|posting|"
-         r"book|booked|booking|match|matched|matching|offset|offsetting)")
+         r"book|booked|booking|match|matched|matching|offset|offsetting|"
+         r"settle|settles|settled|settling|pay|pays|paid|paying)")
+#: Verbs that direct money only when they stand right before the id: "credit"
+#: and "clear" are nouns and descriptions elsewhere in a note ("credit
+#: requested", "cheque cleared").
+_DIRECT_VERB = r"(?:credit|credits|credited|crediting|clear|clears|cleared|clearing)"
 _ID = r"(?:SI|CN)-\d+"
+_SI = r"SI-\d+"
 _TO = r"(?:to|against|on|onto|toward|towards)"
-_AMOUNT = r"(?<![-\w.])(?:\$\s*|USD\s*)?\d[\d,]*(?:\.\d+)?"      # never the digits of an id
+_AMOUNT = (r"(?<![-\w.])(?:\$\s*|USD\s*)?\d(?:[\d,]*\d)?(?:\.\d+)?"    # never the digits of an id
+           r"(?![\w-])(?!\.\d)")                                        # nor the first field of a date
+_NOT_A_NUMBER_LABEL = r"(?<!check )(?<!cheque )(?<!chq )(?<!#)(?<!no\. )(?<!no )(?<!ref )(?<!run )"
 _CLAUSE = r"(?:[^.;\n]|(?<=\d)\.(?=\d)){0,80}?"                   # a decimal point is not a clause end
+#: What may stand between an id and its amount: punctuation, or one small
+#: connecting word ("with", "for", "at", "of", "=").
+_GAP = (r"(?:[ \t:,()\[\]{}\-–—=@/*]|\b(?:with|for|of|at|re|per|in|is|was|"
+        r"to|against|on|onto|toward|towards)\b){0,6}")
+_SEQ = r"(?:then|first|firstly|next|last|lastly|before|after|followed\s+by|thereafter|subsequently|prior\s+to)"
 _INSTRUCTION = re.compile(
     rf"\b{_VERB}\b{_CLAUSE}\b{_ID}\b"
     rf"|\b{_ID}\b{_CLAUSE}\b{_VERB}\b"
+    rf"|\b{_DIRECT_VERB}\s+(?:the\s+|invoice\s+)?{_ID}\b"
     rf"|{_AMOUNT}\s+{_TO}\s+{_ID}\b"
+    rf"|\b{_ID}\b{_GAP}{_AMOUNT}"                                     # id, then an amount within reach
+    rf"|{_NOT_A_NUMBER_LABEL}{_AMOUNT}{_GAP}\b{_ID}\b"                 # an amount, then the id
+    rf"|\b{_SI}\b{_CLAUSE}\b{_SEQ}\b{_CLAUSE}\b{_SI}\b"              # SI-a then/before/after SI-b
+    rf"|\b{_SI}\b[ \t,]*(?:first|firstly|next|last|lastly)\b"
+    rf"|\b(?:first|firstly|then|next|secondly)\b[ \t,:]*(?:the\s+|invoice\s+)?{_SI}\b"
     rf"|\b(?:balance|remainder|remaining|rest|residue|excess)\b{_CLAUSE}\b{_TO}\s+{_ID}\b"
-    rf"|\b{_ID}\b\s+in\s+full\b",
+    rf"|\b{_ID}\b{_CLAUSE}\bin\s+full\b",
     re.IGNORECASE)
 _INVOICE_TOKEN = re.compile(r"\bSI-\d+\b")
 _CREDIT_TOKEN = re.compile(r"\bCN-\d+\b")

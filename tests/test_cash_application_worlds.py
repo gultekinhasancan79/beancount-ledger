@@ -507,10 +507,23 @@ def test_gate_n_the_narration_rule():
     allowed = ("Customer payment, GR PAYRUN 0428",
                "Cash amount after application of CN-0412; do not deduct the credit again.",
                "Short payment on SI-3104 written off under the cash application policy",
-               "Customer payment, SI-3104 SI-3102",
-               "part payment; balance held pending credit for damaged crates")
+               "Short payments on SI-3102 and SI-3104 written off under the cash application policy",
+               "Customer payment, SI-3104 SI-3102", "Customer payment for SI-3102",
+               "part payment; balance held pending credit for damaged crates",
+               "minor remittance discrepancy; customer claims invoice settled",
+               "Cash amount on SI-3102 after application of CN-0412")
     for text in allowed:
         found = narration_problems(text, tied, notes, "t")
+        if found:
+            problems.append(f"{text!r} refused: {found}")
+    # a cheque, pay-run or reference NUMBER beside an invoice id is a genuine
+    # payment reference, not an amount directed at the id; a date is not an
+    # amount either, and "credit requested" is a noun, not a directive
+    referenced = frozenset({"SI-3100", "SI-3102", "SI-3103"})
+    for text in ("Customer check 2291 for SI-3103", "Customer payment, GR PAYRUN 0428 for SI-3102",
+                 "Customer payment ref 0428, SI-3102", "Customer payment 2026-04-28 for SI-3102",
+                 "SI-3100 withheld, credit requested"):
+        found = narration_problems(text, referenced, notes, "t")
         if found:
             problems.append(f"{text!r} refused: {found}")
     # an APPLICATION INSTRUCTION directs money to an id, with or without an
@@ -524,7 +537,19 @@ def test_gate_n_the_narration_rule():
                     "Applied to SI-3101 in full and the balance to SI-3102",
                     "Customer payment, apply to SI-3101 then SI-3102",
                     "2400 to SI-3101 and 1500 to SI-3102", "$1,830 against SI-3102",
-                    "the remainder to SI-3104", "SI-3104 in full", "post SI-3102", "SI-3102 matched")
+                    "the remainder to SI-3104", "SI-3104 in full", "post SI-3102", "SI-3102 matched",
+                    # an amount beside an id, in any punctuation or through one connecting word
+                    "Customer payment SI-3102 1830.00 SI-3104 300.00",
+                    "Customer payment, SI-3102: 1830.00; SI-3104: 300.00",
+                    "SI-3102 (1830.00) and SI-3104 (1890.00)", "1830.00 for SI-3102", "1,830.00 SI-3102",
+                    "credit SI-3102 with 1830.00", "SI-3102 - 1830.00", "SI-3102 = 1830.00", "SI-3102 1830",
+                    "$1,830 SI-3102", "SI-3102 at 1830.00", "Customer payment SI-3102 1830.00.",
+                    # a sequence over invoices
+                    "Customer payment, SI-3102 then SI-3104", "SI-3102 first, then SI-3104", "SI-3104 first",
+                    "SI-3104 before SI-3102", "SI-3102, followed by SI-3104", "Customer payment, then SI-3104",
+                    # a verb of settlement
+                    "settle SI-3102", "pay SI-3102", "clear SI-3102", "credited SI-3102",
+                    "SI-3102 paid in full", "SI-3102 settled")
     for text in instructions:
         found = narration_problems(text, all_tied, notes, "t")
         if not any("application instruction" in p for p in found):
@@ -575,6 +600,20 @@ def test_gate_n_the_narration_rule():
     found, _ = check_world_task(referenced, task2)
     if any("gate (n)" in p for p in found):
         problems.append(f"a narration naming an invoice the statement reference quotes was refused: {found[:2]}")
+    # Case 2's reference ties both invoices, so only the instruction clause
+    # can refuse a memo there: the rung-(2) split written beside the ids, or
+    # the order between them, is the answer the case exists to withhold
+    for memo in ("Customer payment SI-3102 1830.00 SI-3104 300.00",
+                 "Customer payment, SI-3102: 1830.00; SI-3104: 300.00",
+                 "Customer payment, SI-3102 then SI-3104"):
+        r3 = dataclasses.replace(module2.R3, memo=memo)
+        split = B.world("bowline-2026-04-c2", B.april_events(B.r1(), module2.CN_0412, r3))
+        found, _ = check_world_task(split, task2)
+        if any("gate (m)" in p for p in found):
+            problems.append(f"the memo alone moved gate (m); the fixture is wrong: {found[:2]}")
+        if not any("gate (n)" in p and "application instruction" in p for p in found):
+            problems.append(f"an id-adjacent split or a sequence in Case 2's memo passed the world gate: {memo!r} "
+                            f"{found[:2]}")
     return check("gate (n): a genuine payment reference, the credit-note note and the write-off narration are "
                  "allowed; an application instruction with or without an amount, an untied invoice and an "
                  "invented credit note are refused in narrations and advice notes, the world gate names them, "
