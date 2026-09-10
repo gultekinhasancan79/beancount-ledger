@@ -1,18 +1,49 @@
 {
- "schema": "piv.cash-screen-provenance/1",
- "what_this_is": "A provenance sidecar for the cash-application screen archive, written after the run from the shipped source and the archived receipts. It records only values that are recorded or recomputable; fields the archive does not carry are named as not recorded rather than inferred. The calibration JSON itself (cash_screen_kimi.json) is preserved untouched.",
+ "schema": "piv.cash-screen-provenance/2",
+ "what_this_is": "A provenance sidecar for the cash-application screen archive, written after the run from the shipped source and the archived receipts. It records only values that are recorded or recomputable; fields the archive does not carry are named as not recorded rather than inferred. THE SOURCE MOVED AFTER THE RUN, so every task and scorer digest below is recomputed at the revision the screen was MEASURED at, from that revision's own source, and any value the later revision produces instead is recorded beside it under `differs_at_sidecar_revision` rather than in its place. See `inputs_moved_after_measurement`. The calibration JSON itself (cash_screen_kimi.json) is preserved untouched.",
  "source_revision": {
   "measured_at": {
    "commit": "f9fbad13591caeb3573637c55f9230a3f513722b",
    "short": "f9fbad1",
-   "note": "the instrument revision the screen ran at, as stated in the note"
+   "note": "the instrument revision the screen ran at, as stated in the note; every task and scorer digest in `tasks` is recomputed here"
   },
   "sidecar_written_at": {
-   "commit": "3cd5a8188ba59fe20231b67a0e54626e6a1c648a",
-   "short": "3cd5a81",
-   "note": "the revision this sidecar and the rescore were computed at; the changes between the two touch the identifiability checker, the freeze fixtures and documentation, not the scoring engines"
+   "commit": "38a3f63fe744658b89d7aa8282b31cc273223079",
+   "short": "38a3f63",
+   "note": "the revision this sidecar and the rescore were computed at; it is NOT the provenance of the run"
   },
-  "branch": "feat/dense-rewards"
+  "branch": "feat/dense-rewards",
+  "changes_between": {
+   "method": "git diff --name-only <measured> <sidecar>, restricted to beancount_ledger/",
+   "package_files_changed": [
+    "beancount_ledger/graph/identify.py",
+    "beancount_ledger/graph/manifest.py",
+    "beancount_ledger/graph/worlds/bowline_2026_04_c2.py"
+   ],
+   "scoring_engine_files_changed": [],
+   "measured_input_files_changed": [
+    "beancount_ledger/graph/worlds/bowline_2026_04_c2.py"
+   ],
+   "note": "Measured, not asserted. The scoring engines did not move: no file under `beancount_ledger/candidate/` differs, so `candidate/1`, `application/1` and `composite/1` score the archived artifacts identically at either revision. But `beancount_ledger/graph/worlds/bowline_2026_04_c2.py` DID move, and a world module is a measured input, not documentation: Case 2's projected `bank_statement.csv` reference went from `SI-3104 SI-3102` to `TRC0428442 SI-3104 SI-3102`. `graph/identify.py` and `graph/manifest.py` moved with it; the identity rule they carry is what forced the world change."
+  }
+ },
+ "inputs_moved_after_measurement": {
+  "tasks_whose_inputs_moved": [
+   "cash_application_002"
+  ],
+  "tasks_unmoved": [
+   "cash_application_003",
+   "cash_application_005"
+  ],
+  "what_moved": "The payment-reference identity rule in `graph/identify.py` was corrected: a reference decides identity only where the public evidence declares it a payment identifier, so Case 2's bare invoice list stopped deciding and the case was given the bank's own trace `TRC0428442`, printed ahead of the invoice list on the 28 April statement row. Case 2's `bank_statement.csv`, its `expected_ledger`, its input `ledger.beancount` and every digest that binds them therefore differ between the two revisions.",
+  "consequence_for_the_archive": "The archived Case 2 workspace was measured against the OLD bytes and its delivered `cash_application.json` keys R3 as `2026-04-28:SI-3104 SI-3102`; the same case folded from the sidecar revision keys it `2026-04-28:TRC0428442 SI-3104 SI-3102`. That delivery is NOT reproducible against the sidecar revision's source and would not re-score as delivered there. It remains valid evidence about the run. Cases 3 and 5 are unmoved, so the screen's finding - Case 5's omitted `unapplied_amount` - and the Case 5 rescore and counterfactual are untouched by this.",
+  "how_this_sidecar_handles_it": "Nothing here is backfilled or inferred. Both sets of values are recomputed from source revisions that exist, and the measured set is corroborated independently by the archive itself: every archived public input file reproduces the measured-revision view digest recorded for it (`archived_input_view_check`), including Case 2's `bank_statement.csv`, which reproduces the measured digest and not the sidecar revision's.",
+  "also_recorded_in": [
+   "reviews/RELEASE_ATTESTATION.md (Errata 2026-09-10)",
+   "beancount_ledger/graph/worlds/bowline_2026_04_c2.py (module docstring)",
+   "tests/test_cash_application_worlds.py",
+   "the published note beside this directory"
+  ]
  },
  "episode_profile": {
   "resolved_profile": "cash_application",
@@ -22,6 +53,8 @@
   "recorded_contract_digest_in_calibration_rows": [
    "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f"
   ],
+  "unmoved_between_the_two_revisions": true,
+  "unmoved_note": "The episode contract digest resolved at the sidecar revision equals the digest every calibration row recorded during the run, so this block describes the run and not only the sidecar revision.",
   "calibration_profile_field_note": "The calibration JSON's per-row field `profile` reads `standard`. That is the GENERATOR profile label the calibration runner groups rows by; it is not the episode profile. The episode profile for these rows is `cash_application`, established independently by the contract digest each row records and by the source that resolves it.",
   "legacy_profile_for_contrast": {
    "resolved_profile": "legacy",
@@ -80,9 +113,10 @@
    "world_id": "bowline-2026-04-c2",
    "period": "Period(start='2026-04-01', end='2026-04-30', label='April 2026')",
    "task_digests": {
-    "graph_digest": "0abf03f66dedcee7e25b8cf7849037f4a4709694c0d6fad2e04edf286bde8376",
-    "mutation_plan_digest": "2861c7be6a52057138b6e805afe76283c3b65343b6f477ac4e8a96952dfa47b6",
-    "environment_digest": "5e5c3600453d13dc02ebe827493590fc562c4d8f480ec3621b639ee3439b7404",
+    "recomputed_at_revision": "f9fbad1",
+    "graph_digest": "6c2555ea34ae081432b379081eae8038bb2ee3fbca47a5e1d1e42155d9c9b2a1",
+    "mutation_plan_digest": "ae44aa15a7eccd6b6a7012f84caadd83ec906432e35f97ff1e70402e143e089f",
+    "environment_digest": "7f1f282cca43ccce885e0f906a9d9aaa0416acb57a7d184520c51e65f44d6737",
     "view_digests": [
      [
       "accounts.csv",
@@ -94,7 +128,7 @@
      ],
      [
       "bank_statement.csv",
-      "da6351f36357133d0760d0dd69dab65809408f663d23cd369ee7f1e0acb0d131"
+      "0f0cde55c44d56b380831aea33d34cd83b843c43868d24ed0e8181b3eb56a591"
      ],
      [
       "credit_notes.csv",
@@ -110,11 +144,11 @@
      ],
      [
       "expected_ledger",
-      "7b5331a2a416177095d381a84df5c5f731cf34c4b9690c4e94b4230ef4dc1afa"
+      "030606b3b0d732ea745c74af265b2b9a3b94571ff38903570d53a4d8b1d05d1d"
      ],
      [
       "ledger.beancount",
-      "462e1a0675fd3cdce3e3d232f622748ee8c2937cc3d11a6811c410cdfed34948"
+      "38e560a6095c588c28aae1f2c6e19025c4a390ce0edefe9f68e555e160077ba4"
      ],
      [
       "manifest.md",
@@ -139,7 +173,8 @@
     ]
    },
    "scorer_digests": {
-    "task_contract_digest": "2fcd03d601e759644df4c1a4f523a67ccc4b31c44ce375122040123a6135718e",
+    "recomputed_at_revision": "f9fbad1",
+    "task_contract_digest": "e84c68615c1022a9989589672e3a45ffac12d7b08f5daa40823201e955fdf7a3",
     "task_contract_version": 1,
     "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
     "scorer_contract_version": 1,
@@ -147,6 +182,106 @@
     "ledger_engine": "candidate/1",
     "application_engine": "application/1",
     "composite_engine": "composite/1"
+   },
+   "differs_at_sidecar_revision": {
+    "revision": "38a3f63",
+    "why": "this task's world module was re-authored after the measurement, so the source at the sidecar revision derives a different task; the values above are the measured ones and these are the later ones, recorded so neither is mistaken for the other",
+    "scalars_measured_then_sidecar": {
+     "graph_digest": [
+      "6c2555ea34ae081432b379081eae8038bb2ee3fbca47a5e1d1e42155d9c9b2a1",
+      "0abf03f66dedcee7e25b8cf7849037f4a4709694c0d6fad2e04edf286bde8376"
+     ],
+     "mutation_plan_digest": [
+      "ae44aa15a7eccd6b6a7012f84caadd83ec906432e35f97ff1e70402e143e089f",
+      "2861c7be6a52057138b6e805afe76283c3b65343b6f477ac4e8a96952dfa47b6"
+     ],
+     "environment_digest": [
+      "7f1f282cca43ccce885e0f906a9d9aaa0416acb57a7d184520c51e65f44d6737",
+      "5e5c3600453d13dc02ebe827493590fc562c4d8f480ec3621b639ee3439b7404"
+     ],
+     "task_contract_digest": [
+      "e84c68615c1022a9989589672e3a45ffac12d7b08f5daa40823201e955fdf7a3",
+      "2fcd03d601e759644df4c1a4f523a67ccc4b31c44ce375122040123a6135718e"
+     ]
+    },
+    "view_digests_measured_then_sidecar": [
+     [
+      "bank_statement.csv",
+      "0f0cde55c44d56b380831aea33d34cd83b843c43868d24ed0e8181b3eb56a591",
+      "da6351f36357133d0760d0dd69dab65809408f663d23cd369ee7f1e0acb0d131"
+     ],
+     [
+      "expected_ledger",
+      "030606b3b0d732ea745c74af265b2b9a3b94571ff38903570d53a4d8b1d05d1d",
+      "7b5331a2a416177095d381a84df5c5f731cf34c4b9690c4e94b4230ef4dc1afa"
+     ],
+     [
+      "ledger.beancount",
+      "38e560a6095c588c28aae1f2c6e19025c4a390ce0edefe9f68e555e160077ba4",
+      "462e1a0675fd3cdce3e3d232f622748ee8c2937cc3d11a6811c410cdfed34948"
+     ]
+    ]
+   },
+   "archived_input_view_check": {
+    "method": "graph.project._view(name, <archived bytes>, (), (), True).digest, compared with the measured-revision view digest recorded above",
+    "excluded_because_they_are_the_delivered_artifacts_not_input_views": [
+     "cash_application.json",
+     "delivery.json",
+     "ledger.beancount"
+    ],
+    "files": [
+     {
+      "file": "accounts.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "archive_prior_period.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "bank_statement.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": false
+     },
+     {
+      "file": "credit_notes.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "customers.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "manifest.md",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "open_items.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "policy.md",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "remittance_advice.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "vendors.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     }
+    ],
+    "all_inputs_match_measured_revision": true
    },
    "recorded_row": {
     "reward": 1.0,
@@ -199,6 +334,7 @@
    "world_id": "bowline-2026-04-c3",
    "period": "Period(start='2026-04-01', end='2026-04-30', label='April 2026')",
    "task_digests": {
+    "recomputed_at_revision": "f9fbad1",
     "graph_digest": "ae21f1400e97a9def231e847d41f5877d57eb79fe0209adaec77a4d5a183580d",
     "mutation_plan_digest": "f099108edf7553f6cf28ac5a446d41708c704923bfbdf4bd39f68e68318d3204",
     "environment_digest": "0ee09ac2e8d47e5f372aab81b2c79261e9ac9ee4ffede50a22460a7295e6aec1",
@@ -258,6 +394,7 @@
     ]
    },
    "scorer_digests": {
+    "recomputed_at_revision": "f9fbad1",
     "task_contract_digest": "b97d0869fd7270bec104976dee83b76310ee1662e071aa79a13e7f7f63f350eb",
     "task_contract_version": 1,
     "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
@@ -266,6 +403,68 @@
     "ledger_engine": "candidate/1",
     "application_engine": "application/1",
     "composite_engine": "composite/1"
+   },
+   "differs_at_sidecar_revision": null,
+   "archived_input_view_check": {
+    "method": "graph.project._view(name, <archived bytes>, (), (), True).digest, compared with the measured-revision view digest recorded above",
+    "excluded_because_they_are_the_delivered_artifacts_not_input_views": [
+     "cash_application.json",
+     "delivery.json",
+     "ledger.beancount"
+    ],
+    "files": [
+     {
+      "file": "accounts.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "archive_prior_period.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "bank_statement.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "credit_notes.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "customers.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "manifest.md",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "open_items.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "policy.md",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "remittance_advice.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "vendors.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     }
+    ],
+    "all_inputs_match_measured_revision": true
    },
    "recorded_row": {
     "reward": 1.0,
@@ -318,6 +517,7 @@
    "world_id": "bowline-2026-04-c5",
    "period": "Period(start='2026-04-01', end='2026-04-30', label='April 2026')",
    "task_digests": {
+    "recomputed_at_revision": "f9fbad1",
     "graph_digest": "c7f3e2ad6890285f1257c4fdc8186660d8c83248a14c1c1b595e1684287952a0",
     "mutation_plan_digest": "f77a099267a1ebefab6c190ee06c7d896913e7876061943a31b0439c649ac9f2",
     "environment_digest": "345e136b8192e25c663ddcc02c0c1928b1643ef3b4da8060ce6245b90debc3db",
@@ -377,6 +577,7 @@
     ]
    },
    "scorer_digests": {
+    "recomputed_at_revision": "f9fbad1",
     "task_contract_digest": "33d0c5a307347d3459e54d6a84692d32eda3183514f25357af7a26fdf3ba1cbf",
     "task_contract_version": 1,
     "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
@@ -385,6 +586,68 @@
     "ledger_engine": "candidate/1",
     "application_engine": "application/1",
     "composite_engine": "composite/1"
+   },
+   "differs_at_sidecar_revision": null,
+   "archived_input_view_check": {
+    "method": "graph.project._view(name, <archived bytes>, (), (), True).digest, compared with the measured-revision view digest recorded above",
+    "excluded_because_they_are_the_delivered_artifacts_not_input_views": [
+     "cash_application.json",
+     "delivery.json",
+     "ledger.beancount"
+    ],
+    "files": [
+     {
+      "file": "accounts.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "archive_prior_period.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "bank_statement.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "credit_notes.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "customers.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "manifest.md",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "open_items.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "policy.md",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "remittance_advice.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     },
+     {
+      "file": "vendors.csv",
+      "matches_measured_revision": true,
+      "matches_sidecar_revision": true
+     }
+    ],
+    "all_inputs_match_measured_revision": true
    },
    "recorded_row": {
     "reward": 0.333334,
@@ -437,6 +700,8 @@
  "checks_performed": [
   "each archived ledger.beancount reproduces its receipt's delivered stored-bytes and logical-text digests (the archived file is the canonical DELIVERED rendering, not the raw submitted bytes, which the archive does not carry)",
   "each archived cash_application.json reproduces its receipt's delivered stored-bytes and logical-text digests",
-  "the resolved cash-application contract digest equals the digest every calibration row records"
+  "the resolved cash-application contract digest equals the digest every calibration row records",
+  "every archived public input file in every workspace reproduces the MEASURED-revision view digest recorded for it, Case 2's bank_statement.csv included; the per-file result is in each task's archived_input_view_check",
+  "the scoring engines did not move between the measured and the sidecar revision: no file under beancount_ledger/candidate/ differs across git diff --name-only"
  ]
 }

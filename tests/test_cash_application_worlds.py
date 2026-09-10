@@ -130,6 +130,15 @@ R3_CASE_2 = "2026-04-28:TRC0428442 SI-3104 SI-3102"
 #: Kept as a constant so the divergence is a pinned fact rather than prose.
 R3_CASE_2_SUPERSEDED = "2026-04-28:SI-3104 SI-3102"
 SCREEN_WORKSPACE = "cash_screen_evidence/workspaces/cash_application_002"
+#: The published screen: a note plus a self-contained evidence directory of the
+#: same basename. Named here because the disclosure above has to reach a reader
+#: who has only these two, and because the sidecar's provenance fields have to
+#: describe the revision the run was MEASURED at, not the one they were written
+#: at — the two differ for exactly this case.
+SCREEN_NOTE = ROOT / "reviews" / "cash_application_screen_2026-09-10.md"
+SCREEN_EVIDENCE = ROOT / "reviews" / "cash_application_screen_2026-09-10"
+SCREEN_SIDECAR = SCREEN_EVIDENCE / "provenance.json"
+PUBLISHED_WORKSPACE = "workspaces/cash_application_002"
 FAMILY_FILES = ("open_items.csv", "remittance_advice.csv", "credit_notes.csv")
 LEGACY_FILES = ("manifest.md", "policy.md", "accounts.csv", "customers.csv", "vendors.csv",
                 "archive_prior_period.csv", "ledger.beancount", "bank_statement.csv")
@@ -481,18 +490,112 @@ def test_case_2_s_inputs_moved_after_the_screen_and_the_repository_says_where():
     if R3_CASE_2_SUPERSEDED in keys:
         problems.append(f"case 2 still folds to the superseded key {R3_CASE_2_SUPERSEDED!r}; if the reference "
                         f"moved back, the archived screen is reproducible again and this note has to be redrawn")
-    disclosures = ((f"the world module {module.__name__}", Path(module.__file__).read_text(encoding="utf-8")),
+    disclosures = ((f"the world module {module.__name__}", Path(module.__file__).read_text(encoding="utf-8"),
+                    SCREEN_WORKSPACE),
                    ("reviews/RELEASE_ATTESTATION.md",
-                    (ROOT / "reviews" / "RELEASE_ATTESTATION.md").read_text(encoding="utf-8")))
-    for label, text in disclosures:
+                    (ROOT / "reviews" / "RELEASE_ATTESTATION.md").read_text(encoding="utf-8"),
+                    SCREEN_WORKSPACE),
+                   # The published pair has to carry it too. A reader who has only the note and the
+                   # evidence directory beside it is exactly the reader who cannot check the source,
+                   # so dropping the disclosure there is the one place it actually costs something.
+                   ("the published note reviews/cash_application_screen_2026-09-10.md",
+                    SCREEN_NOTE.read_text(encoding="utf-8"), PUBLISHED_WORKSPACE),
+                   ("the published sidecar reviews/cash_application_screen_2026-09-10/provenance.json",
+                    SCREEN_SIDECAR.read_text(encoding="utf-8"), "cash_application_002"))
+    for label, raw, workspace in disclosures:
+        text = " ".join(raw.split())
         if R3_CASE_2_SUPERSEDED not in text:
             problems.append(f"{label} does not name the superseded key {R3_CASE_2_SUPERSEDED!r}")
-        if SCREEN_WORKSPACE not in text:
-            problems.append(f"{label} does not name the archived workspace {SCREEN_WORKSPACE!r}")
+        if R3_CASE_2 not in text:
+            problems.append(f"{label} does not name the key this source folds to, {R3_CASE_2!r}")
+        if workspace not in text:
+            problems.append(f"{label} does not name the archived workspace {workspace!r}")
+    # Re-wrapping a paragraph must not be able to break a claim check, so the
+    # prose is compared with its whitespace flattened.
+    note = " ".join(SCREEN_NOTE.read_text(encoding="utf-8").split())
+    if "not reproducible against this source" not in note:
+        problems.append("the published note does not say the archived Case 2 delivery is not reproducible "
+                        "against this source")
     return check("Case 2's inputs moved after the archived screen was measured, and the repository says so where "
                  "the change lives: the current bytes fold to the trace key, the screen's key is unreachable from "
-                 "this source, and the world module and the attestation both name the workspace and the key it "
-                 "was measured against", not problems, "\n".join(problems))
+                 "this source, and the world module, the attestation, the published note and the published "
+                 "provenance sidecar all name the workspace and the key it was measured against",
+                 not problems, "\n".join(problems))
+
+
+def test_the_screen_sidecar_records_the_measured_revision_not_the_revision_it_was_written_at():
+    """A provenance sidecar may not quietly present now-values as the run's.
+
+    The sidecar was written at a later revision than the screen was measured
+    at, and between the two, correcting the identity rule re-authored Case 2's
+    world module. A world module is a MEASURED INPUT: re-deriving Case 2 at the
+    later revision yields a different `bank_statement.csv` view, a different
+    graph, mutation-plan, environment and task-contract digest. Recording those
+    under `task_digests` would be a fixture row derived afterwards and presented
+    as observed — the one case where recomputation is not recovery.
+
+    So this pins the discipline rather than the numbers: every archived public
+    input file must reproduce the view digest the sidecar records for it, which
+    is only true if those digests are the measured revision's; the sidecar must
+    say which revision each block was recomputed at; it must name the world
+    module among what moved, and must not claim the change missed the measured
+    inputs; and it must carry the later values separately for the one case that
+    moved and declare none for the two that did not.
+    """
+    problems = []
+    sidecar = json.loads(SCREEN_SIDECAR.read_text(encoding="utf-8"))
+    measured = sidecar["source_revision"]["measured_at"]["short"]
+    changes = sidecar["source_revision"]["changes_between"]
+    worlds = "beancount_ledger/graph/worlds/bowline_2026_04_c2.py"
+
+    if worlds not in changes["package_files_changed"]:
+        problems.append(f"the sidecar's list of what moved between the revisions omits {worlds}")
+    if changes["measured_input_files_changed"] != [worlds]:
+        problems.append(f"the sidecar calls {changes['measured_input_files_changed']} the measured inputs "
+                        f"that moved; the world module is the one that did")
+    if changes["scoring_engine_files_changed"]:
+        problems.append(f"the sidecar says a scoring engine moved: {changes['scoring_engine_files_changed']}")
+    if sidecar["inputs_moved_after_measurement"]["tasks_whose_inputs_moved"] != ["cash_application_002"]:
+        problems.append("the sidecar does not name cash_application_002, and only it, as the task whose "
+                        "inputs moved")
+
+    for task_id, block in sidecar["tasks"].items():
+        for field in ("task_digests", "scorer_digests"):
+            if block[field].get("recomputed_at_revision") != measured:
+                problems.append(f"{task_id}: {field} does not declare it was recomputed at the measured "
+                                f"revision {measured}")
+        recorded = dict(map(tuple, block["task_digests"]["view_digests"]))
+        workspace = SCREEN_EVIDENCE / "workspaces" / task_id
+        # The delivered artifacts are outputs, not input views; everything else
+        # in the workspace is a public input file and must reproduce.
+        for path in sorted(workspace.iterdir()):
+            if path.name in ("ledger.beancount", "cash_application.json", "delivery.json"):
+                continue
+            digest = PJ._view(path.name, path.read_text(encoding="utf-8"), (), (), True).digest
+            if digest != recorded.get(path.name):
+                problems.append(f"{task_id}: the archived {path.name} digests to {digest[:16]}… but the "
+                                f"sidecar records {str(recorded.get(path.name))[:16]}… — the recorded value "
+                                f"describes bytes this archive does not contain")
+        differs = block["differs_at_sidecar_revision"]
+        moved_here = task_id == "cash_application_002"
+        if moved_here and not differs:
+            problems.append(f"{task_id}: its inputs moved, but the sidecar records no later values for it")
+        if differs and not moved_here:
+            problems.append(f"{task_id}: its inputs did not move, but the sidecar records later values for it")
+        if moved_here and differs:
+            later = dict(map(lambda row: (row[0], row[2]), differs["view_digests_measured_then_sidecar"]))
+            if "bank_statement.csv" not in later:
+                problems.append(f"{task_id}: the sidecar does not record the later bank_statement.csv digest")
+            if later.get("bank_statement.csv") == recorded.get("bank_statement.csv"):
+                problems.append(f"{task_id}: the sidecar records the same digest as measured and as later; "
+                                f"if the bytes moved back, this note has to be redrawn")
+            if "task_contract_digest" not in differs["scalars_measured_then_sidecar"]:
+                problems.append(f"{task_id}: the task contract binds the view digests, so it moved too, and "
+                                f"the sidecar does not record its later value")
+    return check("the screen's provenance sidecar records the measured revision's digests, corroborated file by "
+                 "file against the archived bytes, and names the world module and the one task whose inputs "
+                 "moved instead of presenting the later values as the run's",
+                 not problems, "\n".join(problems))
 
 
 def test_gate_m_the_public_fold_over_actual_bytes_equals_the_truth():
@@ -1069,6 +1172,7 @@ TESTS = [
     test_gate_f_reads_every_case_as_the_planted_repairs,
     test_the_projected_pack_is_the_spec_s,
     test_case_2_s_inputs_moved_after_the_screen_and_the_repository_says_where,
+    test_the_screen_sidecar_records_the_measured_revision_not_the_revision_it_was_written_at,
     test_gate_m_the_public_fold_over_actual_bytes_equals_the_truth,
     test_gate_l_the_register_ties_to_the_opening_entry,
     test_gate_n_the_narration_rule,

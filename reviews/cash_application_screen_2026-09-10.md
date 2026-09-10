@@ -23,6 +23,28 @@ archive.
 
 Total 123,413 input and 17,412 output tokens across the three episodes.
 
+## One case's inputs moved after the measurement
+
+Case 2's public inputs are no longer the ones this source projects. The source review named below
+corrected the payment-reference identity rule, and Case 2 — the one variant with no remittance
+advice for its third receipt — was left with no declared payment identifier; rather than loosen the
+rule, the case was given the bank's own trace `TRC0428442`, printed ahead of the payer's invoice
+list on the 28 April statement row. The archived workspace `workspaces/cash_application_002` beside
+this note was measured against the bytes as they stood at `f9fbad1`, where that row's reference
+reads `SI-3104 SI-3102`, and its delivered `cash_application.json` keys R3 as
+`2026-04-28:SI-3104 SI-3102`. The same case folded from the current source keys it
+`2026-04-28:TRC0428442 SI-3104 SI-3102`. **The archived Case 2 delivery is therefore not
+reproducible against this source and would not re-score as delivered against it.** It stays valid
+evidence about the run, at the revision named above, and about nothing later.
+
+Cases 3 and 5 did not move: every input byte, task digest and scorer digest derives identically at
+either revision, so the screen's one finding — Case 5's omitted `unapplied_amount` — and the rescore
+and counterfactual below are untouched by this. `provenance.json` records every task and scorer
+digest **at the measured revision**, names the later values separately rather than in their place,
+and shows per file that each archived input reproduces its measured-revision digest.
+`reviews/RELEASE_ATTESTATION.md` carries the same erratum, and
+`beancount_ledger/graph/worlds/bowline_2026_04_c2.py` says it where the change lives.
+
 ## The one failure, diagnosed
 
 Case 5 delivered a ledger scoring `L = 1.0`. Its application artifact correctly reports both R3
@@ -112,9 +134,14 @@ is a same-scorer consistency check, not independent accounting validation.
   single-field counterfactual;
 - `provenance.json` — source revision, resolved episode profile and version, task and scorer
   digests, runtime identity where recoverable, and both artifacts' submission and delivery
-  identities.
+  identities. Its task and scorer digests are recomputed at the revision the screen was **measured**
+  at, not at the revision the sidecar was written at; where the two differ — Case 2 alone — both are
+  recorded, labelled, and the later ones are kept out of the provenance fields. It also names, by
+  file, exactly what changed in the package between those two revisions.
 
 The delivered artifacts match their receipts' artifact hashes; `provenance.json` records that check.
+Every archived public input file reproduces the measured-revision view digest recorded for it, Case
+2's superseded `bank_statement.csv` included; `provenance.json` records that check per file.
 The calibration field `profile = standard` is a **generator**-profile label, not the episode profile;
 the cash-application episode profile is established separately, from the contract digest each row
 records and from the source that resolves it. The archive does not contain full trajectories, or
