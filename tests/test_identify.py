@@ -905,13 +905,28 @@ def test_the_advice_file_is_read_for_the_reference_column_and_nothing_else():
                  not problems, "\n".join(problems))
 
 
-# The corpus the two narrowness claims are measured over: every reference
-# shape these worlds print or were argued about, on the three surfaces a
-# reference is read off — the column alone, an ACH row, and a cheque row.
+# The corpus the two narrowness claims are measured over, and the ONLY thing
+# they are claimed over: every reference shape these worlds print or were
+# argued about, on the surfaces a reference is read off — the column alone, an
+# ACH row, a cheque row printing the column, and a cheque row printing the
+# number JOINED while the column prints it split (`CHECK 2291` beside a column
+# reading `22 91`).
+#
+# Three shapes were added when a verifier showed that a clause measured here
+# was being asserted as a universal: `22 91` and `TRC 0428442` are multi-word
+# references the evidenced rule keeps and neither is a column printing a
+# separate trace token, which the changelog used to say was the only kind
+# kept; `CASH` is a single token carrying no digit, which an advice may
+# declare and which nothing in this file used to quote or count. No world
+# prints any of the three. That is the point: a claim measured over the shapes
+# the worlds happen to print is a claim about those shapes, and either the
+# corpus grows or the sentence says so.
 IDENTITY_CORPUS = ("SI-3104 SI-3102", "SI-1044 SI-1052 XZ", "APRIL 2026", "GR PAYRUN 0428",
                    "GR PAYRUN 0410", "TRC0428442 SI-3104 SI-3102", "TRACE0284471 APRIL 2026",
-                   "TRC0428442", "SI-3104", "PI-2240", "2291", "1037", "0428442", "PAY RUN", "BX-99", "")
-IDENTITY_SURFACES = ("{ref}", "ACH IN GANNET RIGGING INC {ref}", "CHECK {ref} CEDAR PROPERTY GROUP")
+                   "TRC0428442", "TRC 0428442", "SI-3104", "PI-2240", "2291", "22 91", "1037",
+                   "0428442", "PAY RUN", "CASH", "BX-99", "")
+IDENTITY_SURFACES = ("{ref}", "ACH IN GANNET RIGGING INC {ref}", "CHECK {ref} CEDAR PROPERTY GROUP",
+                     "CHECK 2291 CEDAR PROPERTY GROUP {ref}")
 
 
 def withdrawn_shape_role(reference: str, text: str) -> str:
@@ -952,17 +967,25 @@ def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
       * it admits NOTHING the shape rule refused. This is the half that
         carries the conclusion: no manifested verdict can move, because
         anything the current rule calls an instrument the old one called one
-        too;
-      * of the MULTI-WORD references the shape rule admitted it keeps exactly
-        one kind — a column printing a single bank trace id, whose identity is
-        that token alone. The changelog said it "refuses every multi-word
-        reference rule 1 admitted", which is false, and the counterexample is
-        Case 2's own printed reference (`TRC0428442 SI-3104 SI-3102`). The
-        subset is proper regardless, because the invoice list, the dated memo
-        and the payer's addendum are all refused; the sentence was wrong, not
-        the code, and it is corrected in place rather than deleted.
+        too. It is asserted over the corpus and MEANT for every string — the
+        rule is "declared, or the bank's own trace, or the row's own cheque
+        wording", and each of those is a case the shape rule also admitted;
+      * of the MULTI-WORD references the shape rule admitted, the ones it
+        keeps are the ones the BANK or the ROW'S OWN WORDING vouches for. Over
+        this corpus that is three kinds, and the sentence has now been wrong
+        twice by naming fewer: first "it refuses every multi-word reference
+        rule 1 admitted", falsified by Case 2's own printed reference
+        (`TRC0428442 SI-3104 SI-3102`); then "it keeps exactly one kind, a
+        column printing a single bank trace id", falsified by `TRC 0428442`
+        (a trace printed with a space, an instrument by the whole column) and
+        by `22 91` on a row reading `CHECK 2291` (a cheque the wording
+        introduces). Both corrections are in the changelog and both shapes are
+        in the corpus above; the kinds are counted here and claimed nowhere
+        else. The containment is proper regardless, because the invoice list,
+        the dated memo and the payer's addendum are all refused.
     """
     problems, kept, refused, admitted_new = [], [], [], []
+    kinds_kept: dict = {}
     for reference in IDENTITY_CORPUS:
         for shape in IDENTITY_SURFACES:
             text = shape.format(ref=reference).strip()
@@ -976,23 +999,44 @@ def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
         problems.append(f"the evidenced rule admits {len(admitted_new)} thing(s) the shape rule refused, "
                         f"so a promoted verdict could move: {admitted_new[:3]}")
     for reference, text in kept:
+        norm = ID._norm_ref(reference)
         traces = [t for t in ID._ref_tokens(reference) if ID._TRACE_SYNTAX.match(t)]
         identity = ID._identity_reference(reference, text, frozenset())
-        if len(traces) != 1 or identity != traces[0]:
-            problems.append(f"{reference!r} in {text!r} survives as an instrument on something other than "
-                            f"the one bank trace id it prints: traces {traces}, identity {identity!r}")
-    if not any(reference == "TRC0428442 SI-3104 SI-3102" for reference, _ in kept):
+        if len(traces) == 1 and identity == traces[0]:
+            kind = "a column printing one bank trace id beside whatever else it carries"
+        elif ID._TRACE_SYNTAX.match(norm) and not identity:
+            kind = "a column that IS a bank trace id, printed with a space"
+        elif identity == reference.strip() and norm in ID._instrument_tokens(text):
+            kind = "a column the row's own cheque wording introduces"
+        else:
+            problems.append(f"{reference!r} in {text!r} survives as an instrument on none of the three "
+                            f"vouched kinds: traces {traces}, identity {identity!r}, "
+                            f"cheque tokens {sorted(ID._instrument_tokens(text))}")
+            continue
+        kinds_kept.setdefault(kind, []).append((reference, text))
+    for kind in ("a column printing one bank trace id beside whatever else it carries",
+                 "a column that IS a bank trace id, printed with a space",
+                 "a column the row's own cheque wording introduces"):
+        if kind not in kinds_kept:
+            problems.append(f"no kept reference is {kind}; the corpus no longer exercises the shape the "
+                            f"changelog names, so the count there would be unmeasured again")
+    if not any(reference == "TRC0428442 SI-3104 SI-3102"
+               for reference, _ in kinds_kept.get("a column printing one bank trace id beside whatever "
+                                                  "else it carries", [])):
         problems.append("Case 2's own reference is not among the multi-word references the rule keeps; the "
                         "named exception would then be fiction")
     for reference in ("APRIL 2026", "GR PAYRUN 0428", "SI-1044 SI-1052 XZ"):
         if not any(r == reference for r, _ in refused):
             problems.append(f"{reference!r} is not refused, so the containment is not proper")
-    print(f"      multi-word references the shape rule admitted: {len(kept)} kept (each a bank trace id), "
-          f"{len(refused)} refused")
+    print(f"      multi-word references the shape rule admitted: {len(kept)} kept in "
+          f"{len(kinds_kept)} vouched kinds, {len(refused)} refused")
     return check("on an advice-free pack the evidenced rule admits nothing the withdrawn shape rule refused, "
-                 "and of the multi-word references that rule admitted it keeps exactly the columns printing "
-                 "one bank trace id — the exception the changelog used to deny — and refuses the invoice "
-                 "list, the dated memo and the payer's addendum, so the containment is proper",
+                 "and OVER THIS CORPUS, of the multi-word references that rule admitted, it keeps exactly "
+                 "the three kinds the bank or the row's own wording vouches for — a column printing one "
+                 "trace id, a column that is a trace id printed with a space, a column the cheque wording "
+                 "introduces — while the invoice list, the dated memo and the payer's addendum are refused, "
+                 "so the containment is proper; the KINDS are a fact about `IDENTITY_CORPUS` and are "
+                 "claimed no wider",
                  not problems, "\n".join(problems))
 
 
@@ -1002,14 +1046,23 @@ def test_every_identity_a_row_presents_is_one_an_entry_can_quote():
 
     If a row can present an identity no entry text can be found to quote, the
     outstanding rule holds a question nothing can answer: the entry that
-    really is that payment cannot be recognised as naming it. The first repair
-    closed the letter-carrying case (`GRPAYRUN0428`) and the commit that made
-    it said no row could any longer present an identity no entry could quote.
-    That over-claimed. An advice may declare an ALL-DIGIT single token
-    (`0428442`): `_identity_reference` returns it, and every test of the
-    quotation rule missed it. It is closed by handing `_quotes_identity` the
-    same declared set the rest of the module is handed, and the sweep below is
-    what keeps the claim honest — it fails on the previous revision.
+    really is that payment cannot be recognised as naming it. Three repairs,
+    and the first two both announced a closure the corpus had not earned:
+
+      * the letter-carrying clause closed `GRPAYRUN0428`, and its commit said
+        no row could any longer present an identity no entry could quote. An
+        advice may declare an ALL-DIGIT single token (`0428442`);
+      * handing `_quotes_identity` the declared set closed that one, and its
+        commit said the same thing again. An advice may declare a DIGIT-FREE
+        single token (`CASH`): the declared clause admitted it here and then
+        `_mentions` fell through to `_ref_tokens`, which required a digit, so
+        nothing quoted it — not even the row's own surface — while
+        `_identity_reference` went on returning it as an identity.
+
+    The repair is in `_ref_tokens`: a declared token is reference-shaped by
+    declaration. Both misses came from a corpus with no such shape in it, so
+    the corpus carries `CASH` now, and the claim below states the sweep it is
+    measured by rather than asserting a closure over every string.
 
     A cheque number is the one identity an entry must INTRODUCE rather than
     merely mention, because a bare number in a narration is a quantity or a
@@ -1040,16 +1093,194 @@ def test_every_identity_a_row_presents_is_one_an_entry_can_quote():
     if ID._quotes_identity("Part payment received on SI-1044, 0428442", "0428442"):
         problems.append("an UNDECLARED bare number is read as quoting an identity; a number no wording "
                         "introduces is a quantity or a year")
-    pack = two_partial_payments("0428442", advice_rows(("RA-0428442", "0428442")))
-    facts, verdict = identity_facts(pack, "0428442"), verdict_of(pack)
-    if facts.ref_role != ID.REF_INSTRUMENT or not facts.decisive or "0428442" not in facts.presents:
-        problems.append(f"declared all-digit: role {facts.ref_role}, decisive {facts.decisive}, "
+    # the DIGIT-FREE declared token, which the second closure missed: the
+    # row's own surface has to quote it, and an undeclared word must not
+    declared = frozenset({"CASH"})
+    surface = "ACH IN HARBOR FREIGHT LTD CASH"
+    if ID._identity_reference("CASH", surface, declared) != "CASH":
+        problems.append("an advice declaring a digit-free reference does not make it an identity")
+    if not ID._quotes_identity(surface, "CASH", declared):
+        problems.append("a DECLARED digit-free identity is not quoted by the ROW'S OWN SURFACE, so no "
+                        "entry can answer the row either")
+    if not ID._quotes_identity("Part payment received on SI-1044, CASH", "CASH", declared):
+        problems.append("a DECLARED digit-free identity is not recognised as quoted by an entry")
+    if ID._quotes_identity("Paid CASH at the counter", "CASH"):
+        problems.append("an UNDECLARED word is read as quoting an identity; a word no advice declares is "
+                        "not reference-shaped at all")
+    for token in ("0428442", "CASH"):
+        pack = two_partial_payments(token, advice_rows((f"RA-{token}", token)))
+        facts, verdict = identity_facts(pack, token), verdict_of(pack)
+        if facts.ref_role != ID.REF_INSTRUMENT or not facts.decisive or token not in facts.presents:
+            problems.append(f"declared {token}: role {facts.ref_role}, decisive {facts.decisive}, "
+                            f"presents {facts.presents}")
+        if not verdict.unique or verdict.readings != 1:
+            problems.append(f"declared {token}: unique {verdict.unique}, {verdict.readings} readings")
+    return check("over `IDENTITY_CORPUS` × `IDENTITY_SURFACES` × declared/undeclared — every shape these "
+                 "worlds print plus the ones the reviewers named, and no wider — every identity a row "
+                 "presents is one some entry text can be found to quote, the declared ALL-DIGIT and "
+                 "DIGIT-FREE tokens included, which the first two closures missed; and an undeclared bare "
+                 "number is still a quantity, an undeclared word still a word",
+                 not problems, "\n".join(problems))
+
+
+def census_of(public: dict) -> tuple:
+    """The reference census `_evidence` computes, recomputed here so a test can
+    read the COUNTS rather than only what they decided.
+
+    Same three inputs and the same declared set, by the same calls: the census
+    is half of the uniqueness rule ("no two statement rows quote it, no two
+    bank movements quote it"), and a half that counts nothing passes every
+    test written against its consequences.
+    """
+    rows = ID.statement_rows(public[ID.STATEMENT_FILE], period_start=START, period_end=END)[0]
+    chart = ID._chart(public)
+    equity = frozenset(name for name, kind in chart.items() if kind == "equity")
+    movements = ID.ledger_movements(public[ID.LEDGER_FILE], BANK, equity_accounts=equity,
+                                    period_start=START, period_end=END)[0]
+    archive = ID._archive_reference_rows(public.get(ID.ARCHIVE_FILE, ""))
+    return ID._reference_census(rows, archive, movements,
+                                evidenced=ID._evidenced_payment_identifiers(public))
+
+
+def two_partial_payments_and_a_second_row(reference: str, advice: str) -> dict:
+    """`two_partial_payments` with a SECOND, unrelated bank row quoting the
+    same reference — the statement half of uniqueness."""
+    public = two_partial_payments(reference, advice)
+    rows = statement_rows(public) + [("2025-11-27", "ACH IN HARBOR FREIGHT LTD", reference, "", "900.00")]
+    return restate(public, rows)
+
+
+def test_a_declared_digit_free_identity_is_quoted_counted_and_loses_to_a_second_quotation():
+    """The digit-free declared identifier, end to end — the hole a verifier
+    found in the `evidenced` repair, at the level where it did damage.
+
+    An advice may declare `payment_reference` = `CASH`. `_identity_reference`
+    returned it, `reference_role` called it an INSTRUMENT and `_row_facts`
+    made it decisive; but `_mentions` fell through to `_ref_tokens`, which
+    required a digit, so NO text quoted it — the row's own surface included —
+    and `_reference_census` counted it nowhere. Two consequences, and the
+    second is not a conservative failure:
+
+      * the census half of uniqueness did not bite. A second statement row or
+        a second bank movement quoting the identifier left `decisive` True,
+        which is the gate that exists to stop exactly that;
+      * with `quoted` False on every entry and the role INSTRUMENT, the
+        conflict rule pruned every entry naming a document — so the bank row
+        matched nothing, was reported as a MISSING ENTRY, and both part
+        payments were left outstanding, with `unique=True` and one reading. An
+        honest ambiguity would have been survivable; a confident wrong reading
+        is not.
+
+    All four fixtures below are one pack with one thing changed, and the
+    control is the same bytes with the advice removed.
+    """
+    problems = []
+    advice = advice_rows(("RA-1123-HF", "CASH"))
+    declared = two_partial_payments("CASH", advice)
+    documents, ledger = census_of(declared)
+    facts, verdict = identity_facts(declared, "CASH"), verdict_of(declared)
+    if (documents.get("CASH"), ledger.get("CASH")) != (1, 1):
+        problems.append(f"declared: the census counts the identity {documents.get('CASH')} times on the "
+                        f"statement and {ledger.get('CASH')} times in the books, not once each")
+    if facts.ref_role != ID.REF_INSTRUMENT or not facts.decisive or "CASH" not in facts.presents:
+        problems.append(f"declared: role {facts.ref_role}, decisive {facts.decisive}, "
                         f"presents {facts.presents}")
     if not verdict.unique or verdict.readings != 1:
-        problems.append(f"declared all-digit: unique {verdict.unique}, {verdict.readings} readings")
-    return check("every identity a row can present is one some entry text can be found to quote — the "
-                 "declared ALL-DIGIT token included, which the first closure missed and this sweep catches "
-                 "— and an undeclared bare number is still a quantity",
+        problems.append(f"declared: unique {verdict.unique}, {verdict.readings} readings: "
+                        f"{verdict.reason[:200]}")
+    # the wrong reading, named literally: the row is ANSWERED by the entry that
+    # quotes it, not reported as unrecorded, and the OTHER part payment alone
+    # is the deposit in transit
+    if any(k[0] == "missing_entry" and k[1] == "2025-11-23" for k in map(key, verdict.repairs)):
+        problems.append(f"declared: the bank row is read as a missing entry: "
+                        f"{sorted(map(key, verdict.repairs))}")
+    in_transit = [item for item in verdict.outstanding if "Harbor Freight" in item]
+    if len(in_transit) != 1 or "2025-11-20" not in in_transit[0]:
+        problems.append(f"declared: the part payments left outstanding are {in_transit}, not the 20th alone")
+    # the control: the identical bytes with no advice to declare it
+    bare = two_partial_payments("CASH")
+    facts = identity_facts(bare, "CASH")
+    if facts.ref_role != ID.REF_UNKNOWN or facts.decisive or facts.presents:
+        problems.append(f"undeclared: role {facts.ref_role}, decisive {facts.decisive}, "
+                        f"presents {facts.presents}")
+    if verdict_of(bare).readings != 2:
+        problems.append("undeclared: a word no advice declares decides something")
+    # uniqueness, both halves, now that there is a census to count them
+    both_entries = two_partial_payments("CASH", advice, quoted_by=(1, 2))
+    facts, ledger_count = identity_facts(both_entries, "CASH"), census_of(both_entries)[1].get("CASH")
+    if ledger_count != 2:
+        problems.append(f"two bank movements quoting it are counted {ledger_count} times, not twice")
+    if facts.decisive or verdict_of(both_entries).readings != 2:
+        problems.append(f"two bank movements quote it and it still decides: decisive {facts.decisive}")
+    two_rows = two_partial_payments_and_a_second_row("CASH", advice)
+    facts, row_count = identity_facts(two_rows, "CASH"), census_of(two_rows)[0].get("CASH")
+    if row_count != 2:
+        problems.append(f"two statement rows quoting it are counted {row_count} times, not twice")
+    if facts.decisive or facts.presents:
+        problems.append(f"two statement rows quote it and it still decides: decisive {facts.decisive}, "
+                        f"presents {facts.presents}")
+    return check("a DECLARED digit-free identifier is an identity the whole module can see: the row's own "
+                 "surface and the entry that names it both quote it, the census counts it on both sides, it "
+                 "decides between two part payments instead of reading the bank row as unrecorded, and a "
+                 "second quotation on either side takes the decision away",
+                 not problems, "\n".join(problems))
+
+
+def test_appearance_never_rescues_an_undeclared_reference_and_does_condemn_a_declared_invoice_one():
+    """The module docstring's clause about what APPEARANCE may do, pinned.
+
+    The clause said "appearance never rescues one the evidence has not
+    declared, and never condemns one it has". Its first half is the rule; its
+    second half was false when written, and false by the same round's own
+    repair: `_identity_reference` bars a column carrying an invoice id from
+    the declared and cheque branches OUTRIGHT, which is a condemnation by
+    appearance of a reference an advice has declared — the deliberate one that
+    stops a pack promoting receivables to an identity by declaring them.
+
+    So the clause now states an asymmetry, and this test is what makes it a
+    measured sentence rather than a readable one: the rescue half over the
+    shapes a PAYER composes, the condemn half over the invoice bar, the
+    not-condemned half over a declared reference that merely reads badly, and
+    the bank's own trace id as the thing "appearance" does NOT mean — a trace
+    is an appearance that decides undeclared, because the bank issuing and
+    printing it IS the declaration.
+    """
+    problems = []
+    surface = "ACH IN HARBOR FREIGHT LTD {ref}"
+    # RESCUE, never: no shape a payer composes becomes an identity unasked
+    for reference in ("GR PAYRUN 0428", "APRIL 2026", "SI-1044 SI-1052", "0428442", "CASH", "BX-99"):
+        text = surface.format(ref=reference)
+        if ID.reference_role(reference, text) == ID.REF_INSTRUMENT:
+            problems.append(f"undeclared {reference!r} is rescued by its appearance")
+    # except what the BANK composes, which is what the clause excludes by name
+    if ID.reference_role("TRC0428442", surface.format(ref="TRC0428442")) != ID.REF_INSTRUMENT:
+        problems.append("the bank's own trace id stopped deciding; the clause's named exception is gone")
+    # CONDEMN, deliberately: the invoice bar overrules the declaration
+    for reference in ("SI-1044 SI-1052", "SI-1044 SI-1052 XZ", "SI-3104"):
+        text = surface.format(ref=reference)
+        declared = frozenset({ID._norm_ref(reference)})
+        if ID._identity_reference(reference, text, declared):
+            problems.append(f"declared {reference!r} carries an invoice id and is still an identity")
+        if ID.reference_role(reference, text, evidenced=declared) == ID.REF_INSTRUMENT:
+            problems.append(f"declared {reference!r} carries an invoice id and is still an instrument")
+    # and NOT condemned for anything else: a declared reference that merely
+    # reads badly is an identity, which is the half the shape rule got wrong
+    for reference in ("APRIL 2026", "CASH", "0428442"):
+        text = surface.format(ref=reference)
+        declared = frozenset({ID._norm_ref(reference)})
+        if ID.reference_role(reference, text, evidenced=declared) != ID.REF_INSTRUMENT:
+            problems.append(f"declared {reference!r} is condemned by how it reads")
+    # the sentence itself, so that a future edit has to move the code with it
+    prose = " ".join((ID.__doc__ or "").split())
+    if ("appearance never RESCUES a reference the evidence has not declared, and it DOES condemn a "
+            "declared one that carries an invoice id") not in prose:
+        problems.append("the module docstring no longer states the clause this test measures")
+    if "and never condemns one it has" in prose:
+        problems.append("the retracted half of the clause is back in the module docstring")
+    return check("the clause on what appearance may do measures true in both halves: it never rescues a "
+                 "reference the evidence has not declared — the bank's own trace id being a declaration and "
+                 "not an appearance — and it does condemn a declared one that carries an invoice id, while "
+                 "condemning nothing for merely reading badly",
                  not problems, "\n".join(problems))
 
 
@@ -1930,6 +2161,8 @@ TESTS = [
     test_the_advice_file_is_read_for_the_reference_column_and_nothing_else,
     test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule,
     test_every_identity_a_row_presents_is_one_an_entry_can_quote,
+    test_a_declared_digit_free_identity_is_quoted_counted_and_loses_to_a_second_quotation,
+    test_appearance_never_rescues_an_undeclared_reference_and_does_condemn_a_declared_invoice_one,
     test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount,
     test_a_cheque_number_does_decide_between_two_receipts_of_one_amount,
     test_two_partial_receipts_on_one_invoice_are_not_decided_by_the_invoice,

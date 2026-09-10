@@ -334,14 +334,21 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
     for haystack, token, want in quotes:
         if ID._mentions(haystack, token) != want:
             problems.append(f"_mentions({haystack!r}, {token!r}) != {want}")
-    # SYMMETRY. Every identity a row can present must be one an entry can be
-    # found to quote, or the outstanding rule holds an identity no narration
-    # can ever answer. The single-token declared identifier used to be that
-    # case; it is the third row here. The ALL-DIGIT declared identifier was
-    # the half that closure missed — no letter, one token, not a trace, so it
-    # fell through to False while `_identity_reference` returned it — and it
-    # is the last two rows: declared, it is quoted; undeclared, a bare number
-    # the wording does not introduce is still a quantity.
+    # SYMMETRY, over these rows and the sweep `test_identify.py` runs; the
+    # claim below is scoped to them and not to every string. Every identity a
+    # row can present must be one an entry can be found to quote, or the
+    # outstanding rule holds an identity no narration can ever answer. The
+    # single-token declared identifier used to be that case; it is the third
+    # row here. Two closures then announced the case shut and missed a shape
+    # each, both of them here now:
+    #   the ALL-DIGIT declared identifier — no letter, one token, not a
+    #   trace, so `_quotes_identity` fell through to False while
+    #   `_identity_reference` returned it;
+    #   the DIGIT-FREE declared identifier (`CASH`) — admitted by the
+    #   `evidenced` clause and then dropped by `_ref_tokens`, which required a
+    #   digit, so not even the row's own surface quoted it.
+    # Undeclared, each is what it looks like: a bare number the wording does
+    # not introduce is a quantity, a bare word is a word.
     identity_quotes = [
         ("Gannet Rigging Inc Customer payment, GR PAYRUN 0428", "GR PAYRUN 0428", frozenset(), True),
         ("Gannet Rigging Inc Customer payment, TRC0428442 SI-3104 SI-3102", "TRC0428442", frozenset(), True),
@@ -353,6 +360,9 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
         ("Deposit slip 1037", "1037", frozenset(), False),
         ("Part payment received on SI-1044, 0428442", "0428442", frozenset({"0428442"}), True),
         ("Part payment received on SI-1044, 0428442", "0428442", frozenset(), False),
+        ("ACH IN HARBOR FREIGHT LTD CASH", "CASH", frozenset({"CASH"}), True),
+        ("Part payment received on SI-1044, CASH", "CASH", frozenset({"CASH"}), True),
+        ("Part payment received on SI-1044, CASH", "CASH", frozenset(), False),
     ]
     for haystack, token, declared, want in identity_quotes:
         if ID._quotes_identity(haystack, token, declared) != want:
@@ -362,8 +372,10 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
                  "junk token to one promotes nothing — Case 2's bank trace is the identity inside a reference "
                  "that also names invoices, the roles and IDENTIFY_VERSION 7 are unchanged while the rule "
                  "itself is REFERENCE_IDENTITY_VERSION 2 declared by the family's admission and not by the "
-                 "signed population's, and every identity a row can present — a declared ALL-DIGIT token "
-                 "included, which the first closure missed — is one an entry can quote",
+                 "signed population's, and — over the rows above and the sweep in `test_identify.py`, not "
+                 "over every string a pack could print — every identity a row can present is one an entry "
+                 "can quote, the declared ALL-DIGIT and DIGIT-FREE tokens included, which the first two "
+                 "closures missed",
                  not problems, "\n".join(problems))
 
 

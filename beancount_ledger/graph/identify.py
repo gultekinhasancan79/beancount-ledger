@@ -77,10 +77,17 @@ an appearance that DOES decide, and it decides because the bank issues it for
 one transfer and prints it itself — the bank vouching for it is the
 declaration, which is why `_TRACE_SYNTAX` survives the correction and stands
 in the list of three above. For every other
-reference the declaration decides — appearance never rescues one the evidence
-has not declared, and never condemns one it has. (An earlier draft of this
-paragraph said "appearance decides nothing IN EITHER DIRECTION", which
-contradicted the trace id three lines above it.)
+reference the declaration decides, and appearance is allowed exactly one job:
+appearance never RESCUES a reference the evidence has not declared, and it
+DOES condemn a declared one that carries an invoice id — deliberately, by the
+bar in the next sentence, which is the whole reason a pack cannot promote
+receivables by declaring them. Those are the two halves, and they are not
+symmetric. (Two earlier drafts of this paragraph measured false: the first
+said "appearance decides nothing IN EITHER DIRECTION", which contradicts the
+trace id three lines above it; the second said appearance "never condemns one
+the evidence has declared", which contradicts the invoice bar three lines
+below it. `test_identify.py` now pins both halves of the surviving clause
+against the code rather than leaving the sentence to be re-read.)
 A column carrying an invoice id is barred from the first two declarations
 outright, so nothing can promote receivables to an identity by declaring
 them; a dated memo an advice DOES declare is an identity, because the advice
@@ -206,6 +213,18 @@ IDENTIFY_VERSION = 7
 #      first two cases and the third alike, only where the declaration is
 #      unique across the pack.
 #
+# STILL 2 AFTER THE DIGIT-FREE REPAIR, and the reason matters. What
+# `_identity_reference` ADMITS did not move: a declared token was an identity
+# before that repair and is one after it. What moved is that `_mentions` and
+# `_reference_census` can now SEE a declared token that carries no digit, so
+# the identity the rule always admitted can be quoted and counted — the rule
+# as stated in line 2 above being implemented where it previously was not.
+# A version distinguishes admission semantics, and bumping it for a defect in
+# their implementation would say the old number named a rule somebody could
+# still choose, which it never did: no world can reach the digit-free case
+# except by mounting an advice that declares one, and the only reading that
+# case had was the wrong one.
+#
 # This constant exists because the reviewer required the family's admission
 # semantics to be versioned while the OLD SIGNED POPULATION stays verifiable,
 # and those two are not the same version. `IDENTIFY_VERSION` is bound into
@@ -222,16 +241,26 @@ IDENTIFY_VERSION = 7
 # pack that mounts NO advice, `evidenced` is empty and rule 2 reduces to
 # cheque-or-trace, whose admitted set is a PROPER SUBSET of rule 1's: it
 # admits nothing rule 1 refused — the load-bearing half, since that is what
-# stops a verdict moving — and of the multi-word references rule 1 admitted it
-# keeps exactly one kind, a column printing a single bank trace id
-# (`TRC0428442 SI-3104 SI-3102`, Case 2's own reference), which rule 1
-# admitted too. RETRACTED IN PLACE: this clause used to read "it refuses every
-# multi-word reference rule 1 admitted", which is false, and the trace column
-# is the counterexample. The subset is proper all the same, because `APRIL
-# 2026`, `GR PAYRUN 0428` and `SI-1044 SI-1052 XZ` are all refused, so the
-# conclusion below is untouched. Both halves are now MEASURED rather than
-# asserted (`test_identify.py`, the withdrawn rule re-implemented beside the
-# current one over the shapes these worlds print).
+# stops a verdict moving — and, OVER THE SWEPT CORPUS, of the multi-word
+# references rule 1 admitted it keeps only the ones the BANK or the ROW'S OWN
+# WORDING vouches for: a column printing a single bank trace id (`TRC0428442
+# SI-3104 SI-3102`, Case 2's own reference), a column that IS a trace id
+# printed with a space (`TRC 0428442`), and a column the row's own cheque
+# wording introduces (`22 91` on a row reading `CHECK 2291`). Rule 1 admitted
+# all three. SCOPE, retracted in place twice: this clause first read "it
+# refuses every multi-word reference rule 1 admitted", which the trace column
+# falsifies, and then "it keeps exactly one kind, a column printing a single
+# bank trace id", which the other two shapes falsify — each time a universal
+# was asserted over a claim that is only ever MEASURED on a fixed corpus. The
+# kinds and their count are a fact about `IDENTITY_CORPUS` ×
+# `IDENTITY_SURFACES` in `test_identify.py`, which now carries both shapes,
+# and nothing wider is claimed for them; what IS claimed for every string is
+# the load-bearing half above, that nothing rule 1 refused is admitted. The
+# subset is proper all the same, because `APRIL 2026`, `GR PAYRUN 0428` and
+# `SI-1044 SI-1052 XZ` are all refused, so the conclusion below is untouched.
+# Both halves are MEASURED rather than asserted (`test_identify.py`, the
+# withdrawn rule re-implemented beside the current one over the shapes these
+# worlds print and the ones the reviewers named).
 # Every manifested world is such a pack — no legacy task and no generated
 # world mounts a `remittance_advice.csv`, prints a multi-word reference or
 # prints a trace id — so no promoted verdict can move in either direction.
@@ -528,21 +557,42 @@ def _norm_ref(token: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", (token or "").upper())
 
 
-def _ref_tokens(text: str) -> set:
+def _ref_tokens(text: str, evidenced: frozenset = frozenset()) -> set:
     """Every normalised reference-shaped token the text quotes.
 
-    A token must carry a digit: `check` is a word, `1037` is a reference,
-    and word-shaped tokens would otherwise make every narration collide.
+    A token counts when it carries a digit — `check` is a word, `1037` is a
+    reference, and word-shaped tokens would otherwise make every narration
+    collide — OR when the mounted evidence DECLARES it a payment identifier.
+
+    THE DECLARED CLAUSE is not a second guess at what looks like a reference.
+    It is the module's own rule applied where it was missing: a DECLARED
+    identity is an identity whatever it is composed of, so the two things
+    built on this function — quotation (`_mentions`) and the census
+    (`_reference_census`) — have to be able to see one. Without it a digit-free
+    declared token (an advice declaring `payment_reference` = `CASH`) was an
+    identity `_identity_reference` returned, `reference_role` called an
+    INSTRUMENT and `_row_facts` made decisive, and yet NO text could be read
+    as quoting it — not even the row's own surface — and no census could count
+    it, so the "no two statement rows quote it" half of uniqueness did not
+    bite and every entry naming a document was pruned as naming some OTHER
+    instrument. That is not a failure toward ambiguity: it read a bank row as
+    a missing entry with `unique=True`. The digit condition was a quotation
+    aid's heuristic for reference SHAPE, and it has no standing against an
+    explicit declaration.
+
+    The declared set defaults to empty, which is every legacy pack (none
+    mounts an advice) and every generated world, so this widens nothing that
+    the signed population can reach.
     """
     out = set()
     for token in _TOKEN.findall(text or ""):
         norm = _norm_ref(token)
-        if norm and any(ch.isdigit() for ch in norm):
+        if norm and (any(ch.isdigit() for ch in norm) or norm in evidenced):
             out.add(norm)
     return out
 
 
-def _mentions(haystack: str, token: str) -> bool:
+def _mentions(haystack: str, token: str, evidenced: frozenset = frozenset()) -> bool:
     """Does the text quote this reference as a token of its own?
 
     A reference is sometimes several words (`GR PAYRUN 0428`, `SI-3104
@@ -551,6 +601,12 @@ def _mentions(haystack: str, token: str) -> bool:
     contiguous run in the same order. `PAYRUN 0428 GR` does not quote
     `GR PAYRUN 0428`, and `SI-3102` alone does not quote `SI-3104 SI-3102`.
 
+    `evidenced` is handed down to `_ref_tokens`, and it is what lets a
+    single-word DECLARED identity be quoted at all: `CASH` is one word, so the
+    multi-word fallback below cannot fire for it, and without the declared
+    clause the single-token test could not see it either. Callers holding no
+    declared set behave exactly as before.
+
     QUOTATION, not identity. That a text names a reference says nothing about
     whether the reference names one payment; `reference_role` decides that,
     and it asks the evidence rather than the shape.
@@ -558,7 +614,7 @@ def _mentions(haystack: str, token: str) -> bool:
     norm = _norm_ref(token)
     if not norm:
         return False
-    if norm in _ref_tokens(haystack):
+    if norm in _ref_tokens(haystack, evidenced):
         return True
     words = _reference_words(token)
     if not words:
@@ -646,8 +702,13 @@ def _reference_words(reference: str) -> tuple:
     that it forced the reading the cash-application family wanted; they never
     showed the classification was warranted. What an instrument identity is
     now comes from `_identity_reference`: evidence, not shape. The digit
-    condition went with the rest of it — a quotation aid has no business
-    requiring one.
+    condition went with the rest of it HERE — a quotation aid has no business
+    requiring one — and that sentence used to be read as a statement about the
+    module, which it was not: `_ref_tokens` kept a digit condition of its own,
+    and a digit-free DECLARED identity was therefore unquotable and uncounted.
+    `_ref_tokens` now admits a declared token whatever its shape; what still
+    requires a digit there is an UNDECLARED one, which is a heuristic for
+    "reference-shaped" and stays.
     """
     words = tuple(w for w in (_norm_ref(t) for t in _TOKEN.findall(reference or "")) if w)
     return words if len(words) >= 2 else ()
@@ -765,30 +826,47 @@ def _quotes_identity(text: str, token: str, evidenced: frozenset = frozenset()) 
     which is why `evidenced` is handed in here too, from the same public
     mapping and by the same route as everywhere else in this module.
 
-    SYMMETRY, at the width it now holds. Every identity `_identity_reference`
-    can return has to be one SOME entry text can be found to quote, or a row
-    presents an identity no narration can answer and the outstanding rule is
-    left unanswerable. Two rounds of repair, and the first one over-claimed:
-    the letter-carrying clause closed the case of a declared alphanumeric
-    token, and the commit that added it said flatly that no row could any
-    longer present an identity no entry could be found to quote. That was
-    false. An advice may declare an ALL-DIGIT single token (`0428442`), which
-    `_identity_reference` returns as an identity and which none of the earlier
-    tests here recognised. The `evidenced` clause is that case, and with it
-    the guarantee holds: a cheque number is quoted by an entry that introduces
-    it as one, and every other identity by an entry that mentions it. The
-    residual asymmetry was never a wrong pairing — it failed toward ambiguity
-    — and it reaches no shipped world, since every identity the five family
-    packs declare carries a letter and the 95 legacy packs present only cheque
-    numbers; it is repaired rather than left standing, and `test_identify`
-    sweeps the pairing rather than trusting this paragraph.
+    SYMMETRY, at the width it is MEASURED. Every identity
+    `_identity_reference` can return has to be one SOME entry text can be
+    found to quote, or a row presents an identity no narration can answer and
+    the outstanding rule is left unanswerable. Three rounds of repair, and the
+    first two both over-claimed the closure:
+
+      * the letter-carrying clause closed the declared ALPHANUMERIC token
+        (`GRPAYRUN0428`), and its commit said flatly that no row could any
+        longer present an identity no entry could quote. False: an advice may
+        declare an ALL-DIGIT single token (`0428442`);
+      * the `evidenced` clause below closed that one, and its commit said the
+        guarantee now held. Also false, and worse: the clause admitted a
+        digit-free declared token (`CASH`) into this test and then handed it
+        to `_mentions`, which fell through to `_ref_tokens`, which required a
+        digit. Nothing quoted it — including the row's own surface — while
+        `_identity_reference` went on returning it, so the row was decisive on
+        a census that never counted it and every entry naming a document was
+        pruned. That one did NOT fail toward ambiguity: it produced a
+        confident wrong reading (`unique=True`, the bank row read as a missing
+        entry, both part payments left outstanding).
+
+    The repair is in `_ref_tokens`, where the digit condition was: a declared
+    token is reference-shaped by declaration. With it, a cheque number is
+    quoted by an entry that introduces it as one and every other identity by
+    an entry that mentions it — asserted over `IDENTITY_CORPUS` ×
+    `IDENTITY_SURFACES` × declared/undeclared in `test_identify.py`, which is
+    every shape these worlds print plus the ones three reviewers named, and
+    NOT over every string a pack could print. What is claimed without a corpus
+    is narrower and mechanical: `_mentions` and `_ref_tokens` receive the same
+    `evidenced` set this function tests against, so no identity can be
+    admitted here on a declaration and then refused downstream for its shape.
+    No shipped world reached either hole — the five family packs declare only
+    letter-carrying identities and the 95 legacy packs mount no advice at all
+    — but both are repaired rather than scoped around.
     """
     norm = _norm_ref(token)
     if norm in _instrument_tokens(text):
         return True
     if (norm in evidenced or _reference_words(token) or _TRACE_SYNTAX.match(norm)
             or any(ch.isalpha() for ch in norm)):
-        return _mentions(text, token)
+        return _mentions(text, token, evidenced)
     return False
 
 
@@ -1104,28 +1182,34 @@ def _reference_census(rows, archive_rows, movements, *, evidenced=frozenset()) -
     cost-of-goods twin quoting one invoice number do not make that number
     ambiguous.
 
-    `evidenced` is what the advices declare, because the census has to count
-    the key `_row_facts` will look up: a row's IDENTITY, not its whole
-    reference column.
+    `evidenced` is what the advices declare, and it is load-bearing twice
+    over: the census has to count the key `_row_facts` will look up — a row's
+    IDENTITY, not its whole reference column — and it has to be able to SEE a
+    declared token whatever its shape, which is why it reaches `_ref_tokens`
+    here. A digit-free declared identifier (`CASH`) used to be counted by
+    nothing, so `documents[ref]` stayed 0, every row printing it was decisive,
+    and the uniqueness half this census exists to enforce — no two statement
+    rows quote it — silently did not bite.
     """
     documents: dict = {}
     ledger: dict = {}
     # A MULTI-WORD identity is counted as one token — the whole addendum, the
     # key `_row_facts` looks up — beside the tokens inside it, which
     # `_ref_tokens` has already counted. A single-token identity (a cheque
-    # number, a trace id) is in that census already and is not counted twice.
+    # number, a trace id, a declared word) is in that census already and is not
+    # counted twice.
     # A reference that is no identity is counted as its tokens and nothing
     # else: `SI-3104 SI-3102` is two invoice numbers, which is all it is.
     addenda: set = set()
     for row in rows:
-        for token in _ref_tokens(row.reference) | _ref_tokens(row.description):
+        for token in _ref_tokens(row.reference, evidenced) | _ref_tokens(row.description, evidenced):
             documents[token] = documents.get(token, 0) + 1
         identity = _identity_reference(row.reference, f"{row.description} {row.reference}", evidenced)
         if identity and _reference_words(identity):
             documents[_norm_ref(identity)] = documents.get(_norm_ref(identity), 0) + 1
             addenda.add(identity)
     for reference, description in archive_rows:
-        for token in _ref_tokens(reference) | _ref_tokens(description):
+        for token in _ref_tokens(reference, evidenced) | _ref_tokens(description, evidenced):
             documents[token] = documents.get(token, 0) + 1
         identity = _identity_reference(reference, f"{description} {reference}", evidenced)
         if identity and _reference_words(identity):
@@ -1136,10 +1220,10 @@ def _reference_census(rows, archive_rows, movements, *, evidenced=frozenset()) -
     # reused — that would switch off the reference exactly where the books
     # carry the surplus the reference identifies.
     for shape in {m.shape for m in movements}:
-        for token in _ref_tokens(f"{shape[2]} {shape[3]}"):
+        for token in _ref_tokens(f"{shape[2]} {shape[3]}", evidenced):
             ledger[token] = ledger.get(token, 0) + 1
         for reference in addenda:
-            if _mentions(f"{shape[2]} {shape[3]}", reference):
+            if _mentions(f"{shape[2]} {shape[3]}", reference, evidenced):
                 ledger[_norm_ref(reference)] = ledger.get(_norm_ref(reference), 0) + 1
     return documents, ledger
 
@@ -1355,10 +1439,19 @@ def _timing_ok(row, movement, window, *, referenced: bool) -> bool:
     return gap <= window
 
 
-def _build_edges(rows, movements, facts_by_row, *, parties, fee_account, tie_break=False) -> list:
+def _build_edges(rows, movements, facts_by_row, *, parties, fee_account, tie_break=False,
+                 evidenced=frozenset()) -> list:
     """Every pairing the public evidence admits, with reference dominance
     applied afterwards rather than as a first pass that wins by running
-    first."""
+    first.
+
+    `evidenced` reaches here for one reason: `_mentions` below decides whether
+    an entry QUOTES the row's reference, and a declared identifier is quotable
+    whatever its shape. Without it a row whose identity is a digit-free
+    declared token found nothing quoting it, and since such a row is an
+    INSTRUMENT, the conflict rule then pruned every entry naming a document —
+    the pairing the row actually had.
+    """
     edges: list[_Edge] = []
     for row in rows:
         facts = facts_by_row[row.index]
@@ -1372,7 +1465,7 @@ def _build_edges(rows, movements, facts_by_row, *, parties, fee_account, tie_bre
                 continue
             if not _policy_class_ok(facts, movement, fee_account):
                 continue
-            quoted = bool(facts.ref) and _mentions(movement.text, facts.reference)
+            quoted = bool(facts.ref) and _mentions(movement.text, facts.reference, evidenced)
             # A CONFLICT: this row names a reference and the entry names some
             # other document or instrument instead. What the conflict is worth
             # depends on the roles:
@@ -1865,7 +1958,7 @@ def structure(public: dict, *, bank_account: str, period_start: str, period_end:
     """
     ev = _evidence(public, bank_account, period_start, period_end)
     edges = _build_edges(ev.rows, ev.movements, ev.facts_by_row, parties=ev.parties,
-                         fee_account=ev.fee_account, tie_break=False)
+                         fee_account=ev.fee_account, tie_break=False, evidenced=ev.evidenced)
     edges_by_row: dict = {}
     for edge in edges:
         edges_by_row.setdefault(edge.row, []).append(edge)
@@ -1953,7 +2046,8 @@ def check_identifiable(public: dict, *, bank_account: str, period_start: str,
                            f"no statement in the mounted files covers it")
 
     facts_by_row = ev.facts_by_row
-    edges = _build_edges(rows, movements, facts_by_row, parties=parties, fee_account=fee_account, tie_break=tie_break)
+    edges = _build_edges(rows, movements, facts_by_row, parties=parties, fee_account=fee_account,
+                         tie_break=tie_break, evidenced=ev.evidenced)
     edges_by_row: dict = {}
     for edge in edges:
         edges_by_row.setdefault(edge.row, []).append(edge)
