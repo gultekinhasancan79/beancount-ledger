@@ -61,8 +61,13 @@ survives only as a printed DIAGNOSTIC — it can tell that reviewer whether
 the declared views also drifted, and it never turns a failure into a pass.
 Every row carries a `provenance` block saying how it was generated
 (`native` or `derived-by-substitution`) and where a runtime that actually
-ships that database confirmed it; CI runs the whole battery natively on
-CPython 3.11 (14.0.0), 3.12 (15.0.0) and 3.13 (15.1.0).
+ships that database confirmed it. The battery matrix in
+`.github/workflows/ci.yml` covers CPython 3.11 (14.0.0), 3.12 (15.0.0) and
+3.13 (15.1.0) natively and runs on every push to main, every v* tag, and
+every pull request -- so a job's native evidence arrives on a pull request or
+on main, never on a push of a side branch, and
+`test_the_ci_claims_match_the_workflow` parses the workflow and fails if this
+paragraph, a row's provenance or the release attestation stops saying so.
 
 Comparison is exact: an extra file, a missing file, a moved byte, a changed
 digest or a renamed task fails. A task registered outside the freeze is
@@ -86,11 +91,15 @@ Re-pinning is a deliberate act, never a side effect of a green run:
 from __future__ import annotations
 
 import contextlib
+import copy
 import hashlib
+import io
 import json
 import platform
 import re
+import shutil
 import sys
+import tempfile
 import unicodedata
 from pathlib import Path
 
@@ -108,6 +117,8 @@ from beancount_ledger.graph.mint import public_task_id  # noqa: E402
 from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
 
 FIXTURE = ROOT / "tests" / "legacy_freeze.json"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+ATTESTATION = ROOT / "reviews" / "RELEASE_ATTESTATION.md"
 FIXTURE_SCHEMA = "piv.legacy-freeze/2"
 SCORER_SOURCE = ROOT / "beancount_ledger" / "candidate" / "committed.py"
 EPISODE_CONTRACT_TEST = ROOT / "tests" / "test_episode_contract.py"
@@ -709,6 +720,215 @@ def test_the_substitution_reaches_every_reader_of_unidata_version():
                  not failures, "\n".join(failures))
 
 
+# --------------------------------------------------------------------------
+# what this repository SAYS about CI, read out of the workflow itself
+#
+# The Unicode rows above are only as good as the runtime that confirmed
+# them, so both `provenance.native_confirmation` and the release attestation
+# describe WHEN the CI battery compares a row. That sentence is evidence,
+# and evidence has to be measured: the helpers below parse
+# `.github/workflows/ci.yml` and `test_the_ci_claims_match_the_workflow`
+# fails when what the repository says about CI stops matching what CI does.
+# --------------------------------------------------------------------------
+
+def ci_triggers() -> dict:
+    """The workflow's `on:` block, parsed: which pushes and which tags fire
+    it, and whether pull requests do. `push_branches` is `None` when the
+    push trigger names no branches, i.e. every branch fires it."""
+    text = CI_WORKFLOW.read_text(encoding="utf-8")
+    block = re.search(r"^on:[ \t]*\n((?:[ \t]+\S.*\n|[ \t]*\n)*)", text, re.M)
+    if not block:
+        raise AssertionError(f"{CI_WORKFLOW.name} has no top-level `on:` block: the triggers this repository's "
+                             f"prose describes cannot be read, so nothing here may claim to know them")
+    body = block.group(1)
+    push = re.search(r"^  push:[ \t]*\n((?:    \S.*\n)*)", body, re.M)
+    listed = lambda m: [v.strip().strip("\"'") for v in m.group(1).split(",") if v.strip()] if m else None
+    branches = re.search(r"^    branches:\s*\[([^\]]*)\]", push.group(1), re.M) if push else None
+    tags = re.search(r"^    tags:\s*\[([^\]]*)\]", push.group(1), re.M) if push else None
+    return {
+        "push": push is not None,
+        "push_branches": listed(branches),
+        "push_tags": listed(tags) or [],
+        "pull_request": re.search(r"^  pull_request:", body, re.M) is not None,
+    }
+
+
+def ci_trigger_clause() -> str:
+    """The clause every sentence in this repository that says WHEN CI runs
+    must carry, built from the workflow's own triggers -- e.g. "on every push
+    to main, every v* tag, and every pull request". Derived, not written
+    down, so changing the workflow's triggers changes what the prose has to
+    say and the check below notices."""
+    t = ci_triggers()
+    parts: list[str] = []
+    if t["push"]:
+        parts.append("every push" if t["push_branches"] is None
+                     else "every push to " + " or ".join(t["push_branches"]))
+        parts += [f"every {tag} tag" for tag in t["push_tags"]]
+    if t["pull_request"]:
+        parts.append("every pull request")
+    if not parts:
+        raise AssertionError(f"{CI_WORKFLOW.name} declares no trigger this reader understands")
+    if len(parts) == 1:
+        return f"on {parts[0]}"
+    return "on " + ", ".join(parts[:-1]) + (", and " if len(parts) > 2 else " and ") + parts[-1]
+
+
+def ci_battery_pythons() -> list[str]:
+    """The CPython versions the battery job's matrix actually runs."""
+    text = CI_WORKFLOW.read_text(encoding="utf-8")
+    strategy = re.search(r"^    strategy:\n(.*?)^    steps:", text, re.M | re.S)
+    if not strategy:
+        raise AssertionError(f"{CI_WORKFLOW.name}'s battery job has no strategy/matrix block to read")
+    return sorted({v for v in re.findall(r'"(\d+\.\d+)"', strategy.group(1))},
+                  key=lambda v: tuple(int(part) for part in v.split(".")))
+
+
+def _ci_claim_sentences(text: str) -> list[str]:
+    """The sentences of `text` that name the CI workflow file, with runs of
+    whitespace collapsed -- a claim is the same claim whether a docstring or
+    a Markdown paragraph happens to wrap it."""
+    return [" ".join(s.split()) for s in re.split(r"(?<=\.)\s+", text) if CI_WORKFLOW.name in s]
+
+
+def test_the_ci_claims_match_the_workflow():
+    """Every sentence that names `.github/workflows/ci.yml` says when that
+    job runs, and the workflow decides whether it is true.
+
+    This exists because the wording was false once and nothing caught it: a
+    row's provenance said the ubuntu 3.13 job confirms it "from the first
+    push of this branch onward", while the workflow triggers on pushes to
+    main, on tags and on pull requests -- so a push of a feature branch runs
+    no job at all, and the sentence promised evidence that no run would ever
+    produce. A `native_confirmation` is the whole reason a derived row may
+    be trusted later; if it can drift from the workflow, the freeze's
+    provenance is decoration.
+
+    So: the trigger clause is DERIVED from the `on:` block and must appear
+    verbatim wherever the repository describes when CI runs; no site may
+    claim a push to a branch the workflow does not list, or an unqualified
+    "every push"; and the two places that describe the matrix -- this
+    module's docstring and the release attestation -- must name exactly the
+    interpreters the matrix runs. Editing the workflow's triggers or its
+    matrix without editing the prose fails here.
+    """
+    clause = ci_trigger_clause()
+    triggers = ci_triggers()
+    pythons = ci_battery_pythons()
+    failures: list[str] = []
+    sources: list[tuple[str, str, bool]] = [
+        (ATTESTATION.relative_to(ROOT).as_posix(), ATTESTATION.read_text(encoding="utf-8"), True),
+        (f"{Path(__file__).name} module docstring", __doc__ or "", True),
+    ]
+    for version, row in sorted(fixture().get("unicode_scoped", {}).items()):
+        prov = row.get("provenance") if isinstance(row, dict) else None
+        said = prov.get("native_confirmation") if isinstance(prov, dict) else None
+        if isinstance(said, str):
+            sources.append((f"legacy_freeze.json unicode_scoped[{version}].provenance.native_confirmation",
+                            said, False))
+    sites = 0
+    for label, text, claims_matrix in sources:
+        sentences = _ci_claim_sentences(text)
+        if not sentences:
+            if claims_matrix:
+                failures.append(f"{label} no longer says anything about {CI_WORKFLOW.name}: what CI witnesses "
+                                f"natively is why a derived Unicode row may be believed, and it may not go silent")
+            continue
+        sites += len(sentences)
+        for sentence in sentences:
+            if clause not in sentence:
+                failures.append(f"{label} names {CI_WORKFLOW.name} but does not carry the workflow's actual "
+                                f"trigger clause {clause!r}:\n    {sentence}")
+            if triggers["push_branches"] is not None and re.search(r"every push(?! to )", sentence):
+                failures.append(f'{label} says "every push" unqualified, but the workflow\'s push trigger is '
+                                f"limited to {triggers['push_branches']}:\n    {sentence}")
+            for match in re.finditer(r"push(?:es)? to ([A-Za-z0-9_./-]+)", sentence):
+                branch = match.group(1).rstrip(".,;:")
+                if branch not in (triggers["push_branches"] or [branch]):
+                    failures.append(f"{label} claims CI runs on a push to {branch!r}; the workflow's push trigger "
+                                    f"lists {triggers['push_branches']}")
+            for banned in ("first push of this branch", "every push of this branch", "from the first push"):
+                if banned in sentence:
+                    failures.append(f"{label} claims CI runs {banned!r}, which the workflow's triggers do not do")
+        if claims_matrix:
+            named = sorted({v for v in re.findall(r"\b(\d+\.\d+)\b", " ".join(sentences)) if v.startswith("3.")},
+                           key=lambda v: tuple(int(part) for part in v.split(".")))
+            if named != pythons:
+                failures.append(f"{label} says CI covers CPython {named}; the battery matrix in "
+                                f"{CI_WORKFLOW.name} runs {pythons}")
+    if sites < 3:
+        failures.append(f"only {sites} sentence(s) in the repository describe {CI_WORKFLOW.name}: the attestation, "
+                        f"this module and the confirmed Unicode rows all have to say when CI compares them")
+    return check(f"every sentence naming {CI_WORKFLOW.name} carries the workflow's own trigger clause "
+                 f"({clause}) and the matrix it really runs ({', '.join(pythons)})", not failures,
+                 "\n".join(failures))
+
+
+def test_a_fixture_row_that_cannot_be_trusted_fails_the_whole_suite():
+    """The refusal, driven END TO END rather than through the helper.
+
+    `test_an_unpinned_unicode_version_fails_the_freeze` drives
+    `resolve_unicode_scoped` directly, so it proves the helper refuses but
+    not that its caller acts on the refusal -- one careless `if expected is
+    None: expected = live_row` away from a suite that passes anyway. This
+    repoints `FIXTURE` at a mutated COPY (the real fixture is never written)
+    and runs the real check, twice:
+
+      * the running runtime's row deleted -- the freeze must fail with the
+        unseen-database message, not fall back to the live digests;
+      * the running row present but one pinned scorer digest corrupted --
+        the freeze must fail on the comparison, which is what shows the row
+        is compared strictly rather than merely looked up.
+    """
+    global FIXTURE
+    real, pinned = FIXTURE, fixture()
+    scoped = pinned.get("unicode_scoped", {})
+    failures: list[str] = []
+    # On a runtime whose database IS pinned, the two mutations are "delete
+    # that row" and "tamper with it". On a runtime whose database is NOT
+    # pinned -- where the deletion is already the live state -- the tampered
+    # row is minted for this version from the live digests instead, so both
+    # cases are still measured rather than skipped.
+    base_row = copy.deepcopy(scoped[NATIVE_UNICODE_VERSION]) if NATIVE_UNICODE_VERSION in scoped else {
+        **copy.deepcopy(live_unicode_scoped(NATIVE_UNICODE_VERSION)),
+        "provenance": {"method": "derived-by-substitution",
+                       "generated_on": "synthetic",
+                       "native_confirmation": "SYNTHETIC: minted inside this guard, never written to the fixture"},
+    }
+    without = {**pinned, "unicode_scoped": {v: r for v, r in scoped.items() if v != NATIVE_UNICODE_VERSION}}
+    corrupted_row = base_row
+    corrupted_row["scorer"]["parse_policy_digest"] = "0" * 64
+    corrupted = {**pinned, "unicode_scoped": {**scoped, NATIVE_UNICODE_VERSION: corrupted_row}}
+    workspace = Path(tempfile.mkdtemp(prefix="legacy-freeze-guard-"))
+    try:
+        for name, mutated, must_say in (
+            ("the running row deleted", without, ("is NOT pinned", "--regenerate-unicode-scoped")),
+            ("one pinned scorer digest corrupted", corrupted, ("parse_policy_digest", "0" * 64)),
+        ):
+            path = workspace / (name.replace(" ", "_") + ".json")
+            path.write_text(json.dumps(mutated, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            captured = io.StringIO()
+            FIXTURE = path
+            try:
+                with contextlib.redirect_stdout(captured):
+                    passed = test_the_unicode_scoped_digests_are_pinned_for_this_runtime()
+            finally:
+                FIXTURE = real
+            said = captured.getvalue()
+            if passed:
+                failures.append(f"with {name}, the freeze still PASSED end to end")
+            for token in must_say:
+                if token not in said:
+                    failures.append(f"with {name}, the reported failure never mentions {token!r}: {said.strip()!r}")
+    finally:
+        FIXTURE = real
+        shutil.rmtree(workspace, ignore_errors=True)
+    if FIXTURE != real or fixture() != pinned:
+        failures.append("the guard did not restore the real fixture afterwards")
+    return check("the pinned-row check itself fails end to end when the running runtime's row is missing, and "
+                 "when it is present but a pinned digest was tampered with", not failures, "\n".join(failures))
+
+
 def test_the_frozen_scorer_bytes():
     """The scorer's invariant identity: its own bytes and version numbers.
     Its two Unicode-scoped digests (`parse_policy_digest`,
@@ -775,6 +995,8 @@ TESTS = [
     test_the_unicode_scoped_digests_are_pinned_for_this_runtime,
     test_an_unpinned_unicode_version_fails_the_freeze,
     test_the_substitution_reaches_every_reader_of_unidata_version,
+    test_a_fixture_row_that_cannot_be_trusted_fails_the_whole_suite,
+    test_the_ci_claims_match_the_workflow,
     test_the_frozen_scorer_bytes,
     test_the_contract_4_view_is_pinned,
     test_the_served_world_dir_is_bank_recon_001,

@@ -2990,7 +2990,7 @@
    "provenance": {
     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
     "method": "derived-by-substitution",
-    "native_confirmation": "confirmed natively by the CI battery job (.github/workflows/ci.yml, ubuntu-latest, CPython 3.11 / unicode 14.0.0), which runs this suite and compares this row strictly on every push"
+    "native_confirmation": "confirmed natively by the CI battery job (.github/workflows/ci.yml, ubuntu-latest, CPython 3.11 / unicode 14.0.0), which runs this suite and compares this row strictly on every push to main, every v* tag, and every pull request"
    },
    "scorer": {
     "parse_policy_digest": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
@@ -3776,7 +3776,7 @@
    "provenance": {
     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
     "method": "derived-by-substitution",
-    "native_confirmation": "derived by substitution on CPython 3.12 (unicode 15.0.0), then checked against a runtime that really ships unicode 15.1.0: a native CPython 3.13.11 (Windows) run of this suite and of tests/run_all.py, 34/34 suites, 2026-09-10. The ubuntu-latest CPython 3.13 battery job in .github/workflows/ci.yml confirms it on Linux from the first push of this branch onward."
+    "native_confirmation": "derived by substitution on CPython 3.12 (unicode 15.0.0), then checked against a runtime that really ships unicode 15.1.0: a native CPython 3.13.11 (Windows) run of this suite and of tests/run_all.py, 34/34 suites, 2026-09-10. Linux is not confirmed yet: the ubuntu-latest CPython 3.13 battery job in .github/workflows/ci.yml runs on every push to main, every v* tag, and every pull request, so it first compares this row when this branch is opened as a pull request or merged to main -- a push of the branch itself runs no job at all."
    },
    "scorer": {
     "parse_policy_digest": "9f39ade4bcf5bc9ee174995bd7a2765e0009894d90167fbaee5a5b3c1d0a70ca",
