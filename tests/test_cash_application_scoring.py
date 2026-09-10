@@ -68,7 +68,10 @@ from world_checks import score_text  # noqa: E402
 BANK, AR, WRITE_OFFS, SALES = "Assets:Bank:Checking", "Assets:AR", "Expenses:SmallBalanceWriteOffs", "Income:Sales"
 GANNET, SHEARWATER = "Gannet Rigging Inc", "Shearwater Bay Charters LLC"
 R1, R2, R3 = "2026-04-10:GR PAYRUN 0410", "2026-04-21:2291", "2026-04-28:GR PAYRUN 0428"
-R3_CASE_2 = "2026-04-28:SI-3104 SI-3102"
+#: Case 2 keys its receipt on the whole reference column, which since the
+#: identity correction carries the bank's own trace ahead of the payer's
+#: invoice list (the case has no advice to declare an identifier).
+R3_CASE_2 = "2026-04-28:TRC0428442 SI-3104 SI-3102"
 CN = "CN-0412"
 ONE, ZERO = D("1.000000"), D("0.000000")
 

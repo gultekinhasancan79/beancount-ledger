@@ -1,0 +1,208 @@
+{
+ "schema": "piv.cash-screen-rescore/1",
+ "task": "cash_application_005",
+ "scorer": "application/1",
+ "what_this_is": "An offline rescore of the ARCHIVED Case 5 application artifact through the shipped beancount_ledger.candidate.application.score_application, against the truth that graph.derive.derive_contract mints for the task itself, followed by a single-field counterfactual. The counterfactual changes exactly one field - receipt 2026-04-28:GR PAYRUN 0428's unapplied_amount, from 0.00 to 30.00 - and nothing else; the ledger is untouched and is not rescored here, so no composite total is claimed. This is a same-scorer consistency check, not an independent accounting validation.",
+ "counterfactual_edit": {
+  "receipt_id": "2026-04-28:GR PAYRUN 0428",
+  "field": "unapplied_amount",
+  "from": "0.00",
+  "to": "30.00",
+  "changed_lines": [
+   "-   \"unapplied_amount\": \"0.00\",",
+   "+   \"unapplied_amount\": \"30.00\","
+  ]
+ },
+ "result": {
+  "delivered_A": "0.333334",
+  "counterfactual_A": "1.000000",
+  "shipped_formula_prediction": "1.000000",
+  "prediction_met": true
+ },
+ "delivered_rescore_agrees_with_archived_receipt": {
+  "artifact_stored_bytes_digest": true,
+  "artifact_logical_text_digest": true,
+  "canonical_digest": true,
+  "application_result_digest": true,
+  "application_score": true
+ },
+ "delivered": {
+  "label": "delivered",
+  "A": "0.333334",
+  "status": "delivered",
+  "delivered": true,
+  "engine": "application/1",
+  "artifact_stored_bytes_digest": "9a2c8e3b0dd39bc956a71fe1a08a186bf95525d95e68de955e878e3dcefc0951",
+  "artifact_logical_text_digest": "775b8074534098b0499f5c380e555d611ab693b82ccb0c157074a2662fa858ed",
+  "canonical_digest": "6a88d6a645097bfd251446d6f71514d8ccd6756b0829d4486bbc6a56dfcc4063",
+  "canonical_register_bytes_digest": "a7a13ed0b55c3266a1c47ffd8eeb34efc7f9d571d5ba839a75cde8da202c30f7",
+  "application_result_digest": "30229df6403e48c9d3adfdfa73b439aafd669c8c926c047bbd5cf3caea3cbd7e",
+  "components": [
+   [
+    "receipts_exact",
+    "0.666667"
+   ],
+   [
+    "register_exact",
+    "1.000000"
+   ],
+   [
+    "credit_exact",
+    "1.000000"
+   ]
+  ],
+  "penalties": [
+   [
+    "receipt_identity",
+    "2026-04-28:GR PAYRUN 0428: applied + unapplied 3750.00, statement credit 3780.00"
+   ],
+   [
+    "ar_tie_break",
+    "remaining 2970.00 - unapplied 0.00 != closing receivables 2940.00"
+   ]
+  ],
+  "receipt_states": [
+   [
+    "2026-04-10:GR PAYRUN 0410",
+    "RECEIPT_EXACT"
+   ],
+   [
+    "2026-04-21:2291",
+    "RECEIPT_EXACT"
+   ],
+   [
+    "2026-04-28:GR PAYRUN 0428",
+    "RECEIPT_WRONG_UNAPPLIED"
+   ]
+  ],
+  "invoice_states": [
+   [
+    "SI-3100",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3101",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3102",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3103",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3104",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3105",
+    "INVOICE_EXACT"
+   ]
+  ],
+  "credit_states": [
+   [
+    "CN-0412",
+    "CREDIT_EXACT"
+   ]
+  ],
+  "tie_states": [
+   [
+    "ar",
+    "AR_TIE_CONTRADICTS"
+   ],
+   [
+    "writeoff",
+    "WRITEOFF_TIE_OK"
+   ]
+  ],
+  "application_states": [],
+  "rejection": []
+ },
+ "counterfactual": {
+  "label": "counterfactual",
+  "A": "1.000000",
+  "status": "delivered",
+  "delivered": true,
+  "engine": "application/1",
+  "artifact_stored_bytes_digest": "b40b6c299ad4a23a51ed8153938c0e844d873b6fd2009e8de2c3759208234285",
+  "artifact_logical_text_digest": "1b9a8148a36e111540af0d97c095b14f939c2b37e72357195f5ce3c09c63c0f7",
+  "canonical_digest": "f7402ceba3023215717099be4f221474be1d3b4fbca6bd867281188d1f5f015a",
+  "canonical_register_bytes_digest": "b850ab3de94a07251a4a87a6d712afb6b63e1d91e7c0603cfd22571e4a92c56d",
+  "application_result_digest": "5dfc2553eb0c3e966bfbbe0bf0031f7f249223b36b9f65111cf0cfb71a2bf550",
+  "components": [
+   [
+    "receipts_exact",
+    "1.000000"
+   ],
+   [
+    "register_exact",
+    "1.000000"
+   ],
+   [
+    "credit_exact",
+    "1.000000"
+   ]
+  ],
+  "penalties": [],
+  "receipt_states": [
+   [
+    "2026-04-10:GR PAYRUN 0410",
+    "RECEIPT_EXACT"
+   ],
+   [
+    "2026-04-21:2291",
+    "RECEIPT_EXACT"
+   ],
+   [
+    "2026-04-28:GR PAYRUN 0428",
+    "RECEIPT_EXACT"
+   ]
+  ],
+  "invoice_states": [
+   [
+    "SI-3100",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3101",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3102",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3103",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3104",
+    "INVOICE_EXACT"
+   ],
+   [
+    "SI-3105",
+    "INVOICE_EXACT"
+   ]
+  ],
+  "credit_states": [
+   [
+    "CN-0412",
+    "CREDIT_EXACT"
+   ]
+  ],
+  "tie_states": [
+   [
+    "ar",
+    "AR_TIE_OK"
+   ],
+   [
+    "writeoff",
+    "WRITEOFF_TIE_OK"
+   ]
+  ],
+  "application_states": [],
+  "rejection": []
+ }
+}

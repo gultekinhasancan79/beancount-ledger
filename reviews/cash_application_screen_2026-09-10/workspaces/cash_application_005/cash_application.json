@@ -1,0 +1,122 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2026-04-10:GR PAYRUN 0410",
+   "applied": [
+    {
+     "invoice_id": "SI-3101",
+     "amount": "2400.00"
+    },
+    {
+     "invoice_id": "SI-3102",
+     "amount": "1500.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Applied per remittance advice RA-0410-GR; SI-3100 line of 0.00 carries no application (balance withheld pending allowance)."
+  },
+  {
+   "receipt_id": "2026-04-21:2291",
+   "applied": [
+    {
+     "invoice_id": "SI-3103",
+     "amount": "2970.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Check 2291 applied per remittance advice RA-0416-SB."
+  },
+  {
+   "receipt_id": "2026-04-28:GR PAYRUN 0428",
+   "applied": [
+    {
+     "invoice_id": "SI-3102",
+     "amount": "1860.00"
+    },
+    {
+     "invoice_id": "SI-3104",
+     "amount": "1890.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Applied per remittance advice RA-0428-GR; both invoices settled in full, no shortfall."
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-0412",
+   "applied": [
+    {
+     "invoice_id": "SI-3100",
+     "amount": "300.00"
+    },
+    {
+     "invoice_id": "SI-3102",
+     "amount": "240.00"
+    }
+   ],
+   "unapplied_amount": "0.00",
+   "notes": "540.00 gross: 300.00 closed referenced invoice SI-3100, excess 240.00 to Gannet's oldest open invoice SI-3102."
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-3100",
+   "customer": "Gannet Rigging Inc",
+   "period_basis": "300.00",
+   "applied_total": "0.00",
+   "credited": "300.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-3101",
+   "customer": "Gannet Rigging Inc",
+   "period_basis": "2400.00",
+   "applied_total": "2400.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-3102",
+   "customer": "Gannet Rigging Inc",
+   "period_basis": "3600.00",
+   "applied_total": "3360.00",
+   "credited": "240.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-3103",
+   "customer": "Shearwater Bay Charters LLC",
+   "period_basis": "2970.00",
+   "applied_total": "2970.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-3104",
+   "customer": "Gannet Rigging Inc",
+   "period_basis": "1890.00",
+   "applied_total": "1890.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-3105",
+   "customer": "Shearwater Bay Charters LLC",
+   "period_basis": "2970.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2970.00"
+  }
+ ]
+}

@@ -1,0 +1,2 @@
+credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0412,2026-04-15,Gannet Rigging Inc,SI-3100,500.00,40.00,540.00,agreed price allowance on goods retained

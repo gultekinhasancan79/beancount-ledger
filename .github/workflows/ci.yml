@@ -24,8 +24,17 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python: ["3.12"]
         include:
+          # One job per Unicode database `tests/legacy_freeze.json` pins, run
+          # NATIVELY. `candidate/canonical.py` classifies and normalises with
+          # the live Unicode tables, so a row derived by substituting the
+          # version string is only ever a candidate until an interpreter that
+          # really ships that database has scored the 95 frozen tasks against
+          # it — and an unpinned database fails the freeze outright. 3.11 is
+          # also the oldest interpreter pyproject admits, 3.13 the newest.
           - os: ubuntu-latest
-            python: "3.11"      # the oldest interpreter pyproject admits
+            python: "3.11"      # unicode 14.0.0
+          - os: ubuntu-latest
+            python: "3.13"      # unicode 15.1.0
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
 
@@ -59,6 +68,15 @@ jobs:
               print("PIN MISMATCH:", bad); sys.exit(1)
           print(f"{len(pins)} pins match the installed set")
           EOF
+
+      - name: Report the Unicode database this job natively witnesses
+        shell: bash
+        # Named in the log so a reader can see which `unicode_scoped` row of
+        # tests/legacy_freeze.json this job is the native evidence for. If the
+        # fixture does not pin exactly this version, test_legacy_freeze fails
+        # the job rather than accepting the runtime's own digests.
+        run: |
+          uv run --no-sync python -c "import sys, unicodedata; print(sys.version); print('unicodedata.unidata_version =', unicodedata.unidata_version)"
 
       - name: Run every suite (tests/run_all.py)
         shell: bash

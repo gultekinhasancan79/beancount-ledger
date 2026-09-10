@@ -1,0 +1,5 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0410-GR,Gannet Rigging Inc,2026-04-10,ACH,GR PAYRUN 0410,3900.00,SI-3101,2400.00,yes,0.00,
+RA-0410-GR,Gannet Rigging Inc,2026-04-10,ACH,GR PAYRUN 0410,3900.00,SI-3102,1500.00,no,0.00,part payment; balance held pending credit for damaged crates
+RA-0410-GR,Gannet Rigging Inc,2026-04-10,ACH,GR PAYRUN 0410,3900.00,SI-3100,0.00,no,0.00,withheld; short shipment; credit requested
+RA-0416-SB,Shearwater Bay Charters LLC,2026-04-16,CHECK,2291,2970.00,SI-3103,2970.00,yes,0.00,

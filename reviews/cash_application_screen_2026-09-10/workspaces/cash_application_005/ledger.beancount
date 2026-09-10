@@ -1,0 +1,64 @@
+option "title" "Bowline Marine Supply Co. - FY2026"
+option "operating_currency" "USD"
+
+2026-01-01 open Assets:AR                              USD
+2026-01-01 open Assets:Bank:Checking                   USD
+2026-01-01 open Assets:Inventory                       USD
+2026-01-01 open Assets:Prepayments                     USD
+2026-01-01 open Equity:Opening                         USD
+2026-01-01 open Expenses:BankFees                      USD
+2026-01-01 open Expenses:COGS                          USD
+2026-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2026-01-01 open Income:Sales                           USD
+2026-01-01 open Liabilities:AP                         USD
+2026-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-04-01 * "Opening balance" "Carried forward from March close"
+  Assets:Bank:Checking                         60000.00 USD
+  Assets:AR                                     9270.00 USD
+  Assets:Inventory                             23400.00 USD
+  Liabilities:AP                              -11600.00 USD
+  Equity:Opening                              -81070.00 USD
+
+2026-04-07 * "Gannet Rigging Inc" "Cost of goods sold on SI-3104"
+  Expenses:COGS                                 1050.00 USD
+  Assets:Inventory                             -1050.00 USD
+
+2026-04-07 * "Gannet Rigging Inc" "Sale SI-3104"
+  Assets:AR                                     1890.00 USD
+  Income:Sales                                 -1750.00 USD
+  Liabilities:SalesTax-Payable                  -140.00 USD
+
+2026-04-09 * "Northshore Chandlery Supply" "Payment of purchase invoice PI-8813"
+  Liabilities:AP                                4175.00 USD
+  Assets:Bank:Checking                         -4175.00 USD
+
+2026-04-10 * "Gannet Rigging Inc" "Customer payment, GR PAYRUN 0410"
+  Assets:Bank:Checking                          3900.00 USD
+  Assets:AR                                    -3900.00 USD
+
+2026-04-14 * "Shearwater Bay Charters LLC" "Sale SI-3105"
+  Assets:AR                                     2970.00 USD
+  Income:Sales                                 -2750.00 USD
+  Liabilities:SalesTax-Payable                  -220.00 USD
+
+2026-04-14 * "Shearwater Bay Charters LLC" "Cost of goods sold on SI-3105"
+  Expenses:COGS                                 1650.00 USD
+  Assets:Inventory                             -1650.00 USD
+
+2026-04-15 * "Gannet Rigging Inc" "Credit note CN-0412 against SI-3100: agreed price allowance on goods retained"
+  Income:Sales                                   500.00 USD
+  Liabilities:SalesTax-Payable                    40.00 USD
+  Assets:AR                                     -540.00 USD
+
+2026-04-21 * "Shearwater Bay Charters LLC" "Customer check 2291"
+  Assets:Bank:Checking                          2970.00 USD
+  Assets:AR                                    -2970.00 USD
+
+2026-04-28 * "Gannet Rigging Inc" "Customer payment, GR PAYRUN 0428"
+  Assets:Bank:Checking                          3780.00 USD
+  Assets:AR                                    -3780.00 USD
+
+2026-04-30 * "Marram Community Bank" "Monthly account service charge"
+  Expenses:BankFees                               45.00 USD
+  Assets:Bank:Checking                           -45.00 USD

@@ -23,7 +23,22 @@ What is witnessed:
   * the projected pack is the spec's, byte for byte where the spec prints
     it: Case 1's three files, Case 5's credit note, Case 2's absent advice,
     the manifest rows, the write-off account, the addendum in the statement
-    reference, the cheque row that identifies the remitter;
+    reference, the cheque row that identifies the remitter. Case 2's
+    reference departs from the spec's printed text on purpose: it reads
+    `TRC0428442 SI-3104 SI-3102`, the bank's own trace ahead of the payer's
+    invoice list, because the corrected identity rule admits no identity in a
+    list of invoice ids and that case has no advice to declare one. TWO
+    THINGS STILL CARRY THE OLD TEXT and are named rather than left to be
+    found: `cash_application_spec.md` still prints the reference as `SI-3104
+    SI-3102` (sections 1 and 7) and awaits the amendment the reviewer's
+    decision 6 already requires, and `tests/test_cash_application_fold.py`
+    builds its own spec-shaped fixtures, which are internally consistent and
+    now describe a pack this repository does not ship;
+  * the consequence for an already-archived measurement: Case 2's receipt key
+    moved with its reference, so the delivered artifact in the screen
+    workspace `cash_screen_evidence/workspaces/cash_application_002` is no
+    longer reproducible against this source. Pinned, with the superseded key
+    and the disclosures that name it, rather than described;
   * gate (m): for each of the five bundles the PUBLIC fold
     (`graph/cash_application.py`, over the ACTUAL projected bytes) equals
     the truth derived from the authored facts, under an application key
@@ -46,10 +61,11 @@ What is witnessed:
     original unresolved, the merged trap, leaked ids, derived literals, name
     pools, policy headings, plant coverage) passes for all five; gate (f),
     scoped to the bank-evidenced plants, reads every case uniquely as the
-    planted repairs — the spec's open implementation risk (section 8) was
-    resolved in step 4 by the payment-reference syntax in `identify.py`
-    (`_payment_reference_words`: the ACH addendum is an instrument), which
-    `tests/test_family_validators.py` pins mechanism by mechanism;
+    planted repairs — the spec's open implementation risk (section 8) is
+    resolved by an EVIDENCED payment identity in `identify.py`
+    (`_identity_reference`: the advice declares the ACH addendum, the bank
+    declares its own trace), which `tests/test_family_validators.py` pins
+    mechanism by mechanism;
   * the plants are the spec's: R2 omitted in every case on the bank's date,
     R3 transposed with the stated parameters to the stated as-found amounts,
     the write-off omitted alone in Case 3 and booked in Case 4;
@@ -106,6 +122,23 @@ WORLDS_DIR = ROOT / "beancount_ledger" / "graph" / "worlds"
 GANNET, SHEARWATER = "Gannet Rigging Inc", "Shearwater Bay Charters LLC"
 AR, BANK = "Assets:AR", "Assets:Bank:Checking"
 R1, R2, R3 = "2026-04-10:GR PAYRUN 0410", "2026-04-21:2291", "2026-04-28:GR PAYRUN 0428"
+#: Case 2 has no advice for R3, so its identity is the bank's own trace,
+#: printed ahead of the invoice list rung (2) reads.
+R3_CASE_2 = "2026-04-28:TRC0428442 SI-3104 SI-3102"
+#: What Case 2's R3 keyed to BEFORE the identity rule was corrected, and what
+#: the archived screen workspace `cash_application_002` was measured against.
+#: Kept as a constant so the divergence is a pinned fact rather than prose.
+R3_CASE_2_SUPERSEDED = "2026-04-28:SI-3104 SI-3102"
+SCREEN_WORKSPACE = "cash_screen_evidence/workspaces/cash_application_002"
+#: The published screen: a note plus a self-contained evidence directory of the
+#: same basename. Named here because the disclosure above has to reach a reader
+#: who has only these two, and because the sidecar's provenance fields have to
+#: describe the revision the run was MEASURED at, not the one they were written
+#: at — the two differ for exactly this case.
+SCREEN_NOTE = ROOT / "reviews" / "cash_application_screen_2026-09-10.md"
+SCREEN_EVIDENCE = ROOT / "reviews" / "cash_application_screen_2026-09-10"
+SCREEN_SIDECAR = SCREEN_EVIDENCE / "provenance.json"
+PUBLISHED_WORKSPACE = "workspaces/cash_application_002"
 FAMILY_FILES = ("open_items.csv", "remittance_advice.csv", "credit_notes.csv")
 LEGACY_FILES = ("manifest.md", "policy.md", "accounts.csv", "customers.csv", "vendors.csv",
                 "archive_prior_period.csv", "ledger.beancount", "bank_statement.csv")
@@ -192,7 +225,7 @@ EXPECTED = {
             credits=CN_ON_3102, register=CASE_1_REGISTER, closing="3270.00", statement="66370.00",
             r3_found="3702.00", plants={"unrecorded_customer_check": "omit", "transposed_payrun_receipt": "alter"}),
     2: dict(receipts={R1: (R1_APPLIED, (), "0.00"), R2: (R2_APPLIED, (), "0.00"),
-                      "2026-04-28:SI-3104 SI-3102": (pairs(("SI-3102", "1830.00"), ("SI-3104", "300.00")), (), "0.00")},
+                      R3_CASE_2: (pairs(("SI-3102", "1830.00"), ("SI-3104", "300.00")), (), "0.00")},
             credits=CN_ON_3102, register=register(row("SI-3104", GANNET, "1890.00", "300.00", "0.00", "0.00", "1590.00")),
             closing="4860.00", statement="64780.00", r3_found="2310.00",
             plants={"unrecorded_customer_check": "omit", "transposed_payrun_receipt": "alter"}),
@@ -328,17 +361,28 @@ def test_every_gate_passes_for_all_five():
 
 
 def test_gate_f_reads_every_case_as_the_planted_repairs():
-    """Gate (f), scoped to the bank-evidenced plants, after step 4. The
-    spec's open implementation risk (section 8) was real: with `GR PAYRUN
-    0428` and `SI-3104 SI-3102` read as UNKNOWN references, the mis-keyed
-    R3 two days before the cut-off admitted a second reading — the row an
-    unrecorded receipt, the entry a deposit in transit — in Cases 1, 2, 4
-    and 5. Step 4 chose the first of the spec's two fixes: the reference
-    syntax gained the payment reference (`identify._payment_reference_words`,
-    an INSTRUMENT, since a document role never prunes), so the entry that
-    quotes the addendum is its row's alteration and never in transit. Every
-    case now reads uniquely as exactly its planted bank-evidenced repairs;
-    the mechanism itself is pinned in `tests/test_family_validators.py`."""
+    """Gate (f), scoped to the bank-evidenced plants. The spec's open
+    implementation risk (section 8) was real: with `GR PAYRUN 0428` and
+    `SI-3104 SI-3102` read as UNKNOWN references, the mis-keyed R3 two days
+    before the cut-off admitted a second reading — the row an unrecorded
+    receipt, the entry a deposit in transit — in Cases 1, 2, 4 and 5.
+
+    Step 4 closed that with a SHAPE rule (any multi-word reference with a
+    digit is an instrument), and a reviewer refused it: the shape admits an
+    invoice list and a dated memo, and one sighting on each side excludes
+    neither competing history. The rule now in force asks the evidence
+    instead — `identify._identity_reference`: a cheque number the wording
+    introduces, a bank trace id, or a reference a mounted
+    `remittance_advice.csv` declares, unique across the advices and the bank
+    rows. Cases 1, 3, 4 and 5 have RA-0428-GR, which declares `GR PAYRUN
+    0428`. Case 2 has no advice for R3 by design, so it was given a genuine
+    public identity rather than a looser rule: the bank's own trace
+    `TRC0428442`, printed on the row and quoted by the entry, ahead of the
+    invoice list rung (2) still reads.
+
+    Every case reads uniquely as exactly its planted bank-evidenced repairs;
+    the mechanism and its counterexamples are pinned in
+    `tests/test_family_validators.py` and `tests/test_identify.py`."""
     problems = []
     for n in range(1, 6):
         _, world, task, _, inputs, public = case(n)
@@ -357,7 +401,8 @@ def test_gate_f_reads_every_case_as_the_planted_repairs():
             problems.append(f"case {n}: repair kinds {kinds}")
     return check("gate (f): every case reads uniquely, with one reading, as exactly its planted bank-evidenced "
                  "repairs — R2 missing on the bank's date in all five, R3 mis-keyed in Cases 1, 2, 4 and 5 — "
-                 "the spec's open risk resolved by the payment-reference syntax", not problems, "\n".join(problems))
+                 "the spec's open risk resolved by an EVIDENCED payment identity: the advice's declared "
+                 "reference in four cases, the bank's own trace in Case 2", not problems, "\n".join(problems))
 
 
 def test_the_projected_pack_is_the_spec_s():
@@ -398,8 +443,10 @@ def test_the_projected_pack_is_the_spec_s():
         if n in (1, 2, 3, 4) and public["open_items.csv"] != SPEC_OPEN_ITEMS:
             problems.append(f"case {n}: open_items.csv is not the shared register")
     _, _, _, _, _, public2 = case(2)
-    if "RA-0428-GR" in public2["remittance_advice.csv"] or "SI-3104 SI-3102" not in public2["bank_statement.csv"]:
-        problems.append("case 2: RA-0428-GR must be absent and the reference must read SI-3104 SI-3102")
+    if "RA-0428-GR" in public2["remittance_advice.csv"] \
+            or "TRC0428442 SI-3104 SI-3102" not in public2["bank_statement.csv"]:
+        problems.append("case 2: RA-0428-GR must be absent and the reference must read "
+                        "TRC0428442 SI-3104 SI-3102 — the bank's trace, then the invoices rung (2) reads")
     if public2["remittance_advice.csv"] != "".join(SPEC_REMITTANCE.splitlines(True)[:5]):
         problems.append("case 2: remittance_advice.csv is not Case 1's first two advices")
     _, _, _, _, _, public5 = case(5)
@@ -413,6 +460,142 @@ def test_the_projected_pack_is_the_spec_s():
                  "write-off account, both customers on Assets:AR, the addendum in the ACH reference, the cheque row "
                  "naming the remitter, Case 2 without RA-0428-GR, Case 5's credit note; eleven files per bundle, "
                  "April opening at 60,000.00, statement closings per case", not problems, "\n".join(problems))
+
+
+def test_case_2_s_inputs_moved_after_the_screen_and_the_repository_says_where():
+    """An archived measurement whose inputs changed, made loud.
+
+    Correcting the identity rule moved Case 2's 28 April statement reference
+    from `SI-3104 SI-3102` to `TRC0428442 SI-3104 SI-3102`, and the receipt
+    key moves with the reference column. The archived screen workspace
+    `cash_screen_evidence/workspaces/cash_application_002` was measured
+    against the OLD bytes: its delivered `cash_application.json` keys R3 as
+    `2026-04-28:SI-3104 SI-3102`, which this source can no longer produce, so
+    that delivery would not re-score as delivered. The phase brief sanctioned
+    moving family bytes; it did not sanction letting an archived result quietly
+    stop being reproducible.
+
+    So this pins three things together: the key the current bytes fold to, the
+    key they no longer fold to, and the fact that both the world module and
+    the release attestation name the divergence. Deleting the disclosure fails
+    here rather than in a reader's diff, and re-keying the case again fails
+    here too, which is the point — the next person to move these bytes has to
+    come back and say so.
+    """
+    problems = []
+    module, _, _, _, _, public = case(2)
+    keys = [receipt.receipt_id for receipt in CA.fold(public).receipts]
+    if R3_CASE_2 not in keys:
+        problems.append(f"case 2's receipts key as {keys}, without {R3_CASE_2!r}")
+    if R3_CASE_2_SUPERSEDED in keys:
+        problems.append(f"case 2 still folds to the superseded key {R3_CASE_2_SUPERSEDED!r}; if the reference "
+                        f"moved back, the archived screen is reproducible again and this note has to be redrawn")
+    disclosures = ((f"the world module {module.__name__}", Path(module.__file__).read_text(encoding="utf-8"),
+                    SCREEN_WORKSPACE),
+                   ("reviews/RELEASE_ATTESTATION.md",
+                    (ROOT / "reviews" / "RELEASE_ATTESTATION.md").read_text(encoding="utf-8"),
+                    SCREEN_WORKSPACE),
+                   # The published pair has to carry it too. A reader who has only the note and the
+                   # evidence directory beside it is exactly the reader who cannot check the source,
+                   # so dropping the disclosure there is the one place it actually costs something.
+                   ("the published note reviews/cash_application_screen_2026-09-10.md",
+                    SCREEN_NOTE.read_text(encoding="utf-8"), PUBLISHED_WORKSPACE),
+                   ("the published sidecar reviews/cash_application_screen_2026-09-10/provenance.json",
+                    SCREEN_SIDECAR.read_text(encoding="utf-8"), "cash_application_002"))
+    for label, raw, workspace in disclosures:
+        text = " ".join(raw.split())
+        if R3_CASE_2_SUPERSEDED not in text:
+            problems.append(f"{label} does not name the superseded key {R3_CASE_2_SUPERSEDED!r}")
+        if R3_CASE_2 not in text:
+            problems.append(f"{label} does not name the key this source folds to, {R3_CASE_2!r}")
+        if workspace not in text:
+            problems.append(f"{label} does not name the archived workspace {workspace!r}")
+    # Re-wrapping a paragraph must not be able to break a claim check, so the
+    # prose is compared with its whitespace flattened.
+    note = " ".join(SCREEN_NOTE.read_text(encoding="utf-8").split())
+    if "not reproducible against this source" not in note:
+        problems.append("the published note does not say the archived Case 2 delivery is not reproducible "
+                        "against this source")
+    return check("Case 2's inputs moved after the archived screen was measured, and the repository says so where "
+                 "the change lives: the current bytes fold to the trace key, the screen's key is unreachable from "
+                 "this source, and the world module, the attestation, the published note and the published "
+                 "provenance sidecar all name the workspace and the key it was measured against",
+                 not problems, "\n".join(problems))
+
+
+def test_the_screen_sidecar_records_the_measured_revision_not_the_revision_it_was_written_at():
+    """A provenance sidecar may not quietly present now-values as the run's.
+
+    The sidecar was written at a later revision than the screen was measured
+    at, and between the two, correcting the identity rule re-authored Case 2's
+    world module. A world module is a MEASURED INPUT: re-deriving Case 2 at the
+    later revision yields a different `bank_statement.csv` view, a different
+    graph, mutation-plan, environment and task-contract digest. Recording those
+    under `task_digests` would be a fixture row derived afterwards and presented
+    as observed — the one case where recomputation is not recovery.
+
+    So this pins the discipline rather than the numbers: every archived public
+    input file must reproduce the view digest the sidecar records for it, which
+    is only true if those digests are the measured revision's; the sidecar must
+    say which revision each block was recomputed at; it must name the world
+    module among what moved, and must not claim the change missed the measured
+    inputs; and it must carry the later values separately for the one case that
+    moved and declare none for the two that did not.
+    """
+    problems = []
+    sidecar = json.loads(SCREEN_SIDECAR.read_text(encoding="utf-8"))
+    measured = sidecar["source_revision"]["measured_at"]["short"]
+    changes = sidecar["source_revision"]["changes_between"]
+    worlds = "beancount_ledger/graph/worlds/bowline_2026_04_c2.py"
+
+    if worlds not in changes["package_files_changed"]:
+        problems.append(f"the sidecar's list of what moved between the revisions omits {worlds}")
+    if changes["measured_input_files_changed"] != [worlds]:
+        problems.append(f"the sidecar calls {changes['measured_input_files_changed']} the measured inputs "
+                        f"that moved; the world module is the one that did")
+    if changes["scoring_engine_files_changed"]:
+        problems.append(f"the sidecar says a scoring engine moved: {changes['scoring_engine_files_changed']}")
+    if sidecar["inputs_moved_after_measurement"]["tasks_whose_inputs_moved"] != ["cash_application_002"]:
+        problems.append("the sidecar does not name cash_application_002, and only it, as the task whose "
+                        "inputs moved")
+
+    for task_id, block in sidecar["tasks"].items():
+        for field in ("task_digests", "scorer_digests"):
+            if block[field].get("recomputed_at_revision") != measured:
+                problems.append(f"{task_id}: {field} does not declare it was recomputed at the measured "
+                                f"revision {measured}")
+        recorded = dict(map(tuple, block["task_digests"]["view_digests"]))
+        workspace = SCREEN_EVIDENCE / "workspaces" / task_id
+        # The delivered artifacts are outputs, not input views; everything else
+        # in the workspace is a public input file and must reproduce.
+        for path in sorted(workspace.iterdir()):
+            if path.name in ("ledger.beancount", "cash_application.json", "delivery.json"):
+                continue
+            digest = PJ._view(path.name, path.read_text(encoding="utf-8"), (), (), True).digest
+            if digest != recorded.get(path.name):
+                problems.append(f"{task_id}: the archived {path.name} digests to {digest[:16]}… but the "
+                                f"sidecar records {str(recorded.get(path.name))[:16]}… — the recorded value "
+                                f"describes bytes this archive does not contain")
+        differs = block["differs_at_sidecar_revision"]
+        moved_here = task_id == "cash_application_002"
+        if moved_here and not differs:
+            problems.append(f"{task_id}: its inputs moved, but the sidecar records no later values for it")
+        if differs and not moved_here:
+            problems.append(f"{task_id}: its inputs did not move, but the sidecar records later values for it")
+        if moved_here and differs:
+            later = dict(map(lambda row: (row[0], row[2]), differs["view_digests_measured_then_sidecar"]))
+            if "bank_statement.csv" not in later:
+                problems.append(f"{task_id}: the sidecar does not record the later bank_statement.csv digest")
+            if later.get("bank_statement.csv") == recorded.get("bank_statement.csv"):
+                problems.append(f"{task_id}: the sidecar records the same digest as measured and as later; "
+                                f"if the bytes moved back, this note has to be redrawn")
+            if "task_contract_digest" not in differs["scalars_measured_then_sidecar"]:
+                problems.append(f"{task_id}: the task contract binds the view digests, so it moved too, and "
+                                f"the sidecar does not record its later value")
+    return check("the screen's provenance sidecar records the measured revision's digests, corroborated file by "
+                 "file against the archived bytes, and names the world module and the one task whose inputs "
+                 "moved instead of presenting the later values as the run's",
+                 not problems, "\n".join(problems))
 
 
 def test_gate_m_the_public_fold_over_actual_bytes_equals_the_truth():
@@ -509,7 +692,7 @@ def test_gate_n_the_narration_rule():
                "Cash amount after application of CN-0412; do not deduct the credit again.",
                "Short payment on SI-3104 written off under the cash application policy",
                "Short payments on SI-3102 and SI-3104 written off under the cash application policy",
-               "Customer payment, SI-3104 SI-3102", "Customer payment for SI-3102",
+               "Customer payment, TRC0428442 SI-3104 SI-3102", "Customer payment for SI-3102",
                "part payment; balance held pending credit for damaged crates",
                "minor remittance discrepancy; customer claims invoice settled",
                "Cash amount on SI-3102 after application of CN-0412")
@@ -768,7 +951,7 @@ def test_cheque_sign_and_movement_extensions():
             or m.description != "ACH IN GANNET RIGGING INC":
         problems.append(f"the ACH applied receipt moves {m}")
     m = P.movement_of(world, CASH_APPLICATION_MODULES[1].R3)
-    if m is None or m.reference != "SI-3104 SI-3102":
+    if m is None or m.reference != "TRC0428442 SI-3104 SI-3102":
         problems.append(f"Case 2's addendum prints as {m}")
     legacy = P.movement_of(world, B.MARCH_EVENTS[1])
     if legacy.amount != D("-2860.00"):
@@ -988,6 +1171,8 @@ TESTS = [
     test_every_gate_passes_for_all_five,
     test_gate_f_reads_every_case_as_the_planted_repairs,
     test_the_projected_pack_is_the_spec_s,
+    test_case_2_s_inputs_moved_after_the_screen_and_the_repository_says_where,
+    test_the_screen_sidecar_records_the_measured_revision_not_the_revision_it_was_written_at,
     test_gate_m_the_public_fold_over_actual_bytes_equals_the_truth,
     test_gate_l_the_register_ties_to_the_opening_entry,
     test_gate_n_the_narration_rule,
