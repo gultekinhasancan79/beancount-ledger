@@ -2987,6 +2987,11 @@
  },
  "unicode_scoped": {
   "14.0.0": {
+   "provenance": {
+    "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+    "method": "derived-by-substitution",
+    "native_confirmation": "confirmed natively by the CI battery job (.github/workflows/ci.yml, ubuntu-latest, CPython 3.11 / unicode 14.0.0), which runs this suite and compares this row strictly on every push"
+   },
    "scorer": {
     "parse_policy_digest": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
     "scorer_contract_digest": "d1b7131ad316962490fcec637ba17acf3ac1d2f4e0c69171e041622b45cac683"
@@ -3375,6 +3380,11 @@
    }
   },
   "15.0.0": {
+   "provenance": {
+    "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+    "method": "native",
+    "native_confirmation": "observed natively on CPython 3.12.12 (Windows), which ships unicode 15.0.0"
+   },
    "scorer": {
     "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
     "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa"
@@ -3759,6 +3769,399 @@
     "single_error_silverbrook": {
      "environment_digest": "2824f4abc8c64e8e1e30cc32a88fd8ac073a1a73d78166c70bccc9f32bd25700",
      "task_contract_digest": "db8c4b67b75177dc8326417352e7cdc63b23040e897986e9047ce47c5f5578fb"
+    }
+   }
+  },
+  "15.1.0": {
+   "provenance": {
+    "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+    "method": "derived-by-substitution",
+    "native_confirmation": "derived by substitution on CPython 3.12 (unicode 15.0.0), then checked against a runtime that really ships unicode 15.1.0: a native CPython 3.13.11 (Windows) run of this suite and of tests/run_all.py, 34/34 suites, 2026-09-10. The ubuntu-latest CPython 3.13 battery job in .github/workflows/ci.yml confirms it on Linux from the first push of this branch onward."
+   },
+   "scorer": {
+    "parse_policy_digest": "9f39ade4bcf5bc9ee174995bd7a2765e0009894d90167fbaee5a5b3c1d0a70ca",
+    "scorer_contract_digest": "3f12c01c905d62547fc8f156221ec587836e7f3615e61b1c24b0b184e5f2d5fb"
+   },
+   "tasks": {
+    "ap_payment_run_001": {
+     "environment_digest": "87e13c955463e63064730e9fd8500aedf9250dcbd1eadefa39de895ba3c318ab",
+     "task_contract_digest": "80e0f227b09bc4372e8a205998481b2b662e0fdd8e5698ebd7e228f1673f94ff"
+    },
+    "ap_payment_run_bluewater": {
+     "environment_digest": "ad244338611f43b6febe6487452cb393e25f7426a361c67c3f4220360edd5145",
+     "task_contract_digest": "5cceccb7cf2d95c953044bfdc001a98ff6c6e111666ba9aac019b8d8d01e7206"
+    },
+    "ap_payment_run_falcon": {
+     "environment_digest": "84fc5326c36c4f8207916fca8dd98061c4d486dba5d005f7bdcb5daea59abecf",
+     "task_contract_digest": "1d5cd731c5b669d279b6f08fb1d39f8da0ef75e83ce0fbb0571190dc0f89e176"
+    },
+    "ap_payment_run_hawthorn": {
+     "environment_digest": "4f074be5c73209e0fc17991c6698949a54603e890aea3f8ebeadbd69f18e8cff",
+     "task_contract_digest": "2722832d24042a0109a2047bd88e8e5cedc1a825f75edd8df0cfac6b75aa4bbd"
+    },
+    "ap_payment_run_maple": {
+     "environment_digest": "e1ea163ed8056d89a7d5ee49fcede9c42056005211358cb2cba789493652059b",
+     "task_contract_digest": "dc8457216a335e6ed2362dadf0311a97d5153f5f030c04c6e402fdea34566e36"
+    },
+    "ap_payment_run_oakridge": {
+     "environment_digest": "42175ae12eef469e48d72753f3d2b7b35cdaec00ddf0e52e497b0af331ffea75",
+     "task_contract_digest": "8a723eb9acbf7fdcf29b257f48820c333412c86f97e743e6fad33c58b5aa052e"
+    },
+    "ap_payment_run_redwood": {
+     "environment_digest": "59eda4506e883ceb24f101ff0cbfa733262f63b50cc8438cfe539a46ff921cc5",
+     "task_contract_digest": "ab464ac612909615585a8927094321daacdf2ce751a873999d5cd49225cc84b4"
+    },
+    "ap_payment_run_silverbrook": {
+     "environment_digest": "76ec67f5b10d724401ee3024d644c4efdde6113709961355b6fe67cf4a5004b4",
+     "task_contract_digest": "74a31af7b26835dd14354fc838eda00141f72fd4e88d2e04e2184d360ae96246"
+    },
+    "ap_payment_run_thistle": {
+     "environment_digest": "cd1d21496e8de721c54f7e7cad581f99c5907abf132b503a9cce24f047ee0a0b",
+     "task_contract_digest": "d9990a27954f0c2384fd4aa1d158c9f66f417bf384f862046e019717ba91e029"
+    },
+    "ar_collections_001": {
+     "environment_digest": "bc9d316af4dbc5a95daa544a0659d301316cb1fe94698364163f4dcb04898456",
+     "task_contract_digest": "9b19e9471d0e48b43e5dfe1468383fe2856137ad3441ccde9b05fd068e372e86"
+    },
+    "ar_collections_bluewater": {
+     "environment_digest": "708d76749a2745dac90bf1527cc9d054d5b350d0e57673988ef9ef91d212bbd5",
+     "task_contract_digest": "a1d3e775821066643f47853900ab0c4e712c7f1b12d4e60c859a22a11da13fc2"
+    },
+    "ar_collections_falcon": {
+     "environment_digest": "e9516112c478f2a3455a3e4009f7c885154d8cabc5633ed5b114ea7f0af8aa74",
+     "task_contract_digest": "24510a50552201af90761c405381568df4aa5d9661eb2d8c4d8d284bacab0fd9"
+    },
+    "ar_collections_hawthorn": {
+     "environment_digest": "777bd02d35f712fe671b9d5e2131ac22f2951fb250f907b77a7cd5b02688ef24",
+     "task_contract_digest": "6a0a1be69178dba0cbf68d557406105c77f7446273a9dd04d163715ff1050fe7"
+    },
+    "ar_collections_ironwood": {
+     "environment_digest": "b082b89675356a9d6ba145826471ae6227d1da5a9de9c780ba7955a59ff85ea3",
+     "task_contract_digest": "32cc2660dc86fbe5834d69444f89ce291da9f12a8358085a1a1ce1f135263397"
+    },
+    "ar_collections_maple": {
+     "environment_digest": "e59120e227603b9ba727928180c76f38a3f3bf2ee9e5f820d50d6276c1df0fd7",
+     "task_contract_digest": "50b84d09e04f84ef64d2373a687a563a02b1f0cfc32fc20505e764cdad3daaf8"
+    },
+    "ar_collections_oakridge": {
+     "environment_digest": "67188959d1de538f39c0cb4d3732d6b1e023b59bbb9d5955379a4ec27ae9518d",
+     "task_contract_digest": "4202c91e727c31a0a0214548ca6b30c430337411a8b80cd9c9dc2961c4c935d6"
+    },
+    "ar_collections_redwood": {
+     "environment_digest": "85fd99da305f2d9f30b091b32454bd12422039df4d1aeb10dae6c84eb263e7e6",
+     "task_contract_digest": "8db18e159f4beea5a45f3f9f2541a80d74c61deebf5e26effe6f4aa9bc72cbcf"
+    },
+    "ar_collections_thistle": {
+     "environment_digest": "681edf51e3e27fa6d8a8d1259205c014d030f9e85446ff5503816bcb288d35a7",
+     "task_contract_digest": "84be34bfc093f96fc242c7da4a03e759f91190737d82f46fdbe683d30f87f239"
+    },
+    "bank_feed_categorisation_001": {
+     "environment_digest": "ce1a9608fcc780abc25d58162620bc6579963dd4483b4349c1b1f9dd64a9bd3d",
+     "task_contract_digest": "69f841081794783052dac8dade5dd773de8f6a224466c814e9a31b46c3e722da"
+    },
+    "bank_feed_categorisation_bluewater": {
+     "environment_digest": "61409a1c62c08a96c5ed61c2227c316c635ede4e0a745cc3b3af97b4d526738d",
+     "task_contract_digest": "cf23db50cab29b4ff00d29ad90e83d3495550b519bcccd543b6bd5cdd2b1423a"
+    },
+    "bank_feed_categorisation_falcon": {
+     "environment_digest": "9da6351485c9961af546606e8f47979f682253abb770fccff8de9346cdf6c680",
+     "task_contract_digest": "667ca9267c7799de3205d62ac3e05b33bd0a99ed9a1f9832ddff8f09af7adb04"
+    },
+    "bank_feed_categorisation_hawthorn": {
+     "environment_digest": "7f005a2503e5e3bfbc8250c09fe1ed3e593c03549a5093a07cb0ca5e6459831b",
+     "task_contract_digest": "a80f204a143aee693bcaa0c68d9f33b5b9de8f0caea1f15a956c5c25d264670f"
+    },
+    "bank_feed_categorisation_ironwood": {
+     "environment_digest": "82e5d70cce8149a053fdace54e2f629743580337345b825e219080d673c60c7a",
+     "task_contract_digest": "79ce0dc7edf83a5bf2aa3df6fddbcddad1dcc69bb41e793d24d6421a5ed68398"
+    },
+    "bank_feed_categorisation_maple": {
+     "environment_digest": "b0577a38aa395219d8487b60ab94161d1ba231cc5071712ef8401deb77beceaa",
+     "task_contract_digest": "35f35623f4567852eb2b0da6faf5171bdfd5a68b24a686287804a2e900d88133"
+    },
+    "bank_feed_categorisation_oakridge": {
+     "environment_digest": "b6d4084c5c3b2e391d92a891d1219b4821cadb39539c7028da6ff04efa0caa12",
+     "task_contract_digest": "7572f6d1eaf6dd6db37b423f2605ab87026b9d4f8a8aff0099e34889c7d3a7a5"
+    },
+    "bank_feed_categorisation_redwood": {
+     "environment_digest": "9ced2cbb4b08b36f4f75aaa8c1a8e15cd1a45ed09a174f40aff223177d99ee4f",
+     "task_contract_digest": "acc78bbfaf096729044c5acc6158b0eb73c3bd7047b79644beb435b4aaaa5176"
+    },
+    "bank_feed_categorisation_silverbrook": {
+     "environment_digest": "364885e49b7c3d3fd273ccc2a9ea28f2abb8f52b346adca82236a8efa4cbc878",
+     "task_contract_digest": "86a5413f8e1f57aeaa8780d7bfc0b5fdd71cc0dd8c32cdb05bfb648a97043963"
+    },
+    "bank_recon_001": {
+     "environment_digest": "e31187c3142fab8b5fdb8f574c2750f92ddb63272b8a03c58806e102a8c97b32",
+     "task_contract_digest": "d7731503c95ececa733e3cb706e2eb16984338463c1067f4d34caf75e38f95e7"
+    },
+    "bank_recon_bluewater": {
+     "environment_digest": "eb3c638d741a4e9e3eb3ded93cecd43465a69f229eec68459fed0a54d430144f",
+     "task_contract_digest": "1e821d69e44ddd6e934e6291e4831c1e5a9465fc710e4f560b2fb233399f31ed"
+    },
+    "bank_recon_falcon": {
+     "environment_digest": "7d5256395260c28c27215373a0602ca81756c670a4b54d7e5c8e825177641548",
+     "task_contract_digest": "5f700f585b2c9e55de8230eb0c73bbfcc451c946282af52d290d887e311c7a4e"
+    },
+    "bank_recon_hawthorn": {
+     "environment_digest": "aad59e2ac2b15900f8475ea74c64be5e6f381ae654f85babd33e736f0f872700",
+     "task_contract_digest": "2526129454d7b94c315b449035d96f83b83e06bfb6bcaaf7acc7955cf3aa55f2"
+    },
+    "bank_recon_ironwood": {
+     "environment_digest": "d6b8528edc6dc1d8eb28a1d33e3522df3d6167ebc372060f6f2d5dbeacf4cbd6",
+     "task_contract_digest": "a13526ea644c6d26baa37ee9380aa72e7470cded8c841d55ee449c20b721370a"
+    },
+    "bank_recon_maple": {
+     "environment_digest": "6e3db0e999475df789542917f8a733a33e8fa85cebdf974e8d41c153f6e0c99d",
+     "task_contract_digest": "4692c27cb8efecd985f4d72348f71098b509114bcdd1af6a8330f71ac0d73e67"
+    },
+    "bank_recon_oakridge": {
+     "environment_digest": "f783b9dd624122cfd22a4b310024774454df8b736bddb7ec6ebf18c4f67f16d8",
+     "task_contract_digest": "29e49ec5875eb7be26d017f15328582071ae054b098988a6287905f5c8a3b0c8"
+    },
+    "bank_recon_redwood": {
+     "environment_digest": "c5a181c427ffeee4a7f63ff3c5dcf55f4a96b9cb6c065e90dc4b08449e2a3e6a",
+     "task_contract_digest": "c9d8b6a5b15a099de49cdfd7699f5bb3ba867e60ed2b42b8bd6aa3ecf9a44813"
+    },
+    "bank_recon_silverbrook": {
+     "environment_digest": "2051ec9c5d93820e9fa357a92dc1a5c79f659063c4eb038fa94b9f19649a7953",
+     "task_contract_digest": "dc5572b63b792c334535eaf43daa1a37f8a0638d87966d29cc3c90df0b95f144"
+    },
+    "bank_recon_thistle": {
+     "environment_digest": "b81ab2e3c3f6b1c516ea8ab5890a4290314df89e914c80a0a691c578bd4f6809",
+     "task_contract_digest": "79a50802c917683d800a8d9732f79090e649b47cab24f6ccf9065808a55ac8ce"
+    },
+    "clean_month_maple": {
+     "environment_digest": "f0fc6ce2a0fa4b5137fc7a8308944172e6fd8f4b0151b17eda86958d6ac49edc",
+     "task_contract_digest": "840416c51eb5ccf8e9547352c731f6abbb4c009f40f3b6fd0bd6975bf9fb629a"
+    },
+    "clean_month_silverbrook": {
+     "environment_digest": "fb40dd8e05fdea2bb5ec5c5b23ac02e07013bb2c4aae513bf674af42c07c3f98",
+     "task_contract_digest": "19456782d4d8a3ba10ea159fabc35168cb24d9e032faf398b776eada4de83a94"
+    },
+    "expense_reports_001": {
+     "environment_digest": "bd9bfcfba46e95cf3782b6d90e21930cac229d265871ddbad346f34c0a6ddc6c",
+     "task_contract_digest": "d779bf023e3e2a5ce5a28efd3f3c56f4908dab7ee0b283bfb5a231f506b791ee"
+    },
+    "expense_reports_bluewater": {
+     "environment_digest": "72ab671460eea3788b60014d14207fcca971f289ae465b4d7470604bde6f3a5d",
+     "task_contract_digest": "81104d5db9bfc175e569ae6241944422fe1cf67885b5b1e98f94e90013bca62d"
+    },
+    "expense_reports_hawthorn": {
+     "environment_digest": "29211643d4e3ae20af004db0648c26d0727e395ee6e9717e56ac0a3f356f4e43",
+     "task_contract_digest": "8e567ba6dc2ef342bd93582eebf85b65d167b675fbb94504c94f1c593fadcfdc"
+    },
+    "expense_reports_ironwood": {
+     "environment_digest": "e58ef9dd0a0122d70e9b0e08e0024123faec681649fb3f26e06e59f175dd4234",
+     "task_contract_digest": "c43bf88705123ef9cba87c4412f1c983e58045fca4b7b55e29b4af4fcf92d267"
+    },
+    "expense_reports_maple": {
+     "environment_digest": "928ca558e73a73bed58521ab04abbddef180123f79a6e04b46a3d1fe78adc68c",
+     "task_contract_digest": "b2c95b2d108f7b794da29b35fd1ec9dedf80694fa7f5375f1a13982af949f999"
+    },
+    "expense_reports_oakridge": {
+     "environment_digest": "0e2ac7d9a1fc037daa17d621cc70d33cb82bc7f650c710a88fdd9158257766a6",
+     "task_contract_digest": "e5844f24c8f76de8b22ed2a3f155d4f27ad0857e2ea1ffaf100a9c3563e32542"
+    },
+    "expense_reports_redwood": {
+     "environment_digest": "9579ec52afd18a25359b488219505904db08ca8d33f37607cef171a2395b2fd7",
+     "task_contract_digest": "764380a8823ae0a416b9a3256f588a01581aa7da800912c20a73b1cd2b8f3609"
+    },
+    "expense_reports_silverbrook": {
+     "environment_digest": "d17aa4a807f4fde9c702153884dcc18678bd38643730a42ae3292cf9ad5dab14",
+     "task_contract_digest": "3d821a2fe7213dd35257341b01500761b96486782f9c2e1ea2daa48a5439663f"
+    },
+    "expense_reports_thistle": {
+     "environment_digest": "54203287c48cd9803d393863d7a2a89427574f440a09ad1dcd8e4fbdc722aff0",
+     "task_contract_digest": "51d4234506dcd310c6bbd76a5d3f9313d3405ed934aff166c316e306f115edfb"
+    },
+    "fixed_assets_001": {
+     "environment_digest": "90149bbe69569d547ae37b4b31bc760120e5f3ad50ae803562042bf3c5abd756",
+     "task_contract_digest": "8b6915145cb47da4d7c79e7bf016e25e13622a6517c6bcc12d9dc2e3a7051255"
+    },
+    "fixed_assets_bluewater": {
+     "environment_digest": "9a16b89b3145f7fa3f8428a34b022e83fd30bde09131b1dae56e886e7ba145b1",
+     "task_contract_digest": "5a34767f0fd54e503be9e4a8fc33a470afc311090ee4c7e2c6bc10075eb35967"
+    },
+    "fixed_assets_falcon": {
+     "environment_digest": "05a611d469680cf0e7bb37c74c44a9935cee792e267b1270585a63150fd18005",
+     "task_contract_digest": "de48e9df5f14783420696eb750359b46112c996f86a2a5e6a2b7921f4a77917a"
+    },
+    "fixed_assets_hawthorn": {
+     "environment_digest": "baa004d1e5ca80317503ee532cc78706ac41ddb2092754af11c2b1a7fffc963b",
+     "task_contract_digest": "6bc25433976eda2e5cf0073eda016e5149f643a965c572d69cdf3ae3c5bbd321"
+    },
+    "fixed_assets_ironwood": {
+     "environment_digest": "7fd4da3db4d756ca62fbf4a0648a3a1b78d7937b7d1ce0ebab5b9f9425c5ceed",
+     "task_contract_digest": "34b7d38057ea3943bf67e5309c85b450aab51d763cde7e839848b14c794a2d25"
+    },
+    "fixed_assets_maple": {
+     "environment_digest": "53943c7135da689afbed3a22d6f9c0dd1ac45af8cfb6a536712b6e827d06b99f",
+     "task_contract_digest": "f287e82b3a95d35496093dc5e6ff54927333c89a37ec897d9b7654aa219f63e6"
+    },
+    "fixed_assets_redwood": {
+     "environment_digest": "27b208edef3f1b4bbfeb901e8756287fd873250258cbd9f54128f9514b209a88",
+     "task_contract_digest": "c0de2b47581fbbb41bdf0b1c798cfb0dcbc8c607076795d9c05527ff7e0fb8c4"
+    },
+    "fixed_assets_silverbrook": {
+     "environment_digest": "e31b765b142ffca38cbdc200c8af884d396a6caa3ca101df1feb939cd8f71a7b",
+     "task_contract_digest": "af98eab52edbc3a1ad3608d761b652f857ebc9ece520e7ddd496e3c725919e38"
+    },
+    "fixed_assets_thistle": {
+     "environment_digest": "0df1451313f5550cdc8cd62b07831f1d453aa2f372322b8e0806b7329131ba50",
+     "task_contract_digest": "4ac0467a18141c1fd497fff832357d450538a0ea04a06703461682e5fc24dab8"
+    },
+    "intercompany_transfers_001": {
+     "environment_digest": "584b92df72c3c5d1d4425f74c9e568ca45b069545ffa86479756f971837ebe82",
+     "task_contract_digest": "3a92ee07e8eabac9777132e5a42488018bc29aa653d38b97c62df562ff6ddf59"
+    },
+    "intercompany_transfers_bluewater": {
+     "environment_digest": "ca1331a868853d970736fb0be590168057d9d35c987a3ffb548db7fc2eedf536",
+     "task_contract_digest": "9e50dae2ff819d2ac700a6b86c2dbbbdccfb8a4850361fbdbc31d2289a9d4785"
+    },
+    "intercompany_transfers_falcon": {
+     "environment_digest": "e8574c54fe8e53c324aacd0c621a8dd0ff8ea30872448251f4084a33780f7f84",
+     "task_contract_digest": "4f2ce37a03f1f29aa566779302fa8824f11494bbbf18c16749dade8fa99a8d3c"
+    },
+    "intercompany_transfers_hawthorn": {
+     "environment_digest": "37a002f5bc6124e83b796594694d442a4b8bba5c66abc98d075c8bf4e1578a63",
+     "task_contract_digest": "16e925afe641adc0e082865f5de543b2f4a2a0bbb0b077c7c205a127c6a5a723"
+    },
+    "intercompany_transfers_ironwood": {
+     "environment_digest": "bcc9c8d27740b4d1d6d5a6cd781dd0df6b72c1a9fe856939368b12d3419b553a",
+     "task_contract_digest": "cb705664d7fe4ca4266e135c7e6b6d550073c4f9e1d9242c3308c0014d689c95"
+    },
+    "intercompany_transfers_maple": {
+     "environment_digest": "febb7b2da1228e3136805f6087dd57c66df06e7d172b999b89f198211257f96f",
+     "task_contract_digest": "5382c1dad9daf1a7ba9e64b4c8d84988132c75bd9013e9e377f20a47d1bb7179"
+    },
+    "intercompany_transfers_oakridge": {
+     "environment_digest": "b9cd3b944a85ee4b7fa8bc55f95bf24503b75d6eaa315348a512a13b18dc2164",
+     "task_contract_digest": "8772753585b156fb06a0f8c754a5ca5b0204043302468c59a721d4a4e1cb1bd0"
+    },
+    "intercompany_transfers_silverbrook": {
+     "environment_digest": "0377769a527c8aaad3116867643c90dcf34ed42dc80579c88314ca50e3b06042",
+     "task_contract_digest": "4c5e930b9904766c2b223557f30bea02ed5cbcd97c6b7ff03600728b69e714f4"
+    },
+    "intercompany_transfers_thistle": {
+     "environment_digest": "c3a9b6bec47a25b84f032aaba9ad49b2e8b862c401c382c79e27ffd6d9c3a279",
+     "task_contract_digest": "cd5ba1bd6e5bdbeddd1b05349160b7f96929766dc32c06d45369518ea7978360"
+    },
+    "month_end_close_001": {
+     "environment_digest": "22df59227baab70380f11a17852e747fcdd100304602808db1e2a9183c6ae02b",
+     "task_contract_digest": "d6fa17a0b6867e8f8b1f5fbaa620a5ddd2219b70c003169dc76b0d8aab394a01"
+    },
+    "month_end_close_bluewater": {
+     "environment_digest": "cb049d98d3780b7b1f608c398b54b21df7db6dad4e3055778c93bc5ef8a94d4a",
+     "task_contract_digest": "b6e9449dd64254d3a068717d1b339aa25edc3c42c967ee012bca43cdb70656df"
+    },
+    "month_end_close_falcon": {
+     "environment_digest": "4e7438cf38d4192fc01a7850d71dd04b7cb31f72c01bcf142864c99394465126",
+     "task_contract_digest": "273409fc48f296b32c248066817e4c278e704e08b896e0cfc9d0acb92f89c6b0"
+    },
+    "month_end_close_hawthorn": {
+     "environment_digest": "4edaf5a81eb9df78dd986b89ca00e2adb162d34f993b11be05ce178802c18efb",
+     "task_contract_digest": "6cbd1586dc60cbe3837c2906d615fd3f80069ff0229760c605f101cb3987caa6"
+    },
+    "month_end_close_ironwood": {
+     "environment_digest": "d52db8afa3f66311472432f19eda4ac927458a799c517227cdf8a11cf0369794",
+     "task_contract_digest": "65cc60fa29d72cb0b9b539042f3b2071a0f9712269cf6fa4626cd968ef627e69"
+    },
+    "month_end_close_oakridge": {
+     "environment_digest": "31d024eae77fbff13f089462cd479929a68e39a2843b210a0762fc6c1fb400f4",
+     "task_contract_digest": "1924d835ae433131c4e6533ed4d136d64c15e368efe508f34af147d747c09e34"
+    },
+    "month_end_close_redwood": {
+     "environment_digest": "f9c7a198dc762dc905561303bf58332c3d16cf53ed7176f9baa7f690bbc58a9f",
+     "task_contract_digest": "47bb8865affce82aa65c3b993e9c4a993b2513f4c0926cdf21019a2ad0a0cbf9"
+    },
+    "month_end_close_silverbrook": {
+     "environment_digest": "54194718d8dcc2dfd7b68903243f5d977bda5eae829185fce0ff7299fa230316",
+     "task_contract_digest": "c1e49b270869ee91f06e317f3ee670c5cea15a1b595bb716b8230fa6c1a52043"
+    },
+    "month_end_close_thistle": {
+     "environment_digest": "d3be0e50e9e4861babc1aebaf9f61f740586b94729f9e58cfea8695872d45742",
+     "task_contract_digest": "191758c8ff2e949805ff5bf01d1dc6dc7aa6f48a96bbe4790aae912f5718992a"
+    },
+    "payroll_001": {
+     "environment_digest": "86f024399e604eff4e6a55dd78af8b2f58beb41b2d8c62ba3effc2221eda0226",
+     "task_contract_digest": "d1ade46c772a7e155b9266aaa0f823a5047a6afebd2578099198ae594d11e4d2"
+    },
+    "payroll_bluewater": {
+     "environment_digest": "ecb139591f2bf61b6ce1c83b2815567297ee37edf2b352630d5ec3cc3e5fe6c9",
+     "task_contract_digest": "0b85a278ad278ff92747058c350ca6f12b8152accca6f49a9f9263e05502eeec"
+    },
+    "payroll_falcon": {
+     "environment_digest": "b90d53d9d0d9529fb3c070425785661f46f9c66e5c3539ed415b0630b696c9c5",
+     "task_contract_digest": "78aa3a3fc73dda24450579b3ee85d6c9abac5e7c9d3321c175d5810bf7e54c29"
+    },
+    "payroll_ironwood": {
+     "environment_digest": "4f0ccb5ceddcec4603d809ca6f3d5d8d4c4a639a8a922a7f134e78a8faef6ed1",
+     "task_contract_digest": "f03d098be5db72325750f5b4532b6a5a93862cb12ace048dc70ba676523ea172"
+    },
+    "payroll_maple": {
+     "environment_digest": "dae1b0dc24bfc9c02d1a4d7ef82a877d1340eeab2be680fe2dacf3e762a0c7c4",
+     "task_contract_digest": "7ea499640e86096bf62e2ab5ce3dde1dd6715e113dfcb92f45ed5d773960ba3e"
+    },
+    "payroll_oakridge": {
+     "environment_digest": "0b43689735fb85d6086759a0c297f57eadb6c93f2c9ac07583b97ffe296b0cba",
+     "task_contract_digest": "ac03ee4bfef3c081357b4213658a071e75d4227c12621e44bb90d1e0bdeb6e03"
+    },
+    "payroll_redwood": {
+     "environment_digest": "e68c9cc547e674a43062c438753b481f9fc98221a1eabf2f84fea4ad35be03c2",
+     "task_contract_digest": "20f2f0e9d69559cf08a155ddf05c8a718bbe8b60ddfcfc4b879ba54239202a64"
+    },
+    "payroll_silverbrook": {
+     "environment_digest": "e5a5b5649e4bf1dc3d6baf1d193bde835652d0897d4fc417fdee2ae4b71c1fee",
+     "task_contract_digest": "deb41d2a31c76703013902f40be98881a1a3594a026de897a2ed89ef7ad57d34"
+    },
+    "payroll_thistle": {
+     "environment_digest": "d1e53305b82e601274aee68b463803a747f681a88f2db5debefaeab0ddb28afd",
+     "task_contract_digest": "917716d38e7dffade36365331484fc2e562a1d2af46119eab7b33e2581779492"
+    },
+    "sales_tax_remittance_001": {
+     "environment_digest": "820e56b82cd9c6571374e4a7c39fcd1e03bb0622fbe7affa436db37e601d088f",
+     "task_contract_digest": "a9a5c3f3eebedb6ac0639ece77eed458e6c0d34859c2a6d5dbb320aabc9f115e"
+    },
+    "sales_tax_remittance_falcon": {
+     "environment_digest": "099c4263da5867ec69fc921c12cbbb4ff2798232373adeb538f3889f5f260b3b",
+     "task_contract_digest": "71a89c28de42cbc113ca1ce2ae395f8b62fd087d397c09e2a9974eb0440de7e1"
+    },
+    "sales_tax_remittance_hawthorn": {
+     "environment_digest": "f4bec27cb37808ef7bd963bf063d3b5d49de460305398cabfdd56bc49db554d0",
+     "task_contract_digest": "fde23a838d8ce3ea21d8f14527a00ab854aabb68d654fb15c87eed29399ecf02"
+    },
+    "sales_tax_remittance_ironwood": {
+     "environment_digest": "602507925a9891c4a85104dcacbb7113515b6ddd4ea7d0fb25c973a634e8c56f",
+     "task_contract_digest": "4e274fb99fdd13f6020ee5458fe0e06775f6681fed8cc719efc057ee26473009"
+    },
+    "sales_tax_remittance_maple": {
+     "environment_digest": "ab72f92f46e4b70caf7666bdf1e14b28dc5c5926c5f7f6695754afaccf632a5e",
+     "task_contract_digest": "1611f90bcd61178defdb21482323c96544bb6260a361768456c71284c2ad47c1"
+    },
+    "sales_tax_remittance_oakridge": {
+     "environment_digest": "fb1dccdd0c0ba5cdd885c7ca3be1da2c90be951106aca509eb8ce93edc3c6aea",
+     "task_contract_digest": "70f0e3571c1fdf577fe4280f6fa7d90d4d477598aec31b0e3bdc03b19e571403"
+    },
+    "sales_tax_remittance_redwood": {
+     "environment_digest": "b6fb63faf1f0c0ddda247081d8b81d0b2c7bbeaf66dd987ae015fa5788dafcfa",
+     "task_contract_digest": "bdc137c478860f64d658d4d309b2cff28f175c01614168201d9fcd3af464fec4"
+    },
+    "sales_tax_remittance_silverbrook": {
+     "environment_digest": "99692a3e5598a127c52d8b2dbc6e78feab736d3474258e26831599775260913c",
+     "task_contract_digest": "1d27a066104512bf27f74d9e947c33a7c3663b0014400cde18a62a73898011d1"
+    },
+    "sales_tax_remittance_thistle": {
+     "environment_digest": "2f695429549be50b0518266cbbe91cda1bfd10a420a669242efc919da7bea8b1",
+     "task_contract_digest": "73576543cb0bb7050072bbcdf736da284e70ff8d2d8b60336bf3ad562f13856d"
+    },
+    "single_error_maple": {
+     "environment_digest": "6ff06836234fe2058be4d541e6cf40894601420200b722cc657e1389e04ecc3b",
+     "task_contract_digest": "09e5db2a746c4acacc7895c2b73b31430c48f37c7b19b7a107d5026fd7635fb6"
+    },
+    "single_error_silverbrook": {
+     "environment_digest": "6891ea1ecfc1b7c80a1c5af0bfdfdc8fd09019b3d3008c8d9fc8d083a75fe642",
+     "task_contract_digest": "d192974c9147074d275fdde1fc480f90ce2a16090154558ca41be60618bf8940"
     }
    }
   }
