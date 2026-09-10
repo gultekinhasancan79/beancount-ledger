@@ -27,14 +27,12 @@
   "ledger.beancount",
   "bank_statement.csv"
  ],
- "schema": "piv.legacy-freeze/1",
+ "schema": "piv.legacy-freeze/2",
  "scorer": {
   "committed_py_bytes": 68214,
   "committed_py_sha256": "751ff560c656a1c555ece83cec32771722d08f12f62555bfa1edb619e2355a0c",
   "engine": "candidate/1",
-  "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
   "renderer_version": 1,
-  "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
   "scorer_contract_version": 1,
   "task_contract_version": 1,
   "validator_version": 1
@@ -43,7 +41,6 @@
  "tasks": {
   "ap_payment_run_001": {
    "engine": "candidate/1",
-   "environment_digest": "6fd9358994475f4622f1a27d7b71ca80f034b95e1ac7d576e9f23517643e1917",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -58,10 +55,7 @@
    "golden_stored_bytes_digest": "92a2be00b6745da49658c9011644339cc63d962a6f1b2aff6821a4d21248860d",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "a0b12eeaac8b715543c10ae35b44de0f68efda9b955518b6cc53d5d52ee953ee",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-59cb6c596ef301e59fdb4445",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "849b4e40327e29763eb68d63ba0c784ef36b28872bab6d5583fa533d6502803c",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -78,7 +72,6 @@
   },
   "ap_payment_run_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "0351b47ffd867e28e87d8bc310a3257650d5433d04724021765d743143871e11",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -93,10 +86,7 @@
    "golden_stored_bytes_digest": "963850b2568a2ac883411af9b5730498029a1737bc7d87e62459ea7d51564ac6",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "7b0e922a18b694996b2142c131b5ec801d1353700f1f0fb89cda4ff9dfbb87d2",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-a23b579a09fed1c10af0c559",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "e27235330e95e621cbf68f27cac6485a6aa02398b84e0071810b7ea3726eaf58",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -113,7 +103,6 @@
   },
   "ap_payment_run_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "9478c8ee8a889f2036cc4c789a840bfb315e82be4469c8cc669e89a29b09fc93",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -128,10 +117,7 @@
    "golden_stored_bytes_digest": "9231b2e99c5c026198f74155ed5f9931017464015a6e08d8a678496aad8d5543",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "0c7eab9cb41d216692e77dc520bee151462bc7aa5e7dea1b169b7eebaef30218",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-0d5d31771e38fa1bfc80f8d2",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "1e2c7534bcef6311e5e969fe042a4661da715b5b1953889a94289bf845602d94",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -148,7 +134,6 @@
   },
   "ap_payment_run_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "24191b9c6f24822fa876da47a6c8a5e7f81a968d8cbc023f5a84ec0157735ae8",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -163,10 +148,7 @@
    "golden_stored_bytes_digest": "584e4e322c7a73636d64beb03d20922e70c7fe4066210c21f3373d2ce4ee74d9",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "a59e857e753b77dc36480d87cb27045028df1285f09f9d540030129ca6f02b16",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-69d29d2a18b549c29c5bd31b",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "c631405952cfb284a8277f6eaa109a357f3992dbf412feac5895ceb0c9ae5b7c",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -183,7 +165,6 @@
   },
   "ap_payment_run_maple": {
    "engine": "candidate/1",
-   "environment_digest": "ca293b7520b1a59cc49b0716db034afc17fb608e0c8df860e3318fac27cf6cb8",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -198,10 +179,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "4030bed9838a10c98ce5bc32f7f05ce5a1dc6825b76e6b70235825ac7ee94072",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-eb95206c33af70f17999bc61",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "9f02c13189699927e83b82856d8f2f4b59816b01e8535399aeaf07d3bc5b79e7",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -218,7 +196,6 @@
   },
   "ap_payment_run_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "1b85405b7b7faeca42d539bd9fe910f483293f2681b30aebaa263b3c70f12abb",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -233,10 +210,7 @@
    "golden_stored_bytes_digest": "a34d2b39530ce3ab9d64a606283ba3591f0881d4a9a73f76e3f84cbcb6039e90",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "b118a86813e0af330eb24eca1996e66ea670523a5549225fa48bbc1de5114bf0",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-c943eb91ebab6b11d9a2e208",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "444f1bd85580f3d86c418479949c34244de94c016e6fd454b5b910d7e4bee51c",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -253,7 +227,6 @@
   },
   "ap_payment_run_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "9fc20a701a9b501c50628906fd0c3c2e073de653ea34e4787fcd6f3c469d4f22",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -268,10 +241,7 @@
    "golden_stored_bytes_digest": "4c5dfe8da186833137a58aa9f61d163877672e34add6a371c7b4239f79b66bf6",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "9bb890c2ba980e6291776e9e0c5857e07cd3064a3d9560625a500da68e54342a",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-10ab652f9aa1292d690cffbb",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "7973c1c840f558009fdc5bfb7a813ba3891bca2b291b6aee835c94f5b5c24fa0",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -288,7 +258,6 @@
   },
   "ap_payment_run_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "734bff596214c1580715a455dfb01e5454a2e1024e7118975bc07aba48b4d38d",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -303,10 +272,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "628e42043ba1abf7734c2f9ec4ff2a552f5517816c1d41c2d6638572b79d5061",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-f30971e882e53b2adaad06cf",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "51f7ea9bf7f6ba71ff87562630fc987f94f51db5924fd94da34560713cf8142d",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -323,7 +289,6 @@
   },
   "ap_payment_run_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "90b7c8df9cdba174e2d895f460872a7618573d844c40a11a162a3e34a8676332",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -338,10 +303,7 @@
    "golden_stored_bytes_digest": "76b9291b7bc6aa1f12b73522a0c4d059908f7afe88f2e8b3ddbd3529a9220300",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "84f77dff87299a0ab045649cf51f8c292ef38c4a7af2cdc0278366928a1f8227",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-f0de8c5480d1136db480a37c",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "f15ce4ac6005cd0b5d64be96038fb570d1ce1610f6bf78ec07502dd89808c3d7",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -358,7 +320,6 @@
   },
   "ar_collections_001": {
    "engine": "candidate/1",
-   "environment_digest": "c3ebd2796fe816b67693621c66b1e6a3bca9c027c5b021fdfdb57821b9c0ebfa",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -373,10 +334,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "c2e45c24f7b4b1613e27790aa5815945d4223f159c3e945bf10227597f3e3d1a",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-f088c03831568e4183584aea",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "9442aa7b1d6131dfbbec73963850003d31413e277ccee94235d69d60add10417",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -393,7 +351,6 @@
   },
   "ar_collections_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "c5022c7f6d8aa6bdf79ef28489ca7af3b598ea238d808b867b19e97e5e4d7012",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -408,10 +365,7 @@
    "golden_stored_bytes_digest": "c96a66cca3a0be773564082665dd4378a59e79eb6ef65043e4c1b0faf70df7aa",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "8412057a59640f52f040a594afde376da2eceef3ee15f861816d50f198404331",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-fdd958016ea118802dbf474a",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "96b1ec74e1b52078799285851e5ad5c87809ec0a62ffd38dc1e88a94c097e802",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -428,7 +382,6 @@
   },
   "ar_collections_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "a90aee5f382e94ebee490f9c6f721518218242bc6dc99e7dbed151130caac8ba",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -443,10 +396,7 @@
    "golden_stored_bytes_digest": "9231b2e99c5c026198f74155ed5f9931017464015a6e08d8a678496aad8d5543",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "7e2089215b65afdcf432445ed6498d204e0c8224b09a7ef23fb8ed6cd72dac7e",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-2743f1bc7b067f8fc2b076ff",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "73d5cc8bb970a0d680294d97ca60f79415fce2e241d9d17cee0398aed25694a3",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -463,7 +413,6 @@
   },
   "ar_collections_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "57ce695e8a754f16eb5cbca10a86806c00a0c9004a3e04ea9d798fda8f99385b",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -478,10 +427,7 @@
    "golden_stored_bytes_digest": "821daf5ae46c97339385831f03af1c167bbcbca01bab8a01ad52c334db032ee3",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "14bee5c5f5e9a170f72e98430707761c977e90da9d22f399cee4c3524639bd40",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-a14cbcfab2ac08902c455a4d",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "3e49cb482dffbae5b5dc49c9d6282febcea00067c2090fbf927c2e523e02c95c",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -498,7 +444,6 @@
   },
   "ar_collections_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "3b3d4fa1770c087c836a3f6813227e85e2b2470fe7c47d4c7abb2592fef9723e",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -513,10 +458,7 @@
    "golden_stored_bytes_digest": "92a2be00b6745da49658c9011644339cc63d962a6f1b2aff6821a4d21248860d",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "ccc86885c74be27105ec16bbe0e3866c3f1cec9b51a063dc92db51aa05af93c2",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-2188e22289d587f3de4bf451",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "5f4ed766bcb9968482336bc52ab7ac464c44962d7fc8abefa63479c4489aada1",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -533,7 +475,6 @@
   },
   "ar_collections_maple": {
    "engine": "candidate/1",
-   "environment_digest": "3cc659046830b95fa54de21949cd8aa93b72c3cae3d0ef85974f3d9aafa9d313",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -548,10 +489,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "8ca2b6818d15e493ebba9066cd4f805b095704e874917e74c0a7d4b5eca6d799",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-33e9500873c5eb27b2d1b1e6",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "0992d3b71a25b8f86509c7ba769b5caa9638c36c52a327df45540aa0ecdc227e",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -568,7 +506,6 @@
   },
   "ar_collections_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "cea5c600ace62ada5ebdf338fe423355df3afa132922bfbc6f32b8b680e79313",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -583,10 +520,7 @@
    "golden_stored_bytes_digest": "a34d2b39530ce3ab9d64a606283ba3591f0881d4a9a73f76e3f84cbcb6039e90",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "7f52f2a3eea4149b049e2911402dff9a596c1d93612dc73508e49c0e5723a635",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-7aefc2849656e4c0d3e18749",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "9bb7a0acd883d3064ac4f807795101e0cd6f7e6e6b72fba5f0c1ac771e8ec1d4",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -603,7 +537,6 @@
   },
   "ar_collections_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "01931351a5cce033e4528fa3be40daeef6fd078d96e9168b63e450568fc674cb",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -618,10 +551,7 @@
    "golden_stored_bytes_digest": "2f9b1581c4528d1eaafd8a9a335153a210ad2c9e6fa3d51ff0eb71cdc9ba0b29",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "f9db99d1a1e157acac71850a52bcfc6a371f35c33542998c3f6d7b8f49b8aebf",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-8a16d37a28e3987116b43c9f",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "2b9162bd97817658d2acf607ecc5028524fcc2f3d79459faa6dc59213318fe61",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -638,7 +568,6 @@
   },
   "ar_collections_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "5562abf056db0f5bd41a41bb0b6fdf336fe39e4e9b41e7edeeb5d5373e3a7c1f",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -653,10 +582,7 @@
    "golden_stored_bytes_digest": "cc9f51bb74d2e8a8e552285e211ef6badaf6fbaa655e18bca9b9419556984d58",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "fc06c4ae6d9bbffea3e7b1a55df7f7f5c3a777d8d440f08d6c39b41bfbeda5f6",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-28fece53f310df3f3ef787ad",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "257dd11cd880cb698e57731dd16616bdb23ec158bbdd7fb90ddd6bbc6ccba756",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -673,7 +599,6 @@
   },
   "bank_feed_categorisation_001": {
    "engine": "candidate/1",
-   "environment_digest": "d8fab4e280420a0786c2bc17a604e78263bfa1ed0eb2d589e39a2179deb83967",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -688,10 +613,7 @@
    "golden_stored_bytes_digest": "cc9f51bb74d2e8a8e552285e211ef6badaf6fbaa655e18bca9b9419556984d58",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "d04d80c5d1cd70bcbf1ae93df2c4e7aa9245622497ff8b26fb38b6ad58068c04",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-a376a32060deef6e39cc9691",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "a21210c6068813f07b38fd3280b6245f9482cc2862e5186108c63f92c7086d17",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -708,7 +630,6 @@
   },
   "bank_feed_categorisation_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "617f94097091c6a9ee2584f9477fbc6d63480c99a1e39bc71e77285a6e5aa27c",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -723,10 +644,7 @@
    "golden_stored_bytes_digest": "f418ef58d930fe060f5121abbce12289585dea73512a11d3a9703b3dbb50282b",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "920d8e4924f3f9231647bd408176decc80a0114a2cc7db76b4e52772bab82c3a",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-2bc1aa0bdab0fc2d2f0cb227",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "fbe2d02e90a69a821090eb412892291ff0e24aec8db66047ac0287005ee611a6",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -743,7 +661,6 @@
   },
   "bank_feed_categorisation_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "e4396565b3809ba0589771204d888819fd35dea04080c42dfc81fc24730a3342",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -758,10 +675,7 @@
    "golden_stored_bytes_digest": "9231b2e99c5c026198f74155ed5f9931017464015a6e08d8a678496aad8d5543",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "db704c8d8ad3faf7181815918a2a73e9c78ebeb366012cec94eda02bcc2295e2",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-6f4d3a8ca3959b33a2f2a13f",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "5cbd0a7bee694feecfa53ed5645d896af19d32401ac61ec4a9153141c9dbdf99",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -778,7 +692,6 @@
   },
   "bank_feed_categorisation_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "d6f6ff4329f38b9b6af0879112bff315ad24862b41edc19d370ae9c122901627",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -793,10 +706,7 @@
    "golden_stored_bytes_digest": "ef16476e08d7e53639288258e0f9d262f394925937e0259813d33b40dce9093b",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "ba8d4ebc2fc629316c50c62d22ba99b608fbe4d54010b2d16ca366d82f6cf0bd",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-9dd442fbf627acebdfee5198",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "6990faae7c3e6ba90774b33f657b45c6a9308464466c2c520390eb1234e45615",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -813,7 +723,6 @@
   },
   "bank_feed_categorisation_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "79c6d706e4af8acada0d52bbd9d042556fa59d790fd38a4598e8db3ae7d27efd",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -828,10 +737,7 @@
    "golden_stored_bytes_digest": "92a2be00b6745da49658c9011644339cc63d962a6f1b2aff6821a4d21248860d",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "243d79114971c4e93a6e76ddbec42bbf5f2a1cf7f972996e41e8d249229709c7",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-cf36034194a9a0e8144330d1",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "b2da895c83567581994a474267b59707ac1a1b161e452b3a1cc817999bbeb5c3",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -848,7 +754,6 @@
   },
   "bank_feed_categorisation_maple": {
    "engine": "candidate/1",
-   "environment_digest": "62da6d6c0301d13935a78b432606001fe33fdfd7b9a0c70c471fa2fb56af580c",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -863,10 +768,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "13c4ebe271b0f36913c1c7bee394027675da3a586d8782910ddbb6c13ef7e33f",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-2a6cab279bee28486e9e154b",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "96504d9d33d88ba021375fc43dae09f91e57656002c9ab2e05c3d5f3f3ce8d03",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -883,7 +785,6 @@
   },
   "bank_feed_categorisation_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "d785336ce2a6f948344a4e258551b6ab0e62cf300acd95b5b9dc3a07d6d64aa4",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -898,10 +799,7 @@
    "golden_stored_bytes_digest": "a34d2b39530ce3ab9d64a606283ba3591f0881d4a9a73f76e3f84cbcb6039e90",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "85f13e14c0403a64d1a7b9132695e1435a9b0f7716ac6662b2ac8e17eee0b366",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-8a32e369865b49bfcb4a8c9e",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "1b1fa270d9e401dd4a91733b81cff2d593675e95798037f2dacec6f94ff36560",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -918,7 +816,6 @@
   },
   "bank_feed_categorisation_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "2179be539661d390b8f7748819ea354a8e25ee4f9e4ec8ce130c120b83e9bbc5",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -933,10 +830,7 @@
    "golden_stored_bytes_digest": "2b4ad623e283dee350d0d52f1c28d6ce14fc0070e049b08606371a554f20ea93",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "88b6b1de08d1c038fa5b025e382d798e6619b65bab18bcb9ff6ed509422323f4",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-6840664aff27ac6e9ca43f91",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "9eaf9d48b3092388bb0cebc6a14ad36bca3ccf8cc6c194c3a04c960cf61c4169",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -953,7 +847,6 @@
   },
   "bank_feed_categorisation_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "e2e980768d5ca8946f1f90a9673fac9bbe81c8316d2f108c5e9d9bf9aadf2a87",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -968,10 +861,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "f2e595f5b17b20dca4777fbd09c89cc1a4d34e70e313e3b23637fda1c889b445",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-cc1be2c2d44bbef10870f813",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "18512a3d01a8e45c2ac768ffa66305e1484b78c21131c1b72f2d71cb4486f54a",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -988,7 +878,6 @@
   },
   "bank_recon_001": {
    "engine": "candidate/1",
-   "environment_digest": "be11e4ebff6ce516b1a7d864064e59e24e1752a4c7125ccfe2d076b65edf7d0a",
    "files": {
     "accounts.csv": "d1c16f644ad41ecc708f8abda9310dcb83b7051acbd7d38ade749f2cf13b880a",
     "archive_prior_period.csv": "0482194a1b843ce2c04275051a15eb422012fccc45a62e8014c4930198efceb1",
@@ -1003,10 +892,7 @@
    "golden_stored_bytes_digest": "96e7e25103b93b2bae6cea9cdeaee0d00a38d2362464008c0bdee981f0e893b1",
    "graph_digest": "00446ca719056909e437140d197f791b0122a7eb2a2e228946e942223104e6f7",
    "mutation_plan_digest": "eaec56087f0c837fa59f18b6538e2830ca09db65b1a60ad091725952f5ca4df9",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-03e7a9b52b2b93548d82fba8",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "5795206189fa44ee88be322ad0eb759c7f8ee77bd0914977927487ad75a7d622",
    "view_digests": {
     "accounts.csv": "346f44223e534b2d0d95a3a10a2fd62eb4fd46fe7afaee5aac141255202d8eb8",
     "archive_prior_period.csv": "722ab88951f8e1dec9f935e6a1fd56876b8b9a5cfab1f09d05685b11a5bfa3b7",
@@ -1023,7 +909,6 @@
   },
   "bank_recon_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "0d86c99f54ef09c85759b6542d0f4a299fec7da92d300283a94774b4a2bdadae",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -1038,10 +923,7 @@
    "golden_stored_bytes_digest": "c96a66cca3a0be773564082665dd4378a59e79eb6ef65043e4c1b0faf70df7aa",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "657e9fee74270e04750b9cdf422d218fdad2204088280d1a7acbfb71f48d093d",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-2baffa15bda881175f6f8c8a",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "f7f78488bcec3a2ca277b656b2ab2f84c0cc97049f70af310931278a828d6dac",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -1058,7 +940,6 @@
   },
   "bank_recon_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "678f0d103c897c4ed14daaba0fdc0aa1bd9691e67d0d3e848aba4becf0d7a72d",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -1073,10 +954,7 @@
    "golden_stored_bytes_digest": "9231b2e99c5c026198f74155ed5f9931017464015a6e08d8a678496aad8d5543",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "5058c5c87da9cbc3cf55c65e62cb4490a24e45519cb34f7daf18f47b555a91c0",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-fdbe10bf4e81afa398abc652",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "3da59d0dce194a7b615f8578989fc0e4342e189c6fdf483ecb63226d8d0e5fd3",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -1093,7 +971,6 @@
   },
   "bank_recon_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "645bead9919b54e42a9282613e9029543d32666070396a6208cd0246dd86d491",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -1108,10 +985,7 @@
    "golden_stored_bytes_digest": "584e4e322c7a73636d64beb03d20922e70c7fe4066210c21f3373d2ce4ee74d9",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "d6c8c594ce3ca32f26e3093ecd202bcf48e9fe19f925ad3e8e7f2dca25e382a5",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-76e7dc89707785f5a3f9e616",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "45780a01b6e3931176a9ff25446efac2e9375bec055a9cbfa67816eb790b77a7",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -1128,7 +1002,6 @@
   },
   "bank_recon_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "f0a180c0584aa80a2caef1a267a886d31fcde756aad2778c116c10a692861dd3",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -1143,10 +1016,7 @@
    "golden_stored_bytes_digest": "92a2be00b6745da49658c9011644339cc63d962a6f1b2aff6821a4d21248860d",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "8de9d09c849127d1d6174605ca7894ad6fcd109037b8d98b34902963135eda07",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-2eb2ea9e06f3a31d6dace717",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "21f30dd842b5b80d478f4c8adef8b8bcba8a7cc2c29d6b2cf4809eb1655dc4e1",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -1163,7 +1033,6 @@
   },
   "bank_recon_maple": {
    "engine": "candidate/1",
-   "environment_digest": "66b7a091360f2b947d099d864ea5394e4e45e00ffcb7f68f6302eb7f7235097e",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -1178,10 +1047,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "d246573f1f7b937fd00e75eb5aa83a2346f031367514b25076f6cf118e79e4f9",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-bca46440a0aef23c617fbb84",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "213b13702afca64fb1b79f8201b896e2dbb9d6ebf587268d116846607b43fa67",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -1198,7 +1064,6 @@
   },
   "bank_recon_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "57b23f190e9f2e06f941c9c8ead9d7a458f72695528e7e30c4dbf71e6d78ca8c",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -1213,10 +1078,7 @@
    "golden_stored_bytes_digest": "a34d2b39530ce3ab9d64a606283ba3591f0881d4a9a73f76e3f84cbcb6039e90",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "9b05ec2a2e2b19e687017417852de49cd67031396842689933f8c22e1ac7a251",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-378a3ea4c3c90f3cd04bc556",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "3067165586ddb6e0d8d3a527298fcfc2d57c99fab6f4fa95e9c9ec63dde6732e",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -1233,7 +1095,6 @@
   },
   "bank_recon_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "cdc501296a872bff033215a2d8d47d6e8e6d27577309993dc18d877921019fa3",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -1248,10 +1109,7 @@
    "golden_stored_bytes_digest": "2f9b1581c4528d1eaafd8a9a335153a210ad2c9e6fa3d51ff0eb71cdc9ba0b29",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "c6b8ac18adc7bcdc7483b9ef925c9cf1f793dd83cf3088f3acfea4c1fdea86e1",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-59f5bc8ca922c555cd3ead75",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "7b3d0b702687744360e79fa8e92ab3f4e9e9e81593d365e9c32f0d08d9f2e3cb",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -1268,7 +1126,6 @@
   },
   "bank_recon_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "42ab5920883a7656fe09c4da48e0c3f9b00b66f8f465dabfd789a7afeed2ca55",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -1283,10 +1140,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "277da69bd93b6806c2af0d2a7c6d011fddbfd08793251065dcffd465fbbd5903",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-4bfcdd2799268ff6f6871716",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "6c3b1455b2b3a158674c7ad5753da34853d364daecefbed4129d45cdf471a342",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -1303,7 +1157,6 @@
   },
   "bank_recon_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "0072beb4ea7552d847bce1c95d14e92c6dc303769d21b7fb74fec4e3a93e91b5",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -1318,10 +1171,7 @@
    "golden_stored_bytes_digest": "cc9f51bb74d2e8a8e552285e211ef6badaf6fbaa655e18bca9b9419556984d58",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "2f06d44542641d433e0b65bca8c8ee6ca75230bca9a03124587be3b81673dc3c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-6f83b97747b646c2a607ef37",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "b202a15321c822670661109a1b15b525d6ca60b872b4e54fa4a0bbef43982aa1",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -1338,7 +1188,6 @@
   },
   "clean_month_maple": {
    "engine": "candidate/1",
-   "environment_digest": "536b134b3467ea20b432cb30b5503408e68e9957ce49ee114a08c984b844c491",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -1353,10 +1202,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "f99e5a430906bc65b7557b1c02d387e67763f2c289df3ec062349c1260bad242",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-f3cc77afcd60154373c34ad6",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "dc274c91f7b8b202154036249c4f05a151e3fcd8c197bdb67963d6a73064fe99",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -1373,7 +1219,6 @@
   },
   "clean_month_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "32dd0cc111d2f85f8ef218d5f8eb9332397e1ce52fbe20e9ac644b63c902b383",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -1388,10 +1233,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "f99e5a430906bc65b7557b1c02d387e67763f2c289df3ec062349c1260bad242",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-4761acd510601325e163855a",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "0d8eec3d8e69d47f5ed3f2d6be3542c2251ee9c4167a5e5f5d1d24d16d2c44f2",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -1408,7 +1250,6 @@
   },
   "expense_reports_001": {
    "engine": "candidate/1",
-   "environment_digest": "624b04cb59ea8d10c265711686896f5ef95a202034b6dbad36b9bad5a5f86a9c",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -1423,10 +1264,7 @@
    "golden_stored_bytes_digest": "8db2587de6d9aecc507838427b09718a44b9425f148f1275093b53cc2b9a11e2",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "7c79d36bfa67bdebadfededff75615577e882536575f6d7938fe3301b4c2641c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-b2dfc2d3c11cb21c483cb3d6",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "27748be60c2a1ce3b510fba301d1c9e1c8476af59e1399e35008cfb88c438bba",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -1443,7 +1281,6 @@
   },
   "expense_reports_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "8bf06ab23230e58d1088201ab49420bb82a7818fc0023ddc96af725583a85fc9",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -1458,10 +1295,7 @@
    "golden_stored_bytes_digest": "560bb2b015d62eb32483547bc4cfc470da3945babd98f155675c563c04ddaf5a",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "ad47435e201fef8a96798bbd4f80778fa22f40e01d981a08475e89e756df48d3",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-9b7c9d8cf2920827b52202d7",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "3ac443a3c552e58d0f349e7d0d725a4432ecb28eaab86d12f1efcf2b1bc59df0",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -1478,7 +1312,6 @@
   },
   "expense_reports_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "b743b919a225a99897272fe0ac6d22d1b0a6ff386e53bfcc4152f816066fb1e4",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -1493,10 +1326,7 @@
    "golden_stored_bytes_digest": "162afc17af2adbbd6441b11178b3b87898fe7df140b0e6478095dda559c44fd9",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "2698e51fc4c82795d6734c0fddda4ba3f8eb5121c41e06cc816ae5a50806c52d",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-3c3c8bf8ba9da4cb56728ac6",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "b5ff3c91b31d163e4aa1807a5010aa95103069e8508393ddce36338edf04f47f",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -1513,7 +1343,6 @@
   },
   "expense_reports_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "625867f7aa0ed32291fb97e9cc65657dfd6840e13216daab36613cb697302608",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -1528,10 +1357,7 @@
    "golden_stored_bytes_digest": "31a4123652f3a3b74546ce6b1174e0a0126c5dad4ec199c91ca902677b8885df",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "b8fa730089888bd58cb16898416c5254d826491e7d931e029dbd88a7b7778227",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-bbb5745a8cd58caf7b68c993",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "8a689fb8f132091270e5b04b6702ce2a45729e4987cf5b3e29ab3151dba8d1b3",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -1548,7 +1374,6 @@
   },
   "expense_reports_maple": {
    "engine": "candidate/1",
-   "environment_digest": "16b5173392a9bdfcccb62aef97d3c2b0f1ba5ffda3218b6578ad713ad60db75e",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -1563,10 +1388,7 @@
    "golden_stored_bytes_digest": "559673472a2101a2277ee494e68688e978124d98f36991671e53a6dc4580cac0",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "0da8892f88c228c60591bc75723524aac7c76e5eaac65604f7e55989c1760b59",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-69042c68c3b0be49ebe98443",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "54d49a1b902b43fb3a14290cf6203697b62c68fc1e7bdcf09713db0bd7be5c7f",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -1583,7 +1405,6 @@
   },
   "expense_reports_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "0446f52279a84a17d52a4942410d62c52f6f4a7a88cf68dd36ee4c1dc851a4bf",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -1598,10 +1419,7 @@
    "golden_stored_bytes_digest": "ac6adf48d41e432714fc0402e1a6ae6772e23940342135ca8619191f860b43f4",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "57e8f57c53154c851f9e00f5269c31bf61d7db6c60cf7a5896d56e2d95b7280c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-57c64e7e167e1fa361ea3ab9",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "67280a9cacbb462e6fde3eb3dcab6900769084f821ae36750683748ab0a0158f",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -1618,7 +1436,6 @@
   },
   "expense_reports_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "dc39712aec49ae843c0481f0de8d74a9034eef7001771a3744e724884167df91",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -1633,10 +1450,7 @@
    "golden_stored_bytes_digest": "5751945bd47c5c3770d94a811de2718edf66d154171081fe18fba4593d17acec",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "af7e4cc017234bcbed3bfa613ec64c3c8eb63d12365c2e56a8b4807bcbc540ca",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-c373b5d5fab7a68d0ba7f646",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "0ab247618eb27f6c60b1b41365e9e7d6013220038d5bba264ca93577af48da3d",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -1653,7 +1467,6 @@
   },
   "expense_reports_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "be4de7b35b9ea708d2306004bd074cd4b21d47db56d3e76a0d4ba25cd3cad004",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -1668,10 +1481,7 @@
    "golden_stored_bytes_digest": "7e8bc0684c1fbc68679433d370a7a16ead93fa6a257c5f5dcefe07e41364c836",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "45827862222687751f31a88d5845be95674983522d08e8ca7043150f1150d25c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-d47412e854c58dbba42dbf1e",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "f36678d19e85b45d4ea6279ba68db08365ea1d28608347b041c2a184de294ded",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -1688,7 +1498,6 @@
   },
   "expense_reports_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "73d8620c6e26a29cf65356a217afb96df68c49664512bc34f97d62c1b320da45",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -1703,10 +1512,7 @@
    "golden_stored_bytes_digest": "c05430eb84d2e739a60c25eddaffd19ab656d165dd8ae38c21be9236db774dc8",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "96e96f2c0068dd29c1752188921bc821c5c3b1d0cc825f768bc4f118b6d0f6fe",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-aff8ec07b19109026b589e43",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "507a1db65bdf645d82a9b5e2a6d0fa03995a1e3ec6dfa18057a85aced7498963",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -1723,7 +1529,6 @@
   },
   "fixed_assets_001": {
    "engine": "candidate/1",
-   "environment_digest": "9a6b70e9bd6c35b8ab75ecc509c985725cb6efa6079bcf8f295d230f522f7198",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -1738,10 +1543,7 @@
    "golden_stored_bytes_digest": "6d3055e491ef02c4b99c3c70e1e2035eca41e731e6553a884b183d42b7e9cba4",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "852d9b8606e60aa6eab621c26872a35fac81abacc13356048c215a19e6f081ef",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-286f0aa337ab7428c0c80697",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "8d1946ac56e8aaa8e33b42e9cff818e4eeda7adf03850efd49a8fe639c30814e",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -1758,7 +1560,6 @@
   },
   "fixed_assets_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "6dd9c72dadd5e63ca0d33cbccc2f042e8bae51719bcb418da26f87acb98a61a1",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -1773,10 +1574,7 @@
    "golden_stored_bytes_digest": "006a06f6ae10a8121aa0b1089e71244134e4d69273b42f5dd6b799d08170d0a2",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "957a3508bf7fe5d6429bf020a233db23680ead13ca6ee15f7bdaac174cb07a87",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-497781607495044b41b41d44",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "99e22a5b8333063472608afaba926a0dd5dbbfad0a67e43850156576b47301bc",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -1793,7 +1591,6 @@
   },
   "fixed_assets_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "600f4dd3449dcfeeee0144826570d1739e338530e9d49e7893f4c0e773ec946f",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -1808,10 +1605,7 @@
    "golden_stored_bytes_digest": "06924915c5bf906b0e74322fd5ae50d06abf0109d0f8c6e6e97f638e4abb21fd",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "ecd106fe4d0fb678b3c5451463f598c6fef65e07e1a027e2f8e140cb43a1d387",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-9ba9469694be132abb9b66bf",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "aeb6e734ec1cf7d6d8c1deb40ba333edb7d90c5fe6bd16dbaefc1ee25930dd46",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -1828,7 +1622,6 @@
   },
   "fixed_assets_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "2a70e634c276f0b0b24830e3c54bd121b096af8c1e1ec1119c817abfe0bdc155",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -1843,10 +1636,7 @@
    "golden_stored_bytes_digest": "e8ea2a1440772d2e6ecf4a61afc1a58e3e08e06f67f03c7020286ebf9599c5c0",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "4ec768a83be1941a4ed661d14c3904529c5350aba06c962bef74600bef715997",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-8374ed783a71389e71ad85e5",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "792c58233f85d2dfd335ddb3bae90f2fd58298a7584233529b0278fca0f6921f",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -1863,7 +1653,6 @@
   },
   "fixed_assets_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "94b9cb9d6189d8ac24341ad5380d404cea2d991a1273f2e049978c3fb092f006",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -1878,10 +1667,7 @@
    "golden_stored_bytes_digest": "673d4b774f3181b836ff53f02a2c1ee7efe8446918df49975579d9a6f4838123",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "487ed20df06bf782e4ea69256c20bb1706217c5c96039fb779874e97b4fca31e",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-29ca0ef942cd26406a1d81b4",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "c89708add44c6c83f444cf70260680aee178ae1a13750cf617f8364260481e7c",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -1898,7 +1684,6 @@
   },
   "fixed_assets_maple": {
    "engine": "candidate/1",
-   "environment_digest": "01256403912cc18eedd5a561c694b684e7a026774d34b7c43da1c854f8de6c4c",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -1913,10 +1698,7 @@
    "golden_stored_bytes_digest": "a9aa7f81b7461e8f3f70f53ac16f3607052e17f7d4f0abb164e1112f7f6e652d",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "67bb4713a71024461af74a474544d32e7885ebb182c638fa07cb2c4aaa3caaf0",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-14ab75ffa744d8f7cfd50460",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "b5d9d3a4892cddd614a04ad4f9218a1b47a6871199e76e89a0b3fee4d39786ed",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -1933,7 +1715,6 @@
   },
   "fixed_assets_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "54a538139be865df1162e48b2a6fe7b422ba00c50fea01e4042194eac58ec97e",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -1948,10 +1729,7 @@
    "golden_stored_bytes_digest": "fb28b201e0b2ad3d5fc37f68fa4ac9e6909bc5827c803b9527f81adabfa51c81",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "05ceb95d53c791574430a7fa382ae8101db96bdce7d3a6848d44953155c1162b",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-43642b447c541a0baa1e5519",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "30f175d2aadbf9c2fe229987bf4f429dc3db390d816e7d6f723b3e28e36f5388",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -1968,7 +1746,6 @@
   },
   "fixed_assets_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "5203df0e8eec9a62afae5862e5c86c28b52018af4e1c0ac7707d52bd0f8257df",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -1983,10 +1760,7 @@
    "golden_stored_bytes_digest": "697e1d85212175c7cf4f6b1a356ea1ebb71f0ea374c1630488fe9a4f9d2e1703",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "27c6d7bff8387c0c9f10020927e6d971e36d8c0f02a92b1a5e9f6368b5c3d50e",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-9c3dcd51a77bbc82683e35b1",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "3aa56a3dd2f4d45a01ba0fe9bacb4e8f35ec924a9f47bd2ac04f9205330adef1",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -2003,7 +1777,6 @@
   },
   "fixed_assets_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "3a424feb614ae698cdf00e6a15551a5b94c04f4f6147fb3cb55b9646f59d8ebd",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -2018,10 +1791,7 @@
    "golden_stored_bytes_digest": "d1942d69eddbc36ce2b532eeb82ef73d53fa343555adfa9c6b716da8fe50705c",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "e0c4f3e7f84a41210c087b655357e3df97d9bd8be22d8622239be9510dce5372",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-99ef3a259d3ae860f1e8c809",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "851bb60db7db752275606ed265ee840f28f6282368340bc745ef5e84834ffdbc",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -2038,7 +1808,6 @@
   },
   "intercompany_transfers_001": {
    "engine": "candidate/1",
-   "environment_digest": "7de4d810213c0f9d566006f052fd99e6241eab0551ad4aa4a60569ee68e5e7cc",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -2053,10 +1822,7 @@
    "golden_stored_bytes_digest": "9a95132afe43693f445a52c1e5b514f4003e33675d81e7e19a7edb9968852b4c",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "c20e6e72d7486b959f8c418fbf4e5459411a556f362ef2b3df1c823d7a3aae34",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-c08e9b73a997df0abd85f766",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "73f503d8858a7e896e2cba4410eb64b9abb70d2f4444d50e503e24a0daa56887",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -2073,7 +1839,6 @@
   },
   "intercompany_transfers_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "6935978b4fb9d8f521f1e549271fab92b117a540bfb9f5e6087acfed2f3b9536",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -2088,10 +1853,7 @@
    "golden_stored_bytes_digest": "b74e76cfcc4485a05210cd8841470b4791b42356ef7971a63118d55564b9c2e8",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "207b88a3a26ee49eed4153055817c51796be094889dc01483ab1cbfda112d57c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-0ee25ba6b57a4704e00dbb28",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "0d32a9658dbc8271ccd730d1916f14086fab457ff8243d706099cf30cfed7f69",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -2108,7 +1870,6 @@
   },
   "intercompany_transfers_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "8ed537148ef01ee9549608a894c2088f3bad8d9d7cbcb690ea9cf30a34a5d643",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -2123,10 +1884,7 @@
    "golden_stored_bytes_digest": "1f1546737eadd8c30e5e301ccbddd07deaffe2b41595df44523d9fa458376b42",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "3278c9f48a87e2a376df780e3e697e81350de93d01818b0c5882133d1e08ef6d",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-822bf8dea4c0acd85da246f2",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "4172d1201c7007f1be10a23a074c447077f4a8e894968463f15f45fd884997e4",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -2143,7 +1901,6 @@
   },
   "intercompany_transfers_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "c1471c43af60833e963e1b11884b0632bb796179fd5af7d043b45c795b218285",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -2158,10 +1915,7 @@
    "golden_stored_bytes_digest": "b3399dfefa3ec91971d5f739de3e59c498986816b613fc3ad7e4671ce86e754b",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "0beecc52805ffc223d6e65b5e12db7472f881a8ee4f09ad923c1c01a9e65364e",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-f38b5f67f0ff554672e932da",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "31c341bbbb8477993db2ecfeb21e68675d35ca5040ca745546900d70594d91e3",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -2178,7 +1932,6 @@
   },
   "intercompany_transfers_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "5e3fdae2bf20e6f222394bbbd7051d443f0b795ba9c8ff15c597f6b538d4a9d8",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -2193,10 +1946,7 @@
    "golden_stored_bytes_digest": "dcd236577f3986b0511741329380ba51e6be15e0c7297e21d8a50f093c7c5c1e",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "2e6beb21f237d817e1fe936b05d82cc40fe5b4b7d683c313e523875b7f1510e7",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-b3f90d88fd7f57fb6e601c85",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "b722ecf1eba93228bb9bac6e01377f3c3fbfe2b8a314325acb96cd23a2a869e7",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -2213,7 +1963,6 @@
   },
   "intercompany_transfers_maple": {
    "engine": "candidate/1",
-   "environment_digest": "6b0dedd3a04040ed7adf0533cea68c33ab945dc21a7cfe9a252c5086f4a45b6d",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -2228,10 +1977,7 @@
    "golden_stored_bytes_digest": "fe9ba7d3837aa85da2e14327833b2c8694b46a1962858dc5bb70f4be450fb339",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "1cdfd10437b6a5fba6529e79f9a26b2d924a9da195dbca4c4f6c3ae5a8a3251e",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-9bec884806dd87b80da9e4e9",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "02819e469263ff399db3ec431a7b0346ac4039af7444e3c125265b4e2f4b88f4",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -2248,7 +1994,6 @@
   },
   "intercompany_transfers_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "44d43ef9adb1be0410a669a05f9bbf502ff1c5e4438d9ee55aaf719f3e1a3bcf",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -2263,10 +2008,7 @@
    "golden_stored_bytes_digest": "d5b044cdb651466f0e04739036fe30958d64db07c2add21e586fa9db14c4822b",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "ec9b2877edcec3e6749da5280528cc43d30c0a941db1e7fc8f9ae58cdaea658c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-77b7b8d4a3072cfe94c6bd4e",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "b13aace7e94d215cb74d8cee9c2ac8f08641c29061db5b8db6b19e3f2c637900",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -2283,7 +2025,6 @@
   },
   "intercompany_transfers_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "948517ea000db8ba3d4fa41f64e6bdd79b8cbbb6a5df6ce7168749eb61e48bd1",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -2298,10 +2039,7 @@
    "golden_stored_bytes_digest": "c5285ccfcac8561d240cf72d2c0f71a3f092b3b7588a3a581790fd1f996acec3",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "2de1c170e3b2c372ba5a235efdc921b45687758f61275380b31ddb9fe2b728d1",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-7572ffea4594b3775318a540",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "e233feb2f0e403f7c16c44090d81a8253637be8faee9db78e2c709c398f299ce",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -2318,7 +2056,6 @@
   },
   "intercompany_transfers_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "973ed6ccfb5dbf73ace840cf699b6103defb9e12c19640f52939efbeade43e9a",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -2333,10 +2070,7 @@
    "golden_stored_bytes_digest": "6f27d3d53e3cb5de2e04a636729f47bc507027570a30d288009f762f6c43e6d7",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "4362c812278859f58d586a1cd1a3798d8760ef88c3a1168a9739a40f148e859c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-984b534f42d10cdd5f072a80",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "7a4ad30f842b6dbfdc46391f74e1bf1a7fdbe26e933ed568850ccb65ef3b0ffb",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -2353,7 +2087,6 @@
   },
   "month_end_close_001": {
    "engine": "candidate/1",
-   "environment_digest": "c9e41db7fe4ebeb863cff53e198ddee3bb7cbd3647ce6cbb20208616aa5a3e03",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -2368,10 +2101,7 @@
    "golden_stored_bytes_digest": "1d3231c6c1d120f74a988c1a5a5b671a1aff436217146e48acf68875a79dbe67",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "b75003db607f51dd903e72fde48d548fc042bfe7b17608cba01e65b4e56dc854",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-5db19af961e6c59adc6a8a00",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "5e3568f349161db28212a0794d4157fd9760473b8f11c3b4a367094bc8ae99f6",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -2388,7 +2118,6 @@
   },
   "month_end_close_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "d3bcacbbaefd1aca6d233545edc360cc398d7c0a9fa6963589abc49b246a5515",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -2403,10 +2132,7 @@
    "golden_stored_bytes_digest": "d9404e6b3425659962626f367f691e874d3beee20f7870d2bba7315b34b2e64e",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "b08efcd165e718c8730d5ad04b235b2078f128fc9bd18678a8c2fc6c2e542be5",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-f9246f97806a10a46f0c3753",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "29bed5d3f0536748f96a71f2075fdd780a75c13dddf93037d6d32f66d0bb4c18",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -2423,7 +2149,6 @@
   },
   "month_end_close_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "7a8693a9f9fe9646d2c8aa3a9e9623843c1bfcceae22e8401fbfae538116d181",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -2438,10 +2163,7 @@
    "golden_stored_bytes_digest": "6170e5acea43bfbe785592bca150b8e100349b46ad6f02b3da85ce51128fe5e9",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "2e9cc728df8be6de097ca6b0af9dde97f114f32083c770ad44131288fd544ecd",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-06628a1c08a6735ece61a8fd",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "c25a0de5c0f85c8ff1f077ee1dcde90bf5afa1c9574d6ce0a1653aeecfc461a3",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -2458,7 +2180,6 @@
   },
   "month_end_close_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "e1d4ed0a2b69bf755cace29d9212a465f1910a24a6d3ec9a2d7fafc309bf1eeb",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -2473,10 +2194,7 @@
    "golden_stored_bytes_digest": "633fa33ac9fe366664a43396dc37c72f127d808bd27890e3d1229c1cf0205c46",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "09dbd595e1121e18482cfbfcc158a14fad72e4beddc49f565117688eb3d33109",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-a6c01b26409d5719a97fda75",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "e82b01afe33437696b20cf2a5140669f15944bc332ef2dbc1ee8a3dfdabd319a",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -2493,7 +2211,6 @@
   },
   "month_end_close_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "07710fcbfa51603802051ed6174da8e32079bbb1f7a1407ad2475af434e584ae",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -2508,10 +2225,7 @@
    "golden_stored_bytes_digest": "d09364d5e36764befd78e56e204d885a876d907f37fcef7fe00200b4b2524096",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "87da9f07d8653e405a61eff2bf68825f6df36ceef700f3c0bb1e9a2582bb92da",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-d5e19d1e3c923c8b4e98201f",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "88e4c33b6734d04dac695a35a7db091428c9665a1941f69cd1f10c189c91ac71",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -2528,7 +2242,6 @@
   },
   "month_end_close_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "442a9a4b06cd7938ae37bfa5fa9f4a9c433aa0454bcc82d9472832cb3cafccd6",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -2543,10 +2256,7 @@
    "golden_stored_bytes_digest": "65e8492b6e93163c18143164c81c44f470a564c22ab9c30f88683dbb35fa8393",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "53a87ccc8dcaf5381aa9f2293f2d3846e51f599ce3aba4cbd2679107701df2fe",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-81a1417bf8bbe31769691101",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "40ab5d5eda35e417c9edb7df6eef1926fefc7a7cb5e7f98e7134df84c813b350",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -2563,7 +2273,6 @@
   },
   "month_end_close_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "fc235d679aad777e164ae3e5cd7a4c66e572d4b03238357f7a155a533fb29ed4",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -2578,10 +2287,7 @@
    "golden_stored_bytes_digest": "0c206f93eb85c4af084e4f7af537e950e60c13244d574e78c4f711eda8faff0c",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "7e4e1d73b05290f77b7d68bb21cd0ace217fbf7d4c40b4d4508f4d02737c3fcd",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-c6c91a0f775652c742862e85",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "2fb0f69e1ded28287b841c55c9e6b92b476b7b985bd21b89daa02d8748654823",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -2598,7 +2304,6 @@
   },
   "month_end_close_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "79f7d360d63d30f45701ef34d956ea1301e9e9930c7d6153dd3d749af556f21c",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -2613,10 +2318,7 @@
    "golden_stored_bytes_digest": "f98e50ff2772a273ce738a3e57d5efd314047bc6bd5c3df460c0df2b9c6da9fe",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "8b6137cee6b29ad7d0597b714c0351c17f1bc87d53ed29e6243026433873e47a",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-17e6e9684936720bdf71884c",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "f8c277358b45723ef5878cd53a3c61ba5c5892acfebd254c6499c7d9f53d05c7",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -2633,7 +2335,6 @@
   },
   "month_end_close_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "1a00ab097e9dbe1c076af995f8075856d4c85c175bcc2e236b7b505172ef1cec",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -2648,10 +2349,7 @@
    "golden_stored_bytes_digest": "56e5362e2c21bd5ccf8e21f42e28f54ce66f7953307720d7857a8b991a0cbfed",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "833d905b465b44e274d835afcffeffd0c043d317742edec1054ce034a602d73a",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-de16a584edc3011c1a5ace0b",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "df2d9cbf40c24e61569158c76eeeac3f63d694cc9aa55c30c5271f1a8b573a4d",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -2668,7 +2366,6 @@
   },
   "payroll_001": {
    "engine": "candidate/1",
-   "environment_digest": "c0e82888b4308f4a1cb9d61e489bb0b392868c855384b97c4a6faf4cfdd3a9e8",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -2683,10 +2380,7 @@
    "golden_stored_bytes_digest": "e19736ad1bb4c10fe9c8ee692a6d8ebc30038c45da98827a0664338d4cc0b837",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "34c4329591e45dfe5a1b9c1a0fa9142e76b1e35cbd911b5581357058fa337476",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-29c67d4f75dd54ea8b4fd397",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "5b64d55173edab73dad88e76c95b07801a48a7243ce9c66f1e4ef735cca91a45",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -2703,7 +2397,6 @@
   },
   "payroll_bluewater": {
    "engine": "candidate/1",
-   "environment_digest": "6e3b34a2c1aec7eb0777df88902e5c7a8df4e2aa2af53dd60707debe1d06b8cc",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -2718,10 +2411,7 @@
    "golden_stored_bytes_digest": "26b066dd067e8211be1cd4828dec4959d9f673256ad3474fdbe8d3710c5cff43",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "dd23d0649ec65ac2d5ab5011755f42131bba0d867ebe20a063537a705be0fc30",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-3bd31d7249b2ccf1bd38e75a",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "d09883edcc9c2eaaf7eaf7c49f1c77e1c101577dd2fca07d5dc7376faf9c5eb7",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -2738,7 +2428,6 @@
   },
   "payroll_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "ec251e153adfa65440fc35bba09b7b88be43c10327ec28a138cf116561c1d627",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -2753,10 +2442,7 @@
    "golden_stored_bytes_digest": "bc314e8918e290a639c28ac7bebd63c56182797d8e4d2308484b450bfc4eec68",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "b9220d08cebc3d77a5a8ee66686ed7be6dab8ddab7d325445b3996e55499c387",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-7a1612ee9c3cd28db8590888",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "69f461f92e9fcfefaa5ce470cf6e4faaf8bea112c0dab0f2b86ac40b0fd6de37",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -2773,7 +2459,6 @@
   },
   "payroll_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "61f8ba48ef7c0f6c229e659c057f99fd2b874eb67d07808d6935d3239aefb7d9",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -2788,10 +2473,7 @@
    "golden_stored_bytes_digest": "249fdeaac92f4e8bdeb732419192db2989eba1b79ef61f5b3b85a8e05fa94d3e",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "b5f0b173653fcfbfcec9da0df13cec4ecca17d0e4e3fa72cff2dfaf4f3d019d1",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-535c8f98ea9ba94f5bf09b87",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "f39880cb0acd9138ec1be0d0c87fa03519608b8d5924385eaa67c88249ae36b1",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -2808,7 +2490,6 @@
   },
   "payroll_maple": {
    "engine": "candidate/1",
-   "environment_digest": "dc51d96c3193bc78ef9d055873bb0544a4bd4cf57e6035ef1edc21dcd433d4c2",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -2823,10 +2504,7 @@
    "golden_stored_bytes_digest": "94b2a4a03867db59833a5a014d6caa556770ac99eb9cacf78235965fa16a089c",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "7ff0f71c82f462384b7778af96bf2abc384a0c0d3e6bbdbf8b885e4f6c8dfc73",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-847373cf87ff74bb53c6d4af",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "1ff62eae3dbf3403ef735c6423f1d8402aba4f51dc187e6c2a2d30ff0ea95300",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -2843,7 +2521,6 @@
   },
   "payroll_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "e5cd84ec168763c669035e4a79c0dc9d2f20ebec1ce3f0ac993fba1a02553977",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -2858,10 +2535,7 @@
    "golden_stored_bytes_digest": "5b225e47e63b3626ebf46917d86cb74ace11b4173d588d91337c30d113f46beb",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "a5cb8df82c3367a46b0070a2706ed858c67e3aa7c1af91a2ac053647b8b35047",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-5234f32c58560427b43124bb",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "0d22fc2c1783e4cf2096fce554bed764cce558b975fd63d6af7740fde65925eb",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -2878,7 +2552,6 @@
   },
   "payroll_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "e09287aac9d05d8f42745c70db370fa28ff31f5f1a06bd45e05c3a7723a3f6bd",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -2893,10 +2566,7 @@
    "golden_stored_bytes_digest": "565fd2d5bf4ddb85b6ae621d11d72b00433d9106502e7a694179d09cb58cbe31",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "f7201d048dd4ea758f704309e6de0243b3abad63608a3b11c60e2d897fe89eb8",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-58881543e9dea77bc395d8d1",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "4483b5210ff3bdd2f130bca95643bbf9c3afcbac6ca2b4b59201386b57fd635f",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -2913,7 +2583,6 @@
   },
   "payroll_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "b5f3f713ae93773760be8da89e76e62b6d1123f8cd2edb0dfe17b6806e2386fc",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -2928,10 +2597,7 @@
    "golden_stored_bytes_digest": "ec1fb441cdecbb4b8e3d6f44f6ba04ef6e82906212a994ef31784b8a511d7344",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "58dd6b677f298705cf32c86638d18111b5f188bebbb651684e76830e1bc7d118",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-7eff8ac4e61f68b1890fc096",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "9dc4f938efaa41886861e39089a320573f99638a7365413162503aa22921c36f",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -2948,7 +2614,6 @@
   },
   "payroll_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "52dfcbe1fcb568a9a4b9de515683c19db2735bb6ca04bf1e13f6fc9b87f1407a",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -2963,10 +2628,7 @@
    "golden_stored_bytes_digest": "12713144993d4ecaebca2139379cdfb3fb77a5b6474100ff30e7f9dcbd0d770e",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "cd668f877868389f5bcd213cbc3c3c28f9b10b1810d7e0731ad81f44bfc541d6",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-39842f76c23174c0e142abce",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "33584ed52600d7ae40e71f0e4137fe1c6de028332d6c630a6a49c49f5b3721bb",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -2983,7 +2645,6 @@
   },
   "sales_tax_remittance_001": {
    "engine": "candidate/1",
-   "environment_digest": "fdfb85d5ff77b084445bdddaa500a95ba87644638c0f6fd939493a02f80b2aa7",
    "files": {
     "accounts.csv": "cce850fa16ad78e24d7f8f4f0fe491ea15190dd9ae5201d5b87a74052df25ac5",
     "archive_prior_period.csv": "a47727f787ffcbbecf7a13d39465d00e0dce83f8ed46f12699a7f19984394440",
@@ -2998,10 +2659,7 @@
    "golden_stored_bytes_digest": "d2986b7803a3d74cccf7d31bfc2e0c14dd7aa19e55f5a64f4dd3fbdc5c2731d1",
    "graph_digest": "cf5f47671e1799b3849d307e4202bc64bf55e37f5426ecb4ffabfaed283a5b2f",
    "mutation_plan_digest": "b0258c887825362b7cef55bac56c345078ea3c16b31cf84fa887cee86df9dbc7",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-3475fcd6415bf0adc8191017",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "fce22b88a12cebe363524f8d01c6e2fe284d6c918bf664c63e6b2354c6502309",
    "view_digests": {
     "accounts.csv": "1935af499f9afa1e55f0bfc1cd574b96a5b437b5e274b0c3f00c96aae81c25c4",
     "archive_prior_period.csv": "7097abe2851b80e2dc483aa99ba53dfb058de7e56f6635756ada72e306c8abce",
@@ -3018,7 +2676,6 @@
   },
   "sales_tax_remittance_falcon": {
    "engine": "candidate/1",
-   "environment_digest": "4d3f90984ba00be211c247e7c1515eac1ed9032b0973bc707adb3028a99f2d72",
    "files": {
     "accounts.csv": "eb8b783dec7d87fe49ed7a29ec03f2e74205ad0146b416b68f219966f84e687e",
     "archive_prior_period.csv": "d80180f7a0a5545880d6f1380438a3716a20eb74d38d98e152d864147b57e1d4",
@@ -3033,10 +2690,7 @@
    "golden_stored_bytes_digest": "fe1adba8603bff3eb6d2fb131bccd3a1e9e46dc4da85d69412bb8b72ec9a647a",
    "graph_digest": "72a610f8dda5a69b3bcc4bb13f537e0c1f3b9640c811b025991caff5044533e0",
    "mutation_plan_digest": "389880fdcde63e7fb41d2e1833caf4d8dd4687b0c2be3b5f004a854e25cee13a",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-34b0c071c5e4249d82c5f4af",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "05dbdc83db2770daacfb41b4c898e6a394212ebc398f803d29eb27e33ec199c3",
    "view_digests": {
     "accounts.csv": "199f57bd85cb584ac2d9fcda6e18e71d70f26067e75542fe047063c81485ac85",
     "archive_prior_period.csv": "bae8b16819bcc3abdd3a2d0f1434e7c718f179e514e0dc3c33ca0deff35891ca",
@@ -3053,7 +2707,6 @@
   },
   "sales_tax_remittance_hawthorn": {
    "engine": "candidate/1",
-   "environment_digest": "079a9640f858f81ff18f72d5370a2a785ffc85e9b376e7e55dbfc9fe285c00b9",
    "files": {
     "accounts.csv": "9a59277e47380e6324bc3078bc5111c0a39c12e5101c0b152d6335042e321da7",
     "archive_prior_period.csv": "e7c940dd49acfd27a915e5151994bbaec11ea2b4ac21a1dba05e58cac103be26",
@@ -3068,10 +2721,7 @@
    "golden_stored_bytes_digest": "57c15aa719afbe42eb1c775819bcd57b67f64b3e680c59bc610a1d41d81570e1",
    "graph_digest": "e25cab6281322da23421f80ed8dc273175f0c0faa1709b8bf553943fa725cab8",
    "mutation_plan_digest": "795e38ab8845d804aeb638c31500d96222ffc89b678105c5da0dadffa18b7ff6",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-e6c5862aac499f5b9e1bb62a",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "79962123a6e4bcac1dcefe58f69dac416e94288d64bfb0df05aeb27ab6e25d02",
    "view_digests": {
     "accounts.csv": "5ac7a5faba1dfc245fe2290abbcf903345ce5d4a374a8591f2b3209fa25087ef",
     "archive_prior_period.csv": "ba898aa19f901fc7593d67b1b571f4f2145d1f965df12ec95acd2506d4c81f94",
@@ -3088,7 +2738,6 @@
   },
   "sales_tax_remittance_ironwood": {
    "engine": "candidate/1",
-   "environment_digest": "593f988ba519e6047322a324988e91ca0f6be558e78b15a743883a609a5dbffe",
    "files": {
     "accounts.csv": "932f4d560a714b44760d64488c09371ed5faeecf84716223b55a84a5f3f1c28a",
     "archive_prior_period.csv": "596079e2dcfa472bc04354574e97a96dda8d8bd88c2e8424c7288db651da37e4",
@@ -3103,10 +2752,7 @@
    "golden_stored_bytes_digest": "5d1876c87b6d61bdaa7f0af7f394298d2b633f22533916d443ef02aa1350fa15",
    "graph_digest": "87a4b07dea53293b1a610a07d064b94daf3ba722173aae007b22bd9cd58b0599",
    "mutation_plan_digest": "08ded2ef4f0df878a8db1ab7368a671f93b402e09187ae9202cd33811e8337d4",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-9c7422abb6092633904e044c",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "3875509feb79c503d615d488bc95b78c1eee25b97ac1f5a36b291b25129ef4f1",
    "view_digests": {
     "accounts.csv": "b419afc05b99ebadd9c08354cf6d9ca20e44f5cc2384de4725e531f05f99f6c5",
     "archive_prior_period.csv": "f85cd375cbbd47e7b9c594a9908b5755c1ef60ebbb17a4ceaba008b19e7fa25e",
@@ -3123,7 +2769,6 @@
   },
   "sales_tax_remittance_maple": {
    "engine": "candidate/1",
-   "environment_digest": "eb8066de4c7edc5cc6e6e5c0f1890a171e404bffb1fb834a8e4df7940ed3adf5",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -3138,10 +2783,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "d7f273461f2cbd84e40cf946da95c1a54871b5d2a9d492099b39b072ff2cf290",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-e45495060885ae5b19fe0985",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "861658027c807bcb6a4b8cb3adb6d1ec88f3c56db0304a026105e7685765b9ea",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -3158,7 +2800,6 @@
   },
   "sales_tax_remittance_oakridge": {
    "engine": "candidate/1",
-   "environment_digest": "adaf8f2edd4488a5c2102b11670f20122220dbc5bcf3a2971647821595931c0b",
    "files": {
     "accounts.csv": "b21e25cf0c7d40dbd661b1f1d83d8ec4d1ba9cffba1cd1de22176f0627e25333",
     "archive_prior_period.csv": "8c28e2f876713532f9d54196bb32f8116fb52ab035c6fb92c9848d2885050916",
@@ -3173,10 +2814,7 @@
    "golden_stored_bytes_digest": "a34d2b39530ce3ab9d64a606283ba3591f0881d4a9a73f76e3f84cbcb6039e90",
    "graph_digest": "e702d721cc5bad58077ff54459bf9d93a19a07e7fb38b21c28a71fa7b013ea1a",
    "mutation_plan_digest": "ecd9ee74fdd989eb6a81eb36631c3309fc367c282499fa40fe17c31665ac8a02",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-b63e29350d8320c838533222",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "a48a38efadcb4dae8038c7f69f235b4447399f690485a3d08d6b5a646b74d3b3",
    "view_digests": {
     "accounts.csv": "7824b3799cb1aa60eb834f029f30dfc2164cfa49e165996d930fcf944a552623",
     "archive_prior_period.csv": "3a4ab804640c2e6f92753fc54fecd9fd1c13d024211845681b0a583d7fd6bd05",
@@ -3193,7 +2831,6 @@
   },
   "sales_tax_remittance_redwood": {
    "engine": "candidate/1",
-   "environment_digest": "81dde89cffa82a7088c5b31d46a2b2afb1ee238b2704e482a8797c897901955c",
    "files": {
     "accounts.csv": "e8e2f0d6b91baaba94b8a219b6279441683c72a285ca3dfa5e5551727f804339",
     "archive_prior_period.csv": "e9b4655fb58b1a31f000c5c0e714edd76ccb145fcd6edd5f990350a9c7e4a0cc",
@@ -3208,10 +2845,7 @@
    "golden_stored_bytes_digest": "3ca2a522d114e3e5b42e45dbc86a20f1c4be267939b8e4005e673808ade96b0c",
    "graph_digest": "1d1fe195daa09683336dfc6097c819899a51b5c9229aebc8553a8a277610bde4",
    "mutation_plan_digest": "1875a8a9bef86214774c40e521c937f6a0c4d142235f377036f526935bcfa50c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-3b8a270547b3d7cabbfd5ae3",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "4203baf7338dbd1337b950dc7f688a9841ebcaeeaaea5dfb222278d37848ae70",
    "view_digests": {
     "accounts.csv": "c02b9abf2a717c6a02cdeed2d6537b1e01581cefbd0af845a76260a67402cdad",
     "archive_prior_period.csv": "6620b64d257910190e73664169bdb0381864f15900f645f78bafc484c75bbb6d",
@@ -3228,7 +2862,6 @@
   },
   "sales_tax_remittance_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "0dffe16291eda7c95563844c4342f3ae5d32f782260075ac6d244011fdea6e46",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -3243,10 +2876,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "cffe261bee47bb97721cf571fb4d04fff403e865da91251a2cf6d7a938c81b50",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-12904e65fc61cdfb4f34dd8d",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "9de0278692318302b3fea13f75272d16bdd4738833e53c2532aedb5f8631136d",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -3263,7 +2893,6 @@
   },
   "sales_tax_remittance_thistle": {
    "engine": "candidate/1",
-   "environment_digest": "63ddf9f8f598b749e3aa8ae43c28cb63ec22f09bfada7c3cebdf41a65e2009bc",
    "files": {
     "accounts.csv": "64d253b1773951b169d7bbb15721a0826fa21630f52389e03ab6f294908d85ee",
     "archive_prior_period.csv": "9e111a1f245fbe4dad218051c7244c382ba71695b18146c93c05fd8fea964b37",
@@ -3278,10 +2907,7 @@
    "golden_stored_bytes_digest": "6e610cd447a607a34b927e401f532312262d7a6bfbce474eec83362277bb326f",
    "graph_digest": "a3bc9305c817e0e108b3acd4a82924fc15bef76edb1f8c322ec5dc5d9593583d",
    "mutation_plan_digest": "12980b5357079481a612b2ad7a977e038e7f08d3c0df04fcb5243fc06c991fa4",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-785d76c4de84b6204354cd95",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "8e1e8fb6fec3bdab2c1cedd08111812cd8717e5685daa340f04a2f4766034d3a",
    "view_digests": {
     "accounts.csv": "175a19e5072010175aabf37948f031e4e56909b7def31e98326ba780ebdc58b9",
     "archive_prior_period.csv": "db886832faeaaf82c51d634d20ace7f7823d10e2efb941732fc30a4ecb4acc08",
@@ -3298,7 +2924,6 @@
   },
   "single_error_maple": {
    "engine": "candidate/1",
-   "environment_digest": "20bc8acc97de437ed303e4cc75fcfdc7b2b1b9cce3b90e98b44ac96eae8be3ba",
    "files": {
     "accounts.csv": "bcb9155a7042f4cbb02165e78474920a8d7ded6adb50fa61d171d0cef03220cb",
     "archive_prior_period.csv": "b96a9e274f43cc93f80a64070f95b89314173835ab8e511a60b5d5c0807a7c93",
@@ -3313,10 +2938,7 @@
    "golden_stored_bytes_digest": "39eb67e8bfc0ce9394efe71b4ab2cb9dc75c2198bbae404b6fabb802d3226f8f",
    "graph_digest": "d180764281f0ae85afa88b39b6faf55c2d8e49640a9b263a6fd11c8453d2bd33",
    "mutation_plan_digest": "22e68d231967ee9fe49127d70861dec68bddbbae4d56714435c7783ad6d17939",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-00e9a83ea45294f30d41ec4c",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "5618b4255fc09a26a9f1c3f92c5330b96e3f9f59f48ed14b0e1bfe19c24a529c",
    "view_digests": {
     "accounts.csv": "fc97a212cb86aa938dd32f0cc7f89aadf6cd1c72869fe2649fc94ab146cc8f1c",
     "archive_prior_period.csv": "fd8d9a00a14bef9f65694f5404fcc7ff9036aed39e945cd997dc1b3b8224a7a3",
@@ -3333,7 +2955,6 @@
   },
   "single_error_silverbrook": {
    "engine": "candidate/1",
-   "environment_digest": "2824f4abc8c64e8e1e30cc32a88fd8ac073a1a73d78166c70bccc9f32bd25700",
    "files": {
     "accounts.csv": "ad1ba133497afcf311271c3b360dee9362a8fed88c312d00881b12fe1e0a60e5",
     "archive_prior_period.csv": "21a6582d313f9905fa4c1af811b31990e56850ebabb1eb55357d5a5f0f1585d1",
@@ -3348,10 +2969,7 @@
    "golden_stored_bytes_digest": "2652454526005c464d10d8aaf7f1afa2424a228e798c5d8f911d6f1cde59df32",
    "graph_digest": "94e72407f0409ad1d1c428a61206deca0152cdf9ef921cc54ba24f31a6982f12",
    "mutation_plan_digest": "d6c3a15b8da924a2fbbb256c05dfa562f2aca4a001456fe7d9750dcae45c431c",
-   "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
    "public_task_id": "task-7ffe80bde103af7a23d84081",
-   "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
-   "task_contract_digest": "db8c4b67b75177dc8326417352e7cdc63b23040e897986e9047ce47c5f5578fb",
    "view_digests": {
     "accounts.csv": "b69027becad5181e2702798b548f8a6516d41b08c60aa6e021d057704e062d60",
     "archive_prior_period.csv": "fb54b81c8e8d240bbfb709f3127418ab4863c874138de567218c640e76455527",
@@ -3365,6 +2983,784 @@
     "vendors.csv": "2e90a5c88618f8cdfbbcc474eb25491ad38903b8e23d43cfefc14ce134650142"
    },
    "world_id": "silverbrook-2025-11"
+  }
+ },
+ "unicode_scoped": {
+  "14.0.0": {
+   "scorer": {
+    "parse_policy_digest": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
+    "scorer_contract_digest": "d1b7131ad316962490fcec637ba17acf3ac1d2f4e0c69171e041622b45cac683"
+   },
+   "tasks": {
+    "ap_payment_run_001": {
+     "environment_digest": "d47d7203a5827d0e73c5da613e84040474a54ec107bd815f6cfda55f385a9c85",
+     "task_contract_digest": "25fa82642d354a2fdee5cb12ba66243f2f3106adfbebbf532096c6b6150745e7"
+    },
+    "ap_payment_run_bluewater": {
+     "environment_digest": "84f4adf5dd5463c594ba615df4a2d9905feb503041977877761f033c38aef338",
+     "task_contract_digest": "8fe3704b3c4e58a2cc533f3dcedf26f29f4784c5108f7264a4c2bc3a37d26c0a"
+    },
+    "ap_payment_run_falcon": {
+     "environment_digest": "36efdcfdb6b7270f6fd4de1a08d475780dec89f45c7c8cded50660bb642b256a",
+     "task_contract_digest": "cf57487965c4d3d0297707f9d6f9c85aceb2c26c130216fa5b3a610d1e4112ef"
+    },
+    "ap_payment_run_hawthorn": {
+     "environment_digest": "af1ad355fe7b100cbf353241fd98937acf9e064a433fda1249dd6e8db769b2c5",
+     "task_contract_digest": "0da4de61fda1821460554a118cdc79ebc84374911a112ede767232b1d68ba66f"
+    },
+    "ap_payment_run_maple": {
+     "environment_digest": "949d783252675ddae960ebceba0b3bee638d9fa7c9659842d254b52d28bae63a",
+     "task_contract_digest": "2378b3005895758a4a8c7f0783c6bb5560d13bb38571fae7f9e341544d2d43ab"
+    },
+    "ap_payment_run_oakridge": {
+     "environment_digest": "2dabf5729bbd791d3246e5da3ace6ea8e215ca7403e2135de9c846fa70672321",
+     "task_contract_digest": "ee859c806b07c61062aa8c3bd22eed7cd2fae1ee4c877ca49d40e3d92da4b933"
+    },
+    "ap_payment_run_redwood": {
+     "environment_digest": "7c24f7c79735c262d2c04bd7101052becc850c9879de91dbb199c79b3618341e",
+     "task_contract_digest": "10d0b549a3ed70fe0e9e0236ddcc7030e345ea25d8b637adc36189c1e1896cec"
+    },
+    "ap_payment_run_silverbrook": {
+     "environment_digest": "498c78cdb73f195e81cfbc571c87056a08b4e46d619d7f3d734b8a88f4e77512",
+     "task_contract_digest": "6efdbb6d04dd7cdda7ca9fae09f1d84c0fddc861682c4d9fdb914841e632f4ae"
+    },
+    "ap_payment_run_thistle": {
+     "environment_digest": "fff3eb18d6db99328fd1291fc9bcafc37dffb4314be439c7cfd27f63e0266361",
+     "task_contract_digest": "9a074eabafbc6f63507dd0bcf204ccc03df9c0751c9f9bf5c1f6e32affc65a15"
+    },
+    "ar_collections_001": {
+     "environment_digest": "3827fda19d5cb4c10e43b48c3ba10ed37ff3c85ed781b3c6b03f27fc531b656c",
+     "task_contract_digest": "dae7c679bacb48765bd6e2524c1e4c37366cb19e0d9639dabe49d15a98fcad58"
+    },
+    "ar_collections_bluewater": {
+     "environment_digest": "eaa8c18a6d50cc1c9960b0ab614ae5cdda34c84b48a9fdf1fed90f07a21d6a03",
+     "task_contract_digest": "5d503f6e858e7cd488118e75c406ee7910585a6eab90eb27af695ae9bef02442"
+    },
+    "ar_collections_falcon": {
+     "environment_digest": "e4b6e4d73e2734c1b86f416370d185bdd9355eca8bcc08612e9eab0146c2a191",
+     "task_contract_digest": "4f809f6dac28cc3e98c971e0cb8d8bc81ef7508fa2acf2cab51b2efe6f072d0c"
+    },
+    "ar_collections_hawthorn": {
+     "environment_digest": "4f6ba0a7c2c569da23eb1929ece6445bf9c1fb73192f3d7212f08f81abb616d7",
+     "task_contract_digest": "04d6a051de6878f40594debe9b06bb5fe3e8d695013966ab268478b1b59b1053"
+    },
+    "ar_collections_ironwood": {
+     "environment_digest": "d0a8fffec6b5a9e63888cdb4341175d21e68260efdb250bcea2bc0bfabec4aff",
+     "task_contract_digest": "643e5c358405ebdea99870fa434b55c8c8bf923979a350ae73ec53f53c7913f7"
+    },
+    "ar_collections_maple": {
+     "environment_digest": "2f340bae340904e1afd80dd1c8a7bf6940da4850a7592e94368a9e85c8eaf129",
+     "task_contract_digest": "0aeea008ec2e2c88e68867511d8bfa982ff701c7ae38dc45e1d94d4e15cba59c"
+    },
+    "ar_collections_oakridge": {
+     "environment_digest": "0b7ec5b9f591650de7692a8acd9fe1db49ce4cdd4ddb00a292c13e1c9130f5f1",
+     "task_contract_digest": "848071f6c4edff0e681442e802f2c6d797b30a2dd1a354f57fc639a736a2f907"
+    },
+    "ar_collections_redwood": {
+     "environment_digest": "5988a939107627e7838d977b61c70773fbc14ceb077e8e0b71098f5f8414738d",
+     "task_contract_digest": "772a9c9e4e6d097da173f8a0234cf593f72a708c71e3c2c73c25554d0f40121d"
+    },
+    "ar_collections_thistle": {
+     "environment_digest": "1b8bb9cebc3c71001d8b3708ca5637b1595ed1ae7d444b760e6f822a47c5d748",
+     "task_contract_digest": "456160098296c0e47201499020f51d539b97edeb0e62e594a861fbe2c410cca3"
+    },
+    "bank_feed_categorisation_001": {
+     "environment_digest": "cf9dec6cc42ae001ec4f114b52cd73df11bb8f5e9b51683f786d951a41e38050",
+     "task_contract_digest": "12fea72e062e23d608a29285ea8e0a0ed85d858c7adf17f12f6b9c10af36a412"
+    },
+    "bank_feed_categorisation_bluewater": {
+     "environment_digest": "b47918a99e8541a8a018601db2941946454b60cfd1774cb16549cfaee9e5f346",
+     "task_contract_digest": "371adede02c7bccc6348dae7d99190f7962dc50bebbaba1148887d227a8b5c19"
+    },
+    "bank_feed_categorisation_falcon": {
+     "environment_digest": "f99adab628e2ea75fdddab534214db411ef3631757c0a9504f40caa6cda1e72f",
+     "task_contract_digest": "2a45fe20621b27197df029fae5a88c94cf9fb4bdf1a9a6244060c55b8d359e25"
+    },
+    "bank_feed_categorisation_hawthorn": {
+     "environment_digest": "ccd02b08e823ca44b89ca0b42dc65ebe8c0ef22551143a2279b2604e7e1783de",
+     "task_contract_digest": "35891ad47e00c5b196335a80cebe20270c92d0d579b8850cb26505a7d37e6a5f"
+    },
+    "bank_feed_categorisation_ironwood": {
+     "environment_digest": "1f57ad8ed8985430e175970691fbbccc6f79da2b045eec09d67de681e3a7019e",
+     "task_contract_digest": "fbad27a502f5861a88070a419f81bd575c77424198783d38e649c3e35df75de8"
+    },
+    "bank_feed_categorisation_maple": {
+     "environment_digest": "9749ea504c4a9bc33c37872e41fd6d3ffc75bbb57bc659e1b8eadcfbe53bff53",
+     "task_contract_digest": "7802384c1cf6310aa77d2f0c63527b511826b69ba405bf0f22fcc2d69de3829f"
+    },
+    "bank_feed_categorisation_oakridge": {
+     "environment_digest": "590265fb0f9a399694c735be1eb408f7ecd39108d68ece8095c0586f34317bcb",
+     "task_contract_digest": "e2e2745278720ef8f2a9983ffffaca38a45214878ae07a386dc0aad318e1caf4"
+    },
+    "bank_feed_categorisation_redwood": {
+     "environment_digest": "3527e12b9712671af2d2e80ed93d59e35cd07bc369cbb3f765077bb27af9121b",
+     "task_contract_digest": "1a4fd1c41d7eea46dc73cf605e3e5fb29a902d004385bbc1c1833228464a9ebc"
+    },
+    "bank_feed_categorisation_silverbrook": {
+     "environment_digest": "05ac60da4595a88cafa3d0f3897fc9c336ffc9d16435bbcd7218ab1d42ae3156",
+     "task_contract_digest": "b33897edf3bc8d13b6b3217a912841cb437c95203442cd2cc54109c87833663b"
+    },
+    "bank_recon_001": {
+     "environment_digest": "ab1a432ae6a44e7cc9c29c739254e3571665d6f018ea32ec363a56b4cfab602b",
+     "task_contract_digest": "5532d2dfc46e67411c5afc60f76d644640ee2354d27a41ff435cbf7917006702"
+    },
+    "bank_recon_bluewater": {
+     "environment_digest": "086650c54918dc4c5ab9f3c1feae5c3b3c401f85351695f918d3606734663f43",
+     "task_contract_digest": "f909c917b3f44e388cf23b842b8f59bf4e7f2dc4057cd7c50e0358fa9a5183ff"
+    },
+    "bank_recon_falcon": {
+     "environment_digest": "c98eaff21fd9accf2ba87207a113745aa1356deaf0aa23cc7700d830e04441d1",
+     "task_contract_digest": "9de8b7c68ae78cc2197c14b2b02fb4d6c2f3b0572606e690fe24d07c79038c52"
+    },
+    "bank_recon_hawthorn": {
+     "environment_digest": "9ae54ca6c446fc0ba0e2e0a10fa090921f4036fa1435a2f21dd6dcf25e8db08d",
+     "task_contract_digest": "61240631c9d93a51afb7cb0261469d5d58109c210e3126fd02f653828a0c1f3d"
+    },
+    "bank_recon_ironwood": {
+     "environment_digest": "86c8054ba05252967f80da53ba581e39d9424e872c939eeceb8cf67d33a85fdf",
+     "task_contract_digest": "72f929977db8dea245602bc2e7cee57ffd3d55b95fd41fcc6c964c6b773aa8de"
+    },
+    "bank_recon_maple": {
+     "environment_digest": "a2e58bd7ec571ff4bc9aeed7815d5a6659b5ed9b947dc6d6e805a7014545adc4",
+     "task_contract_digest": "215cea2f35e98276c4ba59397d0e76e574455df16864db180afca5f62c8c8fde"
+    },
+    "bank_recon_oakridge": {
+     "environment_digest": "c7dc5319e06a7c007c6a75e331f50955861f6c516c3cf0ea913da8bedac46280",
+     "task_contract_digest": "004cf5f10baa0095ee360d441f5316b5ff74c51ece8a1d7290f6a5758be1e835"
+    },
+    "bank_recon_redwood": {
+     "environment_digest": "acd791583379e9758e32faa7de428b4f14f01a7614f23c59cc90a9fa6371185e",
+     "task_contract_digest": "056e3561bc820cbc49a6951656b397aaa0f17fd5ae4edd2325e9d3c9082a7f3b"
+    },
+    "bank_recon_silverbrook": {
+     "environment_digest": "c199263c603305393e4d4b23ca79ff3a856801e61952307f4afcca3df693bab3",
+     "task_contract_digest": "c69150132df10891f58740b3a3b70f8a75e3dc4c5f15d1771060705ff34f2f17"
+    },
+    "bank_recon_thistle": {
+     "environment_digest": "2e8a385653740b5e6af05a2fefced60a81305b0ad309aaf950fc1e68815a38f8",
+     "task_contract_digest": "258eaec11b2056d32373330a58de11581b87c6c494dd6c09482eed7b4bda4bfe"
+    },
+    "clean_month_maple": {
+     "environment_digest": "853f22e003b38bac45eb5eb300260a451caf93a3e169881d0ba82131d973e3a8",
+     "task_contract_digest": "7eef0b9b0b96d43b6ca9c8bbdcb341d2dff0abe23b0cfa1051ee66069e7740e3"
+    },
+    "clean_month_silverbrook": {
+     "environment_digest": "f9d01ccce872a355466951533fc041778d9553bdce4ab967cd4dcc4b0ba0919e",
+     "task_contract_digest": "31e7c1365a15b9b1671565722384736b417d51e5fd45e9d1bff0924dbef82dc7"
+    },
+    "expense_reports_001": {
+     "environment_digest": "4a569ec0b456863adfb471e04a10e813899f6c6c2cd162cca2c0560ae3a4e3be",
+     "task_contract_digest": "4513fd67590edb02416858d88ad02cb074264ba243224d88d8a3223c2cfb854a"
+    },
+    "expense_reports_bluewater": {
+     "environment_digest": "d4225c3e9d543d35d62c37bbefaecbd2e8a92d6414530fab3916f3e3cbba8cf3",
+     "task_contract_digest": "89c264f15d687f1d514838639db8192b01565b5e056af3db4b9e0ffb61dd630c"
+    },
+    "expense_reports_hawthorn": {
+     "environment_digest": "937de35bf1a6afe9f4e17e7de27f094e569241f1fcced7ccbdc7d357e50ada32",
+     "task_contract_digest": "263cf29bfc9d7e2496eccb5982a4349b76cdced7ddca5233032d3e00f8d9dea1"
+    },
+    "expense_reports_ironwood": {
+     "environment_digest": "62498db8fdb2e682ef3bb9e8cd4f517202f068d931cda4070a58762be6c3f156",
+     "task_contract_digest": "96cac655a57ac60c60e9012e99a4fbc0c451cf6894666955e8f1e29143cb1f78"
+    },
+    "expense_reports_maple": {
+     "environment_digest": "0f622c22202491fb18c58609931902a25838aac0429229a552437f49ea05bb34",
+     "task_contract_digest": "8651c3aed78f7771f74ed1a0b86bb7962b9bf2e0894bde5ed0eff5601ac17250"
+    },
+    "expense_reports_oakridge": {
+     "environment_digest": "fb46b4e63fa0acb5baa799efc9b9d29e319b1b2de6f01d9e8be4d75f3435f943",
+     "task_contract_digest": "ec63e25874e8c92e3daaef8976358d916e0f3ac5369030601400221d07467d78"
+    },
+    "expense_reports_redwood": {
+     "environment_digest": "771b977eb991f6e0d8a53d8ef362f44cff9f95e81c031cf2ff2732461dded910",
+     "task_contract_digest": "1e21a9616ea901d195620f803c32b45771d6d1f01e012a16670194b3f2ac148c"
+    },
+    "expense_reports_silverbrook": {
+     "environment_digest": "5dd4af009313efb43ec3e5e181751791d808a05cd7a4f43bd302eec31c66972d",
+     "task_contract_digest": "4444fd198e0bebdf1db470d452360e7c385e5f7c83c813216bbb1a512f5a9481"
+    },
+    "expense_reports_thistle": {
+     "environment_digest": "813201e1dfd888da61147532c318c3a7af5aadf7a51a101a206a6000f654a1de",
+     "task_contract_digest": "eac3d8579b6a51a1fa5eb3df96e425fb70afb03d02d024d7a01aabe8a4d8d026"
+    },
+    "fixed_assets_001": {
+     "environment_digest": "88c6f39bcb1ec7a5d3cbc56df9b6195722a282814d9c9552791792dce768ecc8",
+     "task_contract_digest": "c76b89f506818ee04abc308ac3e02faed3b8cccd09a0774d65d36ba00846fed6"
+    },
+    "fixed_assets_bluewater": {
+     "environment_digest": "4aec9c2c3e944335cbb7031df8581754e83fa2f1b55a654cbb502893aff4766b",
+     "task_contract_digest": "370ebc158048a813b92a5f385e1383014c8506fa4d57870e390d7aeb77c95160"
+    },
+    "fixed_assets_falcon": {
+     "environment_digest": "a5a19bbe89f9cb5bcafcd9197d30203aaa8e66b61a05736a0048c8940bdc77ce",
+     "task_contract_digest": "9bcdf4eba0e6b65bf6373e129d402b8ee66f6505097bcb2089c16fe0260adec2"
+    },
+    "fixed_assets_hawthorn": {
+     "environment_digest": "412d714d74a825a3b16d9148d9c70da1d9baad7812a1f73d667009c940d054c1",
+     "task_contract_digest": "f61871d36c7694c0605a573e799b2a4d153818a849e3f35e27b01a5753fa217e"
+    },
+    "fixed_assets_ironwood": {
+     "environment_digest": "74aa5bde5c298410d8068563d37476c1c8c2cf8ee6dd455c5090aa238ef410a4",
+     "task_contract_digest": "6272f5869f803140eac7757f7c5d661bf174b85fb21203af673cc72267ea5645"
+    },
+    "fixed_assets_maple": {
+     "environment_digest": "0d9950cfeb47bb5d39da5acff9de4846089dd8cfa504cb523882a0a36cace687",
+     "task_contract_digest": "687749248aa377ff5c891e40974a7a25ffe2654aeef15397d81f62d0a966933e"
+    },
+    "fixed_assets_redwood": {
+     "environment_digest": "255b6d50f8fbd02e852a5f272313426fc98862ace41ea5f146fa34e2571391c0",
+     "task_contract_digest": "914bdb331e3096666e7f9d49e4f471f05c45dc05ee401d923374f86bc9e24bbd"
+    },
+    "fixed_assets_silverbrook": {
+     "environment_digest": "731c71f73d08cf1fe03c4c7c074f52e1bcc4de4ee1863ceac122fcf88f9ffefb",
+     "task_contract_digest": "de00a816ae36f89991367bb163c8dc7eb4d8ce11e508426fa120891d7290c267"
+    },
+    "fixed_assets_thistle": {
+     "environment_digest": "36a659bce2cf166d3427e353c8e2ef202e95934a00dd22e98b77c593a6e88159",
+     "task_contract_digest": "5cbbf41b1779ee21b3162d4386212ed1a1b4411292473dce48bd14a9c4ef0800"
+    },
+    "intercompany_transfers_001": {
+     "environment_digest": "92bd0b0cf1442799b8bec90b406b71ec1683a6bc299e732d5e52139ba758bcc4",
+     "task_contract_digest": "e5c13aee0604be2028c71e3e59958839834ba34439cdca75862bde7b5e873502"
+    },
+    "intercompany_transfers_bluewater": {
+     "environment_digest": "d4a67007ef579e8c15572c3f63273cac00c8631e1134800c5897ba20fed3a9dd",
+     "task_contract_digest": "e3525cd1fd1e053d52a46d18d93c1d486be094ce2e93439985560a06e1cc1f1b"
+    },
+    "intercompany_transfers_falcon": {
+     "environment_digest": "d5a30ec1637bca5e227b2b760232a469c618b2e07c46f1ee24f9480853a0b1f8",
+     "task_contract_digest": "2638e36ef3831147fc27d9fc4a01742519d300698df3c6e0e29f87e919bccf85"
+    },
+    "intercompany_transfers_hawthorn": {
+     "environment_digest": "d08b8280d4733585175837f1156ec488f23eafbf0adb329e26a805927f55e7e4",
+     "task_contract_digest": "c7a87e544efd51d1419eaab9f1ca770cd929feaecbcf70496a5d0f1a5ab1fcd4"
+    },
+    "intercompany_transfers_ironwood": {
+     "environment_digest": "603562d44e6d1adf2c60f9d363c9f1caff3ff5daf7b9e8c29099490af94199be",
+     "task_contract_digest": "6423f952de42e61ca3d4aec8f08f193381f3ce0c3d1960ccb8d4ddf49fe08c22"
+    },
+    "intercompany_transfers_maple": {
+     "environment_digest": "7527c13c325a843b79dcc96fbd740ef02d5306fd4242daf4d266fe2ed461b022",
+     "task_contract_digest": "618514d49d3c9e740bd1aba7a80b0a08aa0c0b1220f98bb3dff2549e2f22ad69"
+    },
+    "intercompany_transfers_oakridge": {
+     "environment_digest": "3164768de909970e96b256ca280866c357cdc1801a84af83040d586da521cf6a",
+     "task_contract_digest": "b5ba70eaeb1c397f88dc21cc915634b88006974789a642e52547e47f22a0108b"
+    },
+    "intercompany_transfers_silverbrook": {
+     "environment_digest": "2ef9b855653299d21e4baff405e2f7d023f71f6d5f0bae1a5b8a42573ee0a0fa",
+     "task_contract_digest": "489199645c18c154b7fbfaa9235bfd17a958bf5c6072c71794f40b921060bd3d"
+    },
+    "intercompany_transfers_thistle": {
+     "environment_digest": "c227530eefaf5d70f70ce30e971f13dfc043512ad924a99b8af064f0a5b4d814",
+     "task_contract_digest": "881d2d292c56d1bb798e570b556f7e1c085f55494b7161915abcec565a4ae37f"
+    },
+    "month_end_close_001": {
+     "environment_digest": "c9f99fd5f64d643e6676816e3f17e75a4d72748fb20e6417dab2072b02e64a48",
+     "task_contract_digest": "24ee6d2a36853b52abbf4c54fffae6c04dae2c99c9eb3dcd726687592beccd45"
+    },
+    "month_end_close_bluewater": {
+     "environment_digest": "662586401302fe1c7e76c37aa024a2c7dde4ec0db223fadca2a1773fd6c73d36",
+     "task_contract_digest": "1e67ae091d5597024089effbede889918310343e7e2d0ab9b2ae7ac9fb953a04"
+    },
+    "month_end_close_falcon": {
+     "environment_digest": "74954b30086dae2a7df4427c84c83b557e4eee79778e851c63116df629d1e6f2",
+     "task_contract_digest": "8582694c54f4c51b2205b69ef5e071cf48e461aff970deeee04d545d82848b6f"
+    },
+    "month_end_close_hawthorn": {
+     "environment_digest": "873a5d0c4aa74e124e7524301a7803b7f6843f89a2ac92c2d3cf8ce916c1f05d",
+     "task_contract_digest": "4df7a172a7593bc2b20700777e2a1f47481c338297bb853c4956cfc001c93034"
+    },
+    "month_end_close_ironwood": {
+     "environment_digest": "a9139919e1716d89439710aa045967d1b642d3fb4e931da1facc1ffd404c77f9",
+     "task_contract_digest": "21a9e382c029d6663aaeb3873c0984488d4edaa3c0507934d68c28d319bd316d"
+    },
+    "month_end_close_oakridge": {
+     "environment_digest": "75081b743cc7923e810488f71e3671d511deed5eea8ea5a4a58ae0c1bc481f70",
+     "task_contract_digest": "21fad15fe98ef8ad195981bab286596870b7ed0a82268b7befc22bc2892bdf2e"
+    },
+    "month_end_close_redwood": {
+     "environment_digest": "307cf375b3e48661f90ed7d982f496a105155f25ccae98aa1cec21292020a0fe",
+     "task_contract_digest": "3e26fd5a0a1d8001ccba2e33c6eeffdc9a23c6d6a873baf7068b34552e4b1947"
+    },
+    "month_end_close_silverbrook": {
+     "environment_digest": "a9336f70d56ec73ea24c467a8a0cd52e1425892f5e6db061836639fb787e13f8",
+     "task_contract_digest": "1e6155fa6e24d8646e41a34a0d2a5531dc3136b0481d2d904cbe324d251d3f80"
+    },
+    "month_end_close_thistle": {
+     "environment_digest": "6d26c1969d90f9bbdb39ef62f5fc8179a8d0e2553a4b82ff8307b8393123ad2c",
+     "task_contract_digest": "43665a2fb1d675c899fa64d72f7aeb1492ff7f42e62bb157b08b225aca4b18df"
+    },
+    "payroll_001": {
+     "environment_digest": "ae06412b1d6dba594cb593714c69ec5be49cf9f736b9e8255963741a25cbdb63",
+     "task_contract_digest": "19df991781ba50e9e42f64e64e7fbfcfcd1c8bdfb598a86728b53d6db1e50765"
+    },
+    "payroll_bluewater": {
+     "environment_digest": "497b66364a6b78edf109a519db4e36872fe9ef0d67dc6f9d1a1c334c1eb9fe00",
+     "task_contract_digest": "466388dfb1a6f9057dc9acf4ceda03893ec0a18b47561307dd78fc934a2ab9ad"
+    },
+    "payroll_falcon": {
+     "environment_digest": "58dad94f2dc8bf1c1e35515525ff3e3f5977a7464fdeca2f52220b3c9f66f89a",
+     "task_contract_digest": "ed47c75c205f93d2aba93247dbd0841299df4bf3eac7ec958919b1f4d2bac183"
+    },
+    "payroll_ironwood": {
+     "environment_digest": "97a1b096e0ab1c19e2880b4b11d009883819b696d346eff509b8643b506e5838",
+     "task_contract_digest": "ec49bdc0e0d9d30e040bb251ea74f6aa2833da685796bf7d567006ec48f15758"
+    },
+    "payroll_maple": {
+     "environment_digest": "fb095a00e89423253d4c3a4343e20a601b8027376888aabea40f9db6026a1678",
+     "task_contract_digest": "9bcd4d8192e899907d73b41ef46d353516f862a41ab4693bc1ba8ca3028e4e4c"
+    },
+    "payroll_oakridge": {
+     "environment_digest": "8ffff753292957cac70db78a4b5a1a72efeac10436a7f3e379169736097b09f7",
+     "task_contract_digest": "7a8b70511e975a76f15c2cadefd215e25616f102581eab7802c5646b83104822"
+    },
+    "payroll_redwood": {
+     "environment_digest": "1dc80aa6c417f5d1701dbaaff5bd7eb879083237731716e9c1d14f51b5c19af7",
+     "task_contract_digest": "1621bb1e34eb4e2de6ba79da559307d14be2f69cf4cfe6f6a60b66294c36cc4a"
+    },
+    "payroll_silverbrook": {
+     "environment_digest": "5241d82dec3c2f57287a158ea263805f3b022768cc684b4f48ecafe890f9126e",
+     "task_contract_digest": "d9136de3153aaad1e31ff4e0e6683dc339804faa272342f008398c55a58da3aa"
+    },
+    "payroll_thistle": {
+     "environment_digest": "49511068fbf5b77e08a61e9f0b73f191800ddbec14a3522d0a3948bf2d729e0a",
+     "task_contract_digest": "ff72c578b408848e8fb0bfe6ac9e8034c887deb2d9e753385fd513c545549ec9"
+    },
+    "sales_tax_remittance_001": {
+     "environment_digest": "7b6aaeea637b2abdfd9289d1601c760422bb881ffa6a5ed396584e22ab079c36",
+     "task_contract_digest": "e63154678120a4266e20825b18016b2e9ae431894c80277012220e3daff4065b"
+    },
+    "sales_tax_remittance_falcon": {
+     "environment_digest": "8b7f84a702f3e30b8561dc6f03e2cb3e37f2df87205ed5172a0f1dfbcb5456b8",
+     "task_contract_digest": "275559d83a6ca1e5db77092ef376ae0299db8a0ccbd577cb0c0cce11508a2499"
+    },
+    "sales_tax_remittance_hawthorn": {
+     "environment_digest": "7c6787eb5abb63d36c2996fe48f59d8edf0fa40ecd3512b27b3d78a344d21e13",
+     "task_contract_digest": "0303ee6bdcf3de9f451e881cf8da8b081390d191b2b920e0e358c03bfa3eaaa2"
+    },
+    "sales_tax_remittance_ironwood": {
+     "environment_digest": "eb9a7ffd69776609e3febda9fe57f30755c3c82150575e5bf57ba66718414770",
+     "task_contract_digest": "8ad4b8fa2bdc5683fd79f0ba6d56e2234904f3e139e51cdf10e7a43159773c9c"
+    },
+    "sales_tax_remittance_maple": {
+     "environment_digest": "8c3b481ad5799be15296ad8cd4b860524e7228dc7673c178a3cca5c6586b31bc",
+     "task_contract_digest": "5c4342f3f086c9c9fd918de541fb6d416cf4283a86366d0c6d817cda8304bd6b"
+    },
+    "sales_tax_remittance_oakridge": {
+     "environment_digest": "9597d7ab677802991766ed8ddffc2e04b697017fcde6204a1e68d65455b8a809",
+     "task_contract_digest": "9f9e0f03e87ba6aad889b7520f074229b544075071493fd1def813679c93150e"
+    },
+    "sales_tax_remittance_redwood": {
+     "environment_digest": "88d7eece1039d3ee144a887b509d2129c34d2b1f1332fef2c2b1f3a22519651b",
+     "task_contract_digest": "6d1346f67d8e630dec6ab13120b517662f764770cf4771f3845e38331cbc4050"
+    },
+    "sales_tax_remittance_silverbrook": {
+     "environment_digest": "d2876bca061b7f3d073bf7062586f5845e501aa17e6c7b4ec1b42d8845857785",
+     "task_contract_digest": "301c93a479fa59910559b77914028b3ee5ab20e65ebb9bb64e96e4f1d968b376"
+    },
+    "sales_tax_remittance_thistle": {
+     "environment_digest": "5bb17c8dfe172da3b51aa55d01a623c5be9f15359f6a4ce921e7caa0b549248f",
+     "task_contract_digest": "3d38f16f2befd8f469bb0167061aec56eee5d86795e618244229f4c6f5b990aa"
+    },
+    "single_error_maple": {
+     "environment_digest": "e36f00683cc3466b3a1e71b2a00173fc9be3cd7dbc9877407a648547d99a3b93",
+     "task_contract_digest": "67e9d7d3e74c9e8a11064c95a423b53b866a744f1d9dcd50b58923a86a04ef46"
+    },
+    "single_error_silverbrook": {
+     "environment_digest": "f6348c7f5b98fc402b46fddc8581a1b088d95696a32bf3b80d9eea91d180c836",
+     "task_contract_digest": "9e3c0fc78e2c5770235783978fd4bc5c735e79ea32ccf6d90d9ffde5a57ea179"
+    }
+   }
+  },
+  "15.0.0": {
+   "scorer": {
+    "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+    "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa"
+   },
+   "tasks": {
+    "ap_payment_run_001": {
+     "environment_digest": "6fd9358994475f4622f1a27d7b71ca80f034b95e1ac7d576e9f23517643e1917",
+     "task_contract_digest": "849b4e40327e29763eb68d63ba0c784ef36b28872bab6d5583fa533d6502803c"
+    },
+    "ap_payment_run_bluewater": {
+     "environment_digest": "0351b47ffd867e28e87d8bc310a3257650d5433d04724021765d743143871e11",
+     "task_contract_digest": "e27235330e95e621cbf68f27cac6485a6aa02398b84e0071810b7ea3726eaf58"
+    },
+    "ap_payment_run_falcon": {
+     "environment_digest": "9478c8ee8a889f2036cc4c789a840bfb315e82be4469c8cc669e89a29b09fc93",
+     "task_contract_digest": "1e2c7534bcef6311e5e969fe042a4661da715b5b1953889a94289bf845602d94"
+    },
+    "ap_payment_run_hawthorn": {
+     "environment_digest": "24191b9c6f24822fa876da47a6c8a5e7f81a968d8cbc023f5a84ec0157735ae8",
+     "task_contract_digest": "c631405952cfb284a8277f6eaa109a357f3992dbf412feac5895ceb0c9ae5b7c"
+    },
+    "ap_payment_run_maple": {
+     "environment_digest": "ca293b7520b1a59cc49b0716db034afc17fb608e0c8df860e3318fac27cf6cb8",
+     "task_contract_digest": "9f02c13189699927e83b82856d8f2f4b59816b01e8535399aeaf07d3bc5b79e7"
+    },
+    "ap_payment_run_oakridge": {
+     "environment_digest": "1b85405b7b7faeca42d539bd9fe910f483293f2681b30aebaa263b3c70f12abb",
+     "task_contract_digest": "444f1bd85580f3d86c418479949c34244de94c016e6fd454b5b910d7e4bee51c"
+    },
+    "ap_payment_run_redwood": {
+     "environment_digest": "9fc20a701a9b501c50628906fd0c3c2e073de653ea34e4787fcd6f3c469d4f22",
+     "task_contract_digest": "7973c1c840f558009fdc5bfb7a813ba3891bca2b291b6aee835c94f5b5c24fa0"
+    },
+    "ap_payment_run_silverbrook": {
+     "environment_digest": "734bff596214c1580715a455dfb01e5454a2e1024e7118975bc07aba48b4d38d",
+     "task_contract_digest": "51f7ea9bf7f6ba71ff87562630fc987f94f51db5924fd94da34560713cf8142d"
+    },
+    "ap_payment_run_thistle": {
+     "environment_digest": "90b7c8df9cdba174e2d895f460872a7618573d844c40a11a162a3e34a8676332",
+     "task_contract_digest": "f15ce4ac6005cd0b5d64be96038fb570d1ce1610f6bf78ec07502dd89808c3d7"
+    },
+    "ar_collections_001": {
+     "environment_digest": "c3ebd2796fe816b67693621c66b1e6a3bca9c027c5b021fdfdb57821b9c0ebfa",
+     "task_contract_digest": "9442aa7b1d6131dfbbec73963850003d31413e277ccee94235d69d60add10417"
+    },
+    "ar_collections_bluewater": {
+     "environment_digest": "c5022c7f6d8aa6bdf79ef28489ca7af3b598ea238d808b867b19e97e5e4d7012",
+     "task_contract_digest": "96b1ec74e1b52078799285851e5ad5c87809ec0a62ffd38dc1e88a94c097e802"
+    },
+    "ar_collections_falcon": {
+     "environment_digest": "a90aee5f382e94ebee490f9c6f721518218242bc6dc99e7dbed151130caac8ba",
+     "task_contract_digest": "73d5cc8bb970a0d680294d97ca60f79415fce2e241d9d17cee0398aed25694a3"
+    },
+    "ar_collections_hawthorn": {
+     "environment_digest": "57ce695e8a754f16eb5cbca10a86806c00a0c9004a3e04ea9d798fda8f99385b",
+     "task_contract_digest": "3e49cb482dffbae5b5dc49c9d6282febcea00067c2090fbf927c2e523e02c95c"
+    },
+    "ar_collections_ironwood": {
+     "environment_digest": "3b3d4fa1770c087c836a3f6813227e85e2b2470fe7c47d4c7abb2592fef9723e",
+     "task_contract_digest": "5f4ed766bcb9968482336bc52ab7ac464c44962d7fc8abefa63479c4489aada1"
+    },
+    "ar_collections_maple": {
+     "environment_digest": "3cc659046830b95fa54de21949cd8aa93b72c3cae3d0ef85974f3d9aafa9d313",
+     "task_contract_digest": "0992d3b71a25b8f86509c7ba769b5caa9638c36c52a327df45540aa0ecdc227e"
+    },
+    "ar_collections_oakridge": {
+     "environment_digest": "cea5c600ace62ada5ebdf338fe423355df3afa132922bfbc6f32b8b680e79313",
+     "task_contract_digest": "9bb7a0acd883d3064ac4f807795101e0cd6f7e6e6b72fba5f0c1ac771e8ec1d4"
+    },
+    "ar_collections_redwood": {
+     "environment_digest": "01931351a5cce033e4528fa3be40daeef6fd078d96e9168b63e450568fc674cb",
+     "task_contract_digest": "2b9162bd97817658d2acf607ecc5028524fcc2f3d79459faa6dc59213318fe61"
+    },
+    "ar_collections_thistle": {
+     "environment_digest": "5562abf056db0f5bd41a41bb0b6fdf336fe39e4e9b41e7edeeb5d5373e3a7c1f",
+     "task_contract_digest": "257dd11cd880cb698e57731dd16616bdb23ec158bbdd7fb90ddd6bbc6ccba756"
+    },
+    "bank_feed_categorisation_001": {
+     "environment_digest": "d8fab4e280420a0786c2bc17a604e78263bfa1ed0eb2d589e39a2179deb83967",
+     "task_contract_digest": "a21210c6068813f07b38fd3280b6245f9482cc2862e5186108c63f92c7086d17"
+    },
+    "bank_feed_categorisation_bluewater": {
+     "environment_digest": "617f94097091c6a9ee2584f9477fbc6d63480c99a1e39bc71e77285a6e5aa27c",
+     "task_contract_digest": "fbe2d02e90a69a821090eb412892291ff0e24aec8db66047ac0287005ee611a6"
+    },
+    "bank_feed_categorisation_falcon": {
+     "environment_digest": "e4396565b3809ba0589771204d888819fd35dea04080c42dfc81fc24730a3342",
+     "task_contract_digest": "5cbd0a7bee694feecfa53ed5645d896af19d32401ac61ec4a9153141c9dbdf99"
+    },
+    "bank_feed_categorisation_hawthorn": {
+     "environment_digest": "d6f6ff4329f38b9b6af0879112bff315ad24862b41edc19d370ae9c122901627",
+     "task_contract_digest": "6990faae7c3e6ba90774b33f657b45c6a9308464466c2c520390eb1234e45615"
+    },
+    "bank_feed_categorisation_ironwood": {
+     "environment_digest": "79c6d706e4af8acada0d52bbd9d042556fa59d790fd38a4598e8db3ae7d27efd",
+     "task_contract_digest": "b2da895c83567581994a474267b59707ac1a1b161e452b3a1cc817999bbeb5c3"
+    },
+    "bank_feed_categorisation_maple": {
+     "environment_digest": "62da6d6c0301d13935a78b432606001fe33fdfd7b9a0c70c471fa2fb56af580c",
+     "task_contract_digest": "96504d9d33d88ba021375fc43dae09f91e57656002c9ab2e05c3d5f3f3ce8d03"
+    },
+    "bank_feed_categorisation_oakridge": {
+     "environment_digest": "d785336ce2a6f948344a4e258551b6ab0e62cf300acd95b5b9dc3a07d6d64aa4",
+     "task_contract_digest": "1b1fa270d9e401dd4a91733b81cff2d593675e95798037f2dacec6f94ff36560"
+    },
+    "bank_feed_categorisation_redwood": {
+     "environment_digest": "2179be539661d390b8f7748819ea354a8e25ee4f9e4ec8ce130c120b83e9bbc5",
+     "task_contract_digest": "9eaf9d48b3092388bb0cebc6a14ad36bca3ccf8cc6c194c3a04c960cf61c4169"
+    },
+    "bank_feed_categorisation_silverbrook": {
+     "environment_digest": "e2e980768d5ca8946f1f90a9673fac9bbe81c8316d2f108c5e9d9bf9aadf2a87",
+     "task_contract_digest": "18512a3d01a8e45c2ac768ffa66305e1484b78c21131c1b72f2d71cb4486f54a"
+    },
+    "bank_recon_001": {
+     "environment_digest": "be11e4ebff6ce516b1a7d864064e59e24e1752a4c7125ccfe2d076b65edf7d0a",
+     "task_contract_digest": "5795206189fa44ee88be322ad0eb759c7f8ee77bd0914977927487ad75a7d622"
+    },
+    "bank_recon_bluewater": {
+     "environment_digest": "0d86c99f54ef09c85759b6542d0f4a299fec7da92d300283a94774b4a2bdadae",
+     "task_contract_digest": "f7f78488bcec3a2ca277b656b2ab2f84c0cc97049f70af310931278a828d6dac"
+    },
+    "bank_recon_falcon": {
+     "environment_digest": "678f0d103c897c4ed14daaba0fdc0aa1bd9691e67d0d3e848aba4becf0d7a72d",
+     "task_contract_digest": "3da59d0dce194a7b615f8578989fc0e4342e189c6fdf483ecb63226d8d0e5fd3"
+    },
+    "bank_recon_hawthorn": {
+     "environment_digest": "645bead9919b54e42a9282613e9029543d32666070396a6208cd0246dd86d491",
+     "task_contract_digest": "45780a01b6e3931176a9ff25446efac2e9375bec055a9cbfa67816eb790b77a7"
+    },
+    "bank_recon_ironwood": {
+     "environment_digest": "f0a180c0584aa80a2caef1a267a886d31fcde756aad2778c116c10a692861dd3",
+     "task_contract_digest": "21f30dd842b5b80d478f4c8adef8b8bcba8a7cc2c29d6b2cf4809eb1655dc4e1"
+    },
+    "bank_recon_maple": {
+     "environment_digest": "66b7a091360f2b947d099d864ea5394e4e45e00ffcb7f68f6302eb7f7235097e",
+     "task_contract_digest": "213b13702afca64fb1b79f8201b896e2dbb9d6ebf587268d116846607b43fa67"
+    },
+    "bank_recon_oakridge": {
+     "environment_digest": "57b23f190e9f2e06f941c9c8ead9d7a458f72695528e7e30c4dbf71e6d78ca8c",
+     "task_contract_digest": "3067165586ddb6e0d8d3a527298fcfc2d57c99fab6f4fa95e9c9ec63dde6732e"
+    },
+    "bank_recon_redwood": {
+     "environment_digest": "cdc501296a872bff033215a2d8d47d6e8e6d27577309993dc18d877921019fa3",
+     "task_contract_digest": "7b3d0b702687744360e79fa8e92ab3f4e9e9e81593d365e9c32f0d08d9f2e3cb"
+    },
+    "bank_recon_silverbrook": {
+     "environment_digest": "42ab5920883a7656fe09c4da48e0c3f9b00b66f8f465dabfd789a7afeed2ca55",
+     "task_contract_digest": "6c3b1455b2b3a158674c7ad5753da34853d364daecefbed4129d45cdf471a342"
+    },
+    "bank_recon_thistle": {
+     "environment_digest": "0072beb4ea7552d847bce1c95d14e92c6dc303769d21b7fb74fec4e3a93e91b5",
+     "task_contract_digest": "b202a15321c822670661109a1b15b525d6ca60b872b4e54fa4a0bbef43982aa1"
+    },
+    "clean_month_maple": {
+     "environment_digest": "536b134b3467ea20b432cb30b5503408e68e9957ce49ee114a08c984b844c491",
+     "task_contract_digest": "dc274c91f7b8b202154036249c4f05a151e3fcd8c197bdb67963d6a73064fe99"
+    },
+    "clean_month_silverbrook": {
+     "environment_digest": "32dd0cc111d2f85f8ef218d5f8eb9332397e1ce52fbe20e9ac644b63c902b383",
+     "task_contract_digest": "0d8eec3d8e69d47f5ed3f2d6be3542c2251ee9c4167a5e5f5d1d24d16d2c44f2"
+    },
+    "expense_reports_001": {
+     "environment_digest": "624b04cb59ea8d10c265711686896f5ef95a202034b6dbad36b9bad5a5f86a9c",
+     "task_contract_digest": "27748be60c2a1ce3b510fba301d1c9e1c8476af59e1399e35008cfb88c438bba"
+    },
+    "expense_reports_bluewater": {
+     "environment_digest": "8bf06ab23230e58d1088201ab49420bb82a7818fc0023ddc96af725583a85fc9",
+     "task_contract_digest": "3ac443a3c552e58d0f349e7d0d725a4432ecb28eaab86d12f1efcf2b1bc59df0"
+    },
+    "expense_reports_hawthorn": {
+     "environment_digest": "b743b919a225a99897272fe0ac6d22d1b0a6ff386e53bfcc4152f816066fb1e4",
+     "task_contract_digest": "b5ff3c91b31d163e4aa1807a5010aa95103069e8508393ddce36338edf04f47f"
+    },
+    "expense_reports_ironwood": {
+     "environment_digest": "625867f7aa0ed32291fb97e9cc65657dfd6840e13216daab36613cb697302608",
+     "task_contract_digest": "8a689fb8f132091270e5b04b6702ce2a45729e4987cf5b3e29ab3151dba8d1b3"
+    },
+    "expense_reports_maple": {
+     "environment_digest": "16b5173392a9bdfcccb62aef97d3c2b0f1ba5ffda3218b6578ad713ad60db75e",
+     "task_contract_digest": "54d49a1b902b43fb3a14290cf6203697b62c68fc1e7bdcf09713db0bd7be5c7f"
+    },
+    "expense_reports_oakridge": {
+     "environment_digest": "0446f52279a84a17d52a4942410d62c52f6f4a7a88cf68dd36ee4c1dc851a4bf",
+     "task_contract_digest": "67280a9cacbb462e6fde3eb3dcab6900769084f821ae36750683748ab0a0158f"
+    },
+    "expense_reports_redwood": {
+     "environment_digest": "dc39712aec49ae843c0481f0de8d74a9034eef7001771a3744e724884167df91",
+     "task_contract_digest": "0ab247618eb27f6c60b1b41365e9e7d6013220038d5bba264ca93577af48da3d"
+    },
+    "expense_reports_silverbrook": {
+     "environment_digest": "be4de7b35b9ea708d2306004bd074cd4b21d47db56d3e76a0d4ba25cd3cad004",
+     "task_contract_digest": "f36678d19e85b45d4ea6279ba68db08365ea1d28608347b041c2a184de294ded"
+    },
+    "expense_reports_thistle": {
+     "environment_digest": "73d8620c6e26a29cf65356a217afb96df68c49664512bc34f97d62c1b320da45",
+     "task_contract_digest": "507a1db65bdf645d82a9b5e2a6d0fa03995a1e3ec6dfa18057a85aced7498963"
+    },
+    "fixed_assets_001": {
+     "environment_digest": "9a6b70e9bd6c35b8ab75ecc509c985725cb6efa6079bcf8f295d230f522f7198",
+     "task_contract_digest": "8d1946ac56e8aaa8e33b42e9cff818e4eeda7adf03850efd49a8fe639c30814e"
+    },
+    "fixed_assets_bluewater": {
+     "environment_digest": "6dd9c72dadd5e63ca0d33cbccc2f042e8bae51719bcb418da26f87acb98a61a1",
+     "task_contract_digest": "99e22a5b8333063472608afaba926a0dd5dbbfad0a67e43850156576b47301bc"
+    },
+    "fixed_assets_falcon": {
+     "environment_digest": "600f4dd3449dcfeeee0144826570d1739e338530e9d49e7893f4c0e773ec946f",
+     "task_contract_digest": "aeb6e734ec1cf7d6d8c1deb40ba333edb7d90c5fe6bd16dbaefc1ee25930dd46"
+    },
+    "fixed_assets_hawthorn": {
+     "environment_digest": "2a70e634c276f0b0b24830e3c54bd121b096af8c1e1ec1119c817abfe0bdc155",
+     "task_contract_digest": "792c58233f85d2dfd335ddb3bae90f2fd58298a7584233529b0278fca0f6921f"
+    },
+    "fixed_assets_ironwood": {
+     "environment_digest": "94b9cb9d6189d8ac24341ad5380d404cea2d991a1273f2e049978c3fb092f006",
+     "task_contract_digest": "c89708add44c6c83f444cf70260680aee178ae1a13750cf617f8364260481e7c"
+    },
+    "fixed_assets_maple": {
+     "environment_digest": "01256403912cc18eedd5a561c694b684e7a026774d34b7c43da1c854f8de6c4c",
+     "task_contract_digest": "b5d9d3a4892cddd614a04ad4f9218a1b47a6871199e76e89a0b3fee4d39786ed"
+    },
+    "fixed_assets_redwood": {
+     "environment_digest": "54a538139be865df1162e48b2a6fe7b422ba00c50fea01e4042194eac58ec97e",
+     "task_contract_digest": "30f175d2aadbf9c2fe229987bf4f429dc3db390d816e7d6f723b3e28e36f5388"
+    },
+    "fixed_assets_silverbrook": {
+     "environment_digest": "5203df0e8eec9a62afae5862e5c86c28b52018af4e1c0ac7707d52bd0f8257df",
+     "task_contract_digest": "3aa56a3dd2f4d45a01ba0fe9bacb4e8f35ec924a9f47bd2ac04f9205330adef1"
+    },
+    "fixed_assets_thistle": {
+     "environment_digest": "3a424feb614ae698cdf00e6a15551a5b94c04f4f6147fb3cb55b9646f59d8ebd",
+     "task_contract_digest": "851bb60db7db752275606ed265ee840f28f6282368340bc745ef5e84834ffdbc"
+    },
+    "intercompany_transfers_001": {
+     "environment_digest": "7de4d810213c0f9d566006f052fd99e6241eab0551ad4aa4a60569ee68e5e7cc",
+     "task_contract_digest": "73f503d8858a7e896e2cba4410eb64b9abb70d2f4444d50e503e24a0daa56887"
+    },
+    "intercompany_transfers_bluewater": {
+     "environment_digest": "6935978b4fb9d8f521f1e549271fab92b117a540bfb9f5e6087acfed2f3b9536",
+     "task_contract_digest": "0d32a9658dbc8271ccd730d1916f14086fab457ff8243d706099cf30cfed7f69"
+    },
+    "intercompany_transfers_falcon": {
+     "environment_digest": "8ed537148ef01ee9549608a894c2088f3bad8d9d7cbcb690ea9cf30a34a5d643",
+     "task_contract_digest": "4172d1201c7007f1be10a23a074c447077f4a8e894968463f15f45fd884997e4"
+    },
+    "intercompany_transfers_hawthorn": {
+     "environment_digest": "c1471c43af60833e963e1b11884b0632bb796179fd5af7d043b45c795b218285",
+     "task_contract_digest": "31c341bbbb8477993db2ecfeb21e68675d35ca5040ca745546900d70594d91e3"
+    },
+    "intercompany_transfers_ironwood": {
+     "environment_digest": "5e3fdae2bf20e6f222394bbbd7051d443f0b795ba9c8ff15c597f6b538d4a9d8",
+     "task_contract_digest": "b722ecf1eba93228bb9bac6e01377f3c3fbfe2b8a314325acb96cd23a2a869e7"
+    },
+    "intercompany_transfers_maple": {
+     "environment_digest": "6b0dedd3a04040ed7adf0533cea68c33ab945dc21a7cfe9a252c5086f4a45b6d",
+     "task_contract_digest": "02819e469263ff399db3ec431a7b0346ac4039af7444e3c125265b4e2f4b88f4"
+    },
+    "intercompany_transfers_oakridge": {
+     "environment_digest": "44d43ef9adb1be0410a669a05f9bbf502ff1c5e4438d9ee55aaf719f3e1a3bcf",
+     "task_contract_digest": "b13aace7e94d215cb74d8cee9c2ac8f08641c29061db5b8db6b19e3f2c637900"
+    },
+    "intercompany_transfers_silverbrook": {
+     "environment_digest": "948517ea000db8ba3d4fa41f64e6bdd79b8cbbb6a5df6ce7168749eb61e48bd1",
+     "task_contract_digest": "e233feb2f0e403f7c16c44090d81a8253637be8faee9db78e2c709c398f299ce"
+    },
+    "intercompany_transfers_thistle": {
+     "environment_digest": "973ed6ccfb5dbf73ace840cf699b6103defb9e12c19640f52939efbeade43e9a",
+     "task_contract_digest": "7a4ad30f842b6dbfdc46391f74e1bf1a7fdbe26e933ed568850ccb65ef3b0ffb"
+    },
+    "month_end_close_001": {
+     "environment_digest": "c9e41db7fe4ebeb863cff53e198ddee3bb7cbd3647ce6cbb20208616aa5a3e03",
+     "task_contract_digest": "5e3568f349161db28212a0794d4157fd9760473b8f11c3b4a367094bc8ae99f6"
+    },
+    "month_end_close_bluewater": {
+     "environment_digest": "d3bcacbbaefd1aca6d233545edc360cc398d7c0a9fa6963589abc49b246a5515",
+     "task_contract_digest": "29bed5d3f0536748f96a71f2075fdd780a75c13dddf93037d6d32f66d0bb4c18"
+    },
+    "month_end_close_falcon": {
+     "environment_digest": "7a8693a9f9fe9646d2c8aa3a9e9623843c1bfcceae22e8401fbfae538116d181",
+     "task_contract_digest": "c25a0de5c0f85c8ff1f077ee1dcde90bf5afa1c9574d6ce0a1653aeecfc461a3"
+    },
+    "month_end_close_hawthorn": {
+     "environment_digest": "e1d4ed0a2b69bf755cace29d9212a465f1910a24a6d3ec9a2d7fafc309bf1eeb",
+     "task_contract_digest": "e82b01afe33437696b20cf2a5140669f15944bc332ef2dbc1ee8a3dfdabd319a"
+    },
+    "month_end_close_ironwood": {
+     "environment_digest": "07710fcbfa51603802051ed6174da8e32079bbb1f7a1407ad2475af434e584ae",
+     "task_contract_digest": "88e4c33b6734d04dac695a35a7db091428c9665a1941f69cd1f10c189c91ac71"
+    },
+    "month_end_close_oakridge": {
+     "environment_digest": "442a9a4b06cd7938ae37bfa5fa9f4a9c433aa0454bcc82d9472832cb3cafccd6",
+     "task_contract_digest": "40ab5d5eda35e417c9edb7df6eef1926fefc7a7cb5e7f98e7134df84c813b350"
+    },
+    "month_end_close_redwood": {
+     "environment_digest": "fc235d679aad777e164ae3e5cd7a4c66e572d4b03238357f7a155a533fb29ed4",
+     "task_contract_digest": "2fb0f69e1ded28287b841c55c9e6b92b476b7b985bd21b89daa02d8748654823"
+    },
+    "month_end_close_silverbrook": {
+     "environment_digest": "79f7d360d63d30f45701ef34d956ea1301e9e9930c7d6153dd3d749af556f21c",
+     "task_contract_digest": "f8c277358b45723ef5878cd53a3c61ba5c5892acfebd254c6499c7d9f53d05c7"
+    },
+    "month_end_close_thistle": {
+     "environment_digest": "1a00ab097e9dbe1c076af995f8075856d4c85c175bcc2e236b7b505172ef1cec",
+     "task_contract_digest": "df2d9cbf40c24e61569158c76eeeac3f63d694cc9aa55c30c5271f1a8b573a4d"
+    },
+    "payroll_001": {
+     "environment_digest": "c0e82888b4308f4a1cb9d61e489bb0b392868c855384b97c4a6faf4cfdd3a9e8",
+     "task_contract_digest": "5b64d55173edab73dad88e76c95b07801a48a7243ce9c66f1e4ef735cca91a45"
+    },
+    "payroll_bluewater": {
+     "environment_digest": "6e3b34a2c1aec7eb0777df88902e5c7a8df4e2aa2af53dd60707debe1d06b8cc",
+     "task_contract_digest": "d09883edcc9c2eaaf7eaf7c49f1c77e1c101577dd2fca07d5dc7376faf9c5eb7"
+    },
+    "payroll_falcon": {
+     "environment_digest": "ec251e153adfa65440fc35bba09b7b88be43c10327ec28a138cf116561c1d627",
+     "task_contract_digest": "69f461f92e9fcfefaa5ce470cf6e4faaf8bea112c0dab0f2b86ac40b0fd6de37"
+    },
+    "payroll_ironwood": {
+     "environment_digest": "61f8ba48ef7c0f6c229e659c057f99fd2b874eb67d07808d6935d3239aefb7d9",
+     "task_contract_digest": "f39880cb0acd9138ec1be0d0c87fa03519608b8d5924385eaa67c88249ae36b1"
+    },
+    "payroll_maple": {
+     "environment_digest": "dc51d96c3193bc78ef9d055873bb0544a4bd4cf57e6035ef1edc21dcd433d4c2",
+     "task_contract_digest": "1ff62eae3dbf3403ef735c6423f1d8402aba4f51dc187e6c2a2d30ff0ea95300"
+    },
+    "payroll_oakridge": {
+     "environment_digest": "e5cd84ec168763c669035e4a79c0dc9d2f20ebec1ce3f0ac993fba1a02553977",
+     "task_contract_digest": "0d22fc2c1783e4cf2096fce554bed764cce558b975fd63d6af7740fde65925eb"
+    },
+    "payroll_redwood": {
+     "environment_digest": "e09287aac9d05d8f42745c70db370fa28ff31f5f1a06bd45e05c3a7723a3f6bd",
+     "task_contract_digest": "4483b5210ff3bdd2f130bca95643bbf9c3afcbac6ca2b4b59201386b57fd635f"
+    },
+    "payroll_silverbrook": {
+     "environment_digest": "b5f3f713ae93773760be8da89e76e62b6d1123f8cd2edb0dfe17b6806e2386fc",
+     "task_contract_digest": "9dc4f938efaa41886861e39089a320573f99638a7365413162503aa22921c36f"
+    },
+    "payroll_thistle": {
+     "environment_digest": "52dfcbe1fcb568a9a4b9de515683c19db2735bb6ca04bf1e13f6fc9b87f1407a",
+     "task_contract_digest": "33584ed52600d7ae40e71f0e4137fe1c6de028332d6c630a6a49c49f5b3721bb"
+    },
+    "sales_tax_remittance_001": {
+     "environment_digest": "fdfb85d5ff77b084445bdddaa500a95ba87644638c0f6fd939493a02f80b2aa7",
+     "task_contract_digest": "fce22b88a12cebe363524f8d01c6e2fe284d6c918bf664c63e6b2354c6502309"
+    },
+    "sales_tax_remittance_falcon": {
+     "environment_digest": "4d3f90984ba00be211c247e7c1515eac1ed9032b0973bc707adb3028a99f2d72",
+     "task_contract_digest": "05dbdc83db2770daacfb41b4c898e6a394212ebc398f803d29eb27e33ec199c3"
+    },
+    "sales_tax_remittance_hawthorn": {
+     "environment_digest": "079a9640f858f81ff18f72d5370a2a785ffc85e9b376e7e55dbfc9fe285c00b9",
+     "task_contract_digest": "79962123a6e4bcac1dcefe58f69dac416e94288d64bfb0df05aeb27ab6e25d02"
+    },
+    "sales_tax_remittance_ironwood": {
+     "environment_digest": "593f988ba519e6047322a324988e91ca0f6be558e78b15a743883a609a5dbffe",
+     "task_contract_digest": "3875509feb79c503d615d488bc95b78c1eee25b97ac1f5a36b291b25129ef4f1"
+    },
+    "sales_tax_remittance_maple": {
+     "environment_digest": "eb8066de4c7edc5cc6e6e5c0f1890a171e404bffb1fb834a8e4df7940ed3adf5",
+     "task_contract_digest": "861658027c807bcb6a4b8cb3adb6d1ec88f3c56db0304a026105e7685765b9ea"
+    },
+    "sales_tax_remittance_oakridge": {
+     "environment_digest": "adaf8f2edd4488a5c2102b11670f20122220dbc5bcf3a2971647821595931c0b",
+     "task_contract_digest": "a48a38efadcb4dae8038c7f69f235b4447399f690485a3d08d6b5a646b74d3b3"
+    },
+    "sales_tax_remittance_redwood": {
+     "environment_digest": "81dde89cffa82a7088c5b31d46a2b2afb1ee238b2704e482a8797c897901955c",
+     "task_contract_digest": "4203baf7338dbd1337b950dc7f688a9841ebcaeeaaea5dfb222278d37848ae70"
+    },
+    "sales_tax_remittance_silverbrook": {
+     "environment_digest": "0dffe16291eda7c95563844c4342f3ae5d32f782260075ac6d244011fdea6e46",
+     "task_contract_digest": "9de0278692318302b3fea13f75272d16bdd4738833e53c2532aedb5f8631136d"
+    },
+    "sales_tax_remittance_thistle": {
+     "environment_digest": "63ddf9f8f598b749e3aa8ae43c28cb63ec22f09bfada7c3cebdf41a65e2009bc",
+     "task_contract_digest": "8e1e8fb6fec3bdab2c1cedd08111812cd8717e5685daa340f04a2f4766034d3a"
+    },
+    "single_error_maple": {
+     "environment_digest": "20bc8acc97de437ed303e4cc75fcfdc7b2b1b9cce3b90e98b44ac96eae8be3ba",
+     "task_contract_digest": "5618b4255fc09a26a9f1c3f92c5330b96e3f9f59f48ed14b0e1bfe19c24a529c"
+    },
+    "single_error_silverbrook": {
+     "environment_digest": "2824f4abc8c64e8e1e30cc32a88fd8ac073a1a73d78166c70bccc9f32bd25700",
+     "task_contract_digest": "db8c4b67b75177dc8326417352e7cdc63b23040e897986e9047ce47c5f5578fb"
+    }
+   }
   }
  }
 }
