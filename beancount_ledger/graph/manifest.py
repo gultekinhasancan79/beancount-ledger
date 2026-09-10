@@ -132,6 +132,39 @@ def versions() -> dict:
             "preflight_contract": PREFLIGHT_CONTRACT_VERSION, "gate_set": gate_set_digest()}
 
 
+def family_admission_versions() -> dict:
+    """The versions the CASH-APPLICATION family's admission semantics carry.
+
+    Separate from `versions()` on purpose, and this is the whole point of the
+    function. `versions()` is signing material for the v9 bank-reconciliation
+    population: every promoted record's HMAC covers it, so a number that
+    moves there makes `admit` refuse records that are still perfectly valid.
+    The family's admission rests on things that population never touched —
+    the fold, and what the bank checker will accept as a PAYMENT IDENTITY —
+    and those have to be versionable without invalidating anything already
+    signed.
+
+    So: `reference_identity` is `identify.REFERENCE_IDENTITY_VERSION`, which
+    went to 2 when the shape rule ("two or more words, one with a digit") was
+    withdrawn for the evidenced rule. `identify` is repeated here as the
+    checker build it rides on, unchanged at 7 and still bound by `versions()`
+    for the old population.
+
+    NOT YET SIGNED BY ANYTHING, and said plainly rather than implied: the
+    reviewer's decision 3 defers the family's own namespace and manifest
+    until three further company-months survive review, so today this is the
+    declaration that manifest will bind, and the place a later change to
+    either rule has to move a number. It is exercised by
+    `tests/test_family_validators.py`, which is what keeps it honest in the
+    meantime.
+    """
+    from .cash_application import CASH_APPLICATION_VERSION
+    from .identify import REFERENCE_IDENTITY_VERSION
+    return {"cash_application": CASH_APPLICATION_VERSION,
+            "reference_identity": REFERENCE_IDENTITY_VERSION,
+            "identify": IDENTIFY_VERSION}
+
+
 def rotation_id() -> str | None:
     """The opaque rotation label provisioned BESIDE the secret:
     PIV_KEY_ID, or ~/.piv/key_id — never derived from the secret,

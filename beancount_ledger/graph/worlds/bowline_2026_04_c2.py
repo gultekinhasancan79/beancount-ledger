@@ -19,6 +19,22 @@ an invoice list quoted once on each side excludes neither. `TRC0428442` is the
 bank's identifier for one transfer, printed on the row and quoted in the entry
 the books already carry, so it does exclude it. The invoice list keeps its own
 work: it is what rung (2) reads, and it is document evidence, not an identity.
+
+THE INPUTS MOVED AFTER THE SCREEN WAS RUN (2026-09-10). Before the identity
+rule was corrected, the 28 April statement row's reference read `SI-3104
+SI-3102`, and R3's receipt key with it. The archived screen workspace
+`v10-codex/cash_screen_evidence/workspaces/cash_application_002` was measured
+against those bytes and its delivered `cash_application.json` keys R3 as
+`2026-04-28:SI-3104 SI-3102`; the same case folded from this revision keys it
+`2026-04-28:TRC0428442 SI-3104 SI-3102`. That delivery is therefore NOT
+reproducible against this source and would not re-score as delivered. The
+phase brief sanctioned moving family bytes, and the screen's finding — Case
+5's omitted `unapplied_amount` — is untouched by it, since Case 5's bytes did
+not move. But an archived measurement whose inputs have changed has to say so
+where the change lives, and any publication of that screen has to carry the
+source revision it was measured at. Recorded again in
+`reviews/RELEASE_ATTESTATION.md` and pinned by
+`tests/test_cash_application_worlds.py`.
 """
 
 from __future__ import annotations

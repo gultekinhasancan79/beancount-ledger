@@ -71,10 +71,19 @@ transfer), or a payment identifier a mounted document DECLARES to be one —
 a payment of theirs carries that reference. Nothing else is an instrument, and
 in particular a multi-word reference is not: "two or more words, one with a
 digit" describes an invoice list (`SI-3104 SI-3102`) and a dated memo (`APRIL
-2026`) as readily as an ACH addendum, and neither of those names one cash
-movement. The advice bytes reach this module the way every other public file
-does — as text in the `public` mapping, read here and nowhere else; nothing is
-imported to obtain them. It decides only when, after one normalisation, no two
+2026`) as readily as an ACH addendum, and no SHAPE names one cash movement.
+The declaration decides, and appearance decides nothing IN EITHER DIRECTION.
+A column carrying an invoice id is barred from the first two declarations
+outright, so nothing can promote receivables to an identity by declaring
+them; a dated memo an advice DOES declare is an identity, because the advice
+has stated that a payment of the customer's carries that reference, and
+refusing it because it reads badly would put the shape rule back with its
+sign flipped. What stops a poor reference from deciding what it should not is
+uniqueness, not appearance. The advice bytes reach this module the way every
+other public file does — as text in the `public` mapping, read here and
+nowhere else; nothing is imported to obtain them.
+
+An instrument decides only when, after one normalisation, no two
 advices declare it, it is quoted by at most one bank row across the current
 statement and the archive and by at most one ledger bank movement, and the
 candidate is compatible in direction (a credit row never pairs with a debit
@@ -167,15 +176,9 @@ from decimal import Decimal, InvalidOperation
 #    the payment reference, FIRST AS A SHAPE and now as EVIDENCE: the shape
 #    rule (two or more words, one with a digit) was wrong and is retracted in
 #    `_reference_words`; an instrument identity is now one the public bytes
-#    declare (`_identity_reference`). Both the wrong rule and its replacement
-#    reach no world the release manifest admits — the 95 shipped tasks and
-#    the generator print one document id, one cheque number or nothing, and
-#    mount no `remittance_advice.csv` — and the replacement is strictly
-#    NARROWER than the shape rule it removes, so no promoted verdict can move
-#    in either direction and `manifest.admit` need not refuse every promoted
-#    record over a change that reaches none of them. Re-examined, not
-#    assumed: `tests/test_family_validators.py` surveys the shipped
-#    population for both the syntax and the evidenced set.
+#    declare (`_identity_reference`). That correction is versioned separately,
+#    as `REFERENCE_IDENTITY_VERSION` below, and NOT by a bump here; the
+#    argument is written out there rather than asserted here.
 # 5: settlements are forced by the declared convention and every OTHER reading
 #    that explains the whole month competes on equal terms — cardinality and
 #    "fewest alterations" no longer erase one; time direction; bank-initiated
@@ -183,6 +186,43 @@ from decimal import Decimal, InvalidOperation
 # 4: the agreement prior is diagnostic only (tie_break=False by default)
 # 3: the prior broke ties; 2: complete matching
 IDENTIFY_VERSION = 7
+
+# WHAT MAKES A REFERENCE A PAYMENT IDENTITY, versioned in its own right.
+#
+#   1  SHAPE (withdrawn). `_payment_reference_words`: two or more
+#      whitespace-separated words, at least one carrying a digit. Wrong, and
+#      retracted in `_reference_words`.
+#   2  EVIDENCE. `_identity_reference`: a cheque number the row's own wording
+#      introduces, a bank trace id, or a reference a mounted
+#      `remittance_advice.csv` DECLARES in `payment_reference` — and, in the
+#      first two cases and the third alike, only where the declaration is
+#      unique across the pack.
+#
+# This constant exists because the reviewer required the family's admission
+# semantics to be versioned while the OLD SIGNED POPULATION stays verifiable,
+# and those two are not the same version. `IDENTIFY_VERSION` is bound into
+# `manifest.versions()` and therefore into every promoted record's signature:
+# bumping it would make `manifest.admit` refuse the whole v9 population over
+# a rule none of those worlds can reach. So the identity rule carries its OWN
+# number, which the family's admission declares
+# (`manifest.family_admission_versions()`) and which the family manifest
+# deferred by the reviewer's decision 3 must sign when it is built. Nothing
+# about this is a claim that the change is too small to version — it is a
+# claim about WHICH artifact the version belongs in.
+#
+# The compatibility argument, stated at the width it actually holds. On any
+# pack that mounts NO advice, `evidenced` is empty and rule 2 reduces to
+# cheque-or-trace, which IS strictly narrower than rule 1: it refuses every
+# multi-word reference rule 1 admitted and admits nothing rule 1 refused.
+# Every manifested world is such a pack — no legacy task and no generated
+# world mounts a `remittance_advice.csv`, prints a multi-word reference or
+# prints a trace id — so no promoted verdict can move in either direction.
+# The unrestricted claim would be FALSE and is not made: where an advice IS
+# mounted, rule 2 admits inputs rule 1 refused, a declared single-token
+# reference (`GRPAYRUN0428`) being the plain case, and the repository's own
+# ontology table asserts exactly that. `tests/test_family_validators.py`
+# surveys both populations for both facts rather than asserting them.
+REFERENCE_IDENTITY_VERSION = 2
 
 LEDGER_FILE = "ledger.beancount"
 STATEMENT_FILE = "bank_statement.csv"
@@ -644,26 +684,52 @@ def _identity_reference(reference: str, text: str, evidenced: frozenset) -> str:
         addendum the payer sent, so the identity is that token and not the
         whole column.
 
-    An invoice id, and a list of invoice ids, is refused BEFORE any of the
-    three, so no pack can turn one into an identity by declaring it: a list
-    names receivables, and an advice quoting one has stated the basis of an
+    A column that CARRIES an invoice id is barred from the first two, so a
+    declaration cannot promote receivables to an identity: a list names
+    receivables, and an advice quoting one has stated the basis of an
     application rather than the identity of a payment. Two partial payments
     may still quote it. One invoice number was never enough for this, and
     concatenating two does not cure it.
 
-    Anything else names no payment either: a dated memo, an unrecognised
-    code. The caller keeps those as document or unknown evidence, which is
-    what they are. Returned AS PRINTED, because `_mentions` needs the word
-    boundaries normalisation erases.
+    CORRECTION, and the guarantee stated at its real width. This clause used
+    to read "an invoice id, and a LIST of invoice ids, is refused before any
+    of the three, so no pack can turn one into an identity by declaring it",
+    and the code behind it fired only where EVERY word was invoice-shaped.
+    `SI-1044 SI-1052 XZ`, declared by one advice, was therefore an instrument
+    and decided a two-part-payment pack — a list of receivables promoted by
+    appending one junk token, which is the very thing the sentence claimed no
+    pack could do. The test is now "any word of the column is an invoice id",
+    so the mixed list is refused too, and the guarantee holds as written.
+    What such a column may still present is the third declaration and only
+    it: one bank trace id it also prints, and the identity is THAT TOKEN, not
+    the list around it. That is Case 2 of the cash family, and it is why the
+    trace is extracted rather than the column returned whole — an advice that
+    declares the whole printed column, invoice ids and all, still yields the
+    trace alone.
+
+    Anything else names no payment either: an unrecognised code, or a dated
+    memo NO ADVICE DECLARES. A dated memo an advice does declare is an
+    identity, deliberately: `evidenced` is a customer stating that a payment
+    of theirs carries that reference, and the whole point of the correction
+    is that the declaration decides and the shape does not. `APRIL 2026` is
+    a poor reference and a pack should not print one, but a pack that
+    declares it has said what it says; the rule refuses to re-derive an
+    identity from the string's appearance in either direction. Uniqueness,
+    not taste, is what keeps such a reference from deciding anything it
+    should not: two advices declaring it drops it, and so does a second bank
+    row quoting it.
+
+    The caller keeps a refusal as document or unknown evidence, which is what
+    it is. Returned AS PRINTED, because `_mentions` needs the word boundaries
+    normalisation erases.
     """
     printed = (reference or "").strip()
     norm = _norm_ref(printed)
     if not norm:
         return ""
     words = _reference_words(printed)
-    if _DOCUMENT_SYNTAX.match(norm) or (words and all(_DOCUMENT_SYNTAX.match(word) for word in words)):
-        return ""
-    if norm in evidenced or norm in _instrument_tokens(text):
+    carries_invoice = bool(_DOCUMENT_SYNTAX.match(norm)) or any(_DOCUMENT_SYNTAX.match(word) for word in words)
+    if not carries_invoice and (norm in evidenced or norm in _instrument_tokens(text)):
         return printed
     traces = sorted(token for token in _ref_tokens(printed) if _TRACE_SYNTAX.match(token))
     return traces[0] if len(traces) == 1 else ""
@@ -673,14 +739,25 @@ def _quotes_identity(text: str, token: str) -> bool:
     """Does this text NAME the payment identifier a statement row presented?
 
     A cheque number counts only where the wording introduces it — a bare
-    number in a memo is a quantity or a year. A trace id and a multi-word
-    identifier are distinctive enough that quoting them is naming them, and
-    the multi-word case needs the words in order (`_mentions`).
+    number in a memo is a quantity or a year. Anything CARRYING A LETTER is
+    distinctive enough that quoting it is naming it, so quoting suffices: a
+    trace id, a multi-word identifier (whose words `_mentions` requires in
+    order), and — this is the fix — a declared single-token identifier like
+    `GRPAYRUN0428`, which is neither of the first two.
+
+    That last case used to fall through to `False`, which made this function
+    asymmetric with `_identity_reference`: a row could present an identity
+    that no entry could ever be found to quote, so the identity survived the
+    outstanding rule unanswerable. It failed toward ambiguity rather than
+    toward a wrong pairing, so nothing was mis-decided, and it reached no
+    shipped world — the only identities the 95 legacy packs present are
+    cheque numbers, handled by the first test. It is repaired here rather
+    than left as a known asymmetry.
     """
     norm = _norm_ref(token)
     if norm in _instrument_tokens(text):
         return True
-    if _reference_words(token) or _TRACE_SYNTAX.match(norm):
+    if _reference_words(token) or _TRACE_SYNTAX.match(norm) or any(ch.isalpha() for ch in norm):
         return _mentions(text, token)
     return False
 

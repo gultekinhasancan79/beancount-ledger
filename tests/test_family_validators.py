@@ -33,9 +33,13 @@ What is witnessed here:
   * the ontology: an identity is what the evidence declares, and the same
     string is an instrument with the advice and UNKNOWN without it; an
     invoice list is a DOCUMENT declared or not; a lone invoice id, a cheque
-    number, a trace id, an unknown code and a memo keep their roles; the
-    declared role set and `IDENTIFY_VERSION` are unchanged; the quotation
-    rule (`_mentions`) needs the addendum's words in order;
+    number, a trace id, an unknown code and a memo keep their roles; a
+    declaration cannot promote a column that carries an invoice id, however
+    the rest of the column reads; the declared role set and
+    `IDENTIFY_VERSION` are unchanged while `REFERENCE_IDENTITY_VERSION` is
+    2 and the family's admission declares it; the quotation rule
+    (`_mentions`) needs the addendum's words in order, and a declared
+    single-token identifier is recognised as quoted too;
   * Cases 1 and 2 first, then all five: `check_identifiable` over the
     ACTUAL projected bytes is unique with one reading, and the reading is
     exactly the planted bank-evidenced repairs under the shared repair key;
@@ -51,14 +55,22 @@ What is witnessed here:
     being certified; deleting the advice that DECLARES the addendum has the
     same effect, which is what makes the evidence load-bearing rather than
     decorative; the in-transit refusal names the presented reference;
-  * the shipped population is out of the rule's reach, in both its forms: no
-    statement or archive row of the 95 legacy tasks prints a multi-word
-    reference or a trace id, and none of them mounts an advice, so none
-    declares an identifier. That is why `IDENTIFY_VERSION` stays 7 (a bump
-    would make `manifest.admit` refuse every promoted record for a change
-    that reaches none of them), and the new rule is strictly narrower than
-    the one it replaces, so no promoted verdict can move in either
-    direction;
+  * the manifested population is out of the rule's reach, in both its forms,
+    and BOTH HALVES of that are measured rather than argued: no statement or
+    archive row of the 95 legacy tasks prints a multi-word reference or a
+    trace id and none mounts an advice, and neither does any world the
+    GENERATOR mints over a sampled sweep of seeds and splits. On a pack that
+    mounts no advice the evidenced rule reduces to cheque-or-trace, which IS
+    strictly narrower than the shape rule it replaced, so no promoted verdict
+    can move in either direction. That claim is asserted HERE, scoped, and
+    not in its unrestricted form, which is false: where an advice is mounted
+    the evidenced rule admits a declared single-token reference the shape
+    rule refused (`GRPAYRUN0428` in the ontology table below). This is why
+    `IDENTIFY_VERSION` stays 7 — a bump would make `manifest.admit` refuse
+    every promoted record for a change none of those records can reach —
+    while the rule itself is versioned as `REFERENCE_IDENTITY_VERSION` 2,
+    declared by `manifest.family_admission_versions()` for the family
+    manifest the reviewer's decision 3 defers;
   * the write-off plant is validated THROUGH THE PUBLIC FOLD (gate (m)):
     Case 3 as authored passes and its plant is covered; a re-dated
     expected entry, a narration naming the wrong invoice, a planted shape
@@ -91,7 +103,10 @@ for _path in (str(ROOT), str(ROOT / "tests")):
         sys.path.insert(0, _path)
 
 from beancount_ledger.graph import cash_application as CA  # noqa: E402
+from beancount_ledger.graph import generate as GEN  # noqa: E402
 from beancount_ledger.graph import identify as ID  # noqa: E402
+from beancount_ledger.graph import manifest as MANIFEST  # noqa: E402
+from beancount_ledger.graph import mint as MI  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.worlds import (  # noqa: E402
     CASH_APPLICATION_MODULES,
@@ -101,6 +116,11 @@ from beancount_ledger.graph.worlds import (  # noqa: E402
 
 from repair_keys import master_names, planted_key  # noqa: E402
 from world_checks import _family_gates, check_derived, check_world_task, decoded_public  # noqa: E402
+
+# The same public constant `test_generator` mints under: a fixed key makes the
+# generator sweep below reproducible. Not a credential — the evaluator's own
+# secret is never read here, and nothing minted under this key is promoted.
+TEST_SECRET = "5f1c7b9e2a4d6c8b0e1f3a5c7d9b2e4f6a8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e"  # gitleaks:allow
 
 WORLDS_DIR = ROOT / "beancount_ledger" / "graph" / "worlds"
 BANK, AR, WRITE_OFFS = "Assets:Bank:Checking", "Assets:AR", "Expenses:SmallBalanceWriteOffs"
@@ -193,7 +213,17 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
     """The corrected rule, as a table: the SAME string is an instrument where
     the pack declares it and UNKNOWN where nothing does, an invoice list is a
     document either way, and the roles the shape rule never touched are where
-    they were."""
+    they were.
+
+    Two rows carry the load beyond that. `GRPAYRUN0428` declared is an
+    INSTRUMENT and the shape rule called the same string UNKNOWN, which is
+    the counterexample to any unrestricted claim that the replacement is
+    narrower — the narrowness holds on advice-free packs, which is where the
+    signed population lives, and the survey below is what establishes that.
+    `SI-3104 SI-3102 XZ` declared is UNKNOWN: a column carrying an invoice id
+    cannot be promoted by a declaration even when the rest of it is not
+    invoice-shaped, which is the guarantee `_identity_reference` states.
+    """
     problems = []
     # what Case 1's own advices declare: two ACH addenda and a cheque number
     declared = ID._evidenced_payment_identifiers(case(1)[5])
@@ -211,9 +241,17 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
         ("SI-3104 SI-3102", "ACH IN GANNET RIGGING INC SI-3104 SI-3102", declared, ID.REF_DOCUMENT),
         ("SI-3104 SI-3102", "ACH IN GANNET RIGGING INC SI-3104 SI-3102",
          frozenset({"SI3104SI3102"}), ID.REF_DOCUMENT),
+        # nor does appending a token that is not invoice-shaped promote it:
+        # the bar is "any word is an invoice id", not "every word is"
+        ("SI-3104 SI-3102 XZ", "ACH IN GANNET RIGGING INC SI-3104 SI-3102 XZ",
+         frozenset({"SI3104SI3102XZ"}), ID.REF_UNKNOWN),
         # Case 2's reference: the bank's own trace, then the payer's list
         ("TRC0428442 SI-3104 SI-3102", "ACH IN GANNET RIGGING INC TRC0428442 SI-3104 SI-3102",
          frozenset(), ID.REF_INSTRUMENT),
+        # and the trace is still the identity when an advice declares the
+        # whole printed column, invoice ids and all
+        ("TRC0428442 SI-3104 SI-3102", "ACH IN GANNET RIGGING INC TRC0428442 SI-3104 SI-3102",
+         frozenset({"TRC0428442SI3104SI3102"}), ID.REF_INSTRUMENT),
         ("SI-3104", "ACH IN GANNET RIGGING INC SI-3104", declared, ID.REF_DOCUMENT),
         ("PI-8813", "ACH OUT NORTHSHORE CHANDLERY SUPPLY PI-8813", declared, ID.REF_DOCUMENT),
         ("2291", "CHECK 2291 SHEARWATER BAY CHARTERS LLC", declared, ID.REF_INSTRUMENT),
@@ -239,6 +277,10 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
         ("SI-3104 SI-3102", "", declared, ""),
         ("SI-3104 SI-3102", "", frozenset({"SI3104SI3102"}), ""),
         ("TRC0428442 SI-3104 SI-3102", "", frozenset(), "TRC0428442"),
+        # a declaration of the whole column yields the trace, not the column
+        ("TRC0428442 SI-3104 SI-3102", "", frozenset({"TRC0428442SI3104SI3102"}), "TRC0428442"),
+        # one junk token appended to a list of receivables promotes nothing
+        ("SI-3104 SI-3102 XZ", "", frozenset({"SI3104SI3102XZ"}), ""),
         ("2291", "CHECK 2291 SHEARWATER BAY CHARTERS LLC", frozenset(), "2291"),
         ("APRIL 2026", "", declared, ""),
         ("", "", declared, ""),
@@ -251,6 +293,21 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
         problems.append(f"the role set moved: {ID.REFERENCE_ROLES}")
     if ID.IDENTIFY_VERSION != 7:
         problems.append(f"IDENTIFY_VERSION is {ID.IDENTIFY_VERSION}; the corrected rule keeps 7 (see its changelog)")
+    # the versioning half of the ruling: the rule carries its own number, the
+    # family's admission declares it, and it is deliberately NOT signing
+    # material for the v9 population — the two claims have to be pinned
+    # together or the separation is just an unbumped constant.
+    if ID.REFERENCE_IDENTITY_VERSION != 2:
+        problems.append(f"REFERENCE_IDENTITY_VERSION is {ID.REFERENCE_IDENTITY_VERSION}; the evidenced rule is 2 "
+                        f"(1 was the withdrawn shape rule)")
+    admission = MANIFEST.family_admission_versions()
+    if admission.get("reference_identity") != ID.REFERENCE_IDENTITY_VERSION:
+        problems.append(f"the family's admission does not declare the identity rule's version: {admission}")
+    if admission.get("cash_application") != CA.CASH_APPLICATION_VERSION:
+        problems.append(f"the family's admission does not declare the fold's version: {admission}")
+    if "reference_identity" in MANIFEST.versions():
+        problems.append("the identity rule's version is signing material for the v9 population, which would make "
+                        "`admit` refuse every promoted record when the rule next moves")
     if hasattr(ID, "_payment_reference_words"):
         problems.append("the retracted shape rule is still exported under its old name")
     words = {"GR PAYRUN 0428": ("GR", "PAYRUN", "0428"), "SI-3104 SI-3102": ("SI3104", "SI3102"),
@@ -276,10 +333,29 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
     for haystack, token, want in quotes:
         if ID._mentions(haystack, token) != want:
             problems.append(f"_mentions({haystack!r}, {token!r}) != {want}")
+    # SYMMETRY. Every identity a row can present must be one an entry can be
+    # found to quote, or the outstanding rule holds an identity no narration
+    # can ever answer. The single-token declared identifier used to be that
+    # case; it is the third row here.
+    identity_quotes = [
+        ("Gannet Rigging Inc Customer payment, GR PAYRUN 0428", "GR PAYRUN 0428", True),
+        ("Gannet Rigging Inc Customer payment, TRC0428442 SI-3104 SI-3102", "TRC0428442", True),
+        ("Gannet Rigging Inc Customer payment, GRPAYRUN0428", "GRPAYRUN0428", True),
+        ("Gannet Rigging Inc Customer payment, GRPAYRUN0410", "GRPAYRUN0428", False),
+        ("November office rent, check 1037", "1037", True),
+        # a bare number the wording does not introduce is a quantity or a
+        # year, and that has not changed
+        ("Deposit slip 1037", "1037", False),
+    ]
+    for haystack, token, want in identity_quotes:
+        if ID._quotes_identity(haystack, token) != want:
+            problems.append(f"_quotes_identity({haystack!r}, {token!r}) != {want}")
     return check("an instrument identity is what the advices DECLARE: the same addendum is an instrument with "
-                 "RA-0428-GR and UNKNOWN without it, an invoice list is a document either way, Case 2's bank "
-                 "trace is an identity inside a reference that also names invoices, the other roles and "
-                 "IDENTIFY_VERSION 7 are unchanged, and the addendum is quoted only by its words in order",
+                 "RA-0428-GR and UNKNOWN without it, an invoice list is a document either way — appending a "
+                 "junk token to one promotes nothing — Case 2's bank trace is the identity inside a reference "
+                 "that also names invoices, the roles and IDENTIFY_VERSION 7 are unchanged while the rule "
+                 "itself is REFERENCE_IDENTITY_VERSION 2 declared by the family's admission and not by the "
+                 "signed population's, and every identity a row can present is one an entry can quote",
                  not problems, "\n".join(problems))
 
 
@@ -433,6 +509,55 @@ def test_no_shipped_task_declares_or_prints_a_payment_identity():
                  "introduces, so neither the withdrawn shape rule nor the evidenced one that replaced it "
                  "reaches a manifested world, which is why IDENTIFY_VERSION stays 7",
                  not problems, "\n".join(problems))
+
+
+def test_no_generated_world_declares_or_prints_a_payment_identity():
+    """The other half of the manifested population, MEASURED rather than
+    argued.
+
+    The compatibility argument covers two populations: the 95 authored tasks,
+    surveyed above, and everything the GENERATOR can mint, which the changelog
+    used to assert without a test behind it. A promoted record is a generated
+    world, so that half is the half the manifest actually signs.
+
+    Bounded and honest about it: a sweep of both namespaces, both profiles and
+    fifteen indices — sixty worlds — under the public test key, which is the
+    same door `test_generator` mints through. A generator sweep is a SAMPLE,
+    not a proof over the whole seed space; what it can establish is that the
+    draw has no route to an advice file, a multi-word reference or a trace id,
+    and the eight-file public pack is the structural reason it cannot. If the
+    generator ever learns to mount a `remittance_advice.csv`, this fails
+    before the claim reaches a release note.
+    """
+    problems, roles, seen = [], {}, 0
+    for namespace in MI.NAMESPACES:
+        for profile in (GEN.DEFAULT_PROFILE, GEN.HARD_PROFILE):
+            for index in range(15):
+                minted = MI.mint(namespace, index, profile, secret=bytes.fromhex(TEST_SECRET))
+                public = {name: data.decode("utf-8") for name, data in minted.inputs.public_files}
+                seen += 1
+                where = f"{namespace}/{index}/{getattr(profile, 'name', profile)}"
+                if ID.REMITTANCE_FILE in public:
+                    problems.append(f"{where} mounts {ID.REMITTANCE_FILE}")
+                if ID._evidenced_payment_identifiers(public):
+                    problems.append(f"{where} declares payment identifiers")
+                for name in (ID.STATEMENT_FILE, ID.ARCHIVE_FILE):
+                    for record in csv.DictReader(io.StringIO(public.get(name, ""))):
+                        reference = (record.get("reference") or "").strip()
+                        if ID._reference_words(reference):
+                            problems.append(f"{where} {name}: {reference!r} is a multi-word reference")
+                        if ID._TRACE_SYNTAX.match(ID._norm_ref(reference)):
+                            problems.append(f"{where} {name}: {reference!r} is a bank trace id")
+                        surface = f"{record.get('description', '')} {reference}"
+                        role = ID.reference_role(reference, surface)
+                        roles[role] = roles.get(role, 0) + 1
+    print(f"      reference roles over {seen} generated worlds' statement and archive rows: {roles}")
+    if set(roles) - set(ID.REFERENCE_ROLES):
+        problems.append(f"an undeclared role: {roles}")
+    return check(f"no generated world across {seen} sampled seeds mounts an advice, declares a payment "
+                 f"identifier, or prints a multi-word reference or a trace id, so the evidenced rule is "
+                 f"cheque-or-trace on every world the manifest can sign and is strictly narrower there than "
+                 f"the shape rule it replaced", not problems, "\n".join(problems))
 
 
 def test_the_write_off_plant_is_validated_through_the_public_fold():
@@ -597,6 +722,7 @@ TESTS = [
     test_cases_1_and_2_first_then_all_five_read_uniquely_as_planted,
     test_the_mechanism_and_its_limits,
     test_no_shipped_task_declares_or_prints_a_payment_identity,
+    test_no_generated_world_declares_or_prints_a_payment_identity,
     test_the_write_off_plant_is_validated_through_the_public_fold,
     test_every_plant_is_covered_by_an_explicit_validator,
     test_verify_world_and_the_world_battery_accept_the_five,

@@ -604,15 +604,24 @@ def test_the_reference_ontology_classifies_every_shape_the_worlds_publish():
     instrument so that a world which starts printing one gets the instrument
     rules rather than the unknown ones.
 
-    The last block is the identity rule: SHAPE decides nothing. `GR PAYRUN
-    0428` and `APRIL 2026` have the same shape — several words, one carrying a
-    digit — and neither is an instrument until a mounted advice DECLARES it a
-    payment reference. When one does, the payrun reference is an instrument
-    and the dated memo, still undeclared, is not. An invoice list is not one
-    even when an advice declares it, because a list names receivables and two
-    partial payments may quote it.
+    The last block is the identity rule: SHAPE decides nothing, in either
+    direction. `GR PAYRUN 0428` and `APRIL 2026` have the same shape —
+    several words, one carrying a digit — and neither is an instrument until
+    a mounted advice DECLARES it a payment reference. Once one does, BOTH are:
+    the dated memo is a poor reference and a pack should not print one, but a
+    customer has stated that a payment of theirs carries it, and refusing that
+    because the string reads badly would be the shape rule again with its sign
+    flipped. Uniqueness is what stops such a reference deciding what it should
+    not, and that is tested where it lives.
+
+    An invoice list is refused even when an advice declares it, because a list
+    names receivables and two partial payments may quote it — and so is a list
+    with one non-invoice token appended, which is the shape a pack would reach
+    for to get a list declared. The only identity such a column can present is
+    a bank trace id it also prints, and then the identity is that token alone.
     """
-    declared = frozenset({"GRPAYRUN0428", "APRIL2026", "SI1044SI1052", "SI1044"})
+    declared = frozenset({"GRPAYRUN0428", "APRIL2026", "SI1044SI1052", "SI1044",
+                          "SI1044SI1052XZ", "TRC0428442SI1044SI1052"})
     cases = [
         ("SI-1044", "ACH IN HARBOR FREIGHT LTD SI-1044", ID.REF_DOCUMENT, frozenset()),
         ("PI-2240", "Payment of purchase invoice PI-2240", ID.REF_DOCUMENT, frozenset()),
@@ -632,9 +641,16 @@ def test_the_reference_ontology_classifies_every_shape_the_worlds_publish():
         ("SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD SI-1044 SI-1052", ID.REF_DOCUMENT, frozenset()),
         ("SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD SI-1044 SI-1052", ID.REF_DOCUMENT, declared),
         ("SI-1044", "ACH IN HARBOR FREIGHT LTD SI-1044", ID.REF_DOCUMENT, declared),
-        # the bank's own trace, printed beside the payer's invoice list
+        # a list with one non-invoice token appended is not promoted either:
+        # the bar is "any word is an invoice id", not "every word is"
+        ("SI-1044 SI-1052 XZ", "ACH IN HARBOR FREIGHT LTD SI-1044 SI-1052 XZ", ID.REF_UNKNOWN, frozenset()),
+        ("SI-1044 SI-1052 XZ", "ACH IN HARBOR FREIGHT LTD SI-1044 SI-1052 XZ", ID.REF_UNKNOWN, declared),
+        # the bank's own trace, printed beside the payer's invoice list — the
+        # identity is the trace token, declared or not
         ("TRC0428442 SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD TRC0428442 SI-1044 SI-1052",
          ID.REF_INSTRUMENT, frozenset()),
+        ("TRC0428442 SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD TRC0428442 SI-1044 SI-1052",
+         ID.REF_INSTRUMENT, declared),
     ]
     problems = [f"{token!r} in {text!r} (evidenced={sorted(seen)}): "
                 f"{ID.reference_role(token, text, evidenced=seen)} != {want}"
@@ -776,21 +792,36 @@ def test_an_invoice_list_is_document_evidence_and_decides_nothing():
     that. A pack cannot promote a list of receivables to an identity by
     naming it, which is why Case 2 of the cash family was given a bank trace
     id instead of having the rule loosened for it.
+
+    AND NEITHER DOES APPENDING A TOKEN. `SI-1044 SI-1052 XZ` was the hole in
+    the first version of this correction: the refusal fired only where EVERY
+    word was invoice-shaped, so one junk token on the end put a list of
+    receivables back on the instrument path, declared it, and decided this
+    very pack. The test is now "any word is an invoice id", and the third
+    label below is that counterexample held to two readings. It is checked
+    here rather than only in the ontology table because the claim that was
+    wrong was about what a PACK can do, and only the verdict shows that.
     """
     problems = []
-    reference = "SI-1044 SI-1052"
-    for label, advice in (("bare", None), ("declared", advice_rows(("RA-1123-HF", reference)))):
-        public = two_partial_payments(reference, advice, quoted_by=(1, 2))
-        facts = identity_facts(public, reference)
-        verdict = verdict_of(public)
-        if facts.ref_role != ID.REF_DOCUMENT or facts.decisive or facts.presents:
-            problems.append(f"{label}: role {facts.ref_role}, decisive {facts.decisive}, "
-                            f"presents {facts.presents}")
-        if verdict.unique or verdict.readings != 2:
-            problems.append(f"{label}: unique {verdict.unique}, {verdict.readings} readings: "
-                            f"{verdict.reason[:200]}")
-    return check("an invoice list is document evidence and decides nothing — declared by an advice or not — "
-                 "so two part payments quoting one stay two readings", not problems, "\n".join(problems))
+    for reference in ("SI-1044 SI-1052", "SI-1044 SI-1052 XZ"):
+        # the list alone is DOCUMENT evidence; the list with a junk token
+        # appended is not even that, since it is no longer a list of invoice
+        # ids — either way nothing is decisive and nothing is presented
+        want_role = ID.REF_DOCUMENT if reference == "SI-1044 SI-1052" else ID.REF_UNKNOWN
+        for label, advice in (("bare", None), ("declared", advice_rows(("RA-1123-HF", reference)))):
+            public = two_partial_payments(reference, advice, quoted_by=(1, 2))
+            facts = identity_facts(public, reference)
+            verdict = verdict_of(public)
+            where = f"{reference!r} {label}"
+            if facts.ref_role != want_role or facts.decisive or facts.presents:
+                problems.append(f"{where}: role {facts.ref_role}, decisive {facts.decisive}, "
+                                f"presents {facts.presents}")
+            if verdict.unique or verdict.readings != 2:
+                problems.append(f"{where}: unique {verdict.unique}, {verdict.readings} readings: "
+                                f"{verdict.reason[:200]}")
+    return check("an invoice list is document evidence and decides nothing — declared by an advice or not, and "
+                 "with a non-invoice token appended or not — so two part payments quoting one stay two "
+                 "readings", not problems, "\n".join(problems))
 
 
 def test_a_generic_dated_memo_is_not_a_payment_identity():
@@ -801,6 +832,18 @@ def test_a_generic_dated_memo_is_not_a_payment_identity():
     It is a memo naming a month. No advice declares it, so it is UNKNOWN:
     supporting evidence with no hard prune, which is what an unrecognised code
     has to be.
+
+    THE DECLARED HALF, asserted rather than left implicit. An advice that
+    names `APRIL 2026` in `payment_reference` makes it an identity, and this
+    test says so out loud instead of covering only the undeclared case and
+    leaving the other to be discovered. That is not a leak in the rule, it is
+    the rule: the reviewer's criterion is "explicitly evidenced", and a
+    customer has explicitly said a payment of theirs carries that reference. A
+    pack printing so poor a reference is an authoring problem, and it is
+    caught by uniqueness — a second payment quoting `APRIL 2026`, on either
+    side, drops it again — not by the checker second-guessing the string. The
+    alternative is to re-derive an identity from appearance, which is the
+    withdrawn rule wearing the other sign.
     """
     problems = []
     reference = "APRIL 2026"
@@ -808,10 +851,27 @@ def test_a_generic_dated_memo_is_not_a_payment_identity():
     facts = identity_facts(public, reference)
     verdict = verdict_of(public)
     if facts.ref_role != ID.REF_UNKNOWN or facts.decisive or facts.presents:
-        problems.append(f"role {facts.ref_role}, decisive {facts.decisive}, presents {facts.presents}")
+        problems.append(f"undeclared: role {facts.ref_role}, decisive {facts.decisive}, "
+                        f"presents {facts.presents}")
     if verdict.unique or verdict.readings != 2:
-        problems.append(f"unique {verdict.unique}, {verdict.readings} readings: {verdict.reason[:200]}")
-    return check("a generic dated memo is not a payment identity: UNKNOWN, not decisive, presenting nothing",
+        problems.append(f"undeclared: unique {verdict.unique}, {verdict.readings} readings: "
+                        f"{verdict.reason[:200]}")
+    declared = two_partial_payments(reference, advice_rows(("RA-1123-HF", reference)))
+    facts = identity_facts(declared, reference)
+    verdict = verdict_of(declared)
+    if facts.ref_role != ID.REF_INSTRUMENT or not facts.decisive:
+        problems.append(f"declared: role {facts.ref_role}, decisive {facts.decisive}")
+    if not verdict.unique or verdict.readings != 1:
+        problems.append(f"declared: unique {verdict.unique}, {verdict.readings} readings")
+    # and uniqueness, not appearance, is the thing that takes it away again
+    reused = two_partial_payments(reference, advice_rows(("RA-1123-HF", reference),
+                                                         ("RA-1124-HF", reference)))
+    facts = identity_facts(reused, reference)
+    if facts.ref_role != ID.REF_UNKNOWN or facts.decisive:
+        problems.append(f"declared twice: role {facts.ref_role}, decisive {facts.decisive}")
+    return check("a generic dated memo NO ADVICE DECLARES is not a payment identity: UNKNOWN, not decisive, "
+                 "presenting nothing — while one an advice does declare is an identity, deliberately, and "
+                 "loses it to a second declaration rather than to how it reads",
                  not problems, "\n".join(problems))
 
 
