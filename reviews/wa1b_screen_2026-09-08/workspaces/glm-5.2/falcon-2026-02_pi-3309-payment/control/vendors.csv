@@ -1,0 +1,20 @@
+vendor,terms,default_account
+Plumbline Instruments Inc,net 30,Assets:Inventory
+Fuelwise Fleet Card,due on receipt,Expenses:Vehicle
+Ruth Abernathy,expense claim,Expenses:Travel
+Dev Ramaswamy,expense claim,Expenses:Travel
+Caleb Ostrowski,expense claim,Expenses:FieldSupplies
+Marisol Fuentes,expense claim,Expenses:FieldSupplies
+Stakeline Survey Supply,net 30,Assets:Inventory
+Lionel Garvey,monthly payroll,Expenses:Salaries
+Nadia Petrakis,monthly payroll,Expenses:Salaries
+Tomas Reinholt,monthly payroll,Expenses:Salaries
+National Revenue Agency,monthly remittance,Liabilities:PayrollTax
+State Department of Taxation,monthly filing,Liabilities:SalesTax-Payable
+Gridline CAD Software,due on receipt,Expenses:Software
+Northpoint Cellular,due on receipt,Expenses:Telecom
+Inkwell Print and Copy,due on receipt,Expenses:Office
+Benchmark Positioning Systems,due on receipt,Assets:Equipment
+Calibra Instrument Service,due on receipt,Expenses:Repairs
+Falcon Ridge Geomatics LLC,intercompany,Assets:Due-From-Geomatics
+Sentinel Mutual Insurance,due on receipt,Assets:Prepayments

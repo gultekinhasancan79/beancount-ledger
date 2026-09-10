@@ -1,0 +1,18 @@
+14 cases passed adjudication; 14 of the pool are eligible
+resume: 0 rows already archived, 2 left
+SCREEN wa1b/screen-1 subject=glm-5.2: 2 cases x 1 replicates on glm-5.2; cap 40000/40000, contract v3 b16d726ac263
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [06:19<00:00, 379.39s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [06:19<00:00, 379.39s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [06:19<00:00, 379.39s/it, reward=1]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [09:53<00:00, 593.59s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [09:53<00:00, 593.59s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [09:53<00:00, 593.59s/it, reward=1]
+  [ 1/2] wa1b_falcon-2026-02_pi-3309-payment#r1       cont=1.0/RESOLVED | trea=1.0/RESOLVED 
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [04:40<00:00, 280.92s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [04:40<00:00, 280.92s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [04:40<00:00, 280.92s/it, reward=1]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:43<00:00, 163.53s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:43<00:00, 163.53s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:43<00:00, 163.53s/it, reward=1]
+  [ 2/2] wa1b_hawthorn-2025-12_pi-7745-payment#r1     trea=1.0/RESOLVED | cont=1.0/RESOLVED 
+
+2 pairs in 24 min -> C:\Users\gulte\AppData\Local\Temp\claude\C--Users-gulte-Desktop-PIV\e5af9fd8-5589-401a-8521-18264e0703e0\scratchpad\wa1b_screen.jsonl
+SCREEN glm-5.2: 2/2 complete pairs
+  wa1b_falcon-2026-02_pi-3309-payment          arms=['control', 'treatment'] rewards=[1.0, 1.0] item=['RESOLVED', 'RESOLVED'] OK
+  wa1b_hawthorn-2025-12_pi-7745-payment        arms=['treatment', 'control'] rewards=[1.0, 1.0] item=['RESOLVED', 'RESOLVED'] OK

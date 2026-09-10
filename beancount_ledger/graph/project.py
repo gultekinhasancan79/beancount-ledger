@@ -23,7 +23,9 @@ Public views omit every private id; the bundle keeps them for audit.
 from __future__ import annotations
 
 import calendar
+import re
 from dataclasses import dataclass
+from datetime import date as _date, timedelta
 from decimal import Decimal
 from enum import Enum
 
@@ -35,16 +37,23 @@ from .policy import (
     AccountingRecognition,
     BankMovement,
     Roles,
+    credit_note_amounts,
+    is_cash_application_world,
     movement_of,
     opening_recognition,
     recognitions_of,
+    required_sections,
+    write_offs_of,
 )
 from .schema import (
     GRAPH_SCHEMA_VERSION,
+    AppliedReceipt,
+    CreditNote,
     CustomerReceipt,
     DocumentKind,
     PartyRole,
     Purchase,
+    Rail,
     Sale,
     VendorPayment,
     World,
@@ -73,6 +82,20 @@ EXPECTED_BALANCES_VIEW = "expected_balances"      # private
 PUBLIC_VIEWS = (LEDGER_VIEW, STATEMENT_VIEW, ACCOUNTS_VIEW, CUSTOMERS_VIEW, VENDORS_VIEW, POLICY_VIEW,
                 ARCHIVE_VIEW, MANIFEST_VIEW)
 CONSEQUENCE_VIEWS = (LEDGER_VIEW, EXPECTED_LEDGER_VIEW, STATEMENT_VIEW, ARCHIVE_VIEW)
+
+# The cash-application family's evidence pack: three master-data-style views
+# (observations, no absences — they are not consequence views) emitted ONLY
+# for a world the family is inferred from. A legacy world keeps exactly the
+# eight above, byte for byte.
+OPEN_ITEMS_VIEW = "open_items.csv"
+REMITTANCE_VIEW = "remittance_advice.csv"
+CREDIT_NOTES_VIEW = "credit_notes.csv"
+FAMILY_VIEWS = (OPEN_ITEMS_VIEW, REMITTANCE_VIEW, CREDIT_NOTES_VIEW)
+OPEN_ITEMS_COLUMNS = ("invoice_id", "customer", "invoice_date", "due_date", "original_amount", "open_balance")
+REMITTANCE_COLUMNS = ("remittance_id", "customer", "remittance_date", "payment_method", "payment_reference",
+                      "payment_amount", "invoice_id", "amount_paid", "settles_invoice", "deduction_amount", "note")
+CREDIT_NOTE_COLUMNS = ("credit_note_id", "date", "customer", "invoice_id", "net_amount", "tax_amount",
+                       "gross_amount", "reason")
 
 # Fixed layout of the rendered ledger. Contractual: the byte comparison
 # against the shipped world holds these constants to the file.
@@ -326,13 +349,64 @@ def _roles(world: World) -> Roles:
     return Roles(**dict(world.roles))
 
 
+def _terms_days(terms) -> int:
+    """`net 30` -> 30; `due on receipt` (or no terms) -> 0."""
+    match = re.search(r"net\s+(\d+)", terms or "", re.IGNORECASE)
+    return int(match.group(1)) if match else 0
+
+
+def _posting_date(event) -> str:
+    """The date the books carry an event's recognition: the bank's date for
+    an applied receipt (the family posts on the date the bank shows), the
+    event's own date otherwise."""
+    return event.settlement.cleared_on if isinstance(event, AppliedReceipt) else event.date
+
+
+def invoice_applications(world: World, invoice_id: str, *, before: str | None = None) -> Decimal:
+    """Everything applied against one sales invoice by the authored facts —
+    single-invoice receipts, applied-receipt lines, the policy's write-offs
+    on them and credit notes naming it — posted before `before` (every date
+    when None). A credit note counts here for the amount it names; what its
+    excess does is the register's business, not the invoice's."""
+    total = Decimal("0")
+    for e in world.events:
+        if before is not None and _posting_date(e) >= before:
+            continue
+        if isinstance(e, CustomerReceipt) and e.invoice_id == invoice_id:
+            total += e.amount
+        elif isinstance(e, AppliedReceipt):
+            total += sum((line.amount for line in e.lines if line.invoice_id == invoice_id), Decimal("0"))
+            total += sum((amount for inv, amount in write_offs_of(e) if inv == invoice_id), Decimal("0"))
+        elif isinstance(e, CreditNote) and e.invoice_id == invoice_id:
+            total += credit_note_amounts(e)[1]
+    return total
+
+
+def open_items(world: World, period: Period) -> tuple:
+    """The open sales-invoice register entering the period: every sales
+    invoice issued before it whose face value exceeds what was applied
+    against it before it, as `(document, due_date, open_balance)` in
+    `(issued, number)` order. `open_balance`, never the face value, is the
+    balance the period starts from."""
+    rows = []
+    for d in sorted(world.documents, key=lambda d: (d.issued, d.number)):
+        if d.kind is not DocumentKind.SALES_INVOICE or d.issued >= period.start:
+            continue
+        open_balance = d.gross - invoice_applications(world, d.id, before=period.start)
+        if open_balance > 0:
+            issued = _date.fromisoformat(d.issued)
+            due = issued + timedelta(days=_terms_days(world.party(d.party_id).terms))
+            rows.append((d, due.isoformat(), open_balance))
+    return tuple(rows)
+
+
 # --------------------------------------------------------------------------
 # the projector
 # --------------------------------------------------------------------------
 
 def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
     problems = check_world(world)
-    for role, section in POLICY_SECTIONS.items():
+    for role, section in required_sections(world).items():
         if section not in world.policy_text:
             problems.append(f"policy rule {role!r} cites {section!r}, which the policy text lacks")
     if problems:
@@ -527,6 +601,47 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
     vendors_view = parties(VENDORS_VIEW, PartyRole.VENDOR, "vendor,terms,default_account")
     policy_view = _view(POLICY_VIEW, world.policy_text, [Observation(POLICY_VIEW, "policy", ("policy_text",))], [], True)
 
+    # the cash-application family's evidence pack ----------------------
+    family = is_cash_application_world(world)
+    family_views: list = []
+    if family:
+        rows = [",".join(OPEN_ITEMS_COLUMNS)]
+        obs = []
+        for d, due, open_balance in open_items(world, period):
+            customer = world.party(d.party_id).name
+            rows.append(f"{d.number},{customer},{d.issued},{due},{_money(d.gross)},{_money(open_balance)}")
+            obs.append(Observation(OPEN_ITEMS_VIEW, d.number, (d.id, d.party_id), open_balance))
+        family_views.append(_view(OPEN_ITEMS_VIEW, "\n".join(rows) + "\n", obs, [], True))
+
+        rows = [",".join(REMITTANCE_COLUMNS)]
+        obs = []
+        adviced = [e for e in world.events if isinstance(e, AppliedReceipt) and e.remittance_id
+                   and period.contains(e.settlement.cleared_on)]
+        for e in sorted(adviced, key=lambda e: (e.date, e.remittance_id)):
+            customer = world.party(e.party_id).name
+            if e.settlement.rail is Rail.CHEQUE:
+                method, reference = "CHECK", world.document(e.settlement.cheque_id).number
+            else:
+                method, reference = "ACH", e.bank_reference
+            for line in e.lines:
+                number = world.document(line.invoice_id).number
+                rows.append(f"{e.remittance_id},{customer},{e.date},{method},{reference},{_money(e.amount)},"
+                            f"{number},{_money(line.amount)},{'yes' if line.settles else 'no'},"
+                            f"{_money(line.deduction)},{line.note}")
+                obs.append(Observation(REMITTANCE_VIEW, f"{e.remittance_id} {number}", (e.id, line.invoice_id),
+                                       line.amount))
+        family_views.append(_view(REMITTANCE_VIEW, "\n".join(rows) + "\n", obs, [], True))
+
+        rows = [",".join(CREDIT_NOTE_COLUMNS)]
+        obs = []
+        notes = [e for e in world.events if isinstance(e, CreditNote) and period.contains(e.date)]
+        for e in sorted(notes, key=lambda e: (e.date, e.number)):
+            tax, gross = credit_note_amounts(e)
+            rows.append(f"{e.number},{e.date},{world.party(e.party_id).name},{world.document(e.invoice_id).number},"
+                        f"{_money(e.net)},{_money(tax)},{_money(gross)},{e.memo}")
+            obs.append(Observation(CREDIT_NOTES_VIEW, e.number, (e.id, e.invoice_id), gross))
+        family_views.append(_view(CREDIT_NOTES_VIEW, "\n".join(rows) + "\n", obs, [], True))
+
     bank_name = world.party(world.bank_party_id).name
     def rows_of(v: View) -> int:
         return len(v.text.splitlines()) - 1
@@ -542,11 +657,18 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
         f"| `{POLICY_VIEW}` | Bookkeeping policy notes. |",
         f"| `{ARCHIVE_VIEW}` | Checking account statement. Period {prior.start} to {prior.end}. "
         f"{rows_of(archive_view)} rows. Same columns as `{STATEMENT_VIEW}`. |",
-    ]) + "\n"
+    ] + ([
+        f"| `{OPEN_ITEMS_VIEW}` | Open sales-invoice register at {period.start}. "
+        f"{_rows_phrase(rows_of(family_views[0]))}. Columns: {', '.join(OPEN_ITEMS_COLUMNS)}. |",
+        f"| `{REMITTANCE_VIEW}` | Customer remittance advices, one row per advice line. "
+        f"{_rows_phrase(rows_of(family_views[1]))}. Columns: {', '.join(REMITTANCE_COLUMNS)}. |",
+        f"| `{CREDIT_NOTES_VIEW}` | Credit notes issued in the period. "
+        f"{_rows_phrase(rows_of(family_views[2]))}. Columns: {', '.join(CREDIT_NOTE_COLUMNS)}. |",
+    ] if family else [])) + "\n"
     manifest_view = _view(MANIFEST_VIEW, manifest_text,
                           [Observation(MANIFEST_VIEW, v.name, (f"view:{v.name}",))
                            for v in (ledger_view, statement_view, accounts_view, customers_view, vendors_view,
-                                     policy_view, archive_view)], [], True)
+                                     policy_view, archive_view, *family_views)], [], True)
 
     # expected balances: a fold over the expected ledger's PRESENT rows ----
     present = {o.node_ids[0] for o in expected_view.observations if o.node_ids[0].startswith("rec:")}
@@ -563,7 +685,7 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
                            for a, v in expected_balances], [], False)
 
     views = (ledger_view, expected_view, statement_view, archive_view, accounts_view, customers_view, vendors_view,
-             policy_view, manifest_view, balances_view)
+             policy_view, manifest_view, balances_view) + tuple(family_views)
     _assert_exhaustive(views, recognitions, movements)
 
     graph_digest = domain_digest(GRAPH_DOMAIN, canonical_bytes({
@@ -574,6 +696,10 @@ def project(world: World, period: Period, plan: MutationPlan) -> Bundle:
     return Bundle(world.id, world.title, world.currency, period, prior, plan, graph_digest, plan_digest,
                   recognitions, movements, opening_bank, views, expected_balances,
                   tuple(sorted(restated.items())))
+
+
+def _rows_phrase(count: int) -> str:
+    return f"{count} row{'' if count == 1 else 's'}"
 
 
 def _assert_exhaustive(views, recognitions, movements) -> None:
@@ -653,9 +779,37 @@ def check_bundle(world: World, bundle: Bundle) -> list[str]:
         problems.append(f"reconciliation identity fails: statement {statement_close} + unsettled {unsettled} != books {books_bank}")
     # receipts against invoices; sales against their invoice gross; tax arithmetic
     applied: dict[str, Decimal] = {}
+    paid: dict[str, Decimal] = {}
     for e in world.events:
         if isinstance(e, CustomerReceipt):
             applied[e.invoice_id] = applied.get(e.invoice_id, Decimal("0")) + e.amount
+        if isinstance(e, AppliedReceipt):
+            # An applied receipt is checked line by line — each line against
+            # its invoice's face value — and cumulatively below: an invoice's
+            # applications across ALL receipts (cash and the policy's
+            # write-offs) never exceed what the invoice can absorb.
+            lines_total = Decimal("0")
+            for line in e.lines:
+                invoice = world.document(line.invoice_id)
+                if line.amount > invoice.gross:
+                    problems.append(f"{e.id}: line on {invoice.number} pays {line.amount} above its gross {invoice.gross}")
+                applied[line.invoice_id] = applied.get(line.invoice_id, Decimal("0")) + line.amount
+                lines_total += line.amount
+            if lines_total > e.amount:
+                problems.append(f"{e.id}: the advice lines total {lines_total}, above the receipt of {e.amount}")
+            for invoice_id, amount in write_offs_of(e):
+                applied[invoice_id] = applied.get(invoice_id, Decimal("0")) + amount
+            if e.settlement.cleared_on < e.date:
+                problems.append(f"{e.id}: the bank saw the receipt before the customer sent it")
+        if isinstance(e, CreditNote):
+            tax, gross = credit_note_amounts(e)
+            if e.net + tax != gross or gross <= 0:
+                problems.append(f"{e.id}: net {e.net} + tax {tax} is not gross {gross}")
+        if isinstance(e, VendorPayment):
+            # accumulated per invoice, as receipts are: the per-payment check below
+            # refuses one payment above the gross but let two half-payments that
+            # sum above it through, so an economically wrong world could be built
+            paid[e.invoice_id] = paid.get(e.invoice_id, Decimal("0")) + e.amount
         if isinstance(e, Sale):
             gross = (e.net + (e.net * e.tax_rate).quantize(Decimal("0.01"))).quantize(Decimal("0.01"))
             if world.document(e.invoice_id).gross != gross:
@@ -667,14 +821,30 @@ def check_bundle(world: World, bundle: Bundle) -> list[str]:
     for invoice_id, total in applied.items():
         if total > world.document(invoice_id).gross:
             problems.append(f"{invoice_id}: receipts {total} exceed gross {world.document(invoice_id).gross}")
+    for invoice_id, total in paid.items():
+        if total > world.document(invoice_id).gross:
+            problems.append(f"{invoice_id}: payments {total} exceed gross {world.document(invoice_id).gross}")
     # opening receivables/payables cover the prior invoices still open at the boundary
     carried = dict(world.opening.carried)
-    prior_open_ar = sum((d.gross for d in world.documents if d.kind is DocumentKind.SALES_INVOICE
-                         and d.issued < bundle.period.start
-                         and any(isinstance(e, CustomerReceipt) and e.invoice_id == d.id and e.date >= bundle.period.start
-                                 for e in world.events)), Decimal("0"))
+    # The balance ENTERING the period of every prior invoice something in the
+    # period applies to — its face value less what was applied against it
+    # before the period (a part-paid invoice enters at its remainder) — must
+    # be covered by the carried receivables.
+    def applied_in_period(d) -> bool:
+        return invoice_applications(world, d.id) > invoice_applications(world, d.id, before=bundle.period.start)
+    prior_open_ar = sum((d.gross - invoice_applications(world, d.id, before=bundle.period.start)
+                         for d in world.documents if d.kind is DocumentKind.SALES_INVOICE
+                         and d.issued < bundle.period.start and applied_in_period(d)), Decimal("0"))
     if carried.get(roles.receivables, Decimal("0")) < prior_open_ar:
         problems.append(f"opening receivables {carried.get(roles.receivables)} < prior invoices settled in period {prior_open_ar}")
+    if is_cash_application_world(world):
+        # Gate (l), the truth side: the register entering the period ties to
+        # the opening entry's receivables (U7). The public fold checks the
+        # same identity over the projected bytes.
+        register_total = sum((open_balance for _, _, open_balance in open_items(world, bundle.period)), Decimal("0"))
+        if register_total != carried.get(roles.receivables, Decimal("0")):
+            problems.append(f"REFUSE_REGISTER_DOES_NOT_TIE: the open-item register entering the period totals "
+                            f"{register_total}, the opening entry's receivables {carried.get(roles.receivables)}")
     prior_open_ap = sum((d.gross for d in world.documents if d.kind is DocumentKind.PURCHASE_INVOICE
                          and d.issued < bundle.period.start
                          and any(isinstance(e, VendorPayment) and e.invoice_id == d.id and e.date >= bundle.period.start

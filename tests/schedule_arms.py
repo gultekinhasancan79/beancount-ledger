@@ -293,7 +293,12 @@ def schedule_digest(content: dict) -> str:
 #   instrument_commit                 the git HEAD that will execute (clean tree required)
 #   analysis_plan_sha256              reviews/confirmatory_design.md, as sealed
 #   arm_contract                      the literal ARM_PRESETS mapping for these arms
-#   expected_episode_contract_digest  the package's own digest at this ceiling
+#   episode_contract_profile          the EPISODE PROFILE these selectors serve
+#                                     ("legacy" or "cash_application"); the two
+#                                     resolve DIFFERENT contract views, so the
+#                                     digest below means nothing without it
+#   expected_episode_contract_digest  the package's own digest at this ceiling,
+#                                     under that profile
 #   expected_replay_contract_digest_by_arm
 #   package_lock                      the pinned library versions (a READING aid)
 #   runtime_environment_digest        the BYTES of every installed distribution,
@@ -1745,6 +1750,43 @@ def expected_public_task_ids(selectors: list[str]) -> dict:
     return ids
 
 
+def sealed_episode_profile(selectors: list[str]) -> str:
+    """The ONE episode profile these selectors serve, through the real serving
+    door.
+
+    The sealed contract carries a SINGLE `expected_episode_contract_digest`,
+    and `contract_expectations` admits every row of the schedule against it.
+    That is sound only while every selector resolves the same episode
+    contract. Since the cash-application family it is no longer automatic:
+    `cash_application_*` resolves contract 5 and everything else contract 4,
+    and the module-level `episode_contract_digest()` default silently answers
+    for the LEGACY view whatever was asked. So the profile is resolved here,
+    once, from the selectors themselves and sealed beside the digest.
+
+    A schedule that MIXES profiles is refused rather than sealed under one of
+    them: a single admission digest cannot be right for both, and a per-profile
+    seal is a shape change nobody has asked for yet. An empty selector list is
+    the legacy profile (`tests/test_measure_budget.py` seals such a contract to
+    exercise the hash).
+    """
+    from beancount_ledger import beancount_ledger as env_mod
+    legacy = getattr(env_mod, "PROFILE_LEGACY", "legacy")
+    profiles = {}
+    for selector in selectors:
+        env = env_mod.load_environment(selector)
+        profiles[selector] = getattr(env, "profile", None) or legacy
+    distinct = sorted(set(profiles.values()))
+    if len(distinct) > 1:
+        by_profile = {p: sorted(s for s, v in profiles.items() if v == p) for p in distinct}
+        raise SystemExit(
+            "refusing to seal a schedule whose selectors serve DIFFERENT episode profiles "
+            f"({by_profile}). The sealed contract carries one "
+            "expected_episode_contract_digest and every row is admitted against it, so a "
+            "mixed schedule would admit or reject rows against a contract they never ran. "
+            "Seal one schedule per profile.")
+    return distinct[0] if distinct else legacy
+
+
 def build_experiment_contract(arms: list[str], selectors: list[str], ceiling: int,
                               analysis_plan: Path, root: Path | None = None) -> dict:
     """Everything §2 asks the schedule to bind, computed HERE, once, at
@@ -1754,6 +1796,9 @@ def build_experiment_contract(arms: list[str], selectors: list[str], ceiling: in
 
     contract = arm_contract(arms)
     versions = mb.library_versions()
+    # WHICH episode contract these selectors serve. Resolved before the digest
+    # because the digest is meaningless without it.
+    profile = sealed_episode_profile(selectors)
     tree = execution_tree_manifest(root)
     environment = runtime_environment_manifest()
     return {
@@ -1791,8 +1836,13 @@ def build_experiment_contract(arms: list[str], selectors: list[str], ceiling: in
         "analysis_plan": str(Path(analysis_plan).name),
         "analysis_plan_sha256": sha256_file(Path(analysis_plan)),
         "arm_contract": contract,
-        "expected_episode_contract_digest": env_mod.episode_contract_digest(ceiling),
-        "episode_contract_version": getattr(env_mod, "EPISODE_CONTRACT_VERSION", None),
+        # Both resolved UNDER `profile`, never under the module-level default:
+        # `episode_contract_digest(ceiling)` and `EPISODE_CONTRACT_VERSION` are
+        # the LEGACY view, so a cash-application schedule sealed with them
+        # would admit its own rows against a contract they never ran.
+        "episode_contract_profile": profile,
+        "expected_episode_contract_digest": env_mod.episode_contract_digest(ceiling, profile),
+        "episode_contract_version": env_mod.episode_contract_version(profile),
         "max_episode_output_tokens": ceiling,
         "expected_replay_contract_digest_by_arm": {
             arm: mb.replay_contract_digest(spec["reasoning_replay"], versions)
@@ -2222,6 +2272,8 @@ def main() -> int:
         print(f"  python_version              {contract['python_version'].splitlines()[0]}")
         print(f"  analysis_plan_sha256        {contract['analysis_plan_sha256']} ({contract['analysis_plan']})")
         print(f"  arm_contract                {contract['arm_contract']}")
+        print(f"  episode profile             {contract.get('episode_contract_profile')} "
+              f"(contract {contract.get('episode_contract_version')})")
         print(f"  episode_contract_digest     {contract['expected_episode_contract_digest']}")
         for arm, digest in sorted(contract["expected_replay_contract_digest_by_arm"].items()):
             print(f"  replay digest {arm:<3}           {digest}")

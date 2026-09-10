@@ -89,7 +89,7 @@ from beancount_ledger.candidate.normalise import Accepted, ProtocolFailure, pars
 from beancount_ledger.graph.generate import DEFAULT_PROFILE, HARD_PROFILE  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.mint import GENERATOR_VERSION, mint  # noqa: E402
-from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import LEGACY_TASK_IDS, REGISTRY  # noqa: E402
 
 BIG_JUMP = 0.25
 PENALTY_LISTS = ("collateral_damage", "removed_or_altered", "fabricated", "merged_events", "undocumented", "plug_accounts")
@@ -248,6 +248,26 @@ def audit(selector: str, loop_sample: int) -> dict:
     items = list(contract.planted)
     k = len(items)
     targets = list(contract.scored_accounts)
+    if k == 0:
+        # A CLEAN task — the assurance pack's k=0 months — has no repair
+        # lattice: one subset, no targets, and the ladder, the marginal jumps
+        # and the monotonicity claim this instrument exists to measure are
+        # all undefined (`n / k` and `len(targets)` are literally division by
+        # zero). It is named as an EXCLUSION rather than crashed on, and the
+        # exclusion is not vacuous: the one point of the lattice is scored
+        # here, and it must be the complete 1.0 that the whole clean-month
+        # claim rests on. The rest of that claim — that an invented
+        # correction is priced — is `world_checks` branch (d) and
+        # `tests/test_clean_month.py`.
+        one = score_chain(contract, original, 1)
+        why = None
+        if one["outcome"] != "delivered":
+            why = f"the untouched ledger is {one['outcome']}: {one.get('reason') or one.get('detail')}"
+        elif one["reward"] != 1.0 or not one.get("complete"):
+            why = f"the untouched ledger scores {one['reward']} complete={one.get('complete')}, not a complete 1.0"
+        return {"selector": selector, "generator_version": GENERATOR_VERSION,
+                "excluded": "nothing planted: there is no repair lattice to audit",
+                "clean_point_violation": why, "seconds": round(time.time() - t0, 1)}
     bank = next((a for a in targets if a.startswith("Assets:Bank")), targets[0] if targets else "")
     touch = {a: {i for i, p in enumerate(items) if any(x == a for x, _ in p.required)} for a in targets}
     residual = [item_residual(p) for p in items]
@@ -357,7 +377,7 @@ def main() -> int:
     parser.add_argument("--eval", type=int, default=10)
     parser.add_argument("--hard", type=int, default=10)
     parser.add_argument("--selectors", nargs="*", default=None, help="explicit selectors instead of the ranges")
-    parser.add_argument("--manual", action="store_true", help="audit every hand-authored task in the registry instead of the ranges")
+    parser.add_argument("--manual", action="store_true", help="audit the 95 legacy hand-authored tasks instead of the ranges")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--loop-sample", type=int, default=2, help="subsets per world also sent through the real loop (0 = none)")
     parser.add_argument("--json", type=Path, default=None)
@@ -365,7 +385,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.manual:
-        selectors = sorted(REGISTRY)
+        # The 95 legacy ids, not all 100. The lattice this audits is
+        # `candidate/1`'s, and a cash-application task's reward is
+        # `composite/1`'s `L x A` over two artifacts — sweeping the five
+        # here would attest the ledger half as if it were the task's score.
+        selectors = sorted(LEGACY_TASK_IDS)
     else:
         selectors = args.selectors or ([f"train:{i}" for i in range(args.train)] + [f"eval:{i}" for i in range(args.eval)]
                                        + [f"train:{i}:hard" for i in range(args.hard)])
@@ -380,6 +404,9 @@ def main() -> int:
     ok = [r for r in rows if "k" in r]
     refused = [r for r in rows if "refused" in r]
     crashed = [r for r in rows if "crashed" in r]
+    # Clean (k=0) tasks: no lattice to audit, one point checked instead.
+    excluded = [r for r in rows if "excluded" in r]
+    clean_violations = [r for r in excluded if r.get("clean_point_violation")]
     mono = sum(len(r["monotonicity_violations"]) for r in ok)
     pen = sum(len(r["penalty_activations"]) for r in ok)
     unexpected = sum(len(r["unexpected_states"]) for r in ok)
@@ -397,7 +424,8 @@ def main() -> int:
 
     print(f"reward lattice audit: GENERATOR_VERSION {GENERATOR_VERSION}, engine candidate/1, "
           f"{'production serving door' if args.production else 'test secret / development route'}")
-    print(f"{len(rows)} selectors in {time.time() - t0:.0f}s: {len(ok)} audited, {len(refused)} refused, {len(crashed)} crashed; "
+    print(f"{len(rows)} selectors in {time.time() - t0:.0f}s: {len(ok)} audited, {len(excluded)} excluded (nothing planted), "
+          f"{len(refused)} refused, {len(crashed)} crashed; "
           f"{subsets} subsets scored through the chain, {loop_checked} also through the real loop")
     print(f"HARD  monotonicity violations {mono}; correct-repair penalty activations {pen}; unexpected states {unexpected}; "
           f"loop mismatches {mismatches}")
@@ -416,6 +444,9 @@ def main() -> int:
         print(f"   REFUSED {r['selector']}: {r['refused']}")
     for r in crashed[:5]:
         print(f"   CRASHED {r['selector']}: {r['crashed']}")
+    for r in excluded:
+        note = r["clean_point_violation"] or "its untouched ledger is already a complete 1.0"
+        print(f"   {'CLEAN-POINT FAILED' if r['clean_point_violation'] else 'EXCLUDED'} {r['selector']}: {note}")
     for r in ok:
         for v in r["monotonicity_violations"][:3]:
             print(f"   MONOTONICITY {r['selector']}: {v}")
@@ -428,7 +459,9 @@ def main() -> int:
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         summary = {"generator_version": GENERATOR_VERSION, "mode": "production" if args.production else "test",
-                   "selectors": len(rows), "audited": len(ok), "refused": len(refused), "crashed": len(crashed),
+                   "selectors": len(rows), "audited": len(ok), "excluded": len(excluded),
+                   "clean_point_violations": len(clean_violations),
+                   "refused": len(refused), "crashed": len(crashed),
                    "subsets": subsets, "loop_checked": loop_checked, "monotonicity_violations": mono,
                    "penalty_activations": pen, "unexpected_states": unexpected, "loop_mismatches": mismatches,
                    "jumps": n_jumps, "big_jumps": big, "big_jumps_bank": big_bank, "max_jump": max_jump,
@@ -436,7 +469,7 @@ def main() -> int:
                    "seconds": round(time.time() - t0)}
         args.json.write_text(json.dumps({"summary": summary, "worlds": rows}, indent=1, default=str), encoding="utf-8")
         print(f"written {args.json}")
-    hard_fail = mono or pen or unexpected or mismatches or crashed
+    hard_fail = mono or pen or unexpected or mismatches or crashed or clean_violations
     print("FAIL: a hard requirement did not hold" if hard_fail else "PASS: every hard requirement holds")
     return 1 if hard_fail else 0
 

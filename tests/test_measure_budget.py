@@ -448,6 +448,432 @@ def test_bind_artifact_defaults_when_state_is_sparse():
 
 
 # --------------------------------------------------------------------------
+# 1a. the SECOND deliverable — a cash-application rollout binds too
+#
+# Every check above runs on a legacy task, and that was the hole. A
+# cash-application rollout's `delivery.json` carries an extra top-level
+# `application` member; `DeliveryReceipt` (frozen with `candidate/1`) reads
+# the top level by EXACT KEY SET, so the frozen reader RAISES on it — and
+# `bind_artifact` swallowed that exception into
+# "ARTIFACT_MISMATCH: delivery.json unreadable". A perfect 1.0 family
+# rollout was therefore recorded by this instrument as a failed binding: a
+# false failure diagnosis, silent, in the instrument round 12 answer §6
+# names for the very next measurement. These three tests are the family's
+# side of section 1.
+# --------------------------------------------------------------------------
+
+import test_cash_application_route as CAR  # noqa: E402
+
+
+class _FamilyEnvModShim(_DefaultEnvModShim):
+    """`_DefaultEnvModShim` with the family's task: `load_environment` builds
+    `cash_application_001` (contract 5, seven tools, two deliverables)
+    whatever selector it is handed. Nothing else changes, so these rows go
+    through exactly the `one_rollout` the legacy rows above do."""
+
+    def load_environment(self, selector=None):
+        return env_mod.load_environment("cash_application_001")
+
+
+FAMILY_SHIM = _FamilyEnvModShim()
+
+
+def family(turns, selector="family:0") -> dict:
+    return one(turns, selector=selector, env_shim=FAMILY_SHIM)
+
+
+def test_a_family_rollout_binds_both_deliverables():
+    """The golden ledger AND the golden register, through the real door:
+    both bind, and the register's digests are cross-checked against the
+    `application` member of the manifest the scorer published — read back
+    with the scorer's own reader, not this test's arithmetic.
+
+    The regression is pinned from the other side too: the FROZEN
+    `DeliveryReceipt.from_json` must still RAISE on this very file. That is
+    not a defect — it is the exact-key-set rule that keeps a legacy
+    manifest's bytes unchanged — and it is precisely why every reader of
+    `delivery.json` must go through `_read_publication`. If someone ever
+    makes the frozen reader tolerant, this assertion says so out loud
+    instead of letting the instrument quietly depend on it.
+    """
+    row = family([CAR.deliver(register=CAR.case()["register"]), CAR.submit()])
+    problems = []
+    if row.get("reward") != 1.0:
+        problems.append(f"reward {row.get('reward')}; the golden pair must score 1.0")
+    if row["artifact"] != "BOUND" or row.get("artifact_reason") is not None:
+        problems.append(f"artifact {row['artifact']}/{row.get('artifact_reason')}")
+    if row.get("application") != "BOUND" or row.get("application_reason") is not None:
+        problems.append(f"application {row.get('application')}/{row.get('application_reason')}")
+    if (row.get("application_status"), row.get("application_revision")) != ("delivered", 1):
+        problems.append(f"the receipt says {row.get('application_status')} at revision "
+                        f"{row.get('application_revision')}")
+    manifest = Path(row["workspace"]) / env_mod.PUBLICATION_FILE
+    text = manifest.read_text(encoding="utf-8")
+    _delivery, application = env_mod._read_publication(text)
+    if application is None:
+        problems.append("the family manifest carries no register half")
+    else:
+        if (row.get("application_stored_bytes_digest"), row.get("application_logical_text_digest")) != (
+                application.artifact_stored_bytes_digest, application.artifact_logical_text_digest):
+            problems.append("the bound register digests are not the receipt's own")
+        published = (Path(row["workspace"]) / env_mod.APPLICATION_FILE).read_bytes()
+        if env_mod.digests_of(published)["logical_text_digest"] != application.artifact_logical_text_digest:
+            problems.append("the register on the public path is not the one the receipt names")
+    try:
+        env_mod.DeliveryReceipt.from_json(text)
+        problems.append("the FROZEN DeliveryReceipt.from_json now parses a family manifest; the reason "
+                        "bind_artifact must use _read_publication has changed and this test must be revisited")
+    except Exception:                                                            # noqa: BLE001 — the expected refusal
+        pass
+    return check("a cash-application rollout binds BOTH deliverables: ledger BOUND, register BOUND against "
+                 "the scorer's own receipt — through _read_publication, which the frozen "
+                 "DeliveryReceipt.from_json still refuses", not problems, "\n".join(problems))
+
+
+def test_a_family_rollout_reports_an_absent_and_a_rejected_register():
+    """The two undelivered register states, each on its own row and each
+    distinguished from the other — the whole point of reporting the second
+    deliverable rather than only the ledger.
+
+      absent    the agent filed no register at all
+      rejected  a valid register was SUPERSEDED by an invalid one; the
+                lifecycle scores the last committed revision, so there is
+                no fallback to the good one and nothing is published
+
+    In both, the ledger is perfect and BOUND, so a row that reported only
+    the ledger would show these as indistinguishable successes.
+    """
+    problems = []
+    absent = family([CAR.deliver(register=None), CAR.submit()], selector="family:absent")
+    if absent["artifact"] != "BOUND":
+        problems.append(f"absent row: ledger {absent['artifact']}/{absent.get('artifact_reason')}")
+    if (absent.get("application"), absent.get("application_reason")) != ("NO_ARTIFACT", "absent"):
+        problems.append(f"absent row: application {absent.get('application')}/"
+                        f"{absent.get('application_reason')}")
+    if absent.get("application_revision") != 0:
+        problems.append(f"absent row: revision {absent.get('application_revision')}")
+    if (Path(absent["workspace"]) / env_mod.APPLICATION_FILE).exists():
+        problems.append("absent row: a register is on the public path")
+    rejected = family([CAR.deliver(register=CAR.case()["register"]),
+                       CAR.write_register("x", CAR.case()["invalid"]), CAR.submit()],
+                      selector="family:rejected")
+    if rejected["artifact"] != "BOUND":
+        problems.append(f"rejected row: ledger {rejected['artifact']}/{rejected.get('artifact_reason')}")
+    if (rejected.get("application"), rejected.get("application_reason")) != ("NO_ARTIFACT", "rejected"):
+        problems.append(f"rejected row: application {rejected.get('application')}/"
+                        f"{rejected.get('application_reason')}")
+    if rejected.get("application_revision") != 2:
+        problems.append(f"rejected row: revision {rejected.get('application_revision')}")
+    if (Path(rejected["workspace"]) / env_mod.APPLICATION_FILE).exists():
+        problems.append("rejected row: the superseded good register is still on the public path")
+    if rejected.get("reward") != 0.0 or absent.get("reward") != 0.0:
+        problems.append(f"rewards {absent.get('reward')} / {rejected.get('reward')}; both must be 0 "
+                        f"(total = L x A)")
+    return check("a family row tells an ABSENT register from a REJECTED one, both with the ledger BOUND and "
+                 "the reward 0 — and neither leaves a register on the public path",
+                 not problems, "\n".join(problems))
+
+
+def test_a_legacy_row_gains_no_register_keys():
+    """The other half of the same property: contract 4's row is exactly the
+    row it was before the family existed. No `application*` key appears on
+    it, and its `delivery.json` is still, to the byte, what
+    `DeliveryReceipt.to_json()` writes — so a legacy archive stays readable
+    by a reader that knows nothing about registers."""
+    row = one([tec.write(), tec.submit()])
+    problems = []
+    stray = sorted(k for k in row if k.startswith("application"))
+    if stray:
+        problems.append(f"a legacy row carries register keys: {stray}")
+    if row["artifact"] != "BOUND":
+        problems.append(f"artifact {row['artifact']}/{row.get('artifact_reason')}")
+    manifest = Path(row["workspace"]) / env_mod.PUBLICATION_FILE
+    text = manifest.read_text(encoding="utf-8")
+    receipt = env_mod.DeliveryReceipt.from_json(text)     # the FROZEN reader, unaided
+    if receipt.to_json() != text:
+        problems.append("a legacy delivery.json is no longer exactly DeliveryReceipt.to_json()")
+    _delivery, application = env_mod._read_publication(text)
+    if application is not None:
+        problems.append("a legacy manifest grew a register half")
+    return check("a legacy row gains no register keys and its delivery.json is still byte-for-byte what the "
+                 "frozen DeliveryReceipt writes", not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 1c. CONTRACT PROVENANCE — a row must state the contract it actually ran
+#
+# The register binding above was only half of the family's side of the
+# instrument. The other half is what every row CLAIMS about the contract
+# behind it, and it was legacy-only in three places at once:
+#
+#   `episode_contract_digest_declared`  `env_mod.episode_contract_digest(ceiling)`
+#                                       — the module function DEFAULTS to the
+#                                       legacy profile, so a family cell
+#                                       declared the legacy view. It is also
+#                                       what a QUARANTINED cell falls back to,
+#                                       and `schedule_arms.contract_
+#                                       expectations` admits rows on that
+#                                       field — so a quarantined family cell
+#                                       was admitted or rejected against a
+#                                       contract it never ran.
+#   `episode_contract_version`          `EPISODE_CONTRACT_VERSION`, the legacy
+#                                       module constant, permanently 4 — every
+#                                       family row archived "contract 4" next
+#                                       to a contract-5 digest.
+#   `prompt_schema_digest`              computed once from an UNSELECTED
+#                                       default environment, on the written
+#                                       claim that the tool surface is fixed.
+#                                       The family serves SEVEN tools and a
+#                                       different system prompt; the claim was
+#                                       false and the six-tool digest was
+#                                       stamped on family rows.
+#
+# All three now resolve on the environment the cell actually loaded. These
+# tests hold both sides: the family row says 5, and the legacy row is
+# byte-for-byte the row it always was.
+# --------------------------------------------------------------------------
+
+def test_a_family_row_states_the_contract_it_actually_ran():
+    """Contract 5, the cash-application profile, and the family's own digest
+    in BOTH digest fields — never the legacy view.
+
+    `episode_contract_digest_declared` is the one asserted hardest: it is
+    computed BEFORE `evaluate` and is therefore exactly what a QUARANTINED
+    family cell (which produces no state at all) carries into the archive and
+    into `contract_expectations`' admission test. It is checked here against
+    the package's own resolved view at this cell's ceiling, so a regression
+    that silently reintroduces the module-level default is named.
+    """
+    row = family([CAR.deliver(register=CAR.case()["register"]), CAR.submit()])
+    problems = []
+    want_digest = env_mod.episode_contract_digest(0, env_mod.PROFILE_CASH_APPLICATION)
+    want_version = env_mod.episode_contract_version(env_mod.PROFILE_CASH_APPLICATION)
+    if row.get("reward") != 1.0:
+        problems.append(f"reward {row.get('reward')}; this must be the golden family rollout")
+    if row.get("episode_contract_version") != want_version:
+        problems.append(f"episode_contract_version {row.get('episode_contract_version')!r}, "
+                        f"not {want_version} — the family runs contract 5")
+    if row.get("episode_contract_profile") != env_mod.PROFILE_CASH_APPLICATION:
+        problems.append(f"episode_contract_profile {row.get('episode_contract_profile')!r}")
+    for field in ("episode_contract_digest", "episode_contract_digest_declared"):
+        if row.get(field) != want_digest:
+            problems.append(f"{field} {row.get(field)!r}, not the family view {want_digest!r}")
+    legacy_digest = env_mod.episode_contract_digest(0, env_mod.PROFILE_LEGACY)
+    if want_digest == legacy_digest:
+        problems.append("the two profiles resolve the same digest; this test proves nothing")
+    if row.get("prompt_schema_digest") == mb.compute_prompt_schema_digest(env_mod):
+        problems.append("a family row carries the LEGACY six-tool prompt_schema_digest")
+    return check("a cash-application row states contract 5, its own profile and the family contract digest "
+                 "in both digest fields — the declared one included, which is all a quarantined cell has",
+                 not problems, "\n".join(problems))
+
+
+def test_a_legacy_row_states_contract_4_exactly_as_before():
+    """The other side: a legacy row's three provenance fields are the values
+    every archived legacy row already carries. `episode_contract_digest`
+    resolved through the env rather than the module function must be the SAME
+    number for the legacy profile, or the family work moved rows that were
+    measured months ago."""
+    row = one([tec.write(), tec.submit()])
+    problems = []
+    want_digest = env_mod.episode_contract_digest(0, env_mod.PROFILE_LEGACY)
+    if want_digest != env_mod.episode_contract_digest(0):
+        problems.append("the module-level default is no longer the legacy view")
+    if row.get("episode_contract_version") != env_mod.EPISODE_CONTRACT_VERSION:
+        problems.append(f"episode_contract_version {row.get('episode_contract_version')!r}, "
+                        f"not {env_mod.EPISODE_CONTRACT_VERSION}")
+    if row.get("episode_contract_profile") != env_mod.PROFILE_LEGACY:
+        problems.append(f"episode_contract_profile {row.get('episode_contract_profile')!r}")
+    for field in ("episode_contract_digest", "episode_contract_digest_declared"):
+        if row.get(field) != want_digest:
+            problems.append(f"{field} {row.get(field)!r}, not {want_digest!r}")
+    if row.get("prompt_schema_digest") != mb.compute_prompt_schema_digest(env_mod):
+        problems.append("a legacy row no longer carries the unselected-default prompt_schema_digest that "
+                        "every archived legacy row was stamped with")
+    return check("a legacy row still states contract 4, the legacy profile, the legacy digest in both "
+                 "fields and the unchanged prompt_schema_digest", not problems, "\n".join(problems))
+
+
+def test_the_prompt_schema_digest_is_resolved_per_profile():
+    """The retracted claim, held as a test. `compute_prompt_schema_digest`'s
+    docstring asserted the tool surface was fixed at six tools and that an
+    unselected default environment was therefore representative of any cell.
+    The family falsifies it: seven tools, a different system prompt, a
+    different digest. Passing no env still answers for the legacy profile,
+    which is what `tests/stamp_contract_digest.py` backfills archived rows
+    with."""
+    legacy_env = env_mod.load_environment()
+    family_env = env_mod.load_environment("cash_application_001")
+    problems = []
+    if len(legacy_env.tool_defs) == len(family_env.tool_defs):
+        problems.append(f"both profiles expose {len(legacy_env.tool_defs)} tools; the premise is gone")
+    default = mb.compute_prompt_schema_digest(env_mod)
+    if mb.compute_prompt_schema_digest(env_mod, env=legacy_env) != default:
+        problems.append("the legacy env's digest is not the unselected default's — archived rows moved")
+    if mb.compute_prompt_schema_digest(env_mod, env=family_env) == default:
+        problems.append("the family env resolves the legacy digest; the profile is not being read")
+    if mb.row_prompt_schema_digests([{"prompt_schema_digest": "b"}, {"prompt_schema_digest": "a"},
+                                     {"prompt_schema_digest": "a"}, {}]) != "a, b":
+        problems.append("the run summary does not report every digest its rows carry, deduplicated")
+    return check("the prompt/tool-schema digest is resolved per PROFILE — six tools for legacy (unchanged, "
+                 "and what the unselected default answers), seven for the family",
+                 not problems, "\n".join(problems))
+
+
+def test_a_sealed_schedule_names_the_profile_its_digest_resolves_under():
+    """The mirror of the same defect on the SCHEDULE side. The sealed contract
+    carries ONE `expected_episode_contract_digest` and `contract_expectations`
+    admits every row against it, so it must be resolved under the profile the
+    schedule's selectors actually serve — and a schedule that mixes profiles
+    must be refused outright rather than sealed under one of them.
+
+    The startup witness rechecks it under the SEALED profile: a contract-5
+    seal must verify green, and the same seal relabelled `legacy` must be
+    named as a mismatch rather than silently confirmed."""
+    problems = []
+    if SA.sealed_episode_profile([]) != env_mod.PROFILE_LEGACY:
+        problems.append("an empty selector list is not the legacy profile")
+    if SA.sealed_episode_profile(["train:1"]) != env_mod.PROFILE_LEGACY:
+        problems.append("train:1 does not resolve the legacy profile")
+    if SA.sealed_episode_profile(["cash_application_001"]) != env_mod.PROFILE_CASH_APPLICATION:
+        problems.append("cash_application_001 does not resolve the cash-application profile")
+    try:
+        SA.sealed_episode_profile(["train:1", "cash_application_001"])
+        problems.append("a schedule mixing episode profiles was sealed instead of refused")
+    except SystemExit:
+        pass
+    stanza = {
+        "max_episode_output_tokens": 40_000,
+        "episode_contract_profile": env_mod.PROFILE_CASH_APPLICATION,
+        "expected_episode_contract_digest":
+            env_mod.episode_contract_digest(40_000, env_mod.PROFILE_CASH_APPLICATION),
+        "episode_contract_version": env_mod.episode_contract_version(env_mod.PROFILE_CASH_APPLICATION),
+    }
+    named = {r["field"] for r in SW.failures(
+        SW.witness(_sealed_schedule(selectors=["cash_application_001"], contract=dict(stanza)),
+                   check_task_ids=False, check_tree=False))}
+    for field in ("expected_episode_contract_digest", "episode_contract_version"):
+        if field in named:
+            problems.append(f"a correct contract-5 seal was flagged on {field}")
+    mislabelled = dict(stanza, episode_contract_profile=env_mod.PROFILE_LEGACY)
+    named = {r["field"] for r in SW.failures(
+        SW.witness(_sealed_schedule(selectors=["cash_application_001"], contract=mislabelled),
+                   check_task_ids=False, check_tree=False))}
+    for field in ("expected_episode_contract_digest", "episode_contract_version"):
+        if field not in named:
+            problems.append(f"a seal relabelled legacy was confirmed anyway; {field} not flagged")
+    return check("the sealed schedule names the episode profile its digest resolves under, refuses a "
+                 "mixed-profile schedule, and the startup witness rechecks under that profile",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 1b. candidate vs. original — did an UNDELIVERED episode preserve the books?
+#
+# `bind_artifact` reports NO_ARTIFACT for every one of no_write, write_
+# refused, policy_blocked and not_scored, and none of those says what the
+# last accepted candidate actually CONTAINED. `candidate_vs_original`
+# (measure_budget.py) closes that gap: it compares the last accepted
+# candidate's own digest (`piv_logical_text_digest`, `candidate_logical_
+# text_digest` on the row) against the digest of the untouched original
+# ledger this episode was served (`env.public_files[LEDGER]`), through the
+# SAME digest function the environment itself uses for both.
+# --------------------------------------------------------------------------
+
+def test_candidate_vs_original_pure_helper():
+    """The pure helper alone, no episode: equal bytes -> True, different
+    bytes -> False, no candidate at all -> None -- and the original digest
+    is always reported, even when there is no candidate to compare it to."""
+    original_raw = b"2024-01-01 open Assets:Bank\n"
+    same_digest = env_mod.digests_of(original_raw)["logical_text_digest"]
+    different_digest = env_mod.digests_of(b"2024-01-01 open Assets:Other\n")["logical_text_digest"]
+    problems = []
+    r_equal = mb.candidate_vs_original(same_digest, original_raw, env_mod)
+    if r_equal["candidate_equals_original"] is not True:
+        problems.append(f"equal candidate: candidate_equals_original {r_equal['candidate_equals_original']}")
+    if r_equal["original_logical_digest"] != env_mod.digests_of(original_raw)["logical_text_digest"]:
+        problems.append("equal candidate: original_logical_digest does not match the environment's own digest fn")
+    r_diff = mb.candidate_vs_original(different_digest, original_raw, env_mod)
+    if r_diff["candidate_equals_original"] is not False:
+        problems.append(f"differing candidate: candidate_equals_original {r_diff['candidate_equals_original']}")
+    r_none = mb.candidate_vs_original(None, original_raw, env_mod)
+    if r_none["candidate_equals_original"] is not None:
+        problems.append(f"no candidate: candidate_equals_original {r_none['candidate_equals_original']}, want None")
+    if r_none["original_logical_digest"] != r_equal["original_logical_digest"]:
+        problems.append("no candidate: original_logical_digest still must be reported (it needs no candidate)")
+    return check("candidate_vs_original: True on equal digests, False on differing digests, None (never False) "
+                 "when there is no candidate -- and the original's own digest is reported unconditionally",
+                 not problems, "\n".join(problems))
+
+
+def test_candidate_equals_original_true_when_written_candidate_matches_original():
+    """An accepted write that stores back the UNTOUCHED original ledger,
+    never submitted: the exact shape of the reported gap (an episode that
+    ends with an accepted candidate and no delivery on disk) -- and
+    `candidate_equals_original` must say True, because the agent preserved
+    the books even though nothing was ever delivered."""
+    env = env_mod.load_environment()
+    original_text = env.public_files[env_mod.LEDGER].decode("utf-8")
+    turns = [tec.write("w", original_text)] + [tec.calls((f"r{i}", "list_files", {})) for i in range(30)]
+    row = one(turns)
+    problems = []
+    if row["phase"] != env_mod.EpisodePhase.CANDIDATE.value:
+        problems.append(f"phase {row['phase']}; expected an accepted, unsubmitted candidate")
+    if row["submitted"] is not False:
+        problems.append(f"submitted {row['submitted']}")
+    if row.get("candidate_logical_text_digest") is None:
+        problems.append("no candidate digest recorded for an accepted write")
+    if row.get("original_logical_digest") != env_mod.digests_of(env.public_files[env_mod.LEDGER])["logical_text_digest"]:
+        problems.append("original_logical_digest does not match the environment's own digest of the served ledger")
+    if row.get("candidate_equals_original") is not True:
+        problems.append(f"candidate_equals_original {row.get('candidate_equals_original')}; "
+                        "the written candidate IS the original")
+    return check("write back the untouched original, no submit -> ACTIVE_CANDIDATE/unsubmitted with "
+                 "candidate_equals_original=True", not problems, "\n".join(problems))
+
+
+def test_candidate_equals_original_false_when_written_candidate_differs():
+    """An accepted write that stores GOLDEN -- textually different from the
+    served original by construction (it is the REPAIRED ledger) -- must
+    report candidate_equals_original=False, not None: a candidate exists,
+    it merely does not match."""
+    env = env_mod.load_environment()
+    original_raw = env.public_files[env_mod.LEDGER]
+    if GOLDEN.encode("utf-8") == original_raw:
+        return check("write a differing candidate -> candidate_equals_original=False", False,
+                     "test fixture assumption broken: GOLDEN is byte-identical to the served original")
+    row = one([tec.write("w", GOLDEN), tec.submit("s")])
+    problems = []
+    if row["submitted"] is not True:
+        problems.append(f"submitted {row['submitted']}")
+    if row.get("candidate_logical_text_digest") is None:
+        problems.append("no candidate digest recorded for an accepted write")
+    if row.get("candidate_equals_original") is not False:
+        problems.append(f"candidate_equals_original {row.get('candidate_equals_original')}; "
+                        "GOLDEN and the served original differ")
+    return check("write a differing (repaired) candidate, then submit -> candidate_equals_original=False",
+                 not problems, "\n".join(problems))
+
+
+def test_candidate_equals_original_none_when_no_write():
+    """No write at all: there is no candidate to compare, so
+    candidate_equals_original must be None -- never a false "no" -- while
+    original_logical_digest is still reported, because the original is known
+    from world construction whether or not the agent ever touched it."""
+    env = env_mod.load_environment()
+    row = one([tec.submit("s1")])
+    problems = []
+    if row.get("candidate_logical_text_digest") is not None:
+        problems.append("a candidate digest exists for a rollout that never wrote")
+    if row.get("candidate_equals_original") is not None:
+        problems.append(f"candidate_equals_original {row.get('candidate_equals_original')}; want None (no candidate)")
+    if row.get("original_logical_digest") != env_mod.digests_of(env.public_files[env_mod.LEDGER])["logical_text_digest"]:
+        problems.append("original_logical_digest missing or wrong even though the original is always known")
+    return check("no write at all -> candidate_equals_original=None, original_logical_digest still reported",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
 # 2. token_usage["final_*"] semantics, pinned
 # --------------------------------------------------------------------------
 
@@ -6051,6 +6477,18 @@ TESTS = [
     test_write_then_submit_is_bound_submitted_matches_delivery,
     test_two_concurrent_rollouts_each_bind_their_own_artifact,
     test_bind_artifact_defaults_when_state_is_sparse,
+    # the second deliverable: the family binds, and the legacy row does not move
+    test_a_family_rollout_binds_both_deliverables,
+    test_a_family_rollout_reports_an_absent_and_a_rejected_register,
+    test_a_legacy_row_gains_no_register_keys,
+    test_a_family_row_states_the_contract_it_actually_ran,
+    test_a_legacy_row_states_contract_4_exactly_as_before,
+    test_the_prompt_schema_digest_is_resolved_per_profile,
+    test_a_sealed_schedule_names_the_profile_its_digest_resolves_under,
+    test_candidate_vs_original_pure_helper,
+    test_candidate_equals_original_true_when_written_candidate_matches_original,
+    test_candidate_equals_original_false_when_written_candidate_differs,
+    test_candidate_equals_original_none_when_no_write,
     test_token_usage_final_fields_are_pinned_and_row_names_them_truthfully,
     test_reasoning_replay_projection_diffs_only_reasoning_content_and_does_not_mutate_input,
     test_compute_budget_accounting_reasons_pure,

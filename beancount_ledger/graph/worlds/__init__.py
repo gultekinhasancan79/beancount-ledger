@@ -50,3 +50,63 @@ for _module in WORLD_MODULES:
             raise RuntimeError(f"task id {_task_id!r} is registered twice (second time by {_module.__name__})")
         REGISTRY[_task_id] = (_module.WORLD, _task)
 del _module, _task_id, _task
+
+# The cash-application family: five variants of one company-month
+# (`_bowline.py`), each projecting eleven public files and deriving the
+# truth register `application/1` scores against. Authored, checked and held
+# to gates (l), (m) and (n) in step 4; REGISTERED here now that the
+# environment step has landed — the serving door resolves the episode
+# profile from the derived inputs (`episode_profile`), mounts eleven public
+# files instead of eight, advertises the seventh tool and scores the second
+# deliverable. They load exactly like every other hand-authored id, with no
+# evaluator secret and no manifest: `load_environment("cash_application_001")`
+# and the rest.
+#
+# `CASH_APPLICATION_REGISTRY` stays as its own mapping beside `REGISTRY`, so
+# a test can name the family without pattern-matching on task ids, and so
+# the legacy 95 remain enumerable as `REGISTRY` minus this.
+from . import (  # noqa: E402
+    bowline_2026_04_c1,
+    bowline_2026_04_c2,
+    bowline_2026_04_c3,
+    bowline_2026_04_c4,
+    bowline_2026_04_c5,
+)
+
+CASH_APPLICATION_MODULES = (
+    bowline_2026_04_c1,   # cash_application_001  canonical minimum
+    bowline_2026_04_c2,   # cash_application_002  advice missing for R3; the reference names the invoices
+    bowline_2026_04_c3,   # cash_application_003  short-pays both sides of the tolerance; the write-off omitted
+    bowline_2026_04_c4,   # cash_application_004  short-pays both sides of the tolerance; R3 transposed
+    bowline_2026_04_c5,   # cash_application_005  a credit exceeding the invoice's remaining balance
+)
+
+#: The 95 shipped ids, frozen at the moment before the family joins them:
+#: `tests/test_legacy_freeze.py` and `tests/test_worlds.py` read this to say
+#: "the legacy surface" without listing ninety-five strings.
+LEGACY_TASK_IDS = tuple(REGISTRY)
+
+CASH_APPLICATION_REGISTRY: dict = {}
+for _module in CASH_APPLICATION_MODULES:
+    for _task_id, _task in _module.TASKS.items():
+        if _task_id in REGISTRY or _task_id in CASH_APPLICATION_REGISTRY:
+            raise RuntimeError(f"task id {_task_id!r} is registered twice (second time by {_module.__name__})")
+        _entry = (_module.WORLD, _task)
+        CASH_APPLICATION_REGISTRY[_task_id] = _entry
+        REGISTRY[_task_id] = _entry
+del _module, _task_id, _task, _entry
+
+# `LEGACY_TASK_IDS = tuple(REGISTRY)` above is a SNAPSHOT taken at a point in
+# this module's import order, and a snapshot is only as good as the ordering
+# that produced it: a legacy world module imported BELOW the family block
+# would land in `REGISTRY` and in nothing else, silently scoped as neither
+# legacy nor family. That is caught here, at import, rather than by whichever
+# suite happens to notice the count — the legacy surface is exactly 95 ids,
+# `REGISTRY` is exactly those plus the family's, and the two never overlap.
+if len(LEGACY_TASK_IDS) != 95 or set(REGISTRY) != set(LEGACY_TASK_IDS) | set(CASH_APPLICATION_REGISTRY) \
+        or set(LEGACY_TASK_IDS) & set(CASH_APPLICATION_REGISTRY):
+    raise RuntimeError(
+        f"the task registry is mis-scoped: {len(LEGACY_TASK_IDS)} legacy ids (95 expected), "
+        f"{len(CASH_APPLICATION_REGISTRY)} family ids, {len(REGISTRY)} in total. Every legacy world "
+        f"module must be imported ABOVE the cash-application block, so the LEGACY_TASK_IDS snapshot "
+        f"sees it.")

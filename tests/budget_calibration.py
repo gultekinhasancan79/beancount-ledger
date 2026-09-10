@@ -50,6 +50,8 @@ from verifiers.legacy.types import ClientConfig  # noqa: E402
 
 from beancount_ledger import beancount_ledger as env_mod  # noqa: E402
 
+import measure_budget as mb  # noqa: E402 -- reuses candidate_vs_original, the one place the comparison is defined
+
 
 def relax_response_literals() -> None:
     """The OpenAI SDK's response models hold closed literals that some
@@ -139,8 +141,8 @@ def _tool_defs_with_properties():
 # the stop label and nothing else, so a row could not say what cap produced it —
 # the setting the calibration exists to calibrate was the one field it dropped.
 # `piv_request_max_tokens` is the per-turn cap the environment INTENDED for each
-# turn (already clamped to what was left of the episode ceiling), so a row now
-# carries the wire caps rather than the launcher's claim about them; the
+# turn (already clamped to what was left of the episode ceiling) - the request as
+# built, not an observation of what the provider enforced; the
 # truncation and no-tool counters separate "ran out of room" from "stopped
 # calling tools"; `piv_revision` is how many ledgers the agent actually wrote.
 DIAGNOSTIC_STATE_COLUMNS = [
@@ -149,8 +151,17 @@ DIAGNOSTIC_STATE_COLUMNS = [
     "piv_truncation_limit_reached", "piv_no_tool_limit_reached", "piv_output_budget_exhausted",
     "piv_output_budget_deferred", "piv_revision", "piv_ledger_receipts", "piv_submitted",
     "piv_episode_contract_digest", "piv_turn",
+    # episode contract 4: the raw malformed calls, and the run that bounds them
+    "piv_rejected_calls", "piv_consecutive_rejected_turns",
     # the episode's workspace outlives the rollout; a sidecar reads the final ledger from it
     "workspace",
+    # the last ACCEPTED candidate's own logical-text digest (installed by
+    # `env_response` once it has re-derived and matched the tool's own
+    # attestation), so an episode that ends without a submission -- phase
+    # ACTIVE_CANDIDATE, `submitted=None`, no artifact on disk -- can still
+    # say WHAT was accepted, not just that something was: paired below with
+    # `original_logical_digest` into `candidate_equals_original`.
+    "piv_logical_text_digest",
 ]
 
 
@@ -160,6 +171,11 @@ def run_one(selector: str, args) -> dict:
     env_mod.MAX_TURNS = args.turns                       # the prompt reads it when the environment is built
     env = env_mod.load_environment(selector, timeout_seconds=float(args.timeout),
                                    max_episode_output_tokens=int(args.tokens))
+    # The UNTOUCHED original ledger this episode was served, fixed at world
+    # construction -- captured before the episode runs so `candidate_vs_
+    # original` can answer "did the agent preserve the books" even when the
+    # episode ends with an accepted candidate but no submission.
+    original_ledger_raw = env.public_files[env_mod.LEDGER]
     client = TolerantClient(ClientConfig(client_type="openai_chat_completions", api_key_var=args.key_var,
                                          api_base_url=args.base_url, timeout=float(args.timeout),
                                          connect_timeout=10.0, max_retries=1))
@@ -181,9 +197,13 @@ def run_one(selector: str, args) -> dict:
             chain = f"artifact unavailable: {type(inner).__name__}"
         secret = os.environ.get(args.key_var, "")
         chain = (chain or str(exc)).replace(secret, "***") if secret else (chain or str(exc))
+        # a route that has been withdrawn answers 404 "unavailable for free": that is a
+        # retirement, not a refusal, and a caller must stop the batch rather than retry
+        retired = ("404" in chain and "unavailable" in chain.lower())
         return {"selector": selector, "k": len(env.contract.planted),
                 "profile": "hard" if selector.endswith(":hard") else "standard",
-                "reward": None, "quarantined": chain[:600], "secs": round(time.time() - t0)}
+                "reward": None, "quarantined": chain[:600], "retired": retired,
+                "secs": round(time.time() - t0)}
     out = results["outputs"][0]
     metrics = out.get("metrics") or {}
     usage = out.get("token_usage") or {}
@@ -192,6 +212,10 @@ def run_one(selector: str, args) -> dict:
             "reward": out.get("reward"), "stop": out.get("stop_condition"), "error": (str(out.get("error"))[:160] if out.get("error") else None),
             "turns": metrics.get("num_turns", len(out.get("trajectory") or [])),
             "output_tokens": usage.get("output_tokens", usage.get("completion_tokens")) or 0,
+            # what a free quota actually debits: prompt tokens summed over every turn
+            # (the context is resent each turn), from verifiers' usage tracker
+            "input_tokens": usage.get("input_tokens", usage.get("prompt_tokens")),
+            "final_input_tokens": usage.get("final_input_tokens"),
             "observation_bytes": out.get("piv_observation_bytes"), "phase": out.get("piv_phase"),
             "contract_digest": getattr(env, "_episode_contract_digest", None), "secs": round(time.time() - t0),
             # the arm's own settings, so a row is self-describing and two rows can
@@ -204,13 +228,29 @@ def run_one(selector: str, args) -> dict:
             "truncated_run": out.get("piv_consecutive_truncated_turns"),
             "no_tool_truncated_turns": out.get("piv_no_tool_truncated_turns"),
             "no_tool_turns": out.get("piv_no_tool_turns"),
+            "rejected_calls": out.get("piv_rejected_calls"),
             "truncation_limit_reached": out.get("piv_truncation_limit_reached"),
             "no_tool_limit_reached": out.get("piv_no_tool_limit_reached"),
             "budget_exhausted": out.get("piv_output_budget_exhausted"),
             "budget_deferred": out.get("piv_output_budget_deferred"),
             "ledger_revisions": out.get("piv_revision"), "ledger_receipts": out.get("piv_ledger_receipts"),
             "submitted": out.get("piv_submitted"), "score": out.get("piv_score"),
-            "served_model": args.model, "base_url": args.base_url}
+            # `candidate_logical_digest`: the last ACCEPTED candidate's own
+            # digest, present even for an episode that ends with a stored
+            # write but no submission (phase ACTIVE_CANDIDATE) -- the case
+            # `submitted=None` otherwise leaves silent about what, if
+            # anything, was accepted. `original_logical_digest`/
+            # `candidate_equals_original` (from `candidate_vs_original`,
+            # `measure_budget.py`, the one place the comparison is defined):
+            # whether that candidate is textually the untouched original the
+            # episode was served, or `None` when nothing was ever accepted.
+            "candidate_logical_digest": out.get("piv_logical_text_digest"),
+            **mb.candidate_vs_original(out.get("piv_logical_text_digest"), original_ledger_raw, env_mod),
+            # the episode's workspace outlives the rollout; a sidecar reads the final ledger from it
+            "workspace": out.get("workspace"),
+            # what we ASKED the route for. The response's own model identifier is not exposed by
+            # the client this runner drives, so no row may claim to know what was served.
+            "requested_model": args.model, "base_url": args.base_url}
 
 
 def main() -> int:

@@ -5,11 +5,17 @@ agrees that its public bytes admit exactly one reading and that the reading
 is the planted one. A hand-authored world is written by a person and put
 straight into `worlds.REGISTRY`, so the same properties have to be asserted
 somewhere or they are simply assumed. This is that somewhere, over every
-registry entry rather than over Alpine by name.
+registry entry rather than over Alpine by name — the 95 legacy tasks of
+`REGISTRY` and the five cash-application tasks of
+`CASH_APPLICATION_REGISTRY`, held to one gate (the family's own gates (l),
+(m), (n) and the plant-coverage rule run for a world the family is inferred
+from, and for no other).
 
 What is checked per entry lives in `tests/world_checks.py` — the world
 schema, derivation and the contract door, the golden at 1.0 and complete,
-the untouched original below 1.0 with nothing resolved, the MERGED trap the
+the untouched original below 1.0 with nothing resolved — or, for a task that
+plants nothing, already worth 1.0 and complete with no item state at all —
+the MERGED trap the
 scorer's `shapes & _txn_shape(t)` predicate leaves open, public-only
 identifiability under the shared repair key, leaked private ids, derived
 numbers typed into the authored source, generator name-pool collisions and
@@ -29,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import CASH_APPLICATION_REGISTRY, LEGACY_TASK_IDS, REGISTRY  # noqa: E402
 
 from world_checks import check_world_task  # noqa: E402
 
@@ -69,8 +75,24 @@ def test_every_registered_world_and_task():
     results = []
     warned = []
     problems = []
-    for task_id in sorted(REGISTRY):
-        world, task = REGISTRY[task_id]
+    # The family is IN `REGISTRY` now — the serving door reads that mapping
+    # and nothing else — so the legacy surface is `REGISTRY` minus the
+    # family, which `LEGACY_TASK_IDS` records at the moment before the five
+    # join it. Both halves are counted, and the family is checked to be a
+    # subset rather than a second registry that happens to agree.
+    registered = dict(REGISTRY)
+    legacy = [task_id for task_id in REGISTRY if task_id not in CASH_APPLICATION_REGISTRY]
+    if len(legacy) != 95 or len(CASH_APPLICATION_REGISTRY) != 5 or len(registered) != 100:
+        problems.append(f"the registry carries {len(legacy)} legacy and {len(CASH_APPLICATION_REGISTRY)} "
+                        f"cash-application tasks ({len(registered)} distinct), not 95 and 5")
+    if set(LEGACY_TASK_IDS) != set(legacy):
+        problems.append(f"LEGACY_TASK_IDS is not the registry minus the family: "
+                        f"{sorted(set(LEGACY_TASK_IDS) ^ set(legacy))}")
+    for task_id, entry in CASH_APPLICATION_REGISTRY.items():
+        if REGISTRY.get(task_id) is not entry:
+            problems.append(f"{task_id} is not the same entry in REGISTRY and CASH_APPLICATION_REGISTRY")
+    for task_id in sorted(registered):
+        world, task = registered[task_id]
         claimed = owners.get(task_id, [])
         if len(claimed) != 1:
             problems.append(f"{task_id}: {len(claimed)} world module(s) in {WORLDS_DIR.name}/ define this task id "
@@ -86,8 +108,11 @@ def test_every_registered_world_and_task():
         print(f"      {world_id}/{task_id} [{module}]: {bad} problem(s), {warns} warning(s)")
     for warning in warned:
         print(f"      {warning}")
-    return check(f"every world/task in REGISTRY ({len(REGISTRY)}) derives, scores its golden 1.0, leaves its original "
-                 f"unresolved, reads back uniquely as the planted repair, and leaks no id or derived literal",
+    return check(f"every world/task in REGISTRY ({len(REGISTRY)}), the {len(CASH_APPLICATION_REGISTRY)} "
+                 f"cash-application ids included, derives, scores its golden 1.0, leaves its original "
+                 f"unresolved (or, where nothing is planted, already worth 1.0 and complete), reads back uniquely "
+                 f"as the planted repair, has every plant covered by an explicit validator, and leaks no id or "
+                 f"derived literal",
                  not problems, "\n".join(problems))
 
 

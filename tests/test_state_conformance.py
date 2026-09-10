@@ -1143,6 +1143,148 @@ def test_the_three_priced_channels_that_have_no_public_reading():
                  "fixture, and none of them is a reading of the public bytes", not problems, "\n".join(problems))
 
 
+# --------------------------------------------------------------------------
+# 5. the cash-application state catalogue (candidate/application.py)
+# --------------------------------------------------------------------------
+
+# `application/1` classifies the REGISTER delivered beside the ledger, and
+# its closed universe gets the same three proofs as the ledger scorer's:
+# the universe is closed and written once per member; every member is
+# answered by a row of `state_contract.APPLICATION_STATE_CONTRACT` — mapped
+# to the PUBLIC DOCUMENTS that decide the fact behind it, or excluded with
+# an argument; and a fake member or a re-pointed row fails the walk. The
+# positive fixture per state (every member reached on a scored register,
+# with the diagnosis the spec names) lives in
+# `tests/test_cash_application_scoring.py`, beside the S-rows that reach
+# them.
+
+from beancount_ledger.candidate import application as AP  # noqa: E402
+from beancount_ledger.graph import cash_application as CA  # noqa: E402
+
+# Screaming-case string literals in `application.py` that are NOT states.
+NOT_AN_APPLICATION_STATE: set = set()
+APPLICATION_LOWER_VOCABULARIES = ("PENALTY_LABELS", "REJECTION_LABELS", "STATUSES", "CHANNELS", "STATE_SCOPES")
+
+
+def test_the_application_state_universe_is_closed_and_every_member_is_named_once():
+    problems = []
+    values = {str(s) for s in AP.APPLICATION_STATES}
+    source = (ROOT / "beancount_ledger" / "candidate" / "application.py").read_text(encoding="utf-8")
+    seen: dict = {}
+    literals: set = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            literals.add(node.value)
+            if _STATE_SHAPED.match(node.value):
+                seen[node.value] = seen.get(node.value, 0) + 1
+    for literal, count in sorted(seen.items()):
+        if literal in NOT_AN_APPLICATION_STATE:
+            continue
+        if literal not in values:
+            problems.append(f"{literal!r} is a state-shaped literal that is not a member of APPLICATION_STATES")
+        elif count != 1:
+            problems.append(f"{literal!r} appears {count} times as a literal; a member is written once")
+    for value in sorted(values):
+        if value not in seen:
+            problems.append(f"{value!r} is a member no literal in the module constructs")
+    if len(set(AP.APPLICATION_STATES)) != len(AP.APPLICATION_STATES) or len(AP.APPLICATION_STATES) != 26:
+        problems.append(f"APPLICATION_STATES has {len(AP.APPLICATION_STATES)} members, with duplicates or not 26")
+    for state in AP.APPLICATION_STATES:
+        if not isinstance(state, AP.ApplicationState) or not isinstance(state, str):
+            problems.append(f"{state!r} is not an ApplicationState (and a str)")
+        elif state.scope not in AP.STATE_SCOPES:
+            problems.append(f"{state!r} has scope {state.scope!r}")
+    if {s.scope for s in AP.APPLICATION_STATES} != set(AP.STATE_SCOPES):
+        problems.append("a scope is declared and unused, or used and undeclared")
+    if AP.RECEIPT_EXACT != "RECEIPT_EXACT" or {AP.RECEIPT_EXACT} != {"RECEIPT_EXACT"} \
+            or dict.fromkeys([AP.AR_TIE_OK]) != {"AR_TIE_OK": None}:
+        problems.append("an ApplicationState no longer compares and hashes as its own string")
+    if [type(x) for x in (pickle.loads(pickle.dumps(AP.RECEIPT_EXACT)), copy.deepcopy(AP.RECEIPT_EXACT))] != [str, str] \
+            or copy.deepcopy(AP.APPLICATION_REJECTED) != "APPLICATION_REJECTED":
+        problems.append("an ApplicationState does not pickle/deepcopy to a plain str of the same value")
+    # the lower-case vocabularies: closed tuples whose members the module writes as literals
+    for name in APPLICATION_LOWER_VOCABULARIES:
+        vocabulary = getattr(AP, name, None)
+        if not isinstance(vocabulary, tuple) or not vocabulary or len(set(vocabulary)) != len(vocabulary):
+            problems.append(f"application.{name} is not a closed tuple of unique values: {vocabulary!r}")
+            continue
+        for value in vocabulary:
+            if value not in literals:
+                problems.append(f"{name}: {value!r} is a member no literal in the module constructs")
+    if set(AP.PENALTY_PRICES) != set(AP.PENALTY_LABELS):
+        problems.append("PENALTY_PRICES and PENALTY_LABELS disagree")
+    return check("the application scorer's state universe is closed (26 members, written once each, five scopes), "
+                 "copies to a plain str, and its lower-case vocabularies are closed tuples the module writes",
+                 not problems, "\n".join(problems))
+
+
+def application_conformance_problems(states=None, table=None) -> list:
+    problems = []
+    states = {str(s) for s in AP.APPLICATION_STATES} if states is None else {str(s) for s in states}
+    table = SC.APPLICATION_STATE_CONTRACT if table is None else table
+    rows = set(table)
+    for missing in sorted(states - rows):
+        problems.append(f"{missing}: no row in APPLICATION_STATE_CONTRACT — every application state needs the "
+                        f"public documents that decide it, or a documented exclusion")
+    for orphan in sorted(rows - states):
+        problems.append(f"{orphan}: APPLICATION_STATE_CONTRACT names a state the scorer cannot reach")
+    for state in sorted(states & rows):
+        authorities, note = table[state]
+        for authority in authorities:
+            if authority not in SC.APPLICATION_AUTHORITIES:
+                problems.append(f"{state}: names {authority!r}, which is not a public authority")
+        if not isinstance(note, str) or len(note.split()) < 20:
+            problems.append(f"{state}: the {'mapping' if authorities else 'exclusion'} carries no argument")
+        if not authorities and not note.startswith("EXCLUDED"):
+            problems.append(f"{state}: an unmapped state must say EXCLUDED and why")
+    return problems
+
+
+def test_every_application_state_has_a_public_authority_or_a_documented_exclusion():
+    problems = application_conformance_problems()
+    # the authorities are the family's public files (the reference column of the statement counted as its file)
+    public = set(env_mod.PUBLIC_FILES) | set(CA.EXTRA_PUBLIC_FILES)
+    for authority in SC.APPLICATION_AUTHORITIES:
+        if authority.split(":")[0] not in public:
+            problems.append(f"{authority!r} is not a public file of the family")
+    if set(SC.APPLICATION_EXCLUDED_STATES) != {"APPLICATION_ABSENT", "APPLICATION_REJECTED"}:
+        problems.append(f"excluded: {SC.APPLICATION_EXCLUDED_STATES}; only the two artifact states are properties "
+                        f"of the submission alone")
+    if not problems:
+        print(f"      · {len(SC.APPLICATION_MAPPED_STATES)} mapped, {len(SC.APPLICATION_EXCLUDED_STATES)} "
+              f"excluded, {len(AP.APPLICATION_STATES)} members total")
+    return check("every member of the application scorer's state universe is mapped to public authorities or "
+                 "excluded with an argument, and the authorities are the family's public files",
+                 not problems, "\n".join(problems))
+
+
+def test_an_application_state_with_no_row_fails_the_walk():
+    problems = []
+    real_states, real_table = AP.APPLICATION_STATES, SC.APPLICATION_STATE_CONTRACT
+    fake = AP.ApplicationState("RECEIPT_SETTLED_LATE", scope=AP.RECEIPT_SCOPE)
+    found = application_conformance_problems(states=real_states + (fake,))
+    if not any("RECEIPT_SETTLED_LATE" in p and "no row" in p for p in found):
+        problems.append("a state with no row passed the walk")
+    found = application_conformance_problems(table={**real_table, "RECEIPT_EXACT": (("oracle.csv",),
+                                                                                     real_table["RECEIPT_EXACT"][1])})
+    if not any("oracle.csv" in p for p in found):
+        problems.append("a row naming a non-public authority passed the walk")
+    found = application_conformance_problems(table={k: v for k, v in real_table.items() if k != "CREDIT_MISSING"})
+    if not any("CREDIT_MISSING" in p for p in found):
+        problems.append("a dropped row passed the walk")
+    found = application_conformance_problems(table={**real_table, "APPLICATION_ABSENT": ((), "EXCLUDED: because.")})
+    if not any("APPLICATION_ABSENT" in p and "no argument" in p for p in found):
+        problems.append("an exclusion without an argument passed the walk")
+    found = application_conformance_problems(table={**real_table, "GHOST_STATE": ((SC.AUTHORITY_POLICY,),
+                                                                                    real_table["RECEIPT_EXACT"][1])})
+    if not any("GHOST_STATE" in p and "cannot reach" in p for p in found):
+        problems.append("an orphan row passed the walk")
+    if AP.APPLICATION_STATES is not real_states or SC.APPLICATION_STATE_CONTRACT is not real_table:
+        problems.append("the walk mutated the live modules")
+    return check("MUTATION COVERAGE: a fake application state, a non-public authority, a dropped row, a bare "
+                 "exclusion and an orphan row each fail the walk", not problems, "\n".join(problems))
+
+
 TESTS = [
     test_the_state_universe_is_closed_and_every_member_is_named_once,
     test_the_lower_case_vocabularies_are_closed,
@@ -1155,6 +1297,9 @@ TESTS = [
     test_the_original_books_can_never_be_stale,
     test_the_original_books_are_never_unexplained_merged_or_plugged,
     test_the_three_priced_channels_that_have_no_public_reading,
+    test_the_application_state_universe_is_closed_and_every_member_is_named_once,
+    test_every_application_state_has_a_public_authority_or_a_documented_exclusion,
+    test_an_application_state_with_no_row_fails_the_walk,
 ]
 
 

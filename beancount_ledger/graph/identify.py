@@ -62,7 +62,8 @@ version 2 it is a MATCHING problem rather than a scan:
 Reference dominance is CONDITIONAL and ROLE-AWARE.
 Every reference-shaped token is classified by `reference_role` — instrument,
 document, memo, unknown — and only an INSTRUMENT (a cheque number, a bank
-trace id) may decide a pairing, because only an instrument names one cash
+trace id, the remitter's payment reference an ACH credit carries as its
+addendum) may decide a pairing, because only an instrument names one cash
 movement. It decides only when, after one normalisation, it is quoted by at
 most one bank row across the current statement and the archive and by at most
 one ledger bank movement, and the candidate is compatible in direction (a
@@ -151,7 +152,15 @@ from decimal import Decimal, InvalidOperation
 
 # 7: `## Payments to suppliers` is the public rule for a money-out row and
 #    precedent corroborates it; references carry a ROLE and only an instrument
-#    may dominate or found an alteration
+#    may dominate or found an alteration. The instrument SYNTAX table later
+#    gained the payment reference (`_payment_reference_words`): a multi-word
+#    addendum in the reference column. The role rules are unchanged, and no
+#    world the release manifest admits prints a multi-word reference (the 95
+#    shipped tasks and the generator print one document id, one cheque
+#    number or nothing), so no manifested verdict moves; a version bump here
+#    would make `manifest.admit` refuse every promoted record for a change
+#    that reaches none of them. Re-examined, not assumed: `tests/
+#    test_family_validators.py` surveys the shipped population for the syntax.
 # 5: settlements are forced by the declared convention and every OTHER reading
 #    that explains the whole month competes on equal terms — cardinality and
 #    "fewest alterations" no longer erase one; time direction; bank-initiated
@@ -454,9 +463,25 @@ def _ref_tokens(text: str) -> set:
 
 
 def _mentions(haystack: str, token: str) -> bool:
-    """Does the text quote this reference as a token of its own?"""
+    """Does the text quote this reference as a token of its own?
+
+    A payment reference is several words (`GR PAYRUN 0428`, `SI-3104
+    SI-3102`), so no single token of the text equals it; the text quotes it
+    when it carries the reference's words, normalised one by one, as a
+    contiguous run in the same order. `PAYRUN 0428 GR` does not quote
+    `GR PAYRUN 0428`, and `SI-3102` alone does not quote `SI-3104 SI-3102`.
+    """
     norm = _norm_ref(token)
-    return bool(norm) and norm in _ref_tokens(haystack)
+    if not norm:
+        return False
+    if norm in _ref_tokens(haystack):
+        return True
+    words = _payment_reference_words(token)
+    if not words:
+        return False
+    tokens = [_norm_ref(t) for t in _TOKEN.findall(haystack or "")]
+    n = len(words)
+    return any(tuple(tokens[i:i + n]) == words for i in range(len(tokens) - n + 1))
 
 
 # --------------------------------------------------------------------------
@@ -469,7 +494,12 @@ def _mentions(haystack: str, token: str) -> bool:
 # accused of carrying an earlier row's wrong amount. Every reference-shaped
 # token therefore carries a ROLE, and the role says what the token may do:
 #
-#   instrument  a cheque number or a bank trace id. Names ONE cash movement,
+#   instrument  a cheque number, a bank trace id, or the remitter's PAYMENT
+#               REFERENCE — the addendum an ACH credit carries, which the bank
+#               prints verbatim in the reference column (`GR PAYRUN 0428`,
+#               `SI-3104 SI-3102`; spec section 2: "`payment_reference` is
+#               what the bank prints (ACH addendum, verbatim in the statement
+#               `reference`, or cheque number)"). Names ONE cash movement,
 #               so a globally unique one may decide a pairing outright
 #               (dominance), may found an alteration edge on its own, gets the
 #               long reference float, and CONFLICTS: an entry naming a
@@ -500,6 +530,40 @@ _DOCUMENT_SYNTAX = re.compile(r"^(SI|PI)\d{2,8}$")
 _TRACE_SYNTAX = re.compile(r"^(TRACE|TRC|REF)\d{6,}$")
 
 
+def _payment_reference_words(reference: str) -> tuple:
+    """The normalised words of a PAYMENT REFERENCE, or `()` when the text is
+    not one.
+
+    This is the payment-reference syntax the cash-application spec (section
+    8, "open implementation risk: gate (f) may not return one reading") asked
+    for. The spec offered two fixes — extend the reference-syntax recognition
+    for payment references, or carry the statement reference into the receipt
+    narration — and THIS is the first, chosen because the second cannot work
+    on its own: the family's narrations already quote the reference, and a
+    quoted reference decides nothing while the checker reads it as UNKNOWN
+    (never decisive, never a conflict, never presented). The spec's guess
+    was `_DOCUMENT_SYNTAX`; a DOCUMENT never prunes either, so the syntax is
+    an INSTRUMENT one: the bank attaches the addendum to one credit and
+    prints it verbatim, so it names one cash movement the way a cheque
+    number does, and it takes the instrument rules — dominance when quoted
+    once, the reference float, the conflict rule, and presentation (an entry
+    quoting an addendum the statement shows is not a deposit in transit).
+    The narration still has to quote the addendum for the instrument to bind
+    the entry, which is exactly the join gate (n) permits.
+
+    The syntax: two or more whitespace-separated words, at least one of them
+    carrying a digit. A document id is ONE token (`SI-3104`), a cheque number
+    is one number introduced by "check", a trace id is one token: none of
+    those is a payment reference, and every one of them keeps its role. Only
+    the raw reference column carries word boundaries — the normalised form
+    `GRPAYRUN0428` does not — so callers pass the column as printed.
+    """
+    words = tuple(w for w in (_norm_ref(t) for t in _TOKEN.findall(reference or "")) if w)
+    if len(words) < 2 or not any(any(ch.isdigit() for ch in w) for w in words):
+        return ()
+    return words
+
+
 def reference_role(token: str, text: str = "") -> str:
     """The role of one normalised reference token, read from its syntax and
     from how the text that carries it introduces it.
@@ -508,6 +572,11 @@ def reference_role(token: str, text: str = "") -> str:
     description and reference column, or an entry's payee and narration — and
     it is what turns a bare number into an instrument: `1037` alone is a
     quantity or a year, `check 1037` is a cheque.
+
+    `token` is the reference AS PRINTED: a payment reference is recognised by
+    its word boundaries (`_payment_reference_words`), which normalisation
+    erases, so a caller that has already normalised the column sees a
+    single-word code and gets the unknown role for a multi-word addendum.
     """
     norm = _norm_ref(token)
     if not norm:
@@ -517,6 +586,8 @@ def reference_role(token: str, text: str = "") -> str:
     if _DOCUMENT_SYNTAX.match(norm):
         return REF_DOCUMENT
     if _TRACE_SYNTAX.match(norm):
+        return REF_INSTRUMENT
+    if _payment_reference_words(token):
         return REF_INSTRUMENT
     return REF_UNKNOWN
 
@@ -754,6 +825,8 @@ class _RowFacts:
     notes: tuple             # why the attribution failed, when it did
     authority: str = ""      # which public rule fixed the account, quoted by name
     ref_role: str = REF_MEMO  # the reference ontology's role for this row's reference
+    reference: str = ""      # the reference column as printed (a payment reference keeps its words)
+    presents: tuple = ()     # the instruments the statement shows on this row (see `_outstanding_eligible`)
 
 
 @dataclass(frozen=True)
@@ -796,12 +869,23 @@ def _reference_census(rows, archive_rows, movements) -> tuple:
     """
     documents: dict = {}
     ledger: dict = {}
+    # A payment reference is counted as ONE token — the whole addendum, the
+    # key `_row_facts` looks up — beside the tokens inside it: `SI-3104
+    # SI-3102` is one payment reference and two invoice numbers, and the
+    # invoice numbers keep their own census.
+    addenda: set = set()
     for row in rows:
         for token in _ref_tokens(row.reference) | _ref_tokens(row.description):
             documents[token] = documents.get(token, 0) + 1
+        if _payment_reference_words(row.reference):
+            documents[_norm_ref(row.reference)] = documents.get(_norm_ref(row.reference), 0) + 1
+            addenda.add(row.reference)
     for reference, description in archive_rows:
         for token in _ref_tokens(reference) | _ref_tokens(description):
             documents[token] = documents.get(token, 0) + 1
+        if _payment_reference_words(reference):
+            documents[_norm_ref(reference)] = documents.get(_norm_ref(reference), 0) + 1
+            addenda.add(reference)
     # Distinct SHAPES, not entries. Two copies of one entry are one candidate
     # pairing, so a doubled entry must not make its own cheque number look
     # reused — that would switch off the reference exactly where the books
@@ -809,6 +893,9 @@ def _reference_census(rows, archive_rows, movements) -> tuple:
     for shape in {m.shape for m in movements}:
         for token in _ref_tokens(f"{shape[2]} {shape[3]}"):
             ledger[token] = ledger.get(token, 0) + 1
+        for reference in addenda:
+            if _mentions(f"{shape[2]} {shape[3]}", reference):
+                ledger[_norm_ref(reference)] = ledger.get(_norm_ref(reference), 0) + 1
     return documents, ledger
 
 
@@ -881,7 +968,16 @@ def _row_facts(row, *, parties, chart, fee_account, documents, ledger, precedent
     ref = _norm_ref(row.reference)
     # The four roles are total over rows: a row carrying no reference-shaped
     # token at all is MEMO, which decides nothing, and needs no fifth case.
-    ref_role = reference_role(ref, f"{row.description} {row.reference}")
+    # Classified from the column AS PRINTED: a payment reference is several
+    # words, and the normalised `ref` no longer shows that.
+    ref_role = reference_role(row.reference, f"{row.description} {row.reference}")
+    # What the statement SHOWS on this row, for the in-transit rule: every
+    # cheque number the row names, and the row's payment reference when the
+    # documents print it exactly once — a reused addendum could be a third
+    # payment's, so it presents nothing and the reading stays open.
+    presents = tuple(sorted(_instrument_tokens(f"{row.description} {row.reference}")))
+    if _payment_reference_words(row.reference) and documents.get(ref, 0) == 1:
+        presents += (row.reference,)
     # Only an INSTRUMENT may dominate: a cheque number or a bank trace id names
     # one cash movement, so a globally unique one decides a pairing outright.
     # An invoice or order id names the DOCUMENT a payment applies to and several
@@ -939,7 +1035,7 @@ def _row_facts(row, *, parties, chart, fee_account, documents, ledger, precedent
     elif account is not None and account not in chart and chart:
         notes.append(f"{row} attributes to {account}, which {ACCOUNTS_FILE} does not carry")
     return _RowFacts(_rail_of(row.description, bank_initiated=fee), ref, decisive, tuple(named), fee, counterparty,
-                     account, tuple(notes), authority, ref_role)
+                     account, tuple(notes), authority, ref_role, row.reference, presents)
 
 
 def _direction_ok(row, movement) -> bool:
@@ -1019,7 +1115,7 @@ def _build_edges(rows, movements, facts_by_row, *, parties, fee_account, tie_bre
                 continue
             if not _policy_class_ok(facts, movement, fee_account):
                 continue
-            quoted = bool(facts.ref) and _mentions(movement.text, facts.ref)
+            quoted = bool(facts.ref) and _mentions(movement.text, facts.reference)
             # A CONFLICT: this row names a reference and the entry names some
             # other document or instrument instead. What the conflict is worth
             # depends on the roles:
@@ -1364,7 +1460,10 @@ def _outstanding_eligible(movement, period_end, fee_account, presented) -> str |
                 f"charge the bank levies itself is dated by the bank, so this is not a timing difference")
     named = _instrument_tokens(movement.text)
     for token, row_date in presented:
-        if token in named:
+        # a cheque number the entry names, or a payment reference the entry
+        # quotes word for word (`_mentions`): either way the bank has shown
+        # the instrument
+        if token in named or (_payment_reference_words(token) and _mentions(movement.text, token)):
             # whichever way the dates fall: on or before the row, the cheque
             # has been presented and is not in flight; after the row, the
             # books date a cheque later than the bank cleared it, which is a
@@ -1403,7 +1502,7 @@ def _describe(rows, movements, facts_by_row, comp_rows, comp_movs, period_end, *
             edge = assignment.get(row_index)
             if edge is None:
                 repairs.append(_missing_repair(row, facts, bank_account))
-                presented += [(token, row.date) for token in _instrument_tokens(f"{row.description} {row.reference}")]
+                presented += [(token, row.date) for token in facts.presents]
             elif edge.kind == "alter":
                 repairs.append(_wrong_repair(row, facts, movements[edge.mov], edge, parties, bank_account))
             else:
@@ -1510,8 +1609,7 @@ def structure(public: dict, *, bank_account: str, period_start: str, period_end:
     # `ev.rows`, not a bare `rows`: the name was free in this function and the
     # comprehension raised `NameError` on every call, so `structure()` — and
     # with it `differential_sweep.py`'s whole coverage matrix — never ran.
-    presented_everywhere = [(token, row.date) for row in ev.rows
-                            for token in _instrument_tokens(f"{row.description} {row.reference}")]
+    presented_everywhere = [(token, row.date) for row in ev.rows for token in ev.facts_by_row[row.index].presents]
     out = {"rows": len(ev.rows), "movements": len(ev.movements),
            "settle_edges": sum(1 for e in edges if e.kind == "settle"),
            "alter_edges": sum(1 for e in edges if e.kind == "alter"),
@@ -1596,8 +1694,7 @@ def check_identifiable(public: dict, *, bank_account: str, period_start: str,
     for edge in edges:
         edges_by_row.setdefault(edge.row, []).append(edge)
     # every instrument the statement shows, whatever the reading (see describe)
-    presented_everywhere = [(token, rows[i].date) for i in range(len(rows))
-                            for token in _instrument_tokens(f"{rows[i].description} {rows[i].reference}")]
+    presented_everywhere = [(token, rows[i].date) for i in range(len(rows)) for token in facts_by_row[i].presents]
 
     repairs: list[Repair] = []
     outstanding: list[str] = []

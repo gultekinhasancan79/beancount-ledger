@@ -645,6 +645,41 @@ def test_an_account_name_at_the_column_width_keeps_its_separator():
                  not problems, "; ".join(problems))
 
 
+def test_vendor_payments_accumulate_per_invoice():
+    """One payment above an invoice's gross was refused; two half-payments that
+    together exceed it were not, because vendor payments were checked one at a
+    time while receipts were accumulated. An economically wrong world could be
+    built. Both shapes are refused now, by name."""
+    from beancount_ledger.graph.schema import Settlement, Rail
+    from beancount_ledger.graph import derive as DVm
+    problems = []
+    world = A.WORLD
+    vp = next(e for e in world.events if type(e).__name__ == "VendorPayment")
+    gross = world.document(vp.invoice_id).gross
+    part = (gross * Decimal("0.6")).quantize(Decimal("0.01"))
+    rest = tuple(e for e in world.events if e is not vp)
+    a = dataclasses.replace(vp, id=vp.id + "-a", amount=part)
+    b = dataclasses.replace(vp, id=vp.id + "-b", amount=part, date=vp.date,
+                            settlement=Settlement(Rail.ACH_OUT, vp.settlement.cleared_on))
+    split = dataclasses.replace(world, events=rest + (a, b))
+    try:
+        derive(split, _plan())
+        problems.append("two payments summing above the invoice gross were accepted")
+    except Exception as exc:  # noqa: BLE001
+        if "payments" not in str(exc) or "exceed" not in str(exc):
+            problems.append(f"refused, but not for the accumulated total: {exc}")
+    # and an exact split settlement is still fine
+    half = (gross / 2).quantize(Decimal("0.01"))
+    a2 = dataclasses.replace(a, amount=half)
+    b2 = dataclasses.replace(b, amount=gross - half)
+    try:
+        derive(dataclasses.replace(world, events=rest + (a2, b2)), _plan())
+    except Exception as exc:  # noqa: BLE001
+        problems.append(f"an exact split settlement was refused: {exc}")
+    return check("vendor payments are accumulated per invoice: a split that overpays is refused, an exact split is not",
+                 not problems, "; ".join(problems))
+
+
 TESTS = [
     test_the_shipped_world_is_the_projection,
     test_the_golden_solution_is_the_expected_projection,
@@ -666,6 +701,7 @@ TESTS = [
     test_alter_and_duplicate_project_and_derive,
     test_events_without_an_invoice_settle_by_ach,
     test_an_account_name_at_the_column_width_keeps_its_separator,
+    test_vendor_payments_accumulate_per_invoice,
 ]
 
 

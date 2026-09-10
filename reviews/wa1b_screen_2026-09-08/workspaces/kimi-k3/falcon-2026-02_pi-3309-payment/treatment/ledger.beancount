@@ -1,0 +1,206 @@
+option "title" "Falcon Ridge Surveying - FY2026"
+option "operating_currency" "USD"
+
+2024-01-01 open Assets:AR                              USD
+2024-01-01 open Assets:Bank:Checking                   USD
+2024-01-01 open Assets:Due-From-Geomatics              USD
+2024-01-01 open Assets:Equipment                       USD
+2024-01-01 open Assets:Inventory                       USD
+2024-01-01 open Assets:Prepayments                     USD
+2024-01-01 open Equity:Opening                         USD
+2024-01-01 open Expenses:BankFees                      USD
+2024-01-01 open Expenses:COGS                          USD
+2024-01-01 open Expenses:FieldSupplies                 USD
+2024-01-01 open Expenses:Office                        USD
+2024-01-01 open Expenses:Repairs                       USD
+2024-01-01 open Expenses:Salaries                      USD
+2024-01-01 open Expenses:Software                      USD
+2024-01-01 open Expenses:Telecom                       USD
+2024-01-01 open Expenses:Travel                        USD
+2024-01-01 open Expenses:Vehicle                       USD
+2024-01-01 open Income:Sales                           USD
+2024-01-01 open Liabilities:AP                         USD
+2024-01-01 open Liabilities:PayrollTax                 USD
+2024-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-02-01 * "Opening balance" "Carried forward from January close"
+  Assets:Bank:Checking                         23114.91 USD
+  Assets:Equipment                             58400.00 USD
+  Assets:AR                                    14360.25 USD
+  Assets:Inventory                              3275.40 USD
+  Liabilities:AP                               -2348.20 USD
+  Liabilities:SalesTax-Payable                  -791.50 USD
+  Liabilities:PayrollTax                       -1867.45 USD
+  Equity:Opening                              -94143.41 USD
+
+2026-02-02 * "Stakeline Survey Supply" "Purchase invoice SL-1187 received - rebar, caps and survey flagging"
+  Assets:Inventory                              1432.75 USD
+  Liabilities:AP                               -1432.75 USD
+
+2026-02-03 * "Kestwick Farms LLC" "Boundary survey of the north parcel SI-0883"
+  Assets:AR                                     3916.20 USD
+  Income:Sales                                 -3660.00 USD
+  Liabilities:SalesTax-Payable                  -256.20 USD
+
+2026-02-03 * "Kestwick Farms LLC" "Monuments and flagging issued on SI-0883"
+  Expenses:COGS                                  118.40 USD
+  Assets:Inventory                              -118.40 USD
+
+2026-02-03 * "Ruth Abernathy" "Expense claim - mileage and two nights lodging, Talbot Creek topo"
+  Expenses:Travel                                547.90 USD
+  Assets:Bank:Checking                          -547.90 USD
+
+2026-02-04 * "Gridline CAD Software" "CAD and survey software subscription - February"
+  Expenses:Software                              189.00 USD
+  Assets:Bank:Checking                          -189.00 USD
+
+2026-02-05 * "Dev Ramaswamy" "Expense claim - mileage, lodging and meals, Wexford phase 2 layout"
+  Expenses:Travel                                683.25 USD
+  Assets:Bank:Checking                          -683.25 USD
+
+2026-02-06 * "Wexford Homes LLC" "Hubs and lath issued on SI-0884"
+  Expenses:COGS                                  142.50 USD
+  Assets:Inventory                              -142.50 USD
+
+2026-02-06 * "Wexford Homes LLC" "Phase 2 construction staking SI-0884"
+  Assets:AR                                     5778.00 USD
+  Income:Sales                                 -5400.00 USD
+  Liabilities:SalesTax-Payable                  -378.00 USD
+
+2026-02-06 * "Benchmark Positioning Systems" "GNSS rover receiver and pole, capitalised on payment"
+  Assets:Equipment                              6485.00 USD
+  Assets:Bank:Checking                         -6485.00 USD
+
+2026-02-09 * "Caleb Ostrowski" "Expense claim - rebar caps and flagging bought on site"
+  Expenses:FieldSupplies                         158.64 USD
+  Assets:Bank:Checking                          -158.64 USD
+
+2026-02-09 * "Wexford Homes LLC" "Customer payment for SI-0879"
+  Assets:Bank:Checking                          4815.50 USD
+  Assets:AR                                    -4815.50 USD
+
+2026-02-09 * "Falcon Ridge Geomatics LLC" "Intercompany advance to Falcon Ridge Geomatics - drone survey payroll"
+  Assets:Due-From-Geomatics                     5250.00 USD
+  Assets:Bank:Checking                         -5250.00 USD
+
+2026-02-10 * "Northpoint Cellular" "Crew mobile phones - February"
+  Expenses:Telecom                               243.17 USD
+  Assets:Bank:Checking                          -243.17 USD
+
+2026-02-11 * "Fuelwise Fleet Card" "Fleet fuel card - January statement"
+  Expenses:Vehicle                               712.86 USD
+  Assets:Bank:Checking                          -712.86 USD
+
+2026-02-11 * "Plumbline Instruments Inc" "Purchase invoice PI-3318 received - hubs, lath and marking paint"
+  Assets:Inventory                              1964.80 USD
+  Liabilities:AP                               -1964.80 USD
+
+2026-02-12 * "Marisol Fuentes" "Expense claim - marking paint, nails and whiskers bought on site"
+  Expenses:FieldSupplies                         231.48 USD
+  Assets:Bank:Checking                          -231.48 USD
+
+2026-02-12 * "Kestwick Farms LLC" "Well site and easement staking SI-0885"
+  Assets:AR                                     1979.50 USD
+  Income:Sales                                 -1850.00 USD
+  Liabilities:SalesTax-Payable                  -129.50 USD
+
+2026-02-12 * "Plumbline Instruments Inc" "Payment of purchase invoice PI-3309"
+  Liabilities:AP                                2348.20 USD
+  Assets:Bank:Checking                         -2348.20 USD
+
+2026-02-12 * "Kestwick Farms LLC" "Hubs and whiskers issued on SI-0885"
+  Expenses:COGS                                   64.20 USD
+  Assets:Inventory                               -64.20 USD
+
+2026-02-13 * "Tamarind Valley Bank" "Outgoing ACH batch fee"
+  Expenses:BankFees                               12.50 USD
+  Assets:Bank:Checking                           -12.50 USD
+
+2026-02-13 * "National Revenue Agency" "January payroll withholdings remitted"
+  Liabilities:PayrollTax                        1867.45 USD
+  Assets:Bank:Checking                         -1867.45 USD
+
+2026-02-13 * "Calibra Instrument Service" "Total station collimation check and service"
+  Expenses:Repairs                               385.60 USD
+  Assets:Bank:Checking                          -385.60 USD
+
+2026-02-13 * "Kestwick Farms LLC" "Part payment on SI-0883, customer check 5518"
+  Assets:Bank:Checking                          2500.00 USD
+  Assets:AR                                    -2500.00 USD
+
+2026-02-16 * "Sentinel Mutual Insurance" "Fleet and instrument insurance - March premium prepaid"
+  Assets:Prepayments                             638.75 USD
+  Assets:Bank:Checking                          -638.75 USD
+
+2026-02-16 * "Stakeline Survey Supply" "Purchase invoice SL-1203 received - iron pins, plastic caps and lath"
+  Assets:Inventory                               968.40 USD
+  Liabilities:AP                                -968.40 USD
+
+2026-02-16 * "Inkwell Print and Copy" "Plan copying and plat printing"
+  Expenses:Office                                 96.44 USD
+  Assets:Bank:Checking                           -96.44 USD
+
+2026-02-17 * "Talbot Creek Developments" "Rebar caps and monuments issued on SI-0886"
+  Expenses:COGS                                  218.75 USD
+  Assets:Inventory                              -218.75 USD
+
+2026-02-17 * "State Department of Taxation" "January sales tax filed and paid"
+  Liabilities:SalesTax-Payable                   791.50 USD
+  Assets:Bank:Checking                          -791.50 USD
+
+2026-02-17 * "Talbot Creek Developments" "Topographic survey and ALTA update SI-0886"
+  Assets:AR                                     8827.50 USD
+  Income:Sales                                 -8250.00 USD
+  Liabilities:SalesTax-Payable                  -577.50 USD
+
+2026-02-19 * "Talbot Creek Developments" "Customer payment for SI-0881"
+  Assets:Bank:Checking                          7276.00 USD
+  Assets:AR                                    -7276.00 USD
+
+2026-02-19 * "Ruth Abernathy" "Expense claim - mileage and lodging, Talbot Creek ALTA fieldwork"
+  Expenses:Travel                                396.10 USD
+  Assets:Bank:Checking                          -396.10 USD
+
+2026-02-20 * "Benchmark Positioning Systems" "Field data collector and bracket, capitalised on payment"
+  Assets:Equipment                              1248.75 USD
+  Assets:Bank:Checking                         -1248.75 USD
+
+2026-02-20 * "Stakeline Survey Supply" "Payment of purchase invoice SL-1187"
+  Liabilities:AP                                1432.75 USD
+  Assets:Bank:Checking                         -1432.75 USD
+
+2026-02-23 * "Falcon Ridge Geomatics LLC" "Intercompany advance to Falcon Ridge Geomatics - processing licence renewal"
+  Assets:Due-From-Geomatics                     3175.00 USD
+  Assets:Bank:Checking                         -3175.00 USD
+
+2026-02-24 * "Stakeline Survey Supply" "Payment of purchase invoice SL-1203, check 3115"
+  Liabilities:AP                                 968.40 USD
+  Assets:Bank:Checking                          -968.40 USD
+
+2026-02-25 * "Tomas Reinholt" "February net pay, check 3118"
+  Expenses:Salaries                             2541.80 USD
+  Assets:Bank:Checking                         -2541.80 USD
+
+2026-02-25 * "Lionel Garvey" "February net pay, check 3116"
+  Expenses:Salaries                             3214.60 USD
+  Assets:Bank:Checking                         -3214.60 USD
+
+2026-02-25 * "Wexford Homes LLC" "Customer payment settling SI-0884"
+  Assets:Bank:Checking                          5778.00 USD
+  Assets:AR                                    -5778.00 USD
+
+2026-02-25 * "Nadia Petrakis" "February net pay, check 3117"
+  Expenses:Salaries                             2876.35 USD
+  Assets:Bank:Checking                         -2876.35 USD
+
+2026-02-26 * "Caleb Ostrowski" "Expense claim - flagging and hub stakes bought on site, check 2048"
+  Expenses:FieldSupplies                         264.30 USD
+  Assets:Bank:Checking                          -264.30 USD
+
+2026-02-27 * "Kestwick Farms LLC" "Customer check 5531 settling SI-0885"
+  Assets:Bank:Checking                          1979.50 USD
+  Assets:AR                                    -1979.50 USD
+
+2026-02-27 * "Tamarind Valley Bank" "Monthly service charge and check printing order"
+  Expenses:BankFees                               47.25 USD
+  Assets:Bank:Checking                           -47.25 USD

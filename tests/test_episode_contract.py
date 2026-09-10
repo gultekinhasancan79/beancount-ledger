@@ -872,6 +872,243 @@ def test_an_unbroken_run_of_truncated_turns_ends_under_the_truncation_limit():
 
 
 # --------------------------------------------------------------------------
+# 3a. a call whose arguments are not JSON is rejected AND made replayable
+# --------------------------------------------------------------------------
+
+def broken(tag: str = "b", name: str = "write_ledger", arguments: str = "{not json") -> ResponseMessage:
+    """An assistant turn whose tool call carries unparseable arguments.
+
+    What qwen3-8b actually did on 2026-09-08: five of ten episodes emitted a
+    tool call whose `arguments` were not a JSON object. The pinned framework
+    answered each with `error_formatter` and then re-serialised the ORIGINAL
+    string into every later request, so Alibaba Model Studio refused all of
+    them (HTTP 400, `The "function.arguments" parameter of the code model must
+    be in JSON format`) and the episodes were lost as PROVIDER failures.
+    """
+    return ResponseMessage(
+        content="", finish_reason="tool_calls", is_truncated=False,
+        tool_calls=[ToolCall(id=tag, name=name, arguments=arguments)],
+    )
+
+
+def _maybe_json(value):
+    try:
+        return json.loads(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _stored_tool_calls(completion) -> list:
+    """Every tool call in a saved completion, as dicts.
+
+    `save_utils.sanitize_tool_calls` stores each call as a JSON STRING, which
+    is what a replay tool reads back and what a provider is eventually shown.
+    """
+    out = []
+    for message in completion or []:
+        calls = message.get("tool_calls") if isinstance(message, dict) else getattr(message, "tool_calls", None)
+        for call in calls or []:
+            out.append(json.loads(call) if isinstance(call, str) else call)
+    return out
+
+
+def test_a_malformed_call_is_rejected_rewritten_and_audited():
+    """The four properties of a rejected call, through the real `env_response`.
+
+    Answered with the fixed public refusal; nothing executed, so no revision
+    and no bytes on disk; the STORED call rewritten to the empty object, which
+    is what makes the next request valid; and the raw text retained in the
+    rollout's own audit list, bounded, where the model can never see it.
+    """
+    from types import SimpleNamespace
+
+    env, state, workspace = fresh()
+    before = (workspace / env_mod.LEDGER).read_bytes()
+    call = SimpleNamespace(id="c1", name=env_mod.WRITE_TOOL, arguments="{not json" + "x" * 5000)
+    message = SimpleNamespace(role="assistant", content="", tool_calls=[call])
+    out = asyncio.run(env.env_response([message], state))
+
+    problems = []
+    if replies(out) != [env_mod.PUBLIC_TOOL_ERROR]:
+        problems.append(f"the reply was {replies(out)!r}, expected PUBLIC_TOOL_ERROR")
+    if [getattr(m, "tool_call_id", None) for m in out] != ["c1"]:
+        problems.append("the reply is not paired to the call id")
+    if call.arguments != env_mod.MALFORMED_CALL_REPLAY_ARGUMENTS:
+        problems.append(f"the stored call still carries {call.arguments!r}; the next request would be "
+                        "refused by a provider that validates function.arguments")
+    if json.loads(call.arguments) != {}:
+        problems.append("the rewritten arguments are not the empty JSON object")
+    if message.tool_calls != [call]:
+        problems.append("the assistant message's call list was not restored")
+    record = state.get("piv_rejected_calls")
+    if not record or len(record) != 1:
+        problems.append(f"the audit list is {record!r}")
+    else:
+        entry = record[0]
+        if entry.get("tool") != env_mod.WRITE_TOOL or entry.get("tool_call_id") != "c1":
+            problems.append(f"the audit entry does not name the call: {entry}")
+        if entry.get("turn") != state.get("piv_turn"):
+            problems.append(f"the audit entry names turn {entry.get('turn')}, not {state.get('piv_turn')}")
+        if not entry.get("arguments", "").startswith("{not json"):
+            problems.append("the audit entry does not hold the raw text the model emitted")
+        if len(entry.get("arguments", "")) != env_mod.MAX_REJECTED_CALL_RECORD_CHARS:
+            problems.append(f"the retained raw text is {len(entry.get('arguments', ''))} chars, not bounded "
+                            f"at {env_mod.MAX_REJECTED_CALL_RECORD_CHARS}")
+    if state.get("piv_revision") != 0:
+        problems.append(f"a rejected call advanced the revision to {state.get('piv_revision')}")
+    if phase(state) is not env_mod.EpisodePhase.NO_CANDIDATE:
+        problems.append(f"the phase moved to {phase(state)}")
+    if (workspace / env_mod.LEDGER).read_bytes() != before:
+        problems.append("a rejected call changed the ledger on disk")
+    if state.get("piv_observation_bytes", 0) < len(env_mod.PUBLIC_TOOL_ERROR):
+        problems.append("the refusal was not charged to the observation budget")
+    return check("a call whose arguments are not a JSON object is answered PUBLIC_TOOL_ERROR, executes "
+                 "nothing, has its stored arguments rewritten to the empty object and its raw text "
+                 "retained (bounded) in the audit record", not problems, "\n".join(problems))
+
+
+def test_a_malformed_call_does_not_cost_the_episode():
+    """broken -> write -> submit scores exactly as write -> submit.
+
+    The whole point of the fix: the episode CONTINUES. Before it, the second
+    request carried the unparseable arguments back to the provider, the
+    provider refused it, and the rollout was lost as a provider failure with
+    nothing delivered.
+
+    The end-to-end property is asserted on the SAVED transcript, not on our
+    own state: every tool call the completion stores must parse as a JSON
+    object, because that is the string the client hands the provider.
+    """
+    problems = []
+    results, client, raised = run([broken(), write(), submit()],
+                                  state_columns=["piv_rejected_calls", "piv_consecutive_rejected_turns"])
+    if raised is not None:
+        return check("a malformed call must not raise", False, str(raised))
+    out = one(results)
+    metrics = out.get("metrics") or {}
+    if out.get("reward") != 1.0:
+        problems.append(f"reward {out.get('reward')}, expected the same 1.0 as write -> submit")
+    if out.get("stop_condition") != "piv_submitted" or out.get("error") is not None:
+        problems.append(f"stop_condition {out.get('stop_condition')!r} error {out.get('error')}")
+    if client.turn != 3:
+        problems.append(f"the model was asked {client.turn} times, expected 3")
+    if metrics.get(env_mod.METRIC_REJECTED_CALLS) != 1.0:
+        problems.append(f"piv/rejected_calls {metrics.get(env_mod.METRIC_REJECTED_CALLS)}")
+    if metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT) != 0.0:
+        problems.append("piv/rejected_call_limit fired on an episode that recovered")
+    if metrics.get("piv/evaluator_failed") != 0.0 or metrics.get("piv/training_eligible") != 1.0:
+        problems.append("a rejected call was treated as a failure rather than an agent outcome")
+    if out.get("piv_consecutive_rejected_turns") != 0:
+        problems.append(f"the consecutive run was not reset by the well-formed turn: "
+                        f"{out.get('piv_consecutive_rejected_turns')}")
+    audit = out.get("piv_rejected_calls") or []
+    if len(audit) != 1 or audit[0].get("arguments") != "{not json":
+        problems.append(f"the raw call did not reach the episode record: {audit}")
+    meta = results["metadata"]
+    if meta.get("piv_status") != "VALID" or meta.get("piv_quarantined_count") != 0:
+        problems.append(f"quarantined: status={meta.get('piv_status')}")
+    unreplayable = [c for c in _stored_tool_calls(out.get("completion"))
+                    if not isinstance(_maybe_json(c.get("arguments")), dict)]
+    if unreplayable:
+        problems.append(f"the saved transcript still carries calls no provider will accept: {unreplayable}")
+    tool_replies = [str(m.get("content") if isinstance(m, dict) else getattr(m, "content", None))
+                    for m in out.get("completion") or []
+                    if (m.get("role") if isinstance(m, dict) else getattr(m, "role", None)) == "tool"]
+    if env_mod.PUBLIC_TOOL_ERROR not in tool_replies:
+        problems.append("the malformed call was not answered with the public refusal in the transcript")
+    return check("a malformed call costs a turn and nothing else: the episode continues, delivers and "
+                 "scores 1.0, the raw call is in the record, and every tool call in the saved "
+                 "transcript parses as a JSON object", not problems, "\n".join(problems))
+
+
+def test_repeated_malformed_calls_end_the_episode_at_the_bound():
+    """The refusal must not become its own loop hazard, and it must be nameable.
+
+    Same shape and same K as the nudge limit: MAX_CONSECUTIVE_REJECTED_TURNS
+    turns in a row whose calls were ALL rejected end the episode under
+    `piv_rejected_call_limit` — a name that separates "kept emitting broken
+    calls" from "stopped calling tools" (`piv_no_tool_call_limit`) and from
+    "looping at the completion cap" (`piv_truncation_limit`). One well-formed
+    call in between clears the run, so a model that recovers is never cut
+    short, and a MIXED turn is not a rejected turn at all.
+    """
+    from types import SimpleNamespace
+
+    problems = []
+    results, client, raised = run([broken("b1"), broken("b2"), broken("b3"), write(), submit()])
+    if raised is not None:
+        problems.append(f"the rejected-call limit raised {type(raised).__name__}: {raised}")
+    else:
+        out = one(results)
+        metrics = out.get("metrics") or {}
+        if client.turn != env_mod.MAX_CONSECUTIVE_REJECTED_TURNS:
+            problems.append(f"the model was asked {client.turn} times, expected "
+                            f"{env_mod.MAX_CONSECUTIVE_REJECTED_TURNS}")
+        if out.get("stop_condition") != "piv_rejected_call_limit":
+            problems.append(f"stop_condition {out.get('stop_condition')!r}")
+        if metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT) != 1.0:
+            problems.append(f"piv/rejected_call_limit {metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT)}")
+        if metrics.get(env_mod.METRIC_REJECTED_CALLS) != float(env_mod.MAX_CONSECUTIVE_REJECTED_TURNS):
+            problems.append(f"piv/rejected_calls {metrics.get(env_mod.METRIC_REJECTED_CALLS)}")
+        for other in (env_mod.METRIC_NO_TOOL_LIMIT, env_mod.METRIC_TRUNCATION_LIMIT,
+                      env_mod.METRIC_SUBMITTED, env_mod.METRIC_NO_TOOL_TURNS):
+            if metrics.get(other) != 0.0:
+                problems.append(f"{other} {metrics.get(other)} on a rejected-call ending")
+        if out.get("reward") != 0.0 or out.get("error") is not None:
+            problems.append(f"reward {out.get('reward')} error {out.get('error')}; expected a counted 0.0")
+        if metrics.get("piv/evaluator_failed") != 0.0 or metrics.get("piv/training_eligible") != 1.0:
+            problems.append("the limit was treated as a failure rather than an agent outcome")
+        if metrics.get("piv/protocol_failed") != 0.0:
+            problems.append("a rejected call was scored as a terminal protocol violation")
+        meta = results["metadata"]
+        if meta.get("piv_status") != "VALID" or meta.get("piv_quarantined_count") != 0:
+            problems.append(f"quarantined: status={meta.get('piv_status')}")
+
+    turns = []
+    for _ in range(3):
+        turns += [broken("x1"), broken("x2"), calls(("g", "list_files", {}))]
+    turns += [write(), submit()]
+    results, client, raised = run(turns)
+    if raised is not None:
+        problems.append(f"the recovery route raised {type(raised).__name__}: {raised}")
+    else:
+        out = one(results)
+        metrics = out.get("metrics") or {}
+        if out.get("stop_condition") != "piv_submitted" or out.get("reward") != 1.0:
+            problems.append(f"a well-formed call did not clear the rejected run: "
+                            f"{out.get('stop_condition')!r} reward {out.get('reward')}")
+        if metrics.get(env_mod.METRIC_REJECTED_CALL_LIMIT) != 0.0:
+            problems.append("the rejected-call limit fired on a route that recovered")
+        if metrics.get(env_mod.METRIC_REJECTED_CALLS) != 6.0:
+            problems.append(f"piv/rejected_calls {metrics.get(env_mod.METRIC_REJECTED_CALLS)}, expected 6")
+        if client.turn != len(turns):
+            problems.append(f"the model was asked {client.turn} times, expected {len(turns)}")
+
+    env, state, workspace = fresh()
+    bad = SimpleNamespace(id="m1", name=env_mod.WRITE_TOOL, arguments="")
+    good = SimpleNamespace(id="m2", name="list_files", arguments="{}")
+    got = asyncio.run(env.env_response(
+        [SimpleNamespace(role="assistant", content="", tool_calls=[bad, good])], state))
+    if [getattr(m, "tool_call_id", None) for m in got] != ["m1", "m2"]:
+        problems.append(f"a mixed turn is not answered one reply per call in call order: "
+                        f"{[getattr(m, 'tool_call_id', None) for m in got]}")
+    elif replies(got)[0] != env_mod.PUBLIC_TOOL_ERROR:
+        problems.append("the broken call in a mixed turn was not refused")
+    elif env_mod.LEDGER not in str(replies(got)[1]):
+        problems.append(f"the well-formed call in a mixed turn did not run: {replies(got)[1]!r}")
+    if bad.arguments != env_mod.MALFORMED_CALL_REPLAY_ARGUMENTS:
+        problems.append("the broken call in a mixed turn was not rewritten")
+    if state.get("piv_consecutive_rejected_turns") != 0:
+        problems.append("a mixed turn counted as a rejected turn")
+    if state.get("piv_revision") != 0:
+        problems.append("a mixed turn's rejected write produced a revision")
+    return check("three turns in a row whose calls are all rejected -> piv_rejected_call_limit, counted "
+                 "0.0, never quarantined; a well-formed call clears the run; a mixed turn answers both "
+                 "calls, runs only the good one and does not count as rejected",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
 # 3b. the per-episode output ceiling, enforced on the REQUEST
 # --------------------------------------------------------------------------
 
@@ -1785,15 +2022,72 @@ def test_provider_usage_that_cannot_meter_the_ceiling_is_flagged_not_scored():
 # 3e. the episode contract has its own identity
 # --------------------------------------------------------------------------
 
-#: The pinned episode-contract digest. It covers the system prompt, the tool
-#: names/descriptions/schemas the framework generates, the observation modes
-#: and envelope, the phase machine, the stop conditions in priority order, the
-#: budgets and the pending-call rule, and every public nudge or refusal.
-EPISODE_CONTRACT_DIGEST = "b16d726ac2637486c549c3a2e94ede4da21cccc4be4e9410cb6e081c875ccba8"
+#: The pinned episode-contract digests, ONE PER RESOLVED VIEW. Each covers
+#: the system prompt, the tool names/descriptions/schemas the framework
+#: generates, the observation modes and envelope, the phase machine, the stop
+#: conditions in priority order, the budgets and the pending-call rule, and
+#: every public nudge or refusal — of the view an episode of that profile
+#: actually ran under (spec section 3, "Two resolved views behind a
+#: dispatcher"; round 12 answer §2). Two rollouts share a digest exactly when
+#: they saw the same tools, files and rules.
+#:
+#: The LEGACY value is contract 4's and DOES NOT MOVE: the 95 shipped tasks
+#: were measured under it, and `tests/test_legacy_freeze.py` pins the same
+#: bytes from the other side.
+EPISODE_CONTRACT_DIGEST = "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866"
+#: Contract 5, the cash-application family's view: seven tools, eleven
+#: observed files, the second deliverable, the register's own phase machine,
+#: the three engines and the composition rule. Re-pinned when the family's
+#: contract changes, exactly as the legacy literal is.
+EPISODE_CONTRACT_DIGEST_CASH_APPLICATION = "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f"
+
+#: The parameter of every contract-identity check below:
+#: (profile, task id, pinned digest, declared version, declared shape).
+#: PARAMETERISED rather than duplicated into per-profile branches — the
+#: review's instruction — so a check added for one profile is a check added
+#: for both, and a check that silently applies to only one cannot exist.
+CONTRACT_PROFILES = (
+    (env_mod.PROFILE_LEGACY, "bank_recon_001", EPISODE_CONTRACT_DIGEST, 4, "piv.episode-contract/2"),
+    (env_mod.PROFILE_CASH_APPLICATION, "cash_application_001",
+     EPISODE_CONTRACT_DIGEST_CASH_APPLICATION, 5, "piv.episode-contract/3"),
+)
+
+_FAMILY_CASE: dict = {}
+
+
+def family_case() -> tuple:
+    """(golden ledger, golden register JSON) for `cash_application_001`.
+
+    Derived once through the production door, and the register is the same
+    `golden_document` the scoring suite builds from the truth — so a family
+    turn here delivers exactly what `application/1` scores 1.0.
+    """
+    if not _FAMILY_CASE:
+        from beancount_ledger.graph.derive import derive_contract
+        from beancount_ledger.graph.worlds import CASH_APPLICATION_REGISTRY
+        import test_cash_application_scoring as CA
+        world, task = CASH_APPLICATION_REGISTRY["cash_application_001"]
+        _bundle, inputs = derive_contract(world, task)
+        _FAMILY_CASE["ledger"] = inputs.golden_text
+        _FAMILY_CASE["register"] = json.dumps(CA.golden_document(inputs.application))
+    return _FAMILY_CASE["ledger"], _FAMILY_CASE["register"]
+
+
+def deliver_turns(profile: str) -> list:
+    """The shortest DELIVERING script for a profile: write what that profile
+    is asked for, then submit. The family writes both artifacts in one turn,
+    which is legal — the per-turn rule is one call per WRITE TOOL."""
+    if profile == env_mod.PROFILE_LEGACY:
+        return [write(), submit()]
+    ledger, register = family_case()
+    return [calls(("w", "write_ledger", {"content": ledger}),
+                  ("a", "write_cash_application", {"content": register})),
+            submit()]
 
 
 def test_the_episode_contract_digest_is_pinned():
-    """A rollout's observation and termination rules have an identity.
+    """A rollout's observation and termination rules have an identity — one
+    per PROFILE, and this walks both.
 
     `public_task_id` binds the public files and the task prompt;
     `task_contract_digest` binds the scorer's normative view. Neither notices
@@ -1803,57 +2097,72 @@ def test_the_episode_contract_digest_is_pinned():
     This is the pin that makes such a change loud.
     """
     problems = []
-    if env_mod.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
-        problems.append(f"the episode contract changed: bump EPISODE_CONTRACT_VERSION and re-pin "
-                        f"(now {env_mod.episode_contract_digest()}, pinned {EPISODE_CONTRACT_DIGEST})")
-    if env_mod.EPISODE_CONTRACT_VERSION != 3:
-        problems.append(f"EPISODE_CONTRACT_VERSION is {env_mod.EPISODE_CONTRACT_VERSION}; re-pin the digest")
-    view = env_mod.episode_contract()
-    if view.get("system_prompt") != env_mod.SYSTEM_PROMPT:
-        problems.append("the contract view does not carry the exact system prompt")
+    for profile, task_id, pinned, version, schema in CONTRACT_PROFILES:
+        live_digest = env_mod.episode_contract_digest(profile=profile)
+        if live_digest != pinned:
+            problems.append(f"{profile}: the episode contract changed: bump the version and re-pin "
+                            f"(now {live_digest}, pinned {pinned})")
+        if env_mod.episode_contract_version(profile) != version:
+            problems.append(f"{profile}: version is {env_mod.episode_contract_version(profile)}, not {version}; "
+                            f"re-pin the digest")
+        if env_mod.episode_contract_schema(profile) != schema:
+            problems.append(f"{profile}: shape is {env_mod.episode_contract_schema(profile)!r}, not {schema!r}")
+        view = env_mod.episode_contract(profile=profile)
+        if view.get("system_prompt") != env_mod.system_prompt(profile=profile):
+            problems.append(f"{profile}: the contract view does not carry the exact system prompt")
+        if view.get("version") != version or view.get("schema") != schema:
+            problems.append(f"{profile}: the view's own version/schema disagree with the dispatcher")
 
-    # the tool schemas are the framework's, not a hand-kept copy: the view's
-    # tools must equal a live environment's advertised tool_defs
-    env = load_environment()
-    live = [{"name": t.name, "description": t.description or "", "parameters": t.parameters,
-             "strict": bool(t.strict)} for t in env.tool_defs]
-    if view.get("tools") != live:
-        problems.append("the contract's tool definitions are not the ones the environment advertises")
+        # the tool schemas are the framework's, not a hand-kept copy: the view's
+        # tools must equal a live environment's advertised tool_defs
+        env = load_environment(task_id)
+        live = [{"name": t.name, "description": t.description or "", "parameters": t.parameters,
+                 "strict": bool(t.strict)} for t in env.tool_defs]
+        if view.get("tools") != live:
+            problems.append(f"{profile}: the contract's tool definitions are not the ones the environment advertises")
+        if env.profile != profile:
+            problems.append(f"{task_id} resolved to profile {env.profile!r}, not {profile!r}")
 
-    # the stop conditions, with the priorities `@vf.stop` recorded — names
-    # alone would let an edited priority that preserves the order pass
-    live_stops = [(c.__name__, getattr(c, "stop_priority", 0)) for c in env._stop_conditions]
-    if [tuple(row) for row in env_mod.STOP_CONDITION_PRIORITY] != live_stops:
-        problems.append(f"STOP_CONDITION_PRIORITY {list(env_mod.STOP_CONDITION_PRIORITY)} "
-                        f"is not the live order/priority {live_stops}")
+        # the stop conditions, with the priorities `@vf.stop` recorded — names
+        # alone would let an edited priority that preserves the order pass
+        live_stops = [(c.__name__, getattr(c, "stop_priority", 0)) for c in env._stop_conditions]
+        if [tuple(row) for row in env_mod.STOP_CONDITION_PRIORITY] != live_stops:
+            problems.append(f"{profile}: STOP_CONDITION_PRIORITY {list(env_mod.STOP_CONDITION_PRIORITY)} "
+                            f"is not the live order/priority {live_stops}")
 
-    # every rollout and every batch carries it
-    state = {}
-    env._workspace(state)
-    if state.get("piv_episode_contract_digest") != EPISODE_CONTRACT_DIGEST:
-        problems.append(f"the rollout does not carry the digest: {state.get('piv_episode_contract_digest')!r}")
-    # ...including a rollout that never calls a tool and so never builds a
-    # workspace: that is `setup_state`'s whole job, and without this witness
-    # the override could be deleted with every other test still passing
-    bare, _client, raised = run([narrated(), narrated(), narrated()],
-                                state_columns=["piv_episode_contract_digest", "workspace"])
-    if raised is not None:
-        problems.append(f"the no-tool route raised {type(raised).__name__}")
-    else:
-        out = (bare["outputs"] or [{}])[0]
-        if out.get("workspace"):
-            problems.append("the no-tool route built a workspace; the witness is not about setup_state")
-        if out.get("piv_episode_contract_digest") != EPISODE_CONTRACT_DIGEST:
-            problems.append("a rollout that never called a tool carries no contract digest: "
-                            f"{out.get('piv_episode_contract_digest')!r}")
-    results, _client, raised = run([write(), submit()])
-    if raised is not None:
-        problems.append(f"evaluate raised {type(raised).__name__}")
-    else:
-        stamped = (results["metadata"] or {}).get("piv_episode_contract")
-        if stamped != {"version": env_mod.EPISODE_CONTRACT_VERSION, "digest": EPISODE_CONTRACT_DIGEST,
-                       "max_episode_output_tokens": env_mod.MAX_EPISODE_OUTPUT_TOKENS}:
-            problems.append(f"the batch metadata does not carry the contract: {stamped}")
+        # every rollout and every batch carries it
+        state = {}
+        env._workspace(state)
+        if state.get("piv_episode_contract_digest") != pinned:
+            problems.append(f"{profile}: the rollout does not carry the digest: "
+                            f"{state.get('piv_episode_contract_digest')!r}")
+        # ...including a rollout that never calls a tool and so never builds a
+        # workspace: that is `setup_state`'s whole job, and without this witness
+        # the override could be deleted with every other test still passing
+        bare, _client, raised = run([narrated(), narrated(), narrated()], env=load_environment(task_id),
+                                    state_columns=["piv_episode_contract_digest", "workspace"])
+        if raised is not None:
+            problems.append(f"{profile}: the no-tool route raised {type(raised).__name__}")
+        else:
+            out = (bare["outputs"] or [{}])[0]
+            if out.get("workspace"):
+                problems.append(f"{profile}: the no-tool route built a workspace; the witness is not about "
+                                f"setup_state")
+            if out.get("piv_episode_contract_digest") != pinned:
+                problems.append(f"{profile}: a rollout that never called a tool carries no contract digest: "
+                                f"{out.get('piv_episode_contract_digest')!r}")
+        results, _client, raised = run(deliver_turns(profile), env=load_environment(task_id))
+        if raised is not None:
+            problems.append(f"{profile}: evaluate raised {type(raised).__name__}")
+        else:
+            stamped = (results["metadata"] or {}).get("piv_episode_contract")
+            if stamped != {"version": version, "digest": pinned,
+                           "max_episode_output_tokens": env_mod.MAX_EPISODE_OUTPUT_TOKENS}:
+                problems.append(f"{profile}: the batch metadata does not carry the contract: {stamped}")
+    if EPISODE_CONTRACT_DIGEST == EPISODE_CONTRACT_DIGEST_CASH_APPLICATION:
+        problems.append("the two resolved views share one digest; they promise different tools and files")
+    if env_mod.EPISODE_CONTRACT_VERSION != 4 or env_mod.EPISODE_CONTRACT_SCHEMA != "piv.episode-contract/2":
+        problems.append("the module's legacy constants moved; contract 4 is preserved for the 95 shipped tasks")
 
     # ...and the RELEASE MANIFEST is deliberately NOT bound to it. It was,
     # and the binding was unsound: `load_environment` admits
@@ -1874,11 +2183,13 @@ def test_the_episode_contract_digest_is_pinned():
         if leaked in versions:
             problems.append(f"the release manifest binds {leaked} again; it cannot preflight a ceiling "
                             "it does not choose")
-    if EPISODE_CONTRACT_DIGEST in {str(v) for v in versions.values()}:
-        problems.append("the episode digest reached the manifest under another key")
-    return check("the episode contract digest is pinned, equals the framework's own tool schemas and the "
-                 "live stop order, is carried by every rollout and every batch — and is NOT in the "
-                 "release manifest's versions(), which binds world semantics only",
+    for _profile, _task_id, pinned, _version, _schema in CONTRACT_PROFILES:
+        if pinned in {str(v) for v in versions.values()}:
+            problems.append(f"the {_profile} episode digest reached the manifest under another key")
+    return check("BOTH resolved episode contracts are pinned and distinct, each equals the framework's own "
+                 "tool schemas and the live stop order for its own profile, each is carried by every rollout "
+                 "and every batch of that profile — and neither is in the release manifest's versions(), "
+                 "which binds world semantics only",
                  not problems, "\n".join(problems))
 
 
@@ -1986,26 +2297,32 @@ def test_the_prompt_and_the_digest_follow_the_ceiling_actually_served():
     so the row itself is checked, not just `env.system_prompt`.
     """
     problems = []
-    default = load_environment()
-    small = load_environment(max_episode_output_tokens=8_000)
 
     def row_prompt(env):
         return env.dataset[0]["prompt"][0]["content"]
 
-    for label, env, needle, absent in (
-        ("default", default, "ceiling of 40,000 completion tokens", "8,000 completion tokens"),
-        ("8K", small, "ceiling of 8,000 completion tokens", "40,000 completion tokens"),
-    ):
-        if needle not in env.system_prompt:
-            problems.append(f"{label}: env.system_prompt does not state {needle!r}")
-        if needle not in row_prompt(env):
-            problems.append(f"{label}: the dataset row the model is sent does not state {needle!r}")
-        if absent in row_prompt(env):
-            problems.append(f"{label}: the prompt still states {absent!r}")
-    if default.episode_contract_digest() == small.episode_contract_digest():
-        problems.append("two ceilings share one contract digest")
-    if default.episode_contract_digest() != EPISODE_CONTRACT_DIGEST:
-        problems.append("the default env's digest is not the pinned one")
+    # Parameterised over the two profiles: the ceiling is disclosed and bound
+    # the same way under contract 4 and contract 5, and each profile's
+    # DEFAULT-ceiling digest is its own pinned one.
+    for profile, task_id, pinned, _version, _schema in CONTRACT_PROFILES:
+        default = load_environment(task_id)
+        small = load_environment(task_id, max_episode_output_tokens=8_000)
+        for label, env, needle, absent in (
+            ("default", default, "ceiling of 40,000 completion tokens", "8,000 completion tokens"),
+            ("8K", small, "ceiling of 8,000 completion tokens", "40,000 completion tokens"),
+        ):
+            if needle not in env.system_prompt:
+                problems.append(f"{profile}/{label}: env.system_prompt does not state {needle!r}")
+            if needle not in row_prompt(env):
+                problems.append(f"{profile}/{label}: the dataset row the model is sent does not state {needle!r}")
+            if absent in row_prompt(env):
+                problems.append(f"{profile}/{label}: the prompt still states {absent!r}")
+        if default.episode_contract_digest() == small.episode_contract_digest():
+            problems.append(f"{profile}: two ceilings share one contract digest")
+        if default.episode_contract_digest() != pinned:
+            problems.append(f"{profile}: the default env's digest is not the pinned one")
+    default = load_environment()
+    small = load_environment(max_episode_output_tokens=8_000)
 
     # the setter path, which is how the measurement arms set it
     later = load_environment()
@@ -2401,13 +2718,21 @@ def test_tool_call_arguments_are_counted_in_the_plausibility_floor():
 #: structural separator or a non-model-facing key/encoding, and is justified.
 MODEL_FACING_FUNCTIONS = ("_clip", "_clip_bytes", "list_files", "read_file", "_whole_ledger_reply",
                           "grep", "_public_report", "run_beancount", "write_ledger", "submit",
-                          "submit_receipt")
+                          "submit_receipt",
+                          # contract 5's own door and its report. Left out when the
+                          # seventh tool landed, which was the same hole one rung
+                          # further along: a reply written inline in
+                          # `write_cash_application` or `_application_report` would
+                          # have reached the model without ever entering the view or
+                          # either digest.
+                          "write_cash_application", "_application_report")
 #: The environment METHODS that also emit model-facing text. They were left
 #: out of the first version of this scan, and that was a hole with the same
 #: shape as the one the hoist closed: a reply written inline in
 #: `_no_tool_call_turn` or `_frozen_turn` would not be in the digest and
 #: nothing would say so.
-MODEL_FACING_METHODS = ("call_tool", "_answer_turn", "_frozen_turn", "_no_tool_call_turn")
+MODEL_FACING_METHODS = ("call_tool", "_answer_turn", "_frozen_turn", "_no_tool_call_turn",
+                        "_record_malformed_calls")
 ALLOWED_LITERALS = {
     "",                       # empty tail / empty accumulator
     "\n",                     # the join between lines of one reply
@@ -2429,8 +2754,13 @@ ALLOWED_LITERALS = {
     "piv_complete_reads", "piv_observation_bytes", "piv_observation_refused",
     "piv_calls_refused_after_submit", "piv_turns_rejected", "piv_no_tool_turns",
     "piv_consecutive_no_tool_turns", "piv_consecutive_truncated_turns",
+    "piv_rejected_calls", "piv_consecutive_rejected_turns", "piv_rejected_call_limit_reached",
     "piv_no_tool_truncated_turns", "piv_truncation_limit_reached", "piv_no_tool_limit_reached",
     "piv_protocol_failure", "piv_committed", "piv_delivery", "piv_score", "piv_result",
+    # the cash-application family's own state keys, on the same footing
+    "piv_family", "piv_application_digest",
+    "piv_submitted_application_digest", "piv_submitted_application_phase",
+    "piv_application_phase", "piv_pending_application",
     "final_env_response", "workspace",
     "digest", "turn", "revision", "?", "logical_text_digest",
 }
@@ -2497,28 +2827,50 @@ def test_every_model_facing_reply_is_a_bound_constant():
     import inspect
 
     problems = []
-    view = env_mod.episode_contract()
-    messages = view.get("messages") or {}
-    named = dict(env_mod.model_facing_messages())
-    if set(messages) != set(named):
-        problems.append(f"the view's messages are not model_facing_messages(): "
-                        f"{sorted(set(messages) ^ set(named))}")
-    for name, value in named.items():
-        if messages.get(name) != value:
-            problems.append(f"{name} in the view is not the constant: {messages.get(name)!r}")
+    # PARAMETERISED over the two resolved views, not run on the legacy
+    # default alone: contract 5 adds ten model-facing constants of its own,
+    # and on the default they got neither the "it is in the view" arm nor
+    # the "mutating it moves the digest" arm.
+    named_by_profile = {}
+    for profile, _task_id, _pinned, _version, _schema in CONTRACT_PROFILES:
+        view = env_mod.episode_contract(profile=profile)
+        messages = view.get("messages") or {}
+        named = dict(env_mod.model_facing_messages(profile))
+        named_by_profile[profile] = named
+        if set(messages) != set(named):
+            problems.append(f"{profile}: the view's messages are not model_facing_messages(): "
+                            f"{sorted(set(messages) ^ set(named))}")
+        for name, value in named.items():
+            if messages.get(name) != value:
+                problems.append(f"{profile}: {name} in the view is not the constant: {messages.get(name)!r}")
 
-    # 1. mutating ANY of them moves the digest — one at a time, restored after
-    baseline = env_mod.episode_contract_digest()
-    for name in named:
-        original = getattr(env_mod, name)
-        try:
-            setattr(env_mod, name, original + " ")
-            if env_mod.episode_contract_digest() == baseline:
-                problems.append(f"changing {name} does not move the episode contract digest")
-        finally:
-            setattr(env_mod, name, original)
-    if env_mod.episode_contract_digest() != baseline:
-        problems.append("the digest did not come back after the mutations")
+    # 1. mutating ANY of them moves ITS OWN profile's digest — one at a time,
+    # restored after — and a constant that is NOT on the legacy surface must
+    # leave the legacy digest exactly where it is, because the 95 shipped
+    # tasks were measured under it and family text may not perturb it.
+    baselines = {profile: env_mod.episode_contract_digest(profile=profile)
+                 for profile in named_by_profile}
+    legacy_named = named_by_profile[env_mod.PROFILE_LEGACY]
+    for profile, named in named_by_profile.items():
+        for name in named:
+            original = getattr(env_mod, name)
+            try:
+                setattr(env_mod, name, original + " ")
+                if env_mod.episode_contract_digest(profile=profile) == baselines[profile]:
+                    problems.append(f"{profile}: changing {name} does not move that profile's "
+                                    f"episode contract digest")
+                if name not in legacy_named and env_mod.episode_contract_digest(
+                        profile=env_mod.PROFILE_LEGACY) != baselines[env_mod.PROFILE_LEGACY]:
+                    problems.append(f"changing {name}, which is not on the legacy surface, moved the "
+                                    f"LEGACY contract digest")
+            finally:
+                setattr(env_mod, name, original)
+    for profile, baseline in baselines.items():
+        if env_mod.episode_contract_digest(profile=profile) != baseline:
+            problems.append(f"{profile}: the digest did not come back after the mutations")
+    named = dict(legacy_named)
+    for profile_named in named_by_profile.values():
+        named.update(profile_named)   # the UNION: every constant either view names
 
     # ...and the SCAN ITSELF is not vacuous: a function that inlines a reply
     # must be caught (as an f-string part, which is how one would be written),
@@ -2584,8 +2936,19 @@ def test_every_model_facing_reply_is_a_bound_constant():
                  "REPORT_REJECTED", "REPORT_LOADS_CLEANLY", "REPORT_FINDINGS_HEADER", "REPORT_FINDING",
                  "LIST_FILES_ROW", "SUBMIT_DELIVERING", "LEDGER_UNCHANGED_RECEIPT",
                  "READ_OVER_ENVELOPE"):
-        if name not in named:
+        if name not in legacy_named:
             problems.append(f"{name} is not in model_facing_messages()")
+    # ...and contract 5's ten, named here so the seventh tool's replies are
+    # listed by this test rather than merely swept up by the union.
+    cash_named = named_by_profile[env_mod.PROFILE_CASH_APPLICATION]
+    for name in ("APPLICATION_NOT_REQUESTED", "APPLICATION_NOT_TEXT", "APPLICATION_TOO_LARGE",
+                 "APPLICATION_ACCEPTED", "APPLICATION_REFUSED", "TURN_MULTI_APPLICATION",
+                 "SUBMIT_DELIVERING_WITH_APPLICATION", "APPLICATION_BOUND_ACCEPTED",
+                 "APPLICATION_BOUND_REJECTED", "APPLICATION_BOUND_ABSENT"):
+        if name not in cash_named:
+            problems.append(f"{name} is not in model_facing_messages(PROFILE_CASH_APPLICATION)")
+        if name in legacy_named:
+            problems.append(f"{name} is a family reply but the LEGACY listing names it")
     return check("every model-facing reply is a named constant, every constant is in the canonical "
                  "contract view (mutating one moves the digest), and no model-facing function carries a "
                  "reply literal of its own", not problems, "\n".join(problems))
@@ -3103,6 +3466,9 @@ TESTS = [
     test_three_consecutive_no_tool_turns_end_the_episode,
     test_a_tool_call_resets_the_no_tool_run,
     test_an_unbroken_run_of_truncated_turns_ends_under_the_truncation_limit,
+    test_a_malformed_call_is_rejected_rewritten_and_audited,
+    test_a_malformed_call_does_not_cost_the_episode,
+    test_repeated_malformed_calls_end_the_episode_at_the_bound,
     test_two_per_turn_caps_are_measured_at_exactly_the_same_output_budget,
     test_a_submit_on_the_exhausting_turn_is_still_the_agent_ending_the_episode,
     test_pending_calls_on_the_exhausting_turn_run_and_never_buy_another_request,

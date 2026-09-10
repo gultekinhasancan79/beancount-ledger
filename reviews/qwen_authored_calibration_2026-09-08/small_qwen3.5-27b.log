@@ -1,0 +1,38 @@
+eval_dataset is not set, falling back to train dataset
+budget calibration: qwen3.5-27b @ 25 turns / 40000 tokens; 10 worlds
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [00:55<00:00, 55.68s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [00:55<00:00, 55.68s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [00:55<00:00, 55.68s/it, reward=1]
+  bank_recon_001   k=2 reward=1.0 turns=10.0 out_tokens=2962.0 stop=piv_submitted 56s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:49<00:00, 169.42s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:49<00:00, 169.42s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:49<00:00, 169.42s/it, reward=1]
+  bank_recon_ironwood k=3 reward=1.0 turns=16.0 out_tokens=13159.0 stop=piv_submitted 170s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:27<00:00, 207.70s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:27<00:00, 207.70s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:27<00:00, 207.70s/it, reward=1]
+  bank_recon_bluewater k=3 reward=1.0 turns=13.0 out_tokens=14211.0 stop=piv_submitted 208s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:09<00:00, 189.93s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:09<00:00, 189.93s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:09<00:00, 189.93s/it, reward=1]
+  bank_recon_silverbrook k=3 reward=1.0 turns=20.0 out_tokens=14355.0 stop=piv_submitted 190s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:30<00:00, 90.23s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:30<00:00, 90.23s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:30<00:00, 90.23s/it, reward=1]
+  bank_recon_thistle k=3 reward=1.0 turns=14.0 out_tokens=5064.0 stop=piv_submitted 90s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:23<00:00, 83.15s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:23<00:00, 83.15s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:23<00:00, 83.15s/it, reward=1]
+  bank_recon_oakridge k=3 reward=1.0 turns=9.0 out_tokens=6253.0 stop=piv_submitted 83s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:56<00:00, 116.47s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:56<00:00, 116.47s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:56<00:00, 116.47s/it, reward=1]
+  bank_recon_hawthorn k=3 reward=1.0 turns=13.0 out_tokens=9093.0 stop=piv_submitted 117s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:37<?, ?it/s, reward=?]
+  bank_recon_falcon k=? reward=? turns=? out_tokens=? stop=PermissionDeniedError: Error code: 403 - {'error': {'message': 'The free quota has been exhausted. To continue accessing the model on a paid basis, please complete your payment information （or disable s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]
+  bank_recon_redwood k=? reward=? turns=? out_tokens=? stop=PermissionDeniedError: Error code: 403 - {'error': {'message': 'The free quota has been exhausted. To continue accessing the model on a paid basis, please complete your payment information （or disable s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]
+  bank_recon_maple k=? reward=? turns=? out_tokens=? stop=PermissionDeniedError: Error code: 403 - {'error': {'message': 'The free quota has been exhausted. To continue accessing the model on a paid basis, please complete your payment information （or disable s
+
+10 episodes in 17 min; 7 scored, 3 failed/quarantined
+profile    k  n strict  mean reward  turns p50  tokens p50  cap hits
+standard   2  1   1/1         1.000         10        2962         0
+standard   3  6   6/6         1.000         14       11126         0
+ALL           7   7/7         1.000
+exit=0

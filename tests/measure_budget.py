@@ -208,7 +208,21 @@ BASE_STATE_COLUMNS = [
 # visible rather than assumed away).
 OPTIONAL_STATE_COLUMNS = ["piv_budget_accounting_invalid", "piv_budget_accounting_detail",
                           "piv_episode_contract_digest", "piv_budget_accounting_suspicious",
-                          "piv_complete_reads", "piv_observation_bytes", "piv_library_versions"]
+                          "piv_complete_reads", "piv_observation_bytes", "piv_library_versions",
+                          # episode contract 4: the calls whose `arguments` were not a JSON object,
+                          # raw and bounded. Before the contract-4 rewrite these episodes did not
+                          # reach the archive at all -- the provider refused every later request and
+                          # the rollout was recorded as a provider failure.
+                          "piv_rejected_calls",
+                          # episode contract 5 (the cash-application family): the
+                          # RESOLVED contract version and the profile that resolved
+                          # it, both stamped by `_stamp_identity` beside
+                          # `piv_episode_contract_digest`. Without these two the
+                          # instrument could see a family row's contract DIGEST but
+                          # had to guess its VERSION from a module constant that is
+                          # permanently 4 -- so every family row was archived
+                          # claiming contract 4 next to a contract-5 digest.
+                          "piv_episode_contract_version", "piv_episode_profile"]
 
 # The CLOSED set of `budget_accounting` status codes (adversarial-review
 # follow-up): `compute_budget_accounting` returns "VALID" or
@@ -1879,8 +1893,17 @@ def client_config(key_var: str, base_url: str, timeout: float, connect_timeout: 
                         max_retries=SDK_MAX_RETRIES)
 
 
-def compute_prompt_schema_digest(env_mod) -> str:
-    """sha256 over `SYSTEM_PROMPT` plus the JSON of the native tool
+#: `compute_prompt_schema_digest` memoised BY PROFILE. The system prompt and
+#: the tool surface are functions of the profile alone (`system_prompt(ceiling,
+#: profile)` and `public_tool_defs(profile)` are the package's only two
+#: producers), so one digest per profile per process is exact — and building
+#: the native tool schema costs a client construction, which an uncached
+#: per-rollout call would repeat for every cell of a sweep.
+_PROMPT_SCHEMA_DIGEST_BY_PROFILE: dict[str, str] = {}
+
+
+def compute_prompt_schema_digest(env_mod, env=None) -> str:
+    """sha256 over the served system prompt plus the JSON of the native tool
     definitions the client would actually send — `env.tool_defs` (the
     framework's own provider-agnostic `vf.Tool` list `StatefulToolEnv.
     add_tool` built) run through `to_native_tool`, the SAME door the real
@@ -1891,26 +1914,126 @@ def compute_prompt_schema_digest(env_mod) -> str:
     not from state, so it exists even before `piv_episode_contract_digest`
     lands.
 
-    `env.tool_defs` does not depend on which selector/world is loaded (the
-    tool surface is fixed: `list_files, read_file, grep, run_beancount,
-    write_ledger, submit`), so the unselected default environment is
-    representative. Building a client from a dummy, unreachable config and
-    calling `to_native_tools` never touches the network — `to_native_tool`
+    PROFILE-DEPENDENT, which is why this takes an `env`. This docstring used
+    to assert: "`env.tool_defs` does not depend on which selector/world is
+    loaded (the tool surface is fixed: `list_files, read_file, grep,
+    run_beancount, write_ledger, submit`), so the unselected default
+    environment is representative." That was true only while one profile
+    existed. The cash-application family FALSIFIES it — its environment
+    serves SEVEN tools (`write_cash_application` as well) and a different
+    system prompt — so an unselected default environment is NOT
+    representative of a family cell, and stamping its six-tool digest on a
+    family row was a false claim about what that row was served. Pass the env
+    the cell actually loaded and the digest describes that cell. Pass nothing
+    and the default (legacy) environment is used, which is what
+    `tests/stamp_contract_digest.py` backfills with and what every legacy row
+    ever archived carries — byte-for-byte the same digest as before.
+
+    The prompt is taken at the MODULE DEFAULT ceiling, never at the cell's
+    own: the ceiling belongs to `episode_contract_digest`, and binding it here
+    too would make this digest move with `--max-total-completion-tokens` and
+    split rows that share a prompt schema. For the legacy profile the module
+    constant `SYSTEM_PROMPT` IS that prompt and is read directly rather than
+    recomputed, so nothing about how `system_prompt()` handles its own
+    defaults can move the legacy digest by accident.
+
+    Building a client from a dummy, unreachable config and calling
+    `to_native_tools` never touches the network — `to_native_tool`
     is pure local dict construction (verified against `OpenAIChatCompletions
     Client.to_native_tool`/`setup_openai_client`).
     """
     from verifiers.legacy.types import ClientConfig
 
-    env = env_mod.load_environment()
+    legacy = getattr(env_mod, "PROFILE_LEGACY", "legacy")
+    profile = (getattr(env, "profile", None) if env is not None else legacy) or legacy
+    cached = _PROMPT_SCHEMA_DIGEST_BY_PROFILE.get(profile)
+    if cached is not None:
+        return cached
+    if env is None:
+        env = env_mod.load_environment()
+    prompt = (env_mod.SYSTEM_PROMPT if profile == legacy
+              else env_mod.system_prompt(env_mod.MAX_EPISODE_OUTPUT_TOKENS, profile))
     client_cls = make_client_cls(0.0, True)
     dummy = ClientConfig(client_type="openai_chat_completions", api_key_var="PIV_PROMPT_DIGEST_NO_SUCH_KEY_VAR",
                          api_base_url="https://example.invalid/v1", timeout=5.0, connect_timeout=5.0,
                          max_retries=0)
     client = client_cls(dummy)
     native_tools = asyncio.run(client.to_native_tools(env.tool_defs))
-    payload = json.dumps({"system_prompt": env_mod.SYSTEM_PROMPT, "native_tools": native_tools},
+    payload = json.dumps({"system_prompt": prompt, "native_tools": native_tools},
                          sort_keys=True, default=str)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    _PROMPT_SCHEMA_DIGEST_BY_PROFILE[profile] = digest
+    return digest
+
+
+def row_prompt_schema_digests(rows) -> str:
+    """The prompt/tool-schema digests THIS run's rows actually carry, as
+    written — not the one computed up front from an unselected default
+    environment. A sweep that mixes legacy and cash-application selectors
+    carries two, and the summary must say both rather than name one and imply
+    it covered every row."""
+    seen = sorted({row.get("prompt_schema_digest") for row in rows
+                   if row.get("prompt_schema_digest")})
+    return ", ".join(seen)
+
+
+def bind_register(workspace, delivery_path, env_mod) -> dict:
+    """The SECOND deliverable's binding, on the same footing as the ledger's
+    and under its own key names, for a cash-application rollout.
+
+    Returns `{}` — no keys at all — unless `delivery.json` exists, parses and
+    carries the `application` member the scorer writes only for the family.
+    So a legacy row is byte-for-byte the row it was before the family
+    existed, and a family row always says what became of the register.
+
+    Keys: `application` in {"BOUND", "ARTIFACT_MISMATCH", "NO_ARTIFACT"},
+    `application_reason` (None when BOUND; the receipt's own status word
+    when NO_ARTIFACT), `application_status` and `application_revision` from
+    the receipt, and the register's own digests when BOUND.
+
+    Like the ledger's half, this compares what is ON DISK at the public path
+    against the digests the SCORER recorded — it never re-derives, re-parses
+    or re-canonicalises the register. `_publish` writes the canonical
+    register at `APPLICATION_FILE` and removes the path when there is
+    nothing to publish, so a file present with a NO_ARTIFACT receipt (or
+    absent with a published one) is a real inconsistency and is reported as
+    a mismatch rather than smoothed over.
+
+    The one thing it cannot see: a manifest that exists but does not parse
+    is `{}` here, because nothing in it says whether the rollout was a
+    family rollout at all. `bind_artifact` reports that manifest loudly on
+    its own arm for every phase except REJECTED, where it has never read the
+    manifest.
+    """
+    if not workspace or not Path(delivery_path).is_file():
+        return {}
+    try:
+        _delivery, application = env_mod._read_publication(
+            Path(delivery_path).read_text(encoding="utf-8"))
+    except Exception:                                                            # noqa: BLE001
+        return {}
+    if application is None:
+        return {}
+    row = {"application_status": application.status, "application_revision": application.revision}
+    path = Path(workspace) / env_mod.APPLICATION_FILE
+    if application.artifact_stored_bytes_digest == env_mod.NO_ARTIFACT:
+        if path.exists():
+            return {**row, "application": "ARTIFACT_MISMATCH",
+                    "application_reason": f"{env_mod.APPLICATION_FILE} is on disk but the receipt "
+                                          f"published no register"}
+        return {**row, "application": "NO_ARTIFACT", "application_reason": application.status}
+    if not path.is_file():
+        return {**row, "application": "ARTIFACT_MISMATCH",
+                "application_reason": f"the receipt published a register but {env_mod.APPLICATION_FILE} "
+                                      f"is missing"}
+    now = env_mod.digests_of(path.read_bytes())                                  # the env's own digest function
+    if (now["stored_bytes_digest"], now["logical_text_digest"]) != (
+            application.artifact_stored_bytes_digest, application.artifact_logical_text_digest):
+        return {**row, "application": "ARTIFACT_MISMATCH",
+                "application_reason": f"{env_mod.APPLICATION_FILE} does not match the receipt's register digests"}
+    return {**row, "application": "BOUND", "application_reason": None,
+            "application_stored_bytes_digest": now["stored_bytes_digest"],
+            "application_logical_text_digest": now["logical_text_digest"]}
 
 
 def bind_artifact(out: dict, env_mod) -> dict:
@@ -1931,6 +2054,11 @@ def bind_artifact(out: dict, env_mod) -> dict:
     `artifact_reason` (None when BOUND), `rollout_id`, `revision`, `phase`,
     `submitted`, `workspace`, and — when BOUND — the artifact's own digests
     (equal to `piv_delivery`'s by construction of the match).
+
+    `artifact` is the LEDGER's binding, under contract 4 and contract 5
+    alike. A cash-application rollout has a second deliverable, and its
+    binding rides along in the `application*` keys `bind_register` above
+    builds — absent entirely on a legacy row.
 
     NO_ARTIFACT reasons: `no_write` (phase ACTIVE_NO_CANDIDATE — nothing was
     ever stored), `write_refused` (phase ACTIVE_REJECTED — the last stored
@@ -1958,16 +2086,29 @@ def bind_artifact(out: dict, env_mod) -> dict:
     }
     if not workspace or phase == env_mod.EpisodePhase.NO_CANDIDATE.value:
         return {**result, "artifact": "NO_ARTIFACT", "artifact_reason": "no_write"}
+    delivery_path = Path(workspace) / "delivery.json"
+    # The register's binding is computed from the SAME manifest, before the
+    # ledger's phase can short-circuit, so a family rollout whose ledger was
+    # refused still says what became of its second deliverable.
+    result = {**result, **bind_register(workspace, delivery_path, env_mod)}
     if phase == env_mod.EpisodePhase.REJECTED.value:
         return {**result, "artifact": "NO_ARTIFACT", "artifact_reason": "write_refused"}
     # ACTIVE_CANDIDATE or TERMINAL: the last stored write was accepted. What,
     # if anything, was delivered is read from the scorer's OWN receipt, never
     # re-derived here.
-    delivery_path = Path(workspace) / "delivery.json"
     if not delivery_path.is_file():
         return {**result, "artifact": "NO_ARTIFACT", "artifact_reason": "not_scored"}
     try:
-        delivery = env_mod.DeliveryReceipt.from_json(delivery_path.read_text(encoding="utf-8"))
+        # Through the SCORER'S OWN reader, never `DeliveryReceipt.from_json`
+        # directly. A cash-application manifest carries an extra top-level
+        # `application` member and `DeliveryReceipt` (frozen with
+        # `candidate/1`) reads the top level by EXACT KEY SET, so the frozen
+        # reader raises on every family manifest — which this function then
+        # swallowed into "ARTIFACT_MISMATCH: delivery.json unreadable",
+        # recording a perfect 1.0 family rollout as a failed binding.
+        # `_read_publication` pops that member first and hands back both
+        # halves; a legacy manifest reads identically either way.
+        delivery, _application = env_mod._read_publication(delivery_path.read_text(encoding="utf-8"))
         delivery.verify()
     except Exception as exc:                                                     # noqa: BLE001
         return {**result, "artifact": "ARTIFACT_MISMATCH",
@@ -1990,6 +2131,43 @@ def bind_artifact(out: dict, env_mod) -> dict:
                 "artifact_logical_text_digest": now["logical_text_digest"]}
     return {**result, "artifact": "ARTIFACT_MISMATCH",
             "artifact_reason": "ledger.beancount does not match the delivery receipt's artifact digests"}
+
+
+def candidate_vs_original(candidate_logical_digest, original_raw: bytes, env_mod) -> dict:
+    """Whether the last ACCEPTED candidate is textually identical to the
+    UNTOUCHED original ledger this episode was served — the question an
+    undelivered episode otherwise leaves unanswerable: `bind_artifact` above
+    reports NO_ARTIFACT (nothing on the public path, no `delivery.json`) for
+    every one of `no_write`, `write_refused`, `policy_blocked` and
+    `not_scored`, and none of those carries what the accepted candidate's
+    CONTENT actually was — so "the agent preserved the books" and "the agent
+    altered the books but never got to submit" were, until this function,
+    the same row.
+
+    `original_raw` must be the SERVED public ledger bytes — `env.public_
+    files[env_mod.LEDGER]`, fixed at world construction, the same bytes
+    `Environment._workspace` writes into a fresh workspace before any tool
+    call runs — hashed through `env_mod.digests_of`, the ONE digest function
+    the environment itself uses for both the original mount and every
+    `write_ledger`/`submit` receipt (`beancount_ledger.py`'s `digests_of`,
+    `logical_text`, `_domain_digest`). Never a bespoke hash here: a
+    from-scratch digest would not be comparable to `candidate_logical_
+    digest`, which the environment computed with that same function.
+
+    `candidate_logical_digest` is the caller's own `piv_logical_text_digest`
+    (installed by `env_response` from the raw bytes on disk at the moment of
+    the last ACCEPTED write, after independently re-deriving and matching
+    the tool's own attestation — see `beancount_ledger.py`'s `env_response`,
+    `for key in expected: state[f"piv_{key}"] = expected[key]`), or `None`
+    when no write was ever accepted.
+
+    `candidate_equals_original` is `None` exactly when there is no candidate
+    to compare — an episode that never wrote anything must never report a
+    false "no" for a comparison it cannot make.
+    """
+    original_logical_digest = env_mod.digests_of(original_raw)["logical_text_digest"]
+    equals = None if candidate_logical_digest is None else (candidate_logical_digest == original_logical_digest)
+    return {"original_logical_digest": original_logical_digest, "candidate_equals_original": equals}
 
 
 def breakdown(selector: str, delivered: str) -> dict:
@@ -2515,6 +2693,12 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
                 block_id: str | None = None, permutation_index: int | None = None,
                 arm_position: int | None = None, window_ledger=None) -> dict:
     env = env_mod.load_environment(selector)
+    # The UNTOUCHED original ledger this episode was served, fixed at world
+    # construction and unaffected by anything the agent does later --
+    # captured here, once, so `candidate_vs_original` below can answer
+    # "did the agent preserve the books" even for an episode that never
+    # delivered anything.
+    original_ledger_raw = env.public_files[env_mod.LEDGER]
     # The SERVED public task id, read from the serving door's own dataset
     # BEFORE the rollout runs, so it is on the row even when the provider
     # fails and the row is quarantined (the exact-cell check
@@ -2522,15 +2706,6 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
     # quarantined cell that served a DIFFERENT world than the schedule
     # registered must be visible as such, not invisible because it failed).
     public_task_id = env.dataset[0]["info"]["task_id"] if len(env.dataset) else None
-    # The episode contract THIS process pinned, computed from the package at
-    # the ceiling this cell will run under. `state["piv_episode_contract_
-    # digest"]` is the authority for a rollout that completed; a QUARANTINED
-    # cell never produces one, and the exact-cell check must
-    # still be able to say which episode contract that cell ran under.
-    try:
-        declared_episode_digest = env_mod.episode_contract_digest(max_total_completion_tokens)
-    except Exception:                                                      # noqa: BLE001
-        declared_episode_digest = None
     # MultiTurnEnv's own episode-output ceiling. Set UNCONDITIONALLY --
     # `set_max_total_completion_tokens` accepts any int with no validation,
     # and both the framework's own `max_total_completion_tokens_reached`
@@ -2545,6 +2720,47 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
     # kind of silent mismatch this milestone's budget_accounting work exists
     # to catch.
     env.set_max_total_completion_tokens(max_total_completion_tokens)
+    # The episode contract THIS process pinned, resolved ON THE ENVIRONMENT
+    # THIS CELL LOADED, at the ceiling it will run under.
+    # `state["piv_episode_contract_digest"]` is the authority for a rollout
+    # that completed; a QUARANTINED cell never produces one, and the
+    # exact-cell check (`schedule_arms.contract_expectations` admits rows on
+    # `episode_contract_digest`) must still be able to say which episode
+    # contract that cell ran under.
+    #
+    # `env.episode_contract_digest()` and NOT the module-level
+    # `env_mod.episode_contract_digest(...)`: the env method passes
+    # `self.profile`, the module function DEFAULTS TO THE LEGACY PROFILE. The
+    # module call stamped the legacy view on every cash-application row —
+    # `episode_contract_digest_declared` disagreeing with the digest state
+    # recorded, and a quarantined family cell admitted or rejected against a
+    # contract it never ran. Read AFTER `set_max_total_completion_tokens`,
+    # which is the door that recomputes the env's cached digest at the new
+    # ceiling; for the legacy profile the value is identical to the module
+    # call it replaces, so no archived legacy row's digest moves.
+    declared_profile = getattr(env, "profile", None)
+    try:
+        declared_episode_digest = env.episode_contract_digest()
+    except Exception:                                                      # noqa: BLE001
+        declared_episode_digest = None
+    # The VERSION beside the digest, resolved the same way. The old
+    # `getattr(env_mod, "EPISODE_CONTRACT_VERSION", None)` is the LEGACY
+    # module constant and is permanently 4, so a family row said "contract 4"
+    # next to a contract-5 digest. The fallback stays that constant for an env
+    # (or a package) that cannot name its own profile.
+    try:
+        declared_contract_version = env_mod.episode_contract_version(declared_profile)
+    except Exception:                                                      # noqa: BLE001
+        declared_contract_version = getattr(env_mod, "EPISODE_CONTRACT_VERSION", None)
+    # The prompt/tool-schema digest of THE ENVIRONMENT THIS CELL LOADED — see
+    # `compute_prompt_schema_digest`: the tool surface is 6 tools under the
+    # legacy profile and 7 under the family's, so the run-level value computed
+    # from an unselected default env describes legacy cells only. It stays the
+    # fallback for anything that cannot be resolved here.
+    try:
+        row_prompt_schema_digest = compute_prompt_schema_digest(env_mod, env=env)
+    except Exception:                                                      # noqa: BLE001
+        row_prompt_schema_digest = prompt_schema_digest
     client = client_cls(config)
     started = time.monotonic()
     started_at = datetime.now().isoformat()
@@ -2566,8 +2782,12 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "provider": PROVIDER, "endpoint": getattr(config, "api_base_url", BASE_URL), "model": model,
         "client_version": _client_version(), "started_at": started_at,
         "temperature": temperature, "top_p": top_p, "seed": seed,
-        "prompt_schema_digest": prompt_schema_digest,
-        "episode_contract_version": getattr(env_mod, "EPISODE_CONTRACT_VERSION", None),
+        "prompt_schema_digest": row_prompt_schema_digest,
+        "episode_contract_version": declared_contract_version,
+        # The PROFILE that resolved the two contract fields above, on every row
+        # including a quarantined one: "legacy" or "cash_application".
+        # Provenance a reader would otherwise have to infer from the digest.
+        "episode_contract_profile": declared_profile,
         # The REPLAY contract this row ran under — its own
         # identity, separate from the episode contract: two rows can share a
         # prompt, a tool schema and a ceiling and still not be comparable
@@ -2733,12 +2953,22 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # column that simply does not exist yet is already `None` via
         # `.get()` regardless of `got_optional`).
         "episode_contract_digest": out.get("piv_episode_contract_digest") or declared_episode_digest,
+        # The resolved VERSION and PROFILE, from state for a rollout that
+        # completed — on exactly the same footing as the digest above, so all
+        # three fields of a completed row come from one place and cannot
+        # disagree. The values declared on the loaded env remain the fallback,
+        # and are all a quarantined cell ever has.
+        "episode_contract_version": out.get("piv_episode_contract_version") or declared_contract_version,
+        "episode_contract_profile": out.get("piv_episode_profile") or declared_profile,
         # Package-side counters, `None` until they land:
         # how many COMPLETE ledger reads this episode issued and how many
         # observation bytes those replies carried. The archive can only
         # BOUND both (see tests/pilot_facts.py); the package counts them.
         "complete_reads": out.get("piv_complete_reads"),
         "observation_bytes": out.get("piv_observation_bytes"),
+        # Episode contract 4: tool calls this episode emitted whose arguments
+        # were not a JSON object -- refused, never executed, stored replayable.
+        "rejected_calls": out.get("piv_rejected_calls"),
         # The SERVING host's own view of the packages the replay contract is
         # bound to, beside this process's own — a disagreement means the row
         # was produced under a different projection than its digest claims.
@@ -2760,6 +2990,14 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # distinguishes "what this rollout wrote" across concurrent rollouts.
         "candidate_logical_text_digest": out.get("piv_logical_text_digest"),
         "candidate_stored_bytes_digest": out.get("piv_stored_bytes_digest"),
+        # `original_logical_digest`/`candidate_equals_original`: whether the
+        # last accepted candidate above is textually the untouched original
+        # this episode was served -- the one thing NO_ARTIFACT/not_scored
+        # rows (an accepted write, no delivery) could not say before. See
+        # `candidate_vs_original`'s own docstring for why the comparison is
+        # safe (same digest function on both sides) and why it is `None`
+        # rather than `False` when nothing was ever written.
+        **candidate_vs_original(out.get("piv_logical_text_digest"), original_ledger_raw, env_mod),
         "prompt_tokens": prompt,
         "completion_tokens": done,
         "total_tokens": total,
@@ -3010,7 +3248,8 @@ def main() -> int:
           f"budget {BUDGET_TOKENS:,} tokens / {BUDGET_TURNS} turns; "
           f"max total completion tokens {args.max_total_completion_tokens or 'unset'}; "
           f"sampling temperature={args.temperature} top_p={args.top_p} seed={args.seed}; "
-          f"replicate {args.replicate}; prompt_schema_digest {prompt_schema_digest[:12]}...; "
+          f"replicate {args.replicate}; default-profile prompt_schema_digest "
+          f"{prompt_schema_digest[:12]}...; "
           f"replay_contract v{REPLAY_CONTRACT_VERSION} {replay_contract_digest(reasoning_replay)[:12]}...; "
           f"SDK retries 0\n", flush=True)
     markdown_path = out_dir / f"budget_{slug}_{stamp}.md"
@@ -3072,7 +3311,7 @@ def main() -> int:
              f"Max total completion tokens: {args.max_total_completion_tokens or 'unset'}. "
              f"Timeout {args.timeout:.0f}s, retries {args.retries}. Replicate {args.replicate}.",
              f"Sampling pins: temperature={args.temperature}, top_p={args.top_p}, seed={args.seed}. "
-             f"prompt_schema_digest {prompt_schema_digest}.",
+             f"prompt_schema_digest {row_prompt_schema_digests(rows) or prompt_schema_digest}.",
              f"replay_contract v{REPLAY_CONTRACT_VERSION}, digest "
              f"{replay_contract_digest(reasoning_replay)}, libraries {library_versions()}. "
              f"SDK retries 0 (ClientConfig.max_retries), framework retries {args.retries}."

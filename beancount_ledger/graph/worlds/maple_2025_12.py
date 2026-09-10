@@ -37,6 +37,7 @@ from decimal import Decimal as D
 
 from ..project import AlterRecognition, DuplicateRecognition, MutationPlan, OmitRecognition, Period
 from ..derive import TaskSpec
+from ._assurance import ASSURANCE_PROMPT
 from ..schema import (
     Account,
     AccountKind as K,
@@ -815,6 +816,68 @@ INTERCOMPANY_TRANSFERS_MAPLE = TaskSpec(
     )),
 )
 
+# --------------------------------------------------------------------------
+# THE ASSURANCE PAIR
+#
+# Two tasks on this same December, sharing one neutral instruction with the
+# Silverbrook pair (`_assurance.ASSURANCE_PROMPT`). They answer the buyer's
+# question about damage rather than repair: `clean_month_maple` plants
+# NOTHING, so the correct deliverable is the ledger exactly as it stands,
+# written back and submitted; `single_error_maple` plants exactly one
+# discrepancy in the same month, so leaving that ledger alone fails.
+#
+# The clean month is not empty of things that LOOK like work. December
+# leaves four legitimate features standing, each of them supported by the
+# public files, and each of them an invitation to an unnecessary
+# "correction":
+#
+#   * Two purchase invoices are open at the cut-off and correctly unpaid -
+#     PI-5142 from Corbett Veterinary Supplies (10 December, net 30) and
+#     PI-5148 from Fernleigh Laboratory Supplies (22 December, net 15). The
+#     ledger carries both against Liabilities:AP, vendors.csv states the
+#     terms that make them not yet due, and NO statement row pays either.
+#     An agent that "pays" one, or writes it off, damages the payables.
+#   * The insurance premium paid on 15 December sits in Assets:Prepayments,
+#     not in an expense account: check 4174 to Shieldstone Mutual Insurance
+#     is on the statement for 18 December, vendors.csv gives the insurer
+#     Assets:Prepayments as its default account, and the prepayments section
+#     of the policy says a premium paid in one month for the next month's
+#     cover is an asset. Reclassifying it to an expense is the classic
+#     unnecessary correction.
+#   * Two bank charges are already booked to Expenses:BankFees at exactly
+#     the statement's figures - the returned item fee on 12 December and the
+#     monthly service charge on 31 December.
+#   * Two timing items sit in the ledger and not on the statement: the
+#     January rent check 4175 written on 29 December (itself a second
+#     prepayment) and the client check 2287 taken at the desk on 30
+#     December. Both clear in January; neither is an error.
+#
+# The single-error counterpart leaves all four alone and omits one client
+# receipt, so the pair differs by exactly that one entry.
+# --------------------------------------------------------------------------
+
+CLEAN_MONTH_MAPLE = TaskSpec(
+    id="clean_month_maple",
+    type="bank_reconciliation",
+    prompt=ASSURANCE_PROMPT,
+    period=DECEMBER,
+    plan=MutationPlan(()),
+)
+
+SINGLE_ERROR_MAPLE = TaskSpec(
+    id="single_error_maple",
+    type="bank_reconciliation",
+    prompt=ASSURANCE_PROMPT,
+    period=DECEMBER,
+    plan=MutationPlan((
+        OmitRecognition("unrecorded_kennels_receipt", "rec:si-7318-receipt",
+                        "the statement row names the payer and the invoice (ACH IN HOLLYBROOK BOARDING KENNELS, "
+                        "SI-7318, 2075.80 on 22 December) and no ledger entry matches it; customers.csv maps the "
+                        "kennels to Assets:AR, the ledger carries the open sale SI-7318, and the dates section puts "
+                        "the added entry on the bank's date"),
+    )),
+)
+
 TASKS = {task.id: task for task in (
     MONTH_END_CLOSE_001,
     BANK_RECON_MAPLE,
@@ -826,4 +889,6 @@ TASKS = {task.id: task for task in (
     SALES_TAX_REMITTANCE_MAPLE,
     FIXED_ASSETS_MAPLE,
     INTERCOMPANY_TRANSFERS_MAPLE,
+    CLEAN_MONTH_MAPLE,
+    SINGLE_ERROR_MAPLE,
 )}
