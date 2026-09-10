@@ -1,0 +1,442 @@
+{
+ "schema": "piv.cash-screen-provenance/1",
+ "what_this_is": "A provenance sidecar for the cash-application screen archive, written after the run from the shipped source and the archived receipts. It records only values that are recorded or recomputable; fields the archive does not carry are named as not recorded rather than inferred. The calibration JSON itself (cash_screen_kimi.json) is preserved untouched.",
+ "source_revision": {
+  "measured_at": {
+   "commit": "f9fbad13591caeb3573637c55f9230a3f513722b",
+   "short": "f9fbad1",
+   "note": "the instrument revision the screen ran at, as stated in the note"
+  },
+  "sidecar_written_at": {
+   "commit": "3cd5a8188ba59fe20231b67a0e54626e6a1c648a",
+   "short": "3cd5a81",
+   "note": "the revision this sidecar and the rescore were computed at; the changes between the two touch the identifiability checker, the freeze fixtures and documentation, not the scoring engines"
+  },
+  "branch": "feat/dense-rewards"
+ },
+ "episode_profile": {
+  "resolved_profile": "cash_application",
+  "episode_contract_version": 5,
+  "episode_contract_schema": "piv.episode-contract/3",
+  "episode_contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+  "recorded_contract_digest_in_calibration_rows": [
+   "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f"
+  ],
+  "calibration_profile_field_note": "The calibration JSON's per-row field `profile` reads `standard`. That is the GENERATOR profile label the calibration runner groups rows by; it is not the episode profile. The episode profile for these rows is `cash_application`, established independently by the contract digest each row records and by the source that resolves it.",
+  "legacy_profile_for_contrast": {
+   "resolved_profile": "legacy",
+   "episode_contract_version": 4,
+   "episode_contract_digest": "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866"
+  }
+ },
+ "run_settings": {
+  "requested_model": "kimi-k3",
+  "max_turns": 25,
+  "episode_ceiling_tokens": 40000,
+  "per_turn_cap_tokens": 40000,
+  "production": true,
+  "base_url": "https://ws-r76rtaa6sn7jqbcr.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+  "instrument": "tests/budget_calibration.py --production",
+  "episodes_per_case": 1,
+  "attempts_per_case": 1
+ },
+ "runtime_identity": {
+  "recorded_in_archive": {
+   "requested_model_id": "kimi-k3",
+   "route_base_url": "https://ws-r76rtaa6sn7jqbcr.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+   "episode_workspace_names": {
+    "cash_application_002": "beancount_env_k230baak",
+    "cash_application_003": "beancount_env_lq287e2u",
+    "cash_application_005": "beancount_env_yfxs9gwn"
+   }
+  },
+  "not_recorded_in_archive": [
+   "the interpreter, beancount and Unicode-database versions of the run host",
+   "the served model checkpoint behind the requested model id",
+   "the operator host paths of the episode workspaces (only their directory names are carried here)",
+   "full trajectories and the raw submitted (pre-canonical) artifact bytes",
+   "separate copies of the initial ledger"
+  ],
+  "rescore_host": {
+   "note": "the runtime that produced this sidecar and the rescore, not the runtime of the run",
+   "python": "3.12.12",
+   "beancount": "3.2.3",
+   "unicodedata": "15.0.0",
+   "platform": "Windows-11-10.0.26200-SP0"
+  }
+ },
+ "calibration_record": {
+  "file": "cash_screen_kimi.json",
+  "sha256_working_copy_crlf": "9d6b91fef39cc5be6773ad4d737ce887c00194bd9ee5a52de91587c85f22cea3",
+  "sha256_lf_normalised": "bee250a0b1ca916ad30f5b296b9bbebc95596b0f26fd63a27bd0264299b64f31",
+  "line_endings_note": "The runner wrote these two files with CRLF line endings. The repository's .gitattributes normalises text to LF, so a fresh clone reproduces the LF hash, not the working-copy hash; both are given here rather than one that only matches on one machine. The file content is preserved untouched either way - no field has been edited or backfilled.",
+  "preserved_untouched": true,
+  "log_file": "cash_screen_kimi.log",
+  "log_sha256_working_copy_crlf": "a2b18cf6c46567c003ccbb7edacfe86eb269e8ce802f11f1cb9d366d0f246612",
+  "log_sha256_lf_normalised": "24ec6293b7f82d7fdfad110745e813a4ca48bf9a790193b08ace13d80a44d714"
+ },
+ "tasks": {
+  "cash_application_002": {
+   "world_id": "bowline-2026-04-c2",
+   "period": "Period(start='2026-04-01', end='2026-04-30', label='April 2026')",
+   "task_digests": {
+    "graph_digest": "0abf03f66dedcee7e25b8cf7849037f4a4709694c0d6fad2e04edf286bde8376",
+    "mutation_plan_digest": "2861c7be6a52057138b6e805afe76283c3b65343b6f477ac4e8a96952dfa47b6",
+    "environment_digest": "5e5c3600453d13dc02ebe827493590fc562c4d8f480ec3621b639ee3439b7404",
+    "view_digests": [
+     [
+      "accounts.csv",
+      "41a308d15cf2e1ac4f30497c0ff00ec9217441fd99c54c7c27b13b4c0e74ffd8"
+     ],
+     [
+      "archive_prior_period.csv",
+      "4b04f5ba8cc5d2482a480bb57fbf30e65f6e4ab7726f0f64215e5b2a2696b3c3"
+     ],
+     [
+      "bank_statement.csv",
+      "da6351f36357133d0760d0dd69dab65809408f663d23cd369ee7f1e0acb0d131"
+     ],
+     [
+      "credit_notes.csv",
+      "bfba07e1d82ea518bf79abcd62cfd51655d4cb6457e62891cf01833967eb4b89"
+     ],
+     [
+      "customers.csv",
+      "64e9e11d4a8a86e693beb88ec8bd0729a1f317c3a1984f6625acdce22e8941f3"
+     ],
+     [
+      "expected_balances",
+      "af9e56d4595d97d4e2725fb368d8f138fb5a9948efe67b0b9549c1cfe1596d24"
+     ],
+     [
+      "expected_ledger",
+      "7b5331a2a416177095d381a84df5c5f731cf34c4b9690c4e94b4230ef4dc1afa"
+     ],
+     [
+      "ledger.beancount",
+      "462e1a0675fd3cdce3e3d232f622748ee8c2937cc3d11a6811c410cdfed34948"
+     ],
+     [
+      "manifest.md",
+      "ab8f85aef91f1acf700438a65515d3d1972c2c76c847faabcfa8549720b5734a"
+     ],
+     [
+      "open_items.csv",
+      "bbe7f8a249082f5857743fd10524d6c68daa08b9536f9d56ac1460c3ff1b94c8"
+     ],
+     [
+      "policy.md",
+      "50699da6a78efcd26bac36fdac86723aa57df06c42aae35cdb535432fc122fea"
+     ],
+     [
+      "remittance_advice.csv",
+      "e19f0ad1b8946614b66d56c6801974f81bc77f0ed713755ccb8816704cbe4f1a"
+     ],
+     [
+      "vendors.csv",
+      "7a46c5938a6081f6009ae19891c6f5eab5d77c7bd63e4dc43973deee6a51efcc"
+     ]
+    ]
+   },
+   "scorer_digests": {
+    "task_contract_digest": "2fcd03d601e759644df4c1a4f523a67ccc4b31c44ce375122040123a6135718e",
+    "task_contract_version": 1,
+    "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
+    "scorer_contract_version": 1,
+    "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+    "ledger_engine": "candidate/1",
+    "application_engine": "application/1",
+    "composite_engine": "composite/1"
+   },
+   "recorded_row": {
+    "reward": 1.0,
+    "stop": "piv_submitted",
+    "turns": 5.0,
+    "secs": 117,
+    "input_tokens": 25295.0,
+    "output_tokens": 4857.0,
+    "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+    "requested_model": "kimi-k3"
+   },
+   "artifacts": {
+    "ledger": {
+     "file": "ledger.beancount",
+     "archived_file_stored_bytes_digest": "531d46fb1cdbb3e793af3b3eaff3aaaba44da4d97291c8231542156294e6ff64",
+     "archived_file_logical_text_digest": "891e1180173f1a81094d81669b621770da5a5f4873f0e681aac2ddc7c5db9bc8",
+     "submitted_stored_bytes_digest": "be6a351ace7aff7270ae6a9cde183a5f87bfa581c3415b0e3782b2e5314693d4",
+     "submitted_logical_text_digest": "ec9a6122bfdda79c3e46f2edde6ab8e2d017c136c69267147584d6d7040aa6df",
+     "delivered_stored_bytes_digest": "531d46fb1cdbb3e793af3b3eaff3aaaba44da4d97291c8231542156294e6ff64",
+     "delivered_logical_text_digest": "891e1180173f1a81094d81669b621770da5a5f4873f0e681aac2ddc7c5db9bc8",
+     "committed_revision": 1,
+     "outcome": "delivered"
+    },
+    "application": {
+     "file": "cash_application.json",
+     "archived_file_stored_bytes_digest": "a6b43f57feb12e578e3fbec09f7ac9bd5324f5a79e02f8445255cbe6a747b217",
+     "archived_file_logical_text_digest": "9317af7f28c0c4d157b3e3e18df30194cf0cbed8cbc28c3ce7007c3c074fe292",
+     "submitted_stored_bytes_digest": "0f8390593ff5cc6469f1c7011ea8e03878682560766ab31126e3fa9bc2f580f0",
+     "submitted_logical_text_digest": "9dd53df24a9545ddf4eb20d3cfd76912d97d5fd7b731500d97ff045abacc2eda",
+     "delivered_stored_bytes_digest": "a6b43f57feb12e578e3fbec09f7ac9bd5324f5a79e02f8445255cbe6a747b217",
+     "delivered_logical_text_digest": "9317af7f28c0c4d157b3e3e18df30194cf0cbed8cbc28c3ce7007c3c074fe292",
+     "canonical_digest": "a94811cd37f518b7c3cfdfc64ea74d121304dc1362efdcf3201f9a1952b4e01f",
+     "revision": 1,
+     "status": "delivered",
+     "application_score": "1",
+     "application_result_digest": "c8eda9764f79b2f5d69d6a07de18ba8bff2ecaea06dd551a580f1578dd28413b"
+    },
+    "publication": {
+     "rollout_id": "08b6c29dfedb451c91034e2a8b6f6620",
+     "score": "1",
+     "completion": "complete",
+     "delivery_receipt_digest": "75d378c96436dd26a73f9e92e219d3b3cd0dbcb45b5fd4b1f6f5466265fe73dc",
+     "evaluation_receipt_digest": "55e1ee027e4080f18773dbe6ad303f359d8fd08410fee1ececcacc6186f48b0d",
+     "score_result_digest": "d7c7efbb39a27d52f55c475a6af86af4e0be2e643de88613f288e847f1b9ccdc",
+     "composite_result_digest": "d7c7efbb39a27d52f55c475a6af86af4e0be2e643de88613f288e847f1b9ccdc"
+    }
+   }
+  },
+  "cash_application_003": {
+   "world_id": "bowline-2026-04-c3",
+   "period": "Period(start='2026-04-01', end='2026-04-30', label='April 2026')",
+   "task_digests": {
+    "graph_digest": "ae21f1400e97a9def231e847d41f5877d57eb79fe0209adaec77a4d5a183580d",
+    "mutation_plan_digest": "f099108edf7553f6cf28ac5a446d41708c704923bfbdf4bd39f68e68318d3204",
+    "environment_digest": "0ee09ac2e8d47e5f372aab81b2c79261e9ac9ee4ffede50a22460a7295e6aec1",
+    "view_digests": [
+     [
+      "accounts.csv",
+      "41a308d15cf2e1ac4f30497c0ff00ec9217441fd99c54c7c27b13b4c0e74ffd8"
+     ],
+     [
+      "archive_prior_period.csv",
+      "4b04f5ba8cc5d2482a480bb57fbf30e65f6e4ab7726f0f64215e5b2a2696b3c3"
+     ],
+     [
+      "bank_statement.csv",
+      "b605970b0a700eab8adabfcc2d31d24c2732c458f6aa5cb12e29290aede0e628"
+     ],
+     [
+      "credit_notes.csv",
+      "bfba07e1d82ea518bf79abcd62cfd51655d4cb6457e62891cf01833967eb4b89"
+     ],
+     [
+      "customers.csv",
+      "64e9e11d4a8a86e693beb88ec8bd0729a1f317c3a1984f6625acdce22e8941f3"
+     ],
+     [
+      "expected_balances",
+      "25d444b5b0fbcff0d869d5783597e915e1ebbd01d0220a97abf3569cd8cdedf5"
+     ],
+     [
+      "expected_ledger",
+      "d39a261f822f04c1a5566971bd805f26499a68a00c1244d555569d60cca54a86"
+     ],
+     [
+      "ledger.beancount",
+      "2e5d94b8a1b0f5a7726e4c543310831337152052a2bbf20520e93c5ee14f0237"
+     ],
+     [
+      "manifest.md",
+      "ecd17fc711b5e73062b71e62ae3f598d77b371c789bd2d1744e53b9a36244717"
+     ],
+     [
+      "open_items.csv",
+      "bbe7f8a249082f5857743fd10524d6c68daa08b9536f9d56ac1460c3ff1b94c8"
+     ],
+     [
+      "policy.md",
+      "50699da6a78efcd26bac36fdac86723aa57df06c42aae35cdb535432fc122fea"
+     ],
+     [
+      "remittance_advice.csv",
+      "83c2682d828fc9dc95f3b0cb5ac909e1caa5b94dc7234933871f600372fc04c5"
+     ],
+     [
+      "vendors.csv",
+      "7a46c5938a6081f6009ae19891c6f5eab5d77c7bd63e4dc43973deee6a51efcc"
+     ]
+    ]
+   },
+   "scorer_digests": {
+    "task_contract_digest": "b97d0869fd7270bec104976dee83b76310ee1662e071aa79a13e7f7f63f350eb",
+    "task_contract_version": 1,
+    "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
+    "scorer_contract_version": 1,
+    "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+    "ledger_engine": "candidate/1",
+    "application_engine": "application/1",
+    "composite_engine": "composite/1"
+   },
+   "recorded_row": {
+    "reward": 1.0,
+    "stop": "piv_submitted",
+    "turns": 6.0,
+    "secs": 137,
+    "input_tokens": 34275.0,
+    "output_tokens": 5921.0,
+    "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+    "requested_model": "kimi-k3"
+   },
+   "artifacts": {
+    "ledger": {
+     "file": "ledger.beancount",
+     "archived_file_stored_bytes_digest": "f7be71a88ad481de8a33c2b0e12087be8781294efb348cd4c519e8a6bfd377a5",
+     "archived_file_logical_text_digest": "64f185d12ff0ab7905f180690eba5254d687e0ef2263d811594319f53749ef48",
+     "submitted_stored_bytes_digest": "d334befdd6c11aef43dbf7674ce2a86de8aba0813a5a662d5646e6cc4c1f1254",
+     "submitted_logical_text_digest": "3c518fa1f03f6b09946d88a8a8971662774ad995d3250fb9e625658151a270f2",
+     "delivered_stored_bytes_digest": "f7be71a88ad481de8a33c2b0e12087be8781294efb348cd4c519e8a6bfd377a5",
+     "delivered_logical_text_digest": "64f185d12ff0ab7905f180690eba5254d687e0ef2263d811594319f53749ef48",
+     "committed_revision": 1,
+     "outcome": "delivered"
+    },
+    "application": {
+     "file": "cash_application.json",
+     "archived_file_stored_bytes_digest": "65a602b4b69f2ded91032c1437203e915a1237ff34ea493564dda55752a1c590",
+     "archived_file_logical_text_digest": "b97633c858b41ac522d35800d2292edb76edb8b3314760fa9525b1df8662e129",
+     "submitted_stored_bytes_digest": "d5101f40f934a6c372526749637da80a9111692efc880b14f3039848e501d23c",
+     "submitted_logical_text_digest": "dd76a886c0cf7ae2e44a45e327932152ab1c0beed2ddcd205fc5257ee20f1f03",
+     "delivered_stored_bytes_digest": "65a602b4b69f2ded91032c1437203e915a1237ff34ea493564dda55752a1c590",
+     "delivered_logical_text_digest": "b97633c858b41ac522d35800d2292edb76edb8b3314760fa9525b1df8662e129",
+     "canonical_digest": "4e796e6e9886e0398f08404817450794db282ffe2233be1076168b150a7f04e1",
+     "revision": 1,
+     "status": "delivered",
+     "application_score": "1",
+     "application_result_digest": "9f27e4521020d88ae405fa4fdc930de7236d470bc16c55ac4798c3fa6ffe110a"
+    },
+    "publication": {
+     "rollout_id": "d1d6f0fdfc3c49bea3eb0035a6395c35",
+     "score": "1",
+     "completion": "complete",
+     "delivery_receipt_digest": "378414cbda5d69a04766021e1d0e427e99a1330b67e66b9b3ef7ab9c4a1d35b6",
+     "evaluation_receipt_digest": "fc883c8abfc31ed58386656d696384932450dee4377afab9fe59b89387202c86",
+     "score_result_digest": "defc207cb7297099b29cf0d19122a8142e9e388e7c948792feb511e8efb3154e",
+     "composite_result_digest": "defc207cb7297099b29cf0d19122a8142e9e388e7c948792feb511e8efb3154e"
+    }
+   }
+  },
+  "cash_application_005": {
+   "world_id": "bowline-2026-04-c5",
+   "period": "Period(start='2026-04-01', end='2026-04-30', label='April 2026')",
+   "task_digests": {
+    "graph_digest": "c7f3e2ad6890285f1257c4fdc8186660d8c83248a14c1c1b595e1684287952a0",
+    "mutation_plan_digest": "f77a099267a1ebefab6c190ee06c7d896913e7876061943a31b0439c649ac9f2",
+    "environment_digest": "345e136b8192e25c663ddcc02c0c1928b1643ef3b4da8060ce6245b90debc3db",
+    "view_digests": [
+     [
+      "accounts.csv",
+      "41a308d15cf2e1ac4f30497c0ff00ec9217441fd99c54c7c27b13b4c0e74ffd8"
+     ],
+     [
+      "archive_prior_period.csv",
+      "4b04f5ba8cc5d2482a480bb57fbf30e65f6e4ab7726f0f64215e5b2a2696b3c3"
+     ],
+     [
+      "bank_statement.csv",
+      "1d97f7e96ba6af9b06e46e21896c047fa78df36d7df344519f42a7f2b786d21d"
+     ],
+     [
+      "credit_notes.csv",
+      "0d18a913d53cadcae6d39cd67b6abdcf8d7d37811dce003404e31de7cb8e2718"
+     ],
+     [
+      "customers.csv",
+      "64e9e11d4a8a86e693beb88ec8bd0729a1f317c3a1984f6625acdce22e8941f3"
+     ],
+     [
+      "expected_balances",
+      "3b603c2d584ffce159f4afe82f5df1a8a61add932aea01729b5a26abf3ddc655"
+     ],
+     [
+      "expected_ledger",
+      "221e55f375ae621c99773b6659dc0a97ad5f64d73438865e5fc82bad7e770014"
+     ],
+     [
+      "ledger.beancount",
+      "ec49f34c349649bcfc2fc8139604bcdae8e9d25ef1cd0967a61314c718b9cb70"
+     ],
+     [
+      "manifest.md",
+      "ecd17fc711b5e73062b71e62ae3f598d77b371c789bd2d1744e53b9a36244717"
+     ],
+     [
+      "open_items.csv",
+      "bbe7f8a249082f5857743fd10524d6c68daa08b9536f9d56ac1460c3ff1b94c8"
+     ],
+     [
+      "policy.md",
+      "50699da6a78efcd26bac36fdac86723aa57df06c42aae35cdb535432fc122fea"
+     ],
+     [
+      "remittance_advice.csv",
+      "bd2e128adb87238d2de870b125c13fde4d4c57cf8f02a48ce32efbbb1c9f081b"
+     ],
+     [
+      "vendors.csv",
+      "7a46c5938a6081f6009ae19891c6f5eab5d77c7bd63e4dc43973deee6a51efcc"
+     ]
+    ]
+   },
+   "scorer_digests": {
+    "task_contract_digest": "33d0c5a307347d3459e54d6a84692d32eda3183514f25357af7a26fdf3ba1cbf",
+    "task_contract_version": 1,
+    "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa",
+    "scorer_contract_version": 1,
+    "parse_policy_digest": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+    "ledger_engine": "candidate/1",
+    "application_engine": "application/1",
+    "composite_engine": "composite/1"
+   },
+   "recorded_row": {
+    "reward": 0.333334,
+    "stop": "piv_submitted",
+    "turns": 10.0,
+    "secs": 180,
+    "input_tokens": 63843.0,
+    "output_tokens": 6634.0,
+    "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+    "requested_model": "kimi-k3"
+   },
+   "artifacts": {
+    "ledger": {
+     "file": "ledger.beancount",
+     "archived_file_stored_bytes_digest": "9206e7dbf328768340d55ea3bd520fc2f96992935b6fd70e82b3dc571b1d0efb",
+     "archived_file_logical_text_digest": "22ca37b4e54d4206cc64d7185d1338fd4378d7dc774e419234dcdcab5fc69d20",
+     "submitted_stored_bytes_digest": "fc85f0b1dd350c555752dfe7bc8ee713b1d7eedb9c9ff3b50157b84046a950c3",
+     "submitted_logical_text_digest": "a67782845ed8ab99f4c40307a7fe1f6daf97cac52f9a7e887075a2a142cbd078",
+     "delivered_stored_bytes_digest": "9206e7dbf328768340d55ea3bd520fc2f96992935b6fd70e82b3dc571b1d0efb",
+     "delivered_logical_text_digest": "22ca37b4e54d4206cc64d7185d1338fd4378d7dc774e419234dcdcab5fc69d20",
+     "committed_revision": 1,
+     "outcome": "delivered"
+    },
+    "application": {
+     "file": "cash_application.json",
+     "archived_file_stored_bytes_digest": "9a2c8e3b0dd39bc956a71fe1a08a186bf95525d95e68de955e878e3dcefc0951",
+     "archived_file_logical_text_digest": "775b8074534098b0499f5c380e555d611ab693b82ccb0c157074a2662fa858ed",
+     "submitted_stored_bytes_digest": "5e670d1b726fe6e5c3f7c944c68fa80cbe91456a1d3212185aa671e3a807731f",
+     "submitted_logical_text_digest": "e87351ce259ed0f05228d2820bcedec6b6d90474ad56c7fff8c81f25f8e32176",
+     "delivered_stored_bytes_digest": "9a2c8e3b0dd39bc956a71fe1a08a186bf95525d95e68de955e878e3dcefc0951",
+     "delivered_logical_text_digest": "775b8074534098b0499f5c380e555d611ab693b82ccb0c157074a2662fa858ed",
+     "canonical_digest": "6a88d6a645097bfd251446d6f71514d8ccd6756b0829d4486bbc6a56dfcc4063",
+     "revision": 1,
+     "status": "delivered",
+     "application_score": "0.333334",
+     "application_result_digest": "30229df6403e48c9d3adfdfa73b439aafd669c8c926c047bbd5cf3caea3cbd7e"
+    },
+    "publication": {
+     "rollout_id": "f7985460f9884131b2561d0684b57cff",
+     "score": "0.333334",
+     "completion": "incomplete",
+     "delivery_receipt_digest": "b827cd380e93f23d64d9101f17550b976d9f67dae466d0259be93039356d630a",
+     "evaluation_receipt_digest": "de9cf56908a9dff947c983cc84835c8ec532aba6202479e75a4c2e26902e70fb",
+     "score_result_digest": "7fe513f1d53837c360e1403da38b38a299d1ced2a8a0e8a870549c54bb058137",
+     "composite_result_digest": "7fe513f1d53837c360e1403da38b38a299d1ced2a8a0e8a870549c54bb058137"
+    }
+   }
+  }
+ },
+ "checks_performed": [
+  "each archived ledger.beancount reproduces its receipt's delivered stored-bytes and logical-text digests (the archived file is the canonical DELIVERED rendering, not the raw submitted bytes, which the archive does not carry)",
+  "each archived cash_application.json reproduces its receipt's delivered stored-bytes and logical-text digests",
+  "the resolved cash-application contract digest equals the digest every calibration row records"
+ ]
+}

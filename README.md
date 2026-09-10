@@ -4,14 +4,20 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%E2%80%933.13-blue.svg)](pyproject.toml)
 
-**A reinforcement-learning environment where an agent does a small company's bookkeeping, and the reward is whether the books actually balance.** No LLM judge. Every discrepancy is planted by a generator that knows the correct ledger, so the scorer pays exact partial credit and cannot be argued with.
+**A deterministic accounting environment for ledger repair and batched cash application.** Agents inspect accounting evidence and deliver a corrected Beancount ledger. Cash-application tasks additionally require a receipt-and-invoice application register, allowing the evaluator to detect errors that aggregate ledger postings cannot distinguish.
+
+Version 0.2.0 includes 100 authored task IDs: 91 workflow tasks, four clean-month assurance tasks and five cash-application variants of one company-month. The 95 legacy tasks retain episode contract 4; cash application uses contract 5 and combines the ledger and application scores multiplicatively. Authored tasks are public demonstrations and tests. The existing keyed bank-reconciliation population is separate; cash-application generation is not yet implemented.
+
+> **Version status.** `pyproject.toml` still declares `0.1.0`, and the published Hub package is still the earlier one. The paragraph above describes the release this branch is prepared for; bumping the version and pushing to the Environments Hub are the owner's decisions and have not been made. Until then, read "0.2.0" as the contents of this branch, not as what `pip install` gives you.
+
+No LLM judge: every discrepancy is planted by a generator or an author that knows the correct ledger, and the scorer pays exact partial credit against it.
 
 Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `beancount-ledger`. Apache-2.0.
 
 ### Why this is hard to game
 
 - **The reward is derived, not judged.** Trial balance ties or it does not; planted discrepancies are resolved or they are not. Penalties for damaging existing records, fabricating entries or inventing accounts.
-- **Nothing the agent sees regenerates an answer.** Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The wheel ships no golden ledgers, no tests and no provenance for generated worlds. The hand-authored tasks are demos by construction, never a held-out evaluation.
+- **Generation identity is keyed; the accounting evidence is not.** Worlds are HMAC-keyed under an evaluator secret and public ids derive from public bytes only, so the private generation identity of a task cannot be recovered from what the agent sees. That is all the key protects. It does not make the accounting unsolvable from the evidence, and it is not meant to: the cash-application family's public fold deliberately reconstructs the whole application register from the public files, and that reconstruction is one of the checks a task must pass before it is admitted. The wheel ships no golden ledgers, no tests and no provenance for generated worlds. The hand-authored tasks are demos and tests by construction, never a held-out evaluation.
 - **An exploit corpus and an adversary loop** live in `tests/`: 26 hand-written attacks on the demo world, 14 constructions (13 families, 103 declared payloads, of which a world builds about 90 and skips the rest by name because it lacks the structure they attack) built from a minted world's public bytes, and a nightly sweep over rotating shards. The exploit corpus is scored against an oracle independent of the scorer.
 
 ### Quickstart
@@ -50,6 +56,24 @@ Ninety-one tasks ship in the wheel and need no secret: ten small companies, one 
 | Bluewater Marine Supply | October 2025 |
 
 The ten workflows, with their id prefixes: bank recon (`bank_recon`), AP run (`ap_payment_run`), AR collections (`ar_collections`), bank feed (`bank_feed_categorisation`), expense reports (`expense_reports`), payroll (`payroll`), sales tax (`sales_tax_remittance`), fixed assets (`fixed_assets`), intercompany (`intercompany_transfers`), month-end close (`month_end_close`).
+
+### The two episode profiles
+
+A task resolves one of two profiles, and the profile fixes the tool surface, the deliverables and the envelopes. Nothing else about the loop differs: whole-file reads, the same stop conditions, the same malformed-call policy, the same budgets.
+
+| | `legacy` — the 95 workflow and clean-month tasks | `cash_application` — `cash_application_001`…`005` |
+|---|---|---|
+| Episode contract | 4, shape `piv.episode-contract/2`, digest `e8b8753d…` | 5, shape `piv.episode-contract/3`, digest `b11bc1ac…` |
+| Tools | `list_files`, `read_file`, `grep`, `run_beancount`, `write_ledger`, `submit` | the same six, plus `write_cash_application` |
+| Public files | 8 | 11 (adds `open_items.csv`, `remittance_advice.csv`, `credit_notes.csv`) |
+| Deliverables | `ledger.beancount` | `ledger.beancount` **and** `cash_application.json` (schema `piv.cash-application/1`), the second write-only, optional at submit and required for `complete` |
+| Reward | `L` from `candidate/1` | `total = L × A`, `A` from `application/1`, composed by `composite/1` |
+| Write envelopes | ledger 48,000 bytes / 1,000 lines | ledger as legacy; register 16,000 bytes / 400 lines |
+| Budgets | 25 turns, 40,000-token episode output ceiling, 768,000-byte observation ceiling | identical |
+
+Contract 4 is preserved byte for byte for the 95 legacy tasks, because they were measured under it; the two views are dispatched by profile and both digests are pinned in `tests/test_episode_contract.py`.
+
+**What has been measured on the cash-application profile.** One three-episode screen, on three of the five variants of the single authored company-month, one requested model, one attempt each: two complete two-artifact deliveries and one case where the ledger scored 1.0 while the application register lost a single field. Full note and archive: [reviews/cash_application_screen_2026-09-10.md](reviews/cash_application_screen_2026-09-10.md). It establishes that the second deliverable can fail on its own while the ledger is perfect. It establishes **no** difficulty level, no failure rate, no generalization beyond that company-month and no training utility.
 
 ### Desktop app
 
