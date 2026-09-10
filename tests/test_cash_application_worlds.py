@@ -23,7 +23,11 @@ What is witnessed:
   * the projected pack is the spec's, byte for byte where the spec prints
     it: Case 1's three files, Case 5's credit note, Case 2's absent advice,
     the manifest rows, the write-off account, the addendum in the statement
-    reference, the cheque row that identifies the remitter;
+    reference, the cheque row that identifies the remitter. Case 2's
+    reference departs from the spec's printed text on purpose: it reads
+    `TRC0428442 SI-3104 SI-3102`, the bank's own trace ahead of the payer's
+    invoice list, because the corrected identity rule admits no identity in a
+    list of invoice ids and that case has no advice to declare one;
   * gate (m): for each of the five bundles the PUBLIC fold
     (`graph/cash_application.py`, over the ACTUAL projected bytes) equals
     the truth derived from the authored facts, under an application key
@@ -46,10 +50,11 @@ What is witnessed:
     original unresolved, the merged trap, leaked ids, derived literals, name
     pools, policy headings, plant coverage) passes for all five; gate (f),
     scoped to the bank-evidenced plants, reads every case uniquely as the
-    planted repairs — the spec's open implementation risk (section 8) was
-    resolved in step 4 by the payment-reference syntax in `identify.py`
-    (`_payment_reference_words`: the ACH addendum is an instrument), which
-    `tests/test_family_validators.py` pins mechanism by mechanism;
+    planted repairs — the spec's open implementation risk (section 8) is
+    resolved by an EVIDENCED payment identity in `identify.py`
+    (`_identity_reference`: the advice declares the ACH addendum, the bank
+    declares its own trace), which `tests/test_family_validators.py` pins
+    mechanism by mechanism;
   * the plants are the spec's: R2 omitted in every case on the bank's date,
     R3 transposed with the stated parameters to the stated as-found amounts,
     the write-off omitted alone in Case 3 and booked in Case 4;
@@ -106,6 +111,9 @@ WORLDS_DIR = ROOT / "beancount_ledger" / "graph" / "worlds"
 GANNET, SHEARWATER = "Gannet Rigging Inc", "Shearwater Bay Charters LLC"
 AR, BANK = "Assets:AR", "Assets:Bank:Checking"
 R1, R2, R3 = "2026-04-10:GR PAYRUN 0410", "2026-04-21:2291", "2026-04-28:GR PAYRUN 0428"
+#: Case 2 has no advice for R3, so its identity is the bank's own trace,
+#: printed ahead of the invoice list rung (2) reads.
+R3_CASE_2 = "2026-04-28:TRC0428442 SI-3104 SI-3102"
 FAMILY_FILES = ("open_items.csv", "remittance_advice.csv", "credit_notes.csv")
 LEGACY_FILES = ("manifest.md", "policy.md", "accounts.csv", "customers.csv", "vendors.csv",
                 "archive_prior_period.csv", "ledger.beancount", "bank_statement.csv")
@@ -192,7 +200,7 @@ EXPECTED = {
             credits=CN_ON_3102, register=CASE_1_REGISTER, closing="3270.00", statement="66370.00",
             r3_found="3702.00", plants={"unrecorded_customer_check": "omit", "transposed_payrun_receipt": "alter"}),
     2: dict(receipts={R1: (R1_APPLIED, (), "0.00"), R2: (R2_APPLIED, (), "0.00"),
-                      "2026-04-28:SI-3104 SI-3102": (pairs(("SI-3102", "1830.00"), ("SI-3104", "300.00")), (), "0.00")},
+                      R3_CASE_2: (pairs(("SI-3102", "1830.00"), ("SI-3104", "300.00")), (), "0.00")},
             credits=CN_ON_3102, register=register(row("SI-3104", GANNET, "1890.00", "300.00", "0.00", "0.00", "1590.00")),
             closing="4860.00", statement="64780.00", r3_found="2310.00",
             plants={"unrecorded_customer_check": "omit", "transposed_payrun_receipt": "alter"}),
@@ -328,17 +336,28 @@ def test_every_gate_passes_for_all_five():
 
 
 def test_gate_f_reads_every_case_as_the_planted_repairs():
-    """Gate (f), scoped to the bank-evidenced plants, after step 4. The
-    spec's open implementation risk (section 8) was real: with `GR PAYRUN
-    0428` and `SI-3104 SI-3102` read as UNKNOWN references, the mis-keyed
-    R3 two days before the cut-off admitted a second reading — the row an
-    unrecorded receipt, the entry a deposit in transit — in Cases 1, 2, 4
-    and 5. Step 4 chose the first of the spec's two fixes: the reference
-    syntax gained the payment reference (`identify._payment_reference_words`,
-    an INSTRUMENT, since a document role never prunes), so the entry that
-    quotes the addendum is its row's alteration and never in transit. Every
-    case now reads uniquely as exactly its planted bank-evidenced repairs;
-    the mechanism itself is pinned in `tests/test_family_validators.py`."""
+    """Gate (f), scoped to the bank-evidenced plants. The spec's open
+    implementation risk (section 8) was real: with `GR PAYRUN 0428` and
+    `SI-3104 SI-3102` read as UNKNOWN references, the mis-keyed R3 two days
+    before the cut-off admitted a second reading — the row an unrecorded
+    receipt, the entry a deposit in transit — in Cases 1, 2, 4 and 5.
+
+    Step 4 closed that with a SHAPE rule (any multi-word reference with a
+    digit is an instrument), and a reviewer refused it: the shape admits an
+    invoice list and a dated memo, and one sighting on each side excludes
+    neither competing history. The rule now in force asks the evidence
+    instead — `identify._identity_reference`: a cheque number the wording
+    introduces, a bank trace id, or a reference a mounted
+    `remittance_advice.csv` declares, unique across the advices and the bank
+    rows. Cases 1, 3, 4 and 5 have RA-0428-GR, which declares `GR PAYRUN
+    0428`. Case 2 has no advice for R3 by design, so it was given a genuine
+    public identity rather than a looser rule: the bank's own trace
+    `TRC0428442`, printed on the row and quoted by the entry, ahead of the
+    invoice list rung (2) still reads.
+
+    Every case reads uniquely as exactly its planted bank-evidenced repairs;
+    the mechanism and its counterexamples are pinned in
+    `tests/test_family_validators.py` and `tests/test_identify.py`."""
     problems = []
     for n in range(1, 6):
         _, world, task, _, inputs, public = case(n)
@@ -357,7 +376,8 @@ def test_gate_f_reads_every_case_as_the_planted_repairs():
             problems.append(f"case {n}: repair kinds {kinds}")
     return check("gate (f): every case reads uniquely, with one reading, as exactly its planted bank-evidenced "
                  "repairs — R2 missing on the bank's date in all five, R3 mis-keyed in Cases 1, 2, 4 and 5 — "
-                 "the spec's open risk resolved by the payment-reference syntax", not problems, "\n".join(problems))
+                 "the spec's open risk resolved by an EVIDENCED payment identity: the advice's declared "
+                 "reference in four cases, the bank's own trace in Case 2", not problems, "\n".join(problems))
 
 
 def test_the_projected_pack_is_the_spec_s():
@@ -398,8 +418,10 @@ def test_the_projected_pack_is_the_spec_s():
         if n in (1, 2, 3, 4) and public["open_items.csv"] != SPEC_OPEN_ITEMS:
             problems.append(f"case {n}: open_items.csv is not the shared register")
     _, _, _, _, _, public2 = case(2)
-    if "RA-0428-GR" in public2["remittance_advice.csv"] or "SI-3104 SI-3102" not in public2["bank_statement.csv"]:
-        problems.append("case 2: RA-0428-GR must be absent and the reference must read SI-3104 SI-3102")
+    if "RA-0428-GR" in public2["remittance_advice.csv"] \
+            or "TRC0428442 SI-3104 SI-3102" not in public2["bank_statement.csv"]:
+        problems.append("case 2: RA-0428-GR must be absent and the reference must read "
+                        "TRC0428442 SI-3104 SI-3102 — the bank's trace, then the invoices rung (2) reads")
     if public2["remittance_advice.csv"] != "".join(SPEC_REMITTANCE.splitlines(True)[:5]):
         problems.append("case 2: remittance_advice.csv is not Case 1's first two advices")
     _, _, _, _, _, public5 = case(5)
@@ -509,7 +531,7 @@ def test_gate_n_the_narration_rule():
                "Cash amount after application of CN-0412; do not deduct the credit again.",
                "Short payment on SI-3104 written off under the cash application policy",
                "Short payments on SI-3102 and SI-3104 written off under the cash application policy",
-               "Customer payment, SI-3104 SI-3102", "Customer payment for SI-3102",
+               "Customer payment, TRC0428442 SI-3104 SI-3102", "Customer payment for SI-3102",
                "part payment; balance held pending credit for damaged crates",
                "minor remittance discrepancy; customer claims invoice settled",
                "Cash amount on SI-3102 after application of CN-0412")
@@ -768,7 +790,7 @@ def test_cheque_sign_and_movement_extensions():
             or m.description != "ACH IN GANNET RIGGING INC":
         problems.append(f"the ACH applied receipt moves {m}")
     m = P.movement_of(world, CASH_APPLICATION_MODULES[1].R3)
-    if m is None or m.reference != "SI-3104 SI-3102":
+    if m is None or m.reference != "TRC0428442 SI-3104 SI-3102":
         problems.append(f"Case 2's addendum prints as {m}")
     legacy = P.movement_of(world, B.MARCH_EVENTS[1])
     if legacy.amount != D("-2860.00"):

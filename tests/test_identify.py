@@ -31,6 +31,15 @@ a reused invoice reference, a cheque issued last month and cleared in this
 one, an exact reference pointing the wrong way — and each one names which of
 the two verdicts the evidence supports and why.
 
+One block of those fixtures carries the IDENTITY rule, which was corrected
+after a reviewer refused its first form: a reference is a payment identifier
+only where the public evidence declares it one (`remittance_advice.csv`'s
+`payment_reference` column, a cheque the wording introduces, a bank trace id),
+never because of its shape. The counterexamples the retracted shape rule
+admitted are asserted here — an invoice list, a generic dated memo, two part
+payments quoting one list — beside the positive case and the control that
+isolates it: the same bytes with and without the advice that declares them.
+
 The public files come from `derive_contract`, so what is checked is the bytes
 the environment actually mounts, not a fixture that resembles them.
 
@@ -589,28 +598,250 @@ def test_the_reference_ontology_classifies_every_shape_the_worlds_publish():
     """The ontology as a table, asserted rather than described.
 
     An invoice or purchase-invoice code is a DOCUMENT whatever text carries
-    it; a number introduced by the word check is an INSTRUMENT and the same
-    number without it is UNKNOWN; text with no reference-shaped token at all
-    is MEMO. A bank trace id is classified as an instrument so that a world
-    which starts printing one gets the instrument rules rather than the
-    unknown ones.
+    it, and so is a LIST of them; a number introduced by the word check is an
+    INSTRUMENT and the same number without it is UNKNOWN; text with no
+    reference-shaped token at all is MEMO. A bank trace id is classified as an
+    instrument so that a world which starts printing one gets the instrument
+    rules rather than the unknown ones.
+
+    The last block is the identity rule: SHAPE decides nothing. `GR PAYRUN
+    0428` and `APRIL 2026` have the same shape — several words, one carrying a
+    digit — and neither is an instrument until a mounted advice DECLARES it a
+    payment reference. When one does, the payrun reference is an instrument
+    and the dated memo, still undeclared, is not. An invoice list is not one
+    even when an advice declares it, because a list names receivables and two
+    partial payments may quote it.
     """
+    declared = frozenset({"GRPAYRUN0428", "APRIL2026", "SI1044SI1052", "SI1044"})
     cases = [
-        ("SI-1044", "ACH IN HARBOR FREIGHT LTD SI-1044", ID.REF_DOCUMENT),
-        ("PI-2240", "Payment of purchase invoice PI-2240", ID.REF_DOCUMENT),
-        ("si 1044", "settling si 1044", ID.REF_DOCUMENT),
-        ("1037", "CHECK 1037 CEDAR PROPERTY GROUP", ID.REF_INSTRUMENT),
-        ("1037", "November office rent, check 1037", ID.REF_INSTRUMENT),
-        ("1037", "Deposit slip 1037", ID.REF_UNKNOWN),
-        ("TRACE0284471", "ACH IN TRACE0284471", ID.REF_INSTRUMENT),
-        ("BX-99", "Batch BX-99", ID.REF_UNKNOWN),
-        ("", "Office supplies", ID.REF_MEMO),
+        ("SI-1044", "ACH IN HARBOR FREIGHT LTD SI-1044", ID.REF_DOCUMENT, frozenset()),
+        ("PI-2240", "Payment of purchase invoice PI-2240", ID.REF_DOCUMENT, frozenset()),
+        ("si 1044", "settling si 1044", ID.REF_DOCUMENT, frozenset()),
+        ("1037", "CHECK 1037 CEDAR PROPERTY GROUP", ID.REF_INSTRUMENT, frozenset()),
+        ("1037", "November office rent, check 1037", ID.REF_INSTRUMENT, frozenset()),
+        ("1037", "Deposit slip 1037", ID.REF_UNKNOWN, frozenset()),
+        ("TRACE0284471", "ACH IN TRACE0284471", ID.REF_INSTRUMENT, frozenset()),
+        ("BX-99", "Batch BX-99", ID.REF_UNKNOWN, frozenset()),
+        ("", "Office supplies", ID.REF_MEMO, frozenset()),
+        # the shape that used to be an instrument, undeclared and declared
+        ("GR PAYRUN 0428", "ACH IN HARBOR FREIGHT LTD GR PAYRUN 0428", ID.REF_UNKNOWN, frozenset()),
+        ("GR PAYRUN 0428", "ACH IN HARBOR FREIGHT LTD GR PAYRUN 0428", ID.REF_INSTRUMENT, declared),
+        ("APRIL 2026", "ACH IN HARBOR FREIGHT LTD APRIL 2026", ID.REF_UNKNOWN, frozenset()),
+        ("APRIL 2026", "ACH IN HARBOR FREIGHT LTD APRIL 2026", ID.REF_INSTRUMENT, declared),
+        # an invoice list: document evidence, declared or not
+        ("SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD SI-1044 SI-1052", ID.REF_DOCUMENT, frozenset()),
+        ("SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD SI-1044 SI-1052", ID.REF_DOCUMENT, declared),
+        ("SI-1044", "ACH IN HARBOR FREIGHT LTD SI-1044", ID.REF_DOCUMENT, declared),
+        # the bank's own trace, printed beside the payer's invoice list
+        ("TRC0428442 SI-1044 SI-1052", "ACH IN HARBOR FREIGHT LTD TRC0428442 SI-1044 SI-1052",
+         ID.REF_INSTRUMENT, frozenset()),
     ]
-    problems = [f"{token!r} in {text!r}: {ID.reference_role(token, text)} != {want}"
-                for token, text, want in cases if ID.reference_role(token, text) != want]
+    problems = [f"{token!r} in {text!r} (evidenced={sorted(seen)}): "
+                f"{ID.reference_role(token, text, evidenced=seen)} != {want}"
+                for token, text, want, seen in cases
+                if ID.reference_role(token, text, evidenced=seen) != want]
     if set(ID.REFERENCE_ROLES) != {ID.REF_INSTRUMENT, ID.REF_DOCUMENT, ID.REF_MEMO, ID.REF_UNKNOWN}:
         problems.append(f"the declared role set is {ID.REFERENCE_ROLES}")
-    return check("every reference shape the worlds publish classifies to its declared role",
+    return check("every reference shape the worlds publish classifies to its declared role, and an "
+                 "instrument identity comes from what the evidence declares rather than from the shape",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# the identity rule: a payment identifier is EVIDENCED, never inferred from
+# the shape of the string (reviewer decision 5, round 13)
+# --------------------------------------------------------------------------
+
+ADVICE_HEADER = ("remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,"
+                 "invoice_id,amount_paid,settles_invoice,deduction_amount,note\n")
+
+
+def advice_rows(*rows: tuple) -> str:
+    """A `remittance_advice.csv` declaring `(remittance_id, reference)` pairs.
+
+    Only the two columns this checker reads carry weight; the rest is filled
+    so the file is what the family actually mounts rather than a stub shaped
+    to the assertion.
+    """
+    body = "".join(f"{remittance_id},Harbor Freight Ltd,2025-11-23,ACH,{reference},1500.00,"
+                   f"SI-1044,1500.00,yes,0.00,\n" for remittance_id, reference in rows)
+    return ADVICE_HEADER + body
+
+
+def two_partial_payments(reference: str, advice: str | None = None, *, quoted_by: tuple = (2,)) -> dict:
+    """Two part payments of 1,500.00 in the books and one bank credit for that
+    amount carrying `reference`.
+
+    20 and 22 November, both `Part payment received on SI-1044`, both from
+    Harbor Freight Ltd; the bank credits 1,500.00 on the 23rd. Whichever
+    payment the bank credited, the other is a deposit in transit, and the two
+    readings name different entries as the one outstanding. Only something
+    that identifies ONE cash movement can choose between them.
+
+    `quoted_by` says which of the two entries quote the reference in their
+    narrations. The second alone by default, which is the shape an identity
+    can single a payment out of; `(1, 2)` is two part payments quoting one
+    reference, which is what an invoice list is actually like — the customer
+    is paying the same two invoices twice over.
+
+    `advice`, when given, is mounted as `remittance_advice.csv`.
+    """
+    def narration(which: int) -> str:
+        base = "Part payment received on SI-1044"
+        return f"{base}, {reference}" if which in quoted_by else base
+
+    public = add_entries(
+        public_files(),
+        entry("2025-11-20", "Harbor Freight Ltd", narration(1),
+              [bank("1500.00"), ("Assets:AR", "-1500.00")]),
+        entry("2025-11-22", "Harbor Freight Ltd", narration(2),
+              [bank("1500.00"), ("Assets:AR", "-1500.00")]))
+    public = restate(public, statement_rows(public)
+                     + [("2025-11-23", "ACH IN HARBOR FREIGHT LTD", reference, "", "1500.00")])
+    return public if advice is None else {**public, ID.REMITTANCE_FILE: advice}
+
+
+def identity_facts(public: dict, reference: str):
+    rows = ID.statement_rows(public[ID.STATEMENT_FILE], period_start=START, period_end=END)[0]
+    row = next(r for r in rows if r.reference == reference)
+    return ID._evidence(public, BANK, START, END).facts_by_row[row.index]
+
+
+def test_an_evidenced_unique_payment_identifier_is_decisive():
+    """The positive case, and the control that isolates the evidence.
+
+    `HF PAYRUN 1123` is a payment reference because a mounted remittance
+    advice says so — customer, method and reference, the same column the
+    family binds an advice by. It is quoted by one bank row and by one bank
+    movement, so it is decisive: the row is answered by the entry that quotes
+    it, the other part payment is a deposit in transit, and one reading
+    survives.
+
+    The control is the identical pack with the advice file removed. Nothing
+    about the string changed; the rule reads UNKNOWN, nothing is decisive, and
+    the two readings come back. That difference is the whole rule.
+    """
+    problems = []
+    reference = "HF PAYRUN 1123"
+    declared = two_partial_payments(reference, advice_rows(("RA-1123-HF", reference)))
+    facts = identity_facts(declared, reference)
+    verdict = verdict_of(declared)
+    if facts.ref_role != ID.REF_INSTRUMENT or not facts.decisive or reference not in facts.presents:
+        problems.append(f"declared: role {facts.ref_role}, decisive {facts.decisive}, presents {facts.presents}")
+    if not verdict.unique or verdict.readings != 1:
+        problems.append(f"declared: {verdict.readings} readings: {verdict.reason[:200]}")
+    if not any("1500.00" in item for item in verdict.outstanding):
+        problems.append(f"declared: the unquoted part payment is not outstanding: {verdict.outstanding}")
+    bare = two_partial_payments(reference)
+    facts = identity_facts(bare, reference)
+    verdict = verdict_of(bare)
+    if facts.ref_role != ID.REF_UNKNOWN or facts.decisive or facts.presents:
+        problems.append(f"undeclared: role {facts.ref_role}, decisive {facts.decisive}, presents {facts.presents}")
+    if verdict.unique or verdict.readings != 2:
+        problems.append(f"undeclared: unique {verdict.unique}, {verdict.readings} readings")
+    return check("an EVIDENCED, unique payment identifier decides between two part payments; the identical "
+                 "pack without the advice that declares it does not", not problems, "\n".join(problems))
+
+
+def test_an_identifier_two_advices_declare_is_no_identity():
+    """Uniqueness, on the advice side.
+
+    Two advices quoting one reference is exactly the case where the reference
+    cannot say which payment a row is, so it is not admitted at all — the role
+    falls back to UNKNOWN and the two readings stand. (The statement side of
+    uniqueness is `test_a_reused_reference_falls_back_and_stays_ambiguous`.)
+    """
+    reference = "HF PAYRUN 1123"
+    public = two_partial_payments(reference, advice_rows(("RA-1123-HF", reference),
+                                                         ("RA-1124-HF", reference)))
+    facts = identity_facts(public, reference)
+    verdict = verdict_of(public)
+    ok = facts.ref_role == ID.REF_UNKNOWN and not facts.decisive and not verdict.unique
+    return check("a reference two advices declare is not a payment identity: the role falls back and the "
+                 "world stays ambiguous", ok,
+                 f"role={facts.ref_role} decisive={facts.decisive}\n{verdict}")
+
+
+def test_an_invoice_list_is_document_evidence_and_decides_nothing():
+    """The counterexample the shape rule admitted, at the verdict level.
+
+    `SI-1044 SI-1052` is two or more words with a digit in them, which is what
+    the retracted `_payment_reference_words` called an instrument. It is an
+    invoice list: it says which receivables the money applies to, and two
+    partial payments may quote the same one. So the role is DOCUMENT, the row
+    presents nothing, and the two readings — which part payment the bank
+    credited, which is still in transit — both survive.
+
+    An advice declaring the list as its `payment_reference` does not change
+    that. A pack cannot promote a list of receivables to an identity by
+    naming it, which is why Case 2 of the cash family was given a bank trace
+    id instead of having the rule loosened for it.
+    """
+    problems = []
+    reference = "SI-1044 SI-1052"
+    for label, advice in (("bare", None), ("declared", advice_rows(("RA-1123-HF", reference)))):
+        public = two_partial_payments(reference, advice, quoted_by=(1, 2))
+        facts = identity_facts(public, reference)
+        verdict = verdict_of(public)
+        if facts.ref_role != ID.REF_DOCUMENT or facts.decisive or facts.presents:
+            problems.append(f"{label}: role {facts.ref_role}, decisive {facts.decisive}, "
+                            f"presents {facts.presents}")
+        if verdict.unique or verdict.readings != 2:
+            problems.append(f"{label}: unique {verdict.unique}, {verdict.readings} readings: "
+                            f"{verdict.reason[:200]}")
+    return check("an invoice list is document evidence and decides nothing — declared by an advice or not — "
+                 "so two part payments quoting one stay two readings", not problems, "\n".join(problems))
+
+
+def test_a_generic_dated_memo_is_not_a_payment_identity():
+    """The other counterexample: `APRIL 2026`.
+
+    Two words, one carrying a digit, so the retracted shape rule made it an
+    instrument that could dominate a pairing and refuse a deposit in transit.
+    It is a memo naming a month. No advice declares it, so it is UNKNOWN:
+    supporting evidence with no hard prune, which is what an unrecognised code
+    has to be.
+    """
+    problems = []
+    reference = "APRIL 2026"
+    public = two_partial_payments(reference)
+    facts = identity_facts(public, reference)
+    verdict = verdict_of(public)
+    if facts.ref_role != ID.REF_UNKNOWN or facts.decisive or facts.presents:
+        problems.append(f"role {facts.ref_role}, decisive {facts.decisive}, presents {facts.presents}")
+    if verdict.unique or verdict.readings != 2:
+        problems.append(f"unique {verdict.unique}, {verdict.readings} readings: {verdict.reason[:200]}")
+    return check("a generic dated memo is not a payment identity: UNKNOWN, not decisive, presenting nothing",
+                 not problems, "\n".join(problems))
+
+
+def test_the_advice_file_is_read_for_the_reference_column_and_nothing_else():
+    """The blast radius of mounting `remittance_advice.csv`.
+
+    The checker reads one column of it. A malformed file, a file whose
+    `payment_reference` column is empty, and a file naming references no row
+    quotes all leave every verdict where it was — and a legacy pack, which
+    mounts no advice at all, declares nothing, which is why the 95 shipped
+    tasks cannot move under this rule.
+    """
+    problems = []
+    base = two_partial_payments("HF PAYRUN 1123")
+    baseline = verdict_of(base)
+    for label, text in (("malformed", 'remittance_id,customer\n"unclosed,'),
+                        ("empty column", ADVICE_HEADER + "RA-1,Harbor Freight Ltd,2025-11-23,ACH,,1500.00,"
+                                                         "SI-1044,1500.00,yes,0.00,\n"),
+                        ("another reference", advice_rows(("RA-1", "SB PAYRUN 0007")))):
+        verdict = verdict_of({**base, ID.REMITTANCE_FILE: text})
+        if (verdict.unique, verdict.readings) != (baseline.unique, baseline.readings):
+            problems.append(f"{label}: {verdict.unique}/{verdict.readings} != "
+                            f"{baseline.unique}/{baseline.readings}")
+    if ID._evidenced_payment_identifiers({}) != frozenset():
+        problems.append("a pack with no advice file declares something")
+    if ID._evidenced_payment_identifiers({ID.REMITTANCE_FILE: advice_rows(("RA-1", "HF PAYRUN 1123"))}) \
+            != frozenset({"HFPAYRUN1123"}):
+        problems.append("the declared set is not the normalised payment_reference column")
+    return check("the advice file is read for `payment_reference` and nothing else: malformed, empty or "
+                 "irrelevant advices move no verdict, and a pack without one declares nothing",
                  not problems, "\n".join(problems))
 
 
@@ -1484,6 +1715,11 @@ TESTS = [
     test_a_stranded_ledger_movement_far_from_the_cut_off_is_not_outstanding,
     test_two_receipts_of_one_amount_are_not_decidable_by_amount,
     test_the_reference_ontology_classifies_every_shape_the_worlds_publish,
+    test_an_evidenced_unique_payment_identifier_is_decisive,
+    test_an_identifier_two_advices_declare_is_no_identity,
+    test_an_invoice_list_is_document_evidence_and_decides_nothing,
+    test_a_generic_dated_memo_is_not_a_payment_identity,
+    test_the_advice_file_is_read_for_the_reference_column_and_nothing_else,
     test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount,
     test_a_cheque_number_does_decide_between_two_receipts_of_one_amount,
     test_two_partial_receipts_on_one_invoice_are_not_decided_by_the_invoice,

@@ -401,10 +401,13 @@ def check_derived(world, task, bundle, inputs, source_path=None):
     # advice plus the policy — is not something it can read. Gate (m) below
     # validates that plant instead (amount, invoice, date, customer, shape).
     # The family's altered and omitted receipts ARE bank-evidenced, and the
-    # checker reads them through the payment-reference syntax
-    # (`identify._payment_reference_words`): the addendum the bank prints on
-    # an ACH credit is an instrument, so the mis-keyed entry that quotes it is
-    # its row's alteration and never a deposit in transit.
+    # checker reads them through an EVIDENCED payment identity
+    # (`identify._identity_reference`): a reference a mounted
+    # `remittance_advice.csv` declares in its `payment_reference` column, or
+    # the bank's own trace id, names one cash movement, so the mis-keyed entry
+    # that quotes it is its row's alteration and never a deposit in transit.
+    # A reference that is an invoice list declares nothing and stays document
+    # evidence — the shape rule that used to admit it was withdrawn.
     verdict = None
     try:
         verdict = ID.check_identifiable(public, bank_account=world.bank_account,

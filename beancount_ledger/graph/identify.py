@@ -59,21 +59,32 @@ version 2 it is a MATCHING problem rather than a scan:
     used to erase the competing history "the row is missing and this entry is
     a surplus copy of its twin" before anyone could compare it.
 
-Reference dominance is CONDITIONAL and ROLE-AWARE.
+Reference dominance is CONDITIONAL, ROLE-AWARE and EVIDENCED.
 Every reference-shaped token is classified by `reference_role` — instrument,
-document, memo, unknown — and only an INSTRUMENT (a cheque number, a bank
-trace id, the remitter's payment reference an ACH credit carries as its
-addendum) may decide a pairing, because only an instrument names one cash
-movement. It decides only when, after one normalisation, it is quoted by at
-most one bank row across the current statement and the archive and by at most
-one ledger bank movement, and the candidate is compatible in direction (a
-credit row never pairs with a debit entry), in account role (a row naming one
-master party does not pair with an entry booked to a different master party)
-and in policy-valid timing. A DOCUMENT reference — `SI-*`, `PI-*` — names the
-receivable or payable the money applies to, which several receipts, a refund
-and a deposit in transit may share: it may be the stated basis of a settlement
-the amount and the window already allow, but it never dominates, never founds
-an alteration edge on its own, and never buys the wide reference float. A
+document, memo, unknown — and only an INSTRUMENT may decide a pairing, because
+only an instrument names one cash movement. What makes a reference an
+instrument is never its SHAPE. It is one of three things the public evidence
+says out loud: a cheque number the row's own wording introduces (`check
+2291`), a bank trace id (`_TRACE_SYNTAX` — the bank's own identifier for one
+transfer), or a payment identifier a mounted document DECLARES to be one —
+`remittance_advice.csv`'s `payment_reference` column, a customer stating that
+a payment of theirs carries that reference. Nothing else is an instrument, and
+in particular a multi-word reference is not: "two or more words, one with a
+digit" describes an invoice list (`SI-3104 SI-3102`) and a dated memo (`APRIL
+2026`) as readily as an ACH addendum, and neither of those names one cash
+movement. The advice bytes reach this module the way every other public file
+does — as text in the `public` mapping, read here and nowhere else; nothing is
+imported to obtain them. It decides only when, after one normalisation, no two
+advices declare it, it is quoted by at most one bank row across the current
+statement and the archive and by at most one ledger bank movement, and the
+candidate is compatible in direction (a credit row never pairs with a debit
+entry), in account role (a row naming one master party does not pair with an
+entry booked to a different master party) and in policy-valid timing. A
+DOCUMENT reference — `SI-*`, `PI-*`, or a list of them — names the receivable
+or payable the money applies to, which several receipts, a refund and a
+deposit in transit may share: it may be the stated basis of a settlement the
+amount and the window already allow, but it never dominates, never founds an
+alteration edge on its own, and never buys the wide reference float. A
 reused reference of either kind buys nothing and the pairing falls back to
 amount and counterparty. An exact reference never overrides an impossible
 direction.
@@ -152,15 +163,19 @@ from decimal import Decimal, InvalidOperation
 
 # 7: `## Payments to suppliers` is the public rule for a money-out row and
 #    precedent corroborates it; references carry a ROLE and only an instrument
-#    may dominate or found an alteration. The instrument SYNTAX table later
-#    gained the payment reference (`_payment_reference_words`): a multi-word
-#    addendum in the reference column. The role rules are unchanged, and no
-#    world the release manifest admits prints a multi-word reference (the 95
-#    shipped tasks and the generator print one document id, one cheque
-#    number or nothing), so no manifested verdict moves; a version bump here
-#    would make `manifest.admit` refuse every promoted record for a change
-#    that reaches none of them. Re-examined, not assumed: `tests/
-#    test_family_validators.py` surveys the shipped population for the syntax.
+#    may dominate or found an alteration. The instrument table later gained
+#    the payment reference, FIRST AS A SHAPE and now as EVIDENCE: the shape
+#    rule (two or more words, one with a digit) was wrong and is retracted in
+#    `_reference_words`; an instrument identity is now one the public bytes
+#    declare (`_identity_reference`). Both the wrong rule and its replacement
+#    reach no world the release manifest admits — the 95 shipped tasks and
+#    the generator print one document id, one cheque number or nothing, and
+#    mount no `remittance_advice.csv` — and the replacement is strictly
+#    NARROWER than the shape rule it removes, so no promoted verdict can move
+#    in either direction and `manifest.admit` need not refuse every promoted
+#    record over a change that reaches none of them. Re-examined, not
+#    assumed: `tests/test_family_validators.py` surveys the shipped
+#    population for both the syntax and the evidenced set.
 # 5: settlements are forced by the declared convention and every OTHER reading
 #    that explains the whole month competes on equal terms — cardinality and
 #    "fewest alterations" no longer erase one; time direction; bank-initiated
@@ -176,6 +191,13 @@ ACCOUNTS_FILE = "accounts.csv"
 CUSTOMERS_FILE = "customers.csv"
 VENDORS_FILE = "vendors.csv"
 POLICY_FILE = "policy.md"
+# Read for ONE fact and nothing else: which references the evidence itself
+# declares to be payment identifiers (`payment_reference`). Absent from the
+# legacy packs, in which case no reference is evidenced and only cheque
+# numbers and trace ids are instruments. Nothing else in this module reads it:
+# the applications, the amounts and the invoices it carries are the cash
+# family's business, not the bank reconciliation's.
+REMITTANCE_FILE = "remittance_advice.csv"
 
 # ---------------------------------------------------------------------------
 # Windows. Each one is a rail or a policy statement, not a tuning knob.
@@ -465,18 +487,22 @@ def _ref_tokens(text: str) -> set:
 def _mentions(haystack: str, token: str) -> bool:
     """Does the text quote this reference as a token of its own?
 
-    A payment reference is several words (`GR PAYRUN 0428`, `SI-3104
+    A reference is sometimes several words (`GR PAYRUN 0428`, `SI-3104
     SI-3102`), so no single token of the text equals it; the text quotes it
     when it carries the reference's words, normalised one by one, as a
     contiguous run in the same order. `PAYRUN 0428 GR` does not quote
     `GR PAYRUN 0428`, and `SI-3102` alone does not quote `SI-3104 SI-3102`.
+
+    QUOTATION, not identity. That a text names a reference says nothing about
+    whether the reference names one payment; `reference_role` decides that,
+    and it asks the evidence rather than the shape.
     """
     norm = _norm_ref(token)
     if not norm:
         return False
     if norm in _ref_tokens(haystack):
         return True
-    words = _payment_reference_words(token)
+    words = _reference_words(token)
     if not words:
         return False
     tokens = [_norm_ref(t) for t in _TOKEN.findall(haystack or "")]
@@ -494,19 +520,26 @@ def _mentions(haystack: str, token: str) -> bool:
 # accused of carrying an earlier row's wrong amount. Every reference-shaped
 # token therefore carries a ROLE, and the role says what the token may do:
 #
-#   instrument  a cheque number, a bank trace id, or the remitter's PAYMENT
-#               REFERENCE — the addendum an ACH credit carries, which the bank
-#               prints verbatim in the reference column (`GR PAYRUN 0428`,
-#               `SI-3104 SI-3102`; spec section 2: "`payment_reference` is
-#               what the bank prints (ACH addendum, verbatim in the statement
-#               `reference`, or cheque number)"). Names ONE cash movement,
-#               so a globally unique one may decide a pairing outright
-#               (dominance), may found an alteration edge on its own, gets the
-#               long reference float, and CONFLICTS: an entry naming a
-#               different instrument is not this row's movement.
-#   document    an invoice or order id (`SI-*`, `PI-*`). Names the document a
-#               payment applies to. Supporting evidence: it may be the stated
-#               basis of a SETTLEMENT the amount and the window already allow,
+#   instrument  a payment identifier the PUBLIC EVIDENCE DECLARES to be one:
+#               a cheque number the row's own wording introduces (`check
+#               2291`), a bank trace id (`_TRACE_SYNTAX`), or a reference a
+#               mounted `remittance_advice.csv` names in its
+#               `payment_reference` column — the customer's own statement that
+#               a payment of theirs carries it (spec section 2:
+#               "`payment_reference` is what the bank prints (ACH addendum,
+#               verbatim in the statement `reference`, or cheque number)").
+#               Names ONE cash movement, so a globally unique one may decide a
+#               pairing outright (dominance), may found an alteration edge on
+#               its own, gets the long reference float, and CONFLICTS: an
+#               entry naming a different instrument is not this row's
+#               movement. An identifier two advices declare is no identity at
+#               all; one two bank rows quote is an identity that decides
+#               nothing.
+#   document    an invoice or order id (`SI-*`, `PI-*`), alone or as a LIST of
+#               them (`SI-3104 SI-3102`). Names the document, or documents, a
+#               payment applies to — and two partial payments may quote one
+#               list. Supporting evidence: it may be the stated basis of a
+#               SETTLEMENT the amount and the window already allow,
 #               but it is never dominant, never founds an alteration edge by
 #               itself, and never hard-prunes.
 #   memo        text carrying no reference-shaped token at all. Never decides
@@ -530,65 +563,162 @@ _DOCUMENT_SYNTAX = re.compile(r"^(SI|PI)\d{2,8}$")
 _TRACE_SYNTAX = re.compile(r"^(TRACE|TRC|REF)\d{6,}$")
 
 
-def _payment_reference_words(reference: str) -> tuple:
-    """The normalised words of a PAYMENT REFERENCE, or `()` when the text is
-    not one.
+def _reference_words(reference: str) -> tuple:
+    """The normalised words of a reference printed as SEVERAL words, or `()`.
 
-    This is the payment-reference syntax the cash-application spec (section
-    8, "open implementation risk: gate (f) may not return one reading") asked
-    for. The spec offered two fixes — extend the reference-syntax recognition
-    for payment references, or carry the statement reference into the receipt
-    narration — and THIS is the first, chosen because the second cannot work
-    on its own: the family's narrations already quote the reference, and a
-    quoted reference decides nothing while the checker reads it as UNKNOWN
-    (never decisive, never a conflict, never presented). The spec's guess
-    was `_DOCUMENT_SYNTAX`; a DOCUMENT never prunes either, so the syntax is
-    an INSTRUMENT one: the bank attaches the addendum to one credit and
-    prints it verbatim, so it names one cash movement the way a cheque
-    number does, and it takes the instrument rules — dominance when quoted
-    once, the reference float, the conflict rule, and presentation (an entry
-    quoting an addendum the statement shows is not a deposit in transit).
-    The narration still has to quote the addendum for the instrument to bind
-    the entry, which is exactly the join gate (n) permits.
+    A quotation aid and a census key, nothing more. A multi-word reference is
+    one token on no surface — `GR PAYRUN 0428` normalises to `GRPAYRUN0428`,
+    which no narration contains — so `_mentions` has to look for its words in
+    order and `_reference_census` has to count the whole string beside the
+    tokens inside it. Only the raw column carries word boundaries, so callers
+    pass the reference as printed.
 
-    The syntax: two or more whitespace-separated words, at least one of them
-    carrying a digit. A document id is ONE token (`SI-3104`), a cheque number
-    is one number introduced by "check", a trace id is one token: none of
-    those is a payment reference, and every one of them keeps its role. Only
-    the raw reference column carries word boundaries — the normalised form
-    `GRPAYRUN0428` does not — so callers pass the column as printed.
+    RETRACTION. This was `_payment_reference_words`, and its shape — "two or
+    more whitespace-separated words, at least one carrying a digit" — was read
+    as an INSTRUMENT identity, on the argument that the bank attaches an
+    addendum to one credit and prints it verbatim, so the string names one
+    cash movement the way a cheque number does. That argument does not hold
+    and the rule is withdrawn. The shape admits an invoice list (`SI-3104
+    SI-3102`) and a generic dated memo (`APRIL 2026`), and neither of those
+    names a payment. And an addendum being attached to one bank row does not
+    establish that its text names exactly one payment: two partial payments
+    may quote the same invoice list, and one sighting of that list on the
+    statement beside one in the books does not exclude an unrecorded receipt
+    standing next to a deposit in transit. The tests of the old rule showed
+    that it forced the reading the cash-application family wanted; they never
+    showed the classification was warranted. What an instrument identity is
+    now comes from `_identity_reference`: evidence, not shape. The digit
+    condition went with the rest of it — a quotation aid has no business
+    requiring one.
     """
     words = tuple(w for w in (_norm_ref(t) for t in _TOKEN.findall(reference or "")) if w)
-    if len(words) < 2 or not any(any(ch.isdigit() for ch in w) for w in words):
-        return ()
-    return words
+    return words if len(words) >= 2 else ()
 
 
-def reference_role(token: str, text: str = "") -> str:
-    """The role of one normalised reference token, read from its syntax and
-    from how the text that carries it introduces it.
+def _evidenced_payment_identifiers(public: dict) -> frozenset:
+    """The references the mounted evidence DECLARES to be payment identifiers.
+
+    One source, read leniently: `remittance_advice.csv`'s `payment_reference`
+    column. A row there is a customer saying "a payment of mine carries this
+    reference", and that statement — not the shape of the string — is what
+    lets a bank row's reference be read as naming one cash movement.
+    Normalised, so the column and the statement meet the way every other
+    reference does.
+
+    An identifier TWO ADVICES declare is dropped: two payments quoting one
+    reference is exactly the case where the reference cannot say which payment
+    a row is. The other half of uniqueness — that no two bank rows quote it,
+    archive included — is the census test in `_row_facts`.
+
+    A pack that mounts no advices declares nothing, which is every legacy
+    world: there only a cheque number and a trace id are instruments, exactly
+    as before this file had heard of `payment_reference`. The file is read for
+    this and nothing else — its amounts, invoices and applications are the
+    cash family's business, and reading them here would be reading an answer
+    this module has to prove a reader can reconstruct.
+    """
+    text = public.get(REMITTANCE_FILE, "")
+    if not text:
+        return frozenset()
+    declared: dict = {}
+    try:
+        for record in csv.DictReader(io.StringIO(text)):
+            reference = _norm_ref((record.get("payment_reference") or "").strip())
+            if not reference:
+                continue
+            declared.setdefault(reference, set()).add((record.get("remittance_id") or "").strip())
+    except csv.Error:
+        return frozenset()
+    return frozenset(reference for reference, advices in declared.items() if len(advices) == 1)
+
+
+def _identity_reference(reference: str, text: str, evidenced: frozenset) -> str:
+    """The PAYMENT IDENTIFIER this reference names, as printed, or `""`.
+
+    Three declarations and no fourth:
+
+      * the column is one an advice declares (`evidenced`);
+      * the row's own wording introduces it as a cheque (`check 2291`);
+      * the column names exactly one bank trace id (`_TRACE_SYNTAX`), the
+        bank's own identifier for one transfer — printed beside whatever
+        addendum the payer sent, so the identity is that token and not the
+        whole column.
+
+    An invoice id, and a list of invoice ids, is refused BEFORE any of the
+    three, so no pack can turn one into an identity by declaring it: a list
+    names receivables, and an advice quoting one has stated the basis of an
+    application rather than the identity of a payment. Two partial payments
+    may still quote it. One invoice number was never enough for this, and
+    concatenating two does not cure it.
+
+    Anything else names no payment either: a dated memo, an unrecognised
+    code. The caller keeps those as document or unknown evidence, which is
+    what they are. Returned AS PRINTED, because `_mentions` needs the word
+    boundaries normalisation erases.
+    """
+    printed = (reference or "").strip()
+    norm = _norm_ref(printed)
+    if not norm:
+        return ""
+    words = _reference_words(printed)
+    if _DOCUMENT_SYNTAX.match(norm) or (words and all(_DOCUMENT_SYNTAX.match(word) for word in words)):
+        return ""
+    if norm in evidenced or norm in _instrument_tokens(text):
+        return printed
+    traces = sorted(token for token in _ref_tokens(printed) if _TRACE_SYNTAX.match(token))
+    return traces[0] if len(traces) == 1 else ""
+
+
+def _quotes_identity(text: str, token: str) -> bool:
+    """Does this text NAME the payment identifier a statement row presented?
+
+    A cheque number counts only where the wording introduces it — a bare
+    number in a memo is a quantity or a year. A trace id and a multi-word
+    identifier are distinctive enough that quoting them is naming them, and
+    the multi-word case needs the words in order (`_mentions`).
+    """
+    norm = _norm_ref(token)
+    if norm in _instrument_tokens(text):
+        return True
+    if _reference_words(token) or _TRACE_SYNTAX.match(norm):
+        return _mentions(text, token)
+    return False
+
+
+def reference_role(token: str, text: str = "", *, evidenced: frozenset = frozenset()) -> str:
+    """The role of one reference, read from what the evidence DECLARES it to
+    be and from how the text that carries it introduces it.
 
     `text` is the surface the token was read off — a statement row's
     description and reference column, or an entry's payee and narration — and
     it is what turns a bare number into an instrument: `1037` alone is a
     quantity or a year, `check 1037` is a cheque.
 
-    `token` is the reference AS PRINTED: a payment reference is recognised by
-    its word boundaries (`_payment_reference_words`), which normalisation
-    erases, so a caller that has already normalised the column sees a
-    single-word code and gets the unknown role for a multi-word addendum.
+    `evidenced` is the set of normalised references a mounted
+    `remittance_advice.csv` declares to be payment identifiers
+    (`_evidenced_payment_identifiers`). It is handed in rather than looked up
+    here, the way this module is handed every public file: it holds no world
+    and opens nothing.
+
+    `token` is the reference AS PRINTED: an identity may be several words
+    (`GR PAYRUN 0428`) or one token inside the column (a trace id), and
+    normalisation erases the boundaries either way.
     """
     norm = _norm_ref(token)
     if not norm:
         return REF_MEMO
-    if norm in _instrument_tokens(text):
+    if _identity_reference(token, text, evidenced):
         return REF_INSTRUMENT
     if _DOCUMENT_SYNTAX.match(norm):
         return REF_DOCUMENT
     if _TRACE_SYNTAX.match(norm):
         return REF_INSTRUMENT
-    if _payment_reference_words(token):
-        return REF_INSTRUMENT
+    words = _reference_words(token)
+    if words and all(_DOCUMENT_SYNTAX.match(word) for word in words):
+        # A list of invoice ids names receivables, not a payment: two partial
+        # payments may quote one list. Document evidence, exactly as one
+        # invoice id is.
+        return REF_DOCUMENT
     return REF_UNKNOWN
 
 
@@ -857,7 +987,7 @@ def _wording(text: str) -> str:
     return " ".join(_WORDS.findall(text.lower()))
 
 
-def _reference_census(rows, archive_rows, movements) -> tuple:
+def _reference_census(rows, archive_rows, movements, *, evidenced=frozenset()) -> tuple:
     """How often each normalised reference is quoted, on each side.
 
     Documents: the current statement and the archive, reference column and
@@ -866,26 +996,34 @@ def _reference_census(rows, archive_rows, movements) -> tuple:
     bank cannot be the other half of a bank row, so the sale entry and its
     cost-of-goods twin quoting one invoice number do not make that number
     ambiguous.
+
+    `evidenced` is what the advices declare, because the census has to count
+    the key `_row_facts` will look up: a row's IDENTITY, not its whole
+    reference column.
     """
     documents: dict = {}
     ledger: dict = {}
-    # A payment reference is counted as ONE token — the whole addendum, the
-    # key `_row_facts` looks up — beside the tokens inside it: `SI-3104
-    # SI-3102` is one payment reference and two invoice numbers, and the
-    # invoice numbers keep their own census.
+    # A MULTI-WORD identity is counted as one token — the whole addendum, the
+    # key `_row_facts` looks up — beside the tokens inside it, which
+    # `_ref_tokens` has already counted. A single-token identity (a cheque
+    # number, a trace id) is in that census already and is not counted twice.
+    # A reference that is no identity is counted as its tokens and nothing
+    # else: `SI-3104 SI-3102` is two invoice numbers, which is all it is.
     addenda: set = set()
     for row in rows:
         for token in _ref_tokens(row.reference) | _ref_tokens(row.description):
             documents[token] = documents.get(token, 0) + 1
-        if _payment_reference_words(row.reference):
-            documents[_norm_ref(row.reference)] = documents.get(_norm_ref(row.reference), 0) + 1
-            addenda.add(row.reference)
+        identity = _identity_reference(row.reference, f"{row.description} {row.reference}", evidenced)
+        if identity and _reference_words(identity):
+            documents[_norm_ref(identity)] = documents.get(_norm_ref(identity), 0) + 1
+            addenda.add(identity)
     for reference, description in archive_rows:
         for token in _ref_tokens(reference) | _ref_tokens(description):
             documents[token] = documents.get(token, 0) + 1
-        if _payment_reference_words(reference):
-            documents[_norm_ref(reference)] = documents.get(_norm_ref(reference), 0) + 1
-            addenda.add(reference)
+        identity = _identity_reference(reference, f"{description} {reference}", evidenced)
+        if identity and _reference_words(identity):
+            documents[_norm_ref(identity)] = documents.get(_norm_ref(identity), 0) + 1
+            addenda.add(identity)
     # Distinct SHAPES, not entries. Two copies of one entry are one candidate
     # pairing, so a doubled entry must not make its own cheque number look
     # reused — that would switch off the reference exactly where the books
@@ -963,21 +1101,33 @@ def _supplier_payment_account(counterparty, row, *, parties, chart, payables_acc
 
 
 def _row_facts(row, *, parties, chart, fee_account, documents, ledger, precedents,
-               payables_account=None) -> _RowFacts:
+               payables_account=None, evidenced=frozenset()) -> _RowFacts:
     named = _counterparties(row.description, parties)
-    ref = _norm_ref(row.reference)
+    surface = f"{row.description} {row.reference}"
+    # The identity this row NAMES, where the evidence declares one: the
+    # reference an advice calls a payment reference, the cheque the wording
+    # introduces, or the one trace id the column prints. That, and not the
+    # whole column, is what the census counts and what an entry has to quote.
+    # A row whose reference names no identity keeps the column as its
+    # reference and takes a document or unknown role.
+    identity = _identity_reference(row.reference, surface, evidenced)
+    ref = _norm_ref(identity or row.reference)
+    reference = identity or row.reference
     # The four roles are total over rows: a row carrying no reference-shaped
     # token at all is MEMO, which decides nothing, and needs no fifth case.
-    # Classified from the column AS PRINTED: a payment reference is several
-    # words, and the normalised `ref` no longer shows that.
-    ref_role = reference_role(row.reference, f"{row.description} {row.reference}")
+    # Classified from the column AS PRINTED: an identity may be several words,
+    # and the normalised `ref` no longer shows that.
+    ref_role = reference_role(row.reference, surface, evidenced=evidenced)
     # What the statement SHOWS on this row, for the in-transit rule: every
-    # cheque number the row names, and the row's payment reference when the
-    # documents print it exactly once — a reused addendum could be a third
-    # payment's, so it presents nothing and the reading stays open.
-    presents = tuple(sorted(_instrument_tokens(f"{row.description} {row.reference}")))
-    if _payment_reference_words(row.reference) and documents.get(ref, 0) == 1:
-        presents += (row.reference,)
+    # cheque number the row names, and the row's declared identity when the
+    # documents print it exactly once — a reused identifier could be a third
+    # payment's, so it presents nothing and the reading stays open. A
+    # reference that names no payment presents NOTHING: seeing an invoice list
+    # once on the statement and once in the books does not exclude an
+    # unrecorded receipt standing beside a deposit in transit.
+    presents = tuple(sorted(_instrument_tokens(surface)))
+    if identity and _norm_ref(identity) not in presents and documents.get(ref, 0) == 1:
+        presents += (identity,)
     # Only an INSTRUMENT may dominate: a cheque number or a bank trace id names
     # one cash movement, so a globally unique one decides a pairing outright.
     # An invoice or order id names the DOCUMENT a payment applies to and several
@@ -1035,7 +1185,7 @@ def _row_facts(row, *, parties, chart, fee_account, documents, ledger, precedent
     elif account is not None and account not in chart and chart:
         notes.append(f"{row} attributes to {account}, which {ACCOUNTS_FILE} does not carry")
     return _RowFacts(_rail_of(row.description, bank_initiated=fee), ref, decisive, tuple(named), fee, counterparty,
-                     account, tuple(notes), authority, ref_role, row.reference, presents)
+                     account, tuple(notes), authority, ref_role, reference, presents)
 
 
 def _direction_ok(row, movement) -> bool:
@@ -1458,12 +1608,11 @@ def _outstanding_eligible(movement, period_end, fee_account, presented) -> str |
     if fee_account is not None and fee_account in movement.other_accounts:
         return (f"{LEDGER_FILE} records {movement} against {fee_account} and no statement row answers it; a "
                 f"charge the bank levies itself is dated by the bank, so this is not a timing difference")
-    named = _instrument_tokens(movement.text)
     for token, row_date in presented:
-        # a cheque number the entry names, or a payment reference the entry
-        # quotes word for word (`_mentions`): either way the bank has shown
-        # the instrument
-        if token in named or (_payment_reference_words(token) and _mentions(movement.text, token)):
+        # a cheque number the entry names, or a trace id or multi-word
+        # identifier the entry quotes (`_quotes_identity`): either way the
+        # bank has shown the instrument
+        if _quotes_identity(movement.text, token):
             # whichever way the dates fall: on or before the row, the cheque
             # has been presented and is not in flight; after the row, the
             # books date a cheque later than the bank cleared it, which is a
@@ -1573,11 +1722,15 @@ def _evidence(public: dict, bank_account: str, period_start: str, period_end: st
     rows, statement_opening, statement_outside = statement_rows(
         public[STATEMENT_FILE], period_start=period_start, period_end=period_end)
     archive_rows = _archive_reference_rows(public.get(ARCHIVE_FILE, ""))
-    documents, ledger_refs = _reference_census(rows, archive_rows, movements)
+    # What the mounted advices DECLARE to be payment identifiers, read off the
+    # same `public` mapping as everything else. Empty for a pack that mounts
+    # no advices, which is every legacy world.
+    evidenced = _evidenced_payment_identifiers(public)
+    documents, ledger_refs = _reference_census(rows, archive_rows, movements, evidenced=evidenced)
     precedents = _precedents(movements, parties)
     facts_by_row = {row.index: _row_facts(row, parties=parties, chart=chart, fee_account=fee_account,
                                           documents=documents, ledger=ledger_refs, precedents=precedents,
-                                          payables_account=payables_account)
+                                          payables_account=payables_account, evidenced=evidenced)
                     for row in rows}
     return _Evidence(chart, parties, fee_account, payables_account, movements, ledger_opening, ledger_outside,
                      rows, statement_opening, statement_outside, facts_by_row)
