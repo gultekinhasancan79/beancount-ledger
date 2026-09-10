@@ -955,6 +955,30 @@ def withdrawn_shape_role(reference: str, text: str) -> str:
     return ID.REF_UNKNOWN
 
 
+def declared_admits_what_the_shape_rule_refused() -> list:
+    """The counterexample the subset bullet is premised AGAINST, measured.
+
+    The containment above holds on an advice-free pack and NOT where an advice
+    is mounted, and the difference is the whole point of the evidenced rule.
+    A justification that names "declared" as one of the cases the shape rule
+    also admitted would be restating the claim `21dc563` retracted as defect
+    1, so the four references that refute it are asserted here: each is
+    `unknown` to the withdrawn rule and `instrument` to this one, on the
+    plainest surface, once its own advice declares it.
+    """
+    problems = []
+    surface = "ACH IN GANNET RIGGING INC {ref}"
+    for reference in ("CASH", "GRPAYRUN0428", "0428442", "BX-99"):
+        text = surface.format(ref=reference).strip()
+        old = withdrawn_shape_role(reference, text)
+        new = ID.reference_role(reference, text, evidenced=frozenset({ID._norm_ref(reference)}))
+        if (old, new) != (ID.REF_UNKNOWN, ID.REF_INSTRUMENT):
+            problems.append(f"declared {reference!r}: shape rule {old}, evidenced rule {new} — expected "
+                            f"{ID.REF_UNKNOWN} then {ID.REF_INSTRUMENT}, so the bullet's premise that the "
+                            f"containment is an ADVICE-FREE claim would no longer be earned")
+    return problems
+
+
 def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
     """The compatibility claim IDENTIFY_VERSION 7 rests on, both halves of it
     measured — and one half of it corrected here.
@@ -964,12 +988,20 @@ def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
     PROPER SUBSET of the withdrawn shape rule's. Two facts, and the module's
     changelog used to state the second one wrongly:
 
-      * it admits NOTHING the shape rule refused. This is the half that
-        carries the conclusion: no manifested verdict can move, because
-        anything the current rule calls an instrument the old one called one
-        too. It is asserted over the corpus and MEANT for every string — the
-        rule is "declared, or the bank's own trace, or the row's own cheque
-        wording", and each of those is a case the shape rule also admitted;
+      * it admits NOTHING the shape rule refused — ON AN ADVICE-FREE PACK,
+        which is the premise of the whole paragraph and the only pack the
+        sweep below runs (`ID.reference_role` is called with no `evidenced`).
+        This is the half that carries the conclusion: no manifested verdict
+        can move, because no manifested pack mounts an advice, and with no
+        advice the rule is "the bank's own trace, or the row's own cheque
+        wording", both of which the shape rule also admitted. The
+        justification here used to name "declared" first and call the bullet
+        MEANT for every string. That measures false — it restates the very
+        claim `21dc563` retracted as defect 1 — and the retraction is now
+        measured below rather than promised: with the reference DECLARED,
+        `CASH`, `GRPAYRUN0428`, `0428442` and `BX-99` are each `unknown` to
+        the shape rule and `instrument` to this one. Where an advice is
+        mounted the containment does not hold, in that direction, by design;
       * of the MULTI-WORD references the shape rule admitted, the ones it
         keeps are the ones the BANK or the ROW'S OWN WORDING vouches for. Over
         this corpus that is three kinds, and the sentence has now been wrong
@@ -998,6 +1030,7 @@ def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
     if admitted_new:
         problems.append(f"the evidenced rule admits {len(admitted_new)} thing(s) the shape rule refused, "
                         f"so a promoted verdict could move: {admitted_new[:3]}")
+    problems += declared_admits_what_the_shape_rule_refused()
     for reference, text in kept:
         norm = ID._norm_ref(reference)
         traces = [t for t in ID._ref_tokens(reference) if ID._TRACE_SYNTAX.match(t)]
@@ -1036,7 +1069,9 @@ def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
                  "trace id, a column that is a trace id printed with a space, a column the cheque wording "
                  "introduces — while the invoice list, the dated memo and the payer's addendum are refused, "
                  "so the containment is proper; the KINDS are a fact about `IDENTITY_CORPUS` and are "
-                 "claimed no wider",
+                 "claimed no wider, and the ADVICE-FREE premise is load-bearing — with the reference "
+                 "declared, `CASH`, `GRPAYRUN0428`, `0428442` and `BX-99` are each admitted here and "
+                 "refused by the shape rule",
                  not problems, "\n".join(problems))
 
 
@@ -1223,6 +1258,111 @@ def test_a_declared_digit_free_identity_is_quoted_counted_and_loses_to_a_second_
                  "surface and the entry that names it both quote it, the census counts it on both sides, it "
                  "decides between two part payments instead of reading the bank row as unrecorded, and a "
                  "second quotation on either side takes the decision away",
+                 not problems, "\n".join(problems))
+
+
+def pre_repair_ref_tokens(text: str, evidenced: frozenset = frozenset()) -> set:
+    """`_ref_tokens` as it stood before the digit-free repair: a token counts
+    only when it carries a digit, and the declared set is ignored.
+
+    The signature keeps `evidenced` so it can be BOUND OVER the real function
+    and make the whole declared clause inert — `_mentions`, `_reference_census`
+    and `_build_edges` all reach the declared set only through this call, so
+    binding it here restores the pre-repair module's behaviour exactly. That
+    equivalence was checked against `a4264f5`'s own `identify.py` loaded side
+    by side: same `unique`, `readings`, `reason`, repairs and outstanding list
+    on both packs the test below runs.
+    """
+    out = set()
+    for token in ID._TOKEN.findall(text or ""):
+        norm = ID._norm_ref(token)
+        if norm and any(ch.isdigit() for ch in norm):
+            out.add(norm)
+    return out
+
+
+def test_the_digit_free_repair_moved_quotation_and_not_what_an_identity_is():
+    """`REFERENCE_IDENTITY_VERSION` stays 2, and the ONE ground the changelog
+    now gives for that, measured.
+
+    The ground is that what `_identity_reference` ADMITS did not move: the
+    repair is in `_ref_tokens`, and `_identity_reference` calls it with no
+    declared set, so a declared token was an identity before the repair and is
+    one after it. Swept here over `IDENTITY_CORPUS` x `IDENTITY_SURFACES` x
+    declared/undeclared with the pre-repair function bound over the real one.
+    If a future edit routes the declared set into `_identity_reference`, this
+    fails and the version has to move with it.
+
+    The SECOND ground a draft of that changelog gave is retracted, and its
+    retraction is measured here too, because a retraction nothing runs is
+    prose. The draft said the digit-free case's "only reading was the wrong
+    one", i.e. that nothing was lost by leaving the version alone. False. The
+    old code reads that case as a confident WRONG one only where the competing
+    entries name a document for the conflict rule to prune on:
+
+      * both part payments narrating `Part payment received on SI-1044`:
+        `unique=True`, one reading, the bank row read as a MISSING ENTRY and
+        both part payments left outstanding — the defect;
+      * the same pack with the invoice dropped from both narrations:
+        `unique=False`, two readings, no missing entry on the bank row's date
+        — an honest ambiguity, which is what a checker is allowed to do.
+
+    Both are pinned, so the direction of the old failure is a fact about the
+    entries rather than about the case. The shipped code reads BOTH packs
+    uniquely and correctly, which is the third thing measured below.
+    """
+    problems = []
+    advice = advice_rows(("RA-1", "CASH"))
+    real = ID._ref_tokens
+    ID._ref_tokens = pre_repair_ref_tokens
+    try:
+        for reference in IDENTITY_CORPUS:
+            for shape in IDENTITY_SURFACES:
+                text = shape.format(ref=reference).strip()
+                for declared in (frozenset(), frozenset({ID._norm_ref(reference)})):
+                    before = ID._identity_reference(reference, text, declared)
+                    ID._ref_tokens = real
+                    after = ID._identity_reference(reference, text, declared)
+                    ID._ref_tokens = pre_repair_ref_tokens
+                    if before != after:
+                        problems.append(f"the repair moved what an identity IS: "
+                                        f"_identity_reference({reference!r}, {text!r}, "
+                                        f"{sorted(declared)}) was {before!r}, is now {after!r}")
+        naming_a_document = two_partial_payments("CASH", advice)
+        naming_none = {**naming_a_document,
+                       ID.LEDGER_FILE: naming_a_document[ID.LEDGER_FILE].replace(
+                           "Part payment received on SI-1044", "Part payment received")}
+        was = verdict_of(naming_a_document)
+        if (was.unique, was.readings) != (True, 1) or not any(
+                k[0] == "missing_entry" and k[1] == "2025-11-23" for k in map(key, was.repairs)):
+            problems.append(f"pre-repair, entries naming SI-1044: unique {was.unique}, {was.readings} "
+                            f"readings, repairs {sorted(map(key, was.repairs))} — the defect the "
+                            f"changelog describes is not what the old code does")
+        if len([item for item in was.outstanding if "Harbor Freight" in item]) != 2:
+            problems.append(f"pre-repair: both part payments were said to be left outstanding, "
+                            f"but {was.outstanding}")
+        was = verdict_of(naming_none)
+        if (was.unique, was.readings) != (False, 2):
+            problems.append(f"pre-repair, entries naming no invoice: unique {was.unique}, "
+                            f"{was.readings} readings — the retracted clause would then be true and "
+                            f"the changelog's retraction of it wrong")
+        if any(k[0] == "missing_entry" and k[1] == "2025-11-23" for k in map(key, was.repairs)):
+            problems.append(f"pre-repair, entries naming no invoice: the bank row is still read as a "
+                            f"missing entry: {sorted(map(key, was.repairs))}")
+    finally:
+        ID._ref_tokens = real
+    for label, pack in (("naming SI-1044", naming_a_document), ("naming no invoice", naming_none)):
+        now = verdict_of(pack)
+        if (now.unique, now.readings) != (True, 1):
+            problems.append(f"repaired, entries {label}: unique {now.unique}, {now.readings} readings")
+        if any(k[0] == "missing_entry" and k[1] == "2025-11-23" for k in map(key, now.repairs)):
+            problems.append(f"repaired, entries {label}: the bank row is read as a missing entry")
+    return check("the digit-free repair moved QUOTATION and not admission: `_identity_reference` returns the "
+                 "same identity over the corpus with the pre-repair `_ref_tokens` bound over the real one, "
+                 "which is the whole ground for REFERENCE_IDENTITY_VERSION staying 2 — while the retracted "
+                 "second ground is measured false, the pre-repair code reading the digit-free pack as a "
+                 "confident wrong answer where the entries name an invoice and as an honest two-reading "
+                 "ambiguity where they name none",
                  not problems, "\n".join(problems))
 
 
@@ -2162,6 +2302,7 @@ TESTS = [
     test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule,
     test_every_identity_a_row_presents_is_one_an_entry_can_quote,
     test_a_declared_digit_free_identity_is_quoted_counted_and_loses_to_a_second_quotation,
+    test_the_digit_free_repair_moved_quotation_and_not_what_an_identity_is,
     test_appearance_never_rescues_an_undeclared_reference_and_does_condemn_a_declared_invoice_one,
     test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount,
     test_a_cheque_number_does_decide_between_two_receipts_of_one_amount,

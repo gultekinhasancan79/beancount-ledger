@@ -215,15 +215,31 @@ IDENTIFY_VERSION = 7
 #
 # STILL 2 AFTER THE DIGIT-FREE REPAIR, and the reason matters. What
 # `_identity_reference` ADMITS did not move: a declared token was an identity
-# before that repair and is one after it. What moved is that `_mentions` and
-# `_reference_census` can now SEE a declared token that carries no digit, so
-# the identity the rule always admitted can be quoted and counted — the rule
-# as stated in line 2 above being implemented where it previously was not.
-# A version distinguishes admission semantics, and bumping it for a defect in
-# their implementation would say the old number named a rule somebody could
-# still choose, which it never did: no world can reach the digit-free case
-# except by mounting an advice that declares one, and the only reading that
-# case had was the wrong one.
+# before that repair and is one after it. That is measured rather than
+# asserted — `_identity_reference` reads `_ref_tokens` with NO declared set,
+# so the repair cannot reach it, and `test_identify.py` sweeps the corpus
+# against the pre-repair function restored to check that it did not. What
+# moved is that `_mentions` and `_reference_census` can now SEE a declared
+# token that carries no digit, so the identity the rule always admitted can be
+# quoted and counted — the rule as stated in line 2 above being implemented
+# where it previously was not. A version distinguishes admission semantics,
+# and bumping it for a defect in their implementation would say the old number
+# named a rule somebody could still choose, which it never did: the digit-free
+# case is reachable only by mounting an advice that declares one, and no
+# manifested world mounts an advice at all.
+#
+# WHAT IS NOT CLAIMED, having measured false once. An earlier draft added
+# "and the only reading that case had was the wrong one" as a second ground
+# for keeping the number at 2. It is false. The old reading is a confident
+# WRONG one only where the competing entries name a document for the conflict
+# rule to prune on: on the pack the hole was found on, whose two part payments
+# both narrate `SI-1044`, the pre-repair code returns `unique=True` with the
+# bank row read as a missing entry, and on the same pack with the invoice
+# dropped from both narrations it returns `unique=False` with two readings —
+# an honest ambiguity. The direction of the old failure is a fact about the
+# entries, not about the case, and `test_identify.py` pins both directions by
+# restoring the pre-repair `_ref_tokens`. The load-bearing ground is the one
+# above on its own: admission did not move.
 #
 # This constant exists because the reviewer required the family's admission
 # semantics to be versioned while the OLD SIGNED POPULATION stays verifiable,
@@ -854,12 +870,35 @@ def _quotes_identity(text: str, token: str, evidenced: frozenset = frozenset()) 
     `IDENTITY_SURFACES` × declared/undeclared in `test_identify.py`, which is
     every shape these worlds print plus the ones three reviewers named, and
     NOT over every string a pack could print. What is claimed without a corpus
-    is narrower and mechanical: `_mentions` and `_ref_tokens` receive the same
-    `evidenced` set this function tests against, so no identity can be
-    admitted here on a declaration and then refused downstream for its shape.
-    No shipped world reached either hole — the five family packs declare only
-    letter-carrying identities and the 95 legacy packs mount no advice at all
-    — but both are repaired rather than scoped around.
+    is narrower and mechanical, and it is about THIS test only: `_mentions`
+    and `_ref_tokens` receive the same `evidenced` set this function tests
+    against, so an identity admitted here on a declaration is not then refused
+    by the quotation path for its shape. It does NOT extend to every shape
+    test downstream. `_document_tokens` calls `_ref_tokens` WITHOUT the
+    declared set, so an entry naming a DIFFERENT digit-free declared
+    instrument yields no document token and founds no `instrument_conflict`.
+    Measured on a pack declaring `CASH` and `COIN` with the row presenting
+    `CASH` and one entry narrating `COIN`: still `unique=True`, one reading,
+    the right entry answered. The failure direction there is toward extra
+    edges — ambiguity, not a wrong reading — so it is recorded rather than
+    repaired blind.
+
+    NO SHIPPED WORLD REACHES EITHER HOLE, and the ground for that is
+    BEHAVIOURAL, not a fact about what the packs declare. Two drafts of this
+    sentence said the five family packs declare only letter-carrying
+    identities. They do not: every one of the five declares `2291` — advice
+    row RA-0416-SB, Shearwater Bay Charters LLC, `payment_method` CHECK — which
+    is exactly the ALL-DIGIT shape of the first hole, and Case 1's statement
+    prints a row whose reference and identity are both `2291`. What is
+    measured instead, by `test_family_validators.py` over the derived bytes:
+    across every ledger movement of all five packs and every token they
+    declare, this function answers identically with the declared set and with
+    an empty one. No entry in any of the packs names `2291` in any form — the
+    cheque receipt is precisely the movement those packs leave unrecorded —
+    and the row that presents it is introduced by its own `CHECK 2291`
+    wording, so `_identity_reference` returns it declared or not. The 95
+    legacy packs mount no advice at all, so they declare nothing. Both holes
+    are repaired rather than scoped around all the same.
     """
     norm = _norm_ref(token)
     if norm in _instrument_tokens(text):

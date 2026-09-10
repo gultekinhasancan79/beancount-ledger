@@ -41,6 +41,15 @@ What is witnessed here:
     (`_mentions`) needs the addendum's words in order, and a declared
     single-token identifier is recognised as quoted too, an ALL-DIGIT one
     included (the half the first closure of that asymmetry missed);
+  * the blast radius of that quotation repair, as a MEASUREMENT and not as a
+    fact about the packs. Two drafts of `_quotes_identity` assured the reader
+    that the five family packs declare only letter-carrying identities; they
+    do not — all five declare `2291` (advice row RA-0416-SB, `payment_method`
+    CHECK), which is the all-digit shape the repair was about. What holds is
+    behavioural and is swept here: over every ledger movement of the five
+    packs and every token they declare, `_quotes_identity` answers the same
+    with the declared set and without it, because no entry names `2291` and
+    the row presenting it is carried by its own `CHECK 2291` wording;
   * Cases 1 and 2 first, then all five: `check_identifiable` over the
     ACTUAL projected bytes is unique with one reading, and the reading is
     exactly the planted bank-evidenced repairs under the shared repair key;
@@ -478,6 +487,75 @@ def test_the_mechanism_and_its_limits():
                  "the in-transit refusal names the presented reference", not problems, "\n".join(problems))
 
 
+def test_the_five_packs_declare_an_all_digit_identity_and_quotation_is_unmoved_by_it():
+    """The blast radius of the digit-free quotation repair, stated as what is
+    MEASURED rather than as a fact about the packs — because the fact about
+    the packs was written twice and is false both times.
+
+    `_quotes_identity`'s docstring twice claimed the five family packs
+    "declare only letter-carrying identities", which was the whole assurance
+    that no shipped world reached the ALL-DIGIT hole the letter-carrying
+    clause left open. Measured over the derived bytes, every one of the five
+    declares `2291` — advice row RA-0416-SB, Shearwater Bay Charters LLC,
+    `payment_method` CHECK — which is that hole's shape exactly, and Case 1's
+    statement prints a row whose reference AND identity are both `2291`. The
+    packs refute the sentence.
+
+    What is true is behavioural, and it is what the docstring says now. Over
+    every ledger movement of all five packs and every token they declare,
+    `_quotes_identity` answers identically with the declared set and with an
+    empty one. Two independent reasons, both asserted here so that a world
+    edit which removes either one fails this test rather than quietly widening
+    the repair's reach: no entry in any pack names `2291` in any form (the
+    cheque receipt is precisely the movement these packs leave unrecorded),
+    and the row that presents it is introduced by its own `CHECK 2291`
+    wording, so `_identity_reference` returns it declared or not.
+    """
+    problems, compared = [], 0
+    all_digit = set()
+    for n in range(1, 6):
+        _, _, task, _, _, public = case(n)
+        declared = ID._evidenced_payment_identifiers(public)
+        all_digit |= {t for t in declared if not any(ch.isalpha() for ch in t)}
+        if "2291" not in declared:
+            problems.append(f"case {n} no longer declares 2291; the sentence this test corrects named it "
+                            f"as the counterexample, and it would now be describing nothing: {sorted(declared)}")
+        chart = ID._chart(public)
+        equity = frozenset(name for name, kind in chart.items() if kind == "equity")
+        movements = ID.ledger_movements(public[ID.LEDGER_FILE], BANK, equity_accounts=equity,
+                                        period_start=task.period.start, period_end=task.period.end)[0]
+        for movement in movements:
+            for token in sorted(declared):
+                compared += 1
+                if ID._quotes_identity(movement.text, token, declared) \
+                        != ID._quotes_identity(movement.text, token, frozenset()):
+                    problems.append(f"case {n}: the declared set changes whether {movement.text!r} quotes "
+                                    f"{token!r}, so the repair DOES reach a shipped pack")
+            if "2291" in ID._ref_tokens(movement.text, declared):
+                problems.append(f"case {n}: an entry names 2291 ({movement.text!r}); the first reason the "
+                                f"declared set is inert here no longer holds")
+        rows = ID.statement_rows(public[ID.STATEMENT_FILE], period_start=task.period.start,
+                                 period_end=task.period.end)[0]
+        for row in rows:
+            if ID._norm_ref(row.reference) != "2291":
+                continue
+            surface = f"{row.description} {row.reference}"
+            if ID._identity_reference(row.reference, surface, frozenset()) != row.reference.strip():
+                problems.append(f"case {n}: the 2291 row's identity now rests on the DECLARATION rather "
+                                f"than on its own {row.description!r} cheque wording")
+    if not all_digit:
+        problems.append("no family pack declares an all-digit identity at all, so the docstring's "
+                        "correction would be correcting a claim that is no longer false")
+    print(f"      all-digit identities the five family packs declare: {sorted(all_digit)}; "
+          f"{compared} movement x declared-token comparisons, declared vs empty")
+    return check("the five family packs DO declare an all-digit payment identity (`2291`, advice row "
+                 "RA-0416-SB), which is the shape of the hole the letter-carrying clause left open — so the "
+                 "assurance is behavioural and is measured here: over every ledger movement of all five "
+                 "packs and every token they declare, `_quotes_identity` answers the same with and without "
+                 "the declared set, because no entry names 2291 and the row that presents it is carried by "
+                 "its own cheque wording", not problems, "\n".join(problems))
+
+
 def test_no_shipped_task_declares_or_prints_a_payment_identity():
     """The manifested population is outside BOTH rules — the withdrawn shape
     one and the evidenced one that replaced it.
@@ -741,6 +819,7 @@ TESTS = [
     test_the_payment_identity_is_evidenced_and_nothing_else_moved,
     test_cases_1_and_2_first_then_all_five_read_uniquely_as_planted,
     test_the_mechanism_and_its_limits,
+    test_the_five_packs_declare_an_all_digit_identity_and_quotation_is_unmoved_by_it,
     test_no_shipped_task_declares_or_prints_a_payment_identity,
     test_no_generated_world_declares_or_prints_a_payment_identity,
     test_the_write_off_plant_is_validated_through_the_public_fold,
