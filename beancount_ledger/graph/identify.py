@@ -71,8 +71,16 @@ transfer), or a payment identifier a mounted document DECLARES to be one —
 a payment of theirs carries that reference. Nothing else is an instrument, and
 in particular a multi-word reference is not: "two or more words, one with a
 digit" describes an invoice list (`SI-3104 SI-3102`) and a dated memo (`APRIL
-2026`) as readily as an ACH addendum, and no SHAPE names one cash movement.
-The declaration decides, and appearance decides nothing IN EITHER DIRECTION.
+2026`) as readily as an ACH addendum, and no shape a PAYER composes names one
+cash movement. What the BANK composes is not the same thing: the trace id is
+an appearance that DOES decide, and it decides because the bank issues it for
+one transfer and prints it itself — the bank vouching for it is the
+declaration, which is why `_TRACE_SYNTAX` survives the correction and stands
+in the list of three above. For every other
+reference the declaration decides — appearance never rescues one the evidence
+has not declared, and never condemns one it has. (An earlier draft of this
+paragraph said "appearance decides nothing IN EITHER DIRECTION", which
+contradicted the trace id three lines above it.)
 A column carrying an invoice id is barred from the first two declarations
 outright, so nothing can promote receivables to an identity by declaring
 them; a dated memo an advice DOES declare is an identity, because the advice
@@ -212,8 +220,18 @@ IDENTIFY_VERSION = 7
 #
 # The compatibility argument, stated at the width it actually holds. On any
 # pack that mounts NO advice, `evidenced` is empty and rule 2 reduces to
-# cheque-or-trace, which IS strictly narrower than rule 1: it refuses every
-# multi-word reference rule 1 admitted and admits nothing rule 1 refused.
+# cheque-or-trace, whose admitted set is a PROPER SUBSET of rule 1's: it
+# admits nothing rule 1 refused — the load-bearing half, since that is what
+# stops a verdict moving — and of the multi-word references rule 1 admitted it
+# keeps exactly one kind, a column printing a single bank trace id
+# (`TRC0428442 SI-3104 SI-3102`, Case 2's own reference), which rule 1
+# admitted too. RETRACTED IN PLACE: this clause used to read "it refuses every
+# multi-word reference rule 1 admitted", which is false, and the trace column
+# is the counterexample. The subset is proper all the same, because `APRIL
+# 2026`, `GR PAYRUN 0428` and `SI-1044 SI-1052 XZ` are all refused, so the
+# conclusion below is untouched. Both halves are now MEASURED rather than
+# asserted (`test_identify.py`, the withdrawn rule re-implemented beside the
+# current one over the shapes these worlds print).
 # Every manifested world is such a pack — no legacy task and no generated
 # world mounts a `remittance_advice.csv`, prints a multi-word reference or
 # prints a trace id — so no promoted verdict can move in either direction.
@@ -735,29 +753,41 @@ def _identity_reference(reference: str, text: str, evidenced: frozenset) -> str:
     return traces[0] if len(traces) == 1 else ""
 
 
-def _quotes_identity(text: str, token: str) -> bool:
+def _quotes_identity(text: str, token: str, evidenced: frozenset = frozenset()) -> bool:
     """Does this text NAME the payment identifier a statement row presented?
 
     A cheque number counts only where the wording introduces it — a bare
-    number in a memo is a quantity or a year. Anything CARRYING A LETTER is
-    distinctive enough that quoting it is naming it, so quoting suffices: a
-    trace id, a multi-word identifier (whose words `_mentions` requires in
-    order), and — this is the fix — a declared single-token identifier like
-    `GRPAYRUN0428`, which is neither of the first two.
+    number in a memo is a quantity or a year, and an entry that means the
+    cheque says so. Everything else an identity can be is either distinctive
+    enough that quoting it is naming it, or DECLARED: a trace id, a multi-word
+    identifier (whose words `_mentions` requires in order), a token carrying a
+    letter (`GRPAYRUN0428`), and a reference a mounted advice declares —
+    which is why `evidenced` is handed in here too, from the same public
+    mapping and by the same route as everywhere else in this module.
 
-    That last case used to fall through to `False`, which made this function
-    asymmetric with `_identity_reference`: a row could present an identity
-    that no entry could ever be found to quote, so the identity survived the
-    outstanding rule unanswerable. It failed toward ambiguity rather than
-    toward a wrong pairing, so nothing was mis-decided, and it reached no
-    shipped world — the only identities the 95 legacy packs present are
-    cheque numbers, handled by the first test. It is repaired here rather
-    than left as a known asymmetry.
+    SYMMETRY, at the width it now holds. Every identity `_identity_reference`
+    can return has to be one SOME entry text can be found to quote, or a row
+    presents an identity no narration can answer and the outstanding rule is
+    left unanswerable. Two rounds of repair, and the first one over-claimed:
+    the letter-carrying clause closed the case of a declared alphanumeric
+    token, and the commit that added it said flatly that no row could any
+    longer present an identity no entry could be found to quote. That was
+    false. An advice may declare an ALL-DIGIT single token (`0428442`), which
+    `_identity_reference` returns as an identity and which none of the earlier
+    tests here recognised. The `evidenced` clause is that case, and with it
+    the guarantee holds: a cheque number is quoted by an entry that introduces
+    it as one, and every other identity by an entry that mentions it. The
+    residual asymmetry was never a wrong pairing — it failed toward ambiguity
+    — and it reaches no shipped world, since every identity the five family
+    packs declare carries a letter and the 95 legacy packs present only cheque
+    numbers; it is repaired rather than left standing, and `test_identify`
+    sweeps the pairing rather than trusting this paragraph.
     """
     norm = _norm_ref(token)
     if norm in _instrument_tokens(text):
         return True
-    if _reference_words(token) or _TRACE_SYNTAX.match(norm) or any(ch.isalpha() for ch in norm):
+    if (norm in evidenced or _reference_words(token) or _TRACE_SYNTAX.match(norm)
+            or any(ch.isalpha() for ch in norm)):
         return _mentions(text, token)
     return False
 
@@ -1655,7 +1685,7 @@ def _duplicate_repair(movement, copies, surplus, parties, bank_account) -> Repai
                           f"the movement {copies - surplus} time(s), so {surplus} copy must go"))
 
 
-def _outstanding_eligible(movement, period_end, fee_account, presented) -> str | None:
+def _outstanding_eligible(movement, period_end, fee_account, presented, evidenced=frozenset()) -> str | None:
     """Can this stranded entry read as a timing difference? The reason it
     cannot, or None.
 
@@ -1689,7 +1719,7 @@ def _outstanding_eligible(movement, period_end, fee_account, presented) -> str |
         # a cheque number the entry names, or a trace id or multi-word
         # identifier the entry quotes (`_quotes_identity`): either way the
         # bank has shown the instrument
-        if _quotes_identity(movement.text, token):
+        if _quotes_identity(movement.text, token, evidenced):
             # whichever way the dates fall: on or before the row, the cheque
             # has been presented and is not in flight; after the row, the
             # books date a cheque later than the bank cleared it, which is a
@@ -1705,7 +1735,7 @@ def _outstanding_eligible(movement, period_end, fee_account, presented) -> str |
 
 
 def _describe(rows, movements, facts_by_row, comp_rows, comp_movs, period_end, *, parties, fee_account,
-              bank_account, presented_everywhere=()):
+              bank_account, presented_everywhere=(), evidenced=frozenset()):
     """Build the `describe` callback one component needs."""
 
     def describe(assignment: dict) -> tuple:
@@ -1752,7 +1782,7 @@ def _describe(rows, movements, facts_by_row, comp_rows, comp_movs, period_end, *
                 continue
             for mov_index in group:
                 stranded = movements[mov_index]
-                refused = _outstanding_eligible(stranded, period_end, fee_account, presented)
+                refused = _outstanding_eligible(stranded, period_end, fee_account, presented, evidenced)
                 if refused == "carry-forward":
                     continue
                 if refused is None:
@@ -1785,6 +1815,10 @@ class _Evidence:
     statement_opening: tuple
     statement_outside: tuple
     facts_by_row: dict
+    # what the mounted advices DECLARE to be payment identifiers: read once
+    # off the public bytes and carried, because the outstanding rule needs it
+    # to recognise a declared identity as quoted (`_quotes_identity`)
+    evidenced: frozenset = frozenset()
 
 
 def _evidence(public: dict, bank_account: str, period_start: str, period_end: str) -> _Evidence:
@@ -1810,7 +1844,7 @@ def _evidence(public: dict, bank_account: str, period_start: str, period_end: st
                                           payables_account=payables_account, evidenced=evidenced)
                     for row in rows}
     return _Evidence(chart, parties, fee_account, payables_account, movements, ledger_opening, ledger_outside,
-                     rows, statement_opening, statement_outside, facts_by_row)
+                     rows, statement_opening, statement_outside, facts_by_row, evidenced)
 
 
 def structure(public: dict, *, bank_account: str, period_start: str, period_end: str) -> dict:
@@ -1854,7 +1888,7 @@ def structure(public: dict, *, bank_account: str, period_start: str, period_end:
     for comp_rows, comp_movs in _components([r.index for r in ev.rows], [m.index for m in ev.movements], edges):
         describe = _describe(ev.rows, ev.movements, ev.facts_by_row, comp_rows, comp_movs, period_end,
                              parties=ev.parties, fee_account=ev.fee_account, bank_account=bank_account,
-                             presented_everywhere=presented_everywhere)
+                             presented_everywhere=presented_everywhere, evidenced=ev.evidenced)
         comp_edges = sum(len(edges_by_row.get(r, ())) for r in comp_rows)
         try:
             readings, incomplete, matchings = _optimal_readings(comp_rows, edges_by_row, describe)
@@ -1933,7 +1967,7 @@ def check_identifiable(public: dict, *, bank_account: str, period_start: str,
     for comp_rows, comp_movs in _components([r.index for r in rows], [m.index for m in movements], edges):
         describe = _describe(rows, movements, facts_by_row, comp_rows, comp_movs, period_end,
                              parties=parties, fee_account=fee_account, bank_account=bank_account,
-                             presented_everywhere=presented_everywhere)
+                             presented_everywhere=presented_everywhere, evidenced=ev.evidenced)
         try:
             readings, incomplete, _matchings = _optimal_readings(comp_rows, edges_by_row, describe,
                                                                  rank=tie_break)

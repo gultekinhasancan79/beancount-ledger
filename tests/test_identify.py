@@ -905,6 +905,154 @@ def test_the_advice_file_is_read_for_the_reference_column_and_nothing_else():
                  not problems, "\n".join(problems))
 
 
+# The corpus the two narrowness claims are measured over: every reference
+# shape these worlds print or were argued about, on the three surfaces a
+# reference is read off — the column alone, an ACH row, and a cheque row.
+IDENTITY_CORPUS = ("SI-3104 SI-3102", "SI-1044 SI-1052 XZ", "APRIL 2026", "GR PAYRUN 0428",
+                   "GR PAYRUN 0410", "TRC0428442 SI-3104 SI-3102", "TRACE0284471 APRIL 2026",
+                   "TRC0428442", "SI-3104", "PI-2240", "2291", "1037", "0428442", "PAY RUN", "BX-99", "")
+IDENTITY_SURFACES = ("{ref}", "ACH IN GANNET RIGGING INC {ref}", "CHECK {ref} CEDAR PROPERTY GROUP")
+
+
+def withdrawn_shape_role(reference: str, text: str) -> str:
+    """RULE 1, the withdrawn shape rule, re-implemented from the revision that
+    retired it (`identify.py` at 8fa99b3^).
+
+    In full, in its own order: a cheque number the wording introduces, else an
+    invoice-shaped WHOLE column is a document, else a bank trace id, else "two
+    or more whitespace-separated words, at least one carrying a digit" is an
+    INSTRUMENT. It lives in the test because the module no longer carries it
+    and the compatibility claim is a claim about BOTH rules — asserting it
+    against only the surviving one would be assuming what it states.
+    """
+    norm = ID._norm_ref(reference)
+    if not norm:
+        return ID.REF_MEMO
+    if norm in ID._instrument_tokens(text):
+        return ID.REF_INSTRUMENT
+    if ID._DOCUMENT_SYNTAX.match(norm):
+        return ID.REF_DOCUMENT
+    if ID._TRACE_SYNTAX.match(norm):
+        return ID.REF_INSTRUMENT
+    words = tuple(w for w in (ID._norm_ref(t) for t in ID._TOKEN.findall(reference or "")) if w)
+    if len(words) >= 2 and any(any(ch.isdigit() for ch in w) for w in words):
+        return ID.REF_INSTRUMENT
+    return ID.REF_UNKNOWN
+
+
+def test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule():
+    """The compatibility claim IDENTIFY_VERSION 7 rests on, both halves of it
+    measured — and one half of it corrected here.
+
+    On a pack that mounts no advice the evidenced rule reduces to
+    cheque-or-trace, and the claim made for it is that its admitted set is a
+    PROPER SUBSET of the withdrawn shape rule's. Two facts, and the module's
+    changelog used to state the second one wrongly:
+
+      * it admits NOTHING the shape rule refused. This is the half that
+        carries the conclusion: no manifested verdict can move, because
+        anything the current rule calls an instrument the old one called one
+        too;
+      * of the MULTI-WORD references the shape rule admitted it keeps exactly
+        one kind — a column printing a single bank trace id, whose identity is
+        that token alone. The changelog said it "refuses every multi-word
+        reference rule 1 admitted", which is false, and the counterexample is
+        Case 2's own printed reference (`TRC0428442 SI-3104 SI-3102`). The
+        subset is proper regardless, because the invoice list, the dated memo
+        and the payer's addendum are all refused; the sentence was wrong, not
+        the code, and it is corrected in place rather than deleted.
+    """
+    problems, kept, refused, admitted_new = [], [], [], []
+    for reference in IDENTITY_CORPUS:
+        for shape in IDENTITY_SURFACES:
+            text = shape.format(ref=reference).strip()
+            old, new = withdrawn_shape_role(reference, text), ID.reference_role(reference, text)
+            if new == ID.REF_INSTRUMENT and old != ID.REF_INSTRUMENT:
+                admitted_new.append((reference, text))
+            if not ID._reference_words(reference) or old != ID.REF_INSTRUMENT:
+                continue
+            (kept if new == ID.REF_INSTRUMENT else refused).append((reference, text))
+    if admitted_new:
+        problems.append(f"the evidenced rule admits {len(admitted_new)} thing(s) the shape rule refused, "
+                        f"so a promoted verdict could move: {admitted_new[:3]}")
+    for reference, text in kept:
+        traces = [t for t in ID._ref_tokens(reference) if ID._TRACE_SYNTAX.match(t)]
+        identity = ID._identity_reference(reference, text, frozenset())
+        if len(traces) != 1 or identity != traces[0]:
+            problems.append(f"{reference!r} in {text!r} survives as an instrument on something other than "
+                            f"the one bank trace id it prints: traces {traces}, identity {identity!r}")
+    if not any(reference == "TRC0428442 SI-3104 SI-3102" for reference, _ in kept):
+        problems.append("Case 2's own reference is not among the multi-word references the rule keeps; the "
+                        "named exception would then be fiction")
+    for reference in ("APRIL 2026", "GR PAYRUN 0428", "SI-1044 SI-1052 XZ"):
+        if not any(r == reference for r, _ in refused):
+            problems.append(f"{reference!r} is not refused, so the containment is not proper")
+    print(f"      multi-word references the shape rule admitted: {len(kept)} kept (each a bank trace id), "
+          f"{len(refused)} refused")
+    return check("on an advice-free pack the evidenced rule admits nothing the withdrawn shape rule refused, "
+                 "and of the multi-word references that rule admitted it keeps exactly the columns printing "
+                 "one bank trace id — the exception the changelog used to deny — and refuses the invoice "
+                 "list, the dated memo and the payer's addendum, so the containment is proper",
+                 not problems, "\n".join(problems))
+
+
+def test_every_identity_a_row_presents_is_one_an_entry_can_quote():
+    """The symmetry between `_identity_reference` and `_quotes_identity`,
+    swept rather than argued — and the second half of it closed here.
+
+    If a row can present an identity no entry text can be found to quote, the
+    outstanding rule holds a question nothing can answer: the entry that
+    really is that payment cannot be recognised as naming it. The first repair
+    closed the letter-carrying case (`GRPAYRUN0428`) and the commit that made
+    it said no row could any longer present an identity no entry could quote.
+    That over-claimed. An advice may declare an ALL-DIGIT single token
+    (`0428442`): `_identity_reference` returns it, and every test of the
+    quotation rule missed it. It is closed by handing `_quotes_identity` the
+    same declared set the rest of the module is handed, and the sweep below is
+    what keeps the claim honest — it fails on the previous revision.
+
+    A cheque number is the one identity an entry must INTRODUCE rather than
+    merely mention, because a bare number in a narration is a quantity or a
+    year; the sweep therefore accepts either wording for it and nothing else.
+    """
+    problems = []
+    for reference in IDENTITY_CORPUS:
+        for shape in IDENTITY_SURFACES:
+            text = shape.format(ref=reference).strip()
+            for declared in (frozenset(), frozenset({ID._norm_ref(reference)}) - {""}):
+                identity = ID._identity_reference(reference, text, declared)
+                if not identity:
+                    continue
+                if not ID._quotes_identity(text, identity, declared):
+                    problems.append(f"the surface {text!r} presents {identity!r} and is not read as quoting it")
+                mentioned = ID._quotes_identity(f"Part payment received on SI-1044, {identity}",
+                                                identity, declared)
+                introduced = ID._quotes_identity(f"November office rent, check {identity}", identity, declared)
+                if not (mentioned or introduced):
+                    problems.append(f"no entry text can quote {identity!r}, presented by {text!r} "
+                                    f"(declared={sorted(declared)})")
+    declared = frozenset({"0428442"})
+    if ID._identity_reference("0428442", "ACH IN GANNET RIGGING INC 0428442", declared) != "0428442":
+        problems.append("an advice declaring an all-digit reference does not make it an identity")
+    if not ID._quotes_identity("Part payment received on SI-1044, 0428442", "0428442", declared):
+        problems.append("a DECLARED all-digit identity is still not recognised as quoted, which is the "
+                        "asymmetry the letter-carrying clause left open")
+    if ID._quotes_identity("Part payment received on SI-1044, 0428442", "0428442"):
+        problems.append("an UNDECLARED bare number is read as quoting an identity; a number no wording "
+                        "introduces is a quantity or a year")
+    pack = two_partial_payments("0428442", advice_rows(("RA-0428442", "0428442")))
+    facts, verdict = identity_facts(pack, "0428442"), verdict_of(pack)
+    if facts.ref_role != ID.REF_INSTRUMENT or not facts.decisive or "0428442" not in facts.presents:
+        problems.append(f"declared all-digit: role {facts.ref_role}, decisive {facts.decisive}, "
+                        f"presents {facts.presents}")
+    if not verdict.unique or verdict.readings != 1:
+        problems.append(f"declared all-digit: unique {verdict.unique}, {verdict.readings} readings")
+    return check("every identity a row can present is one some entry text can be found to quote — the "
+                 "declared ALL-DIGIT token included, which the first closure missed and this sweep catches "
+                 "— and an undeclared bare number is still a quantity",
+                 not problems, "\n".join(problems))
+
+
 def test_an_invoice_id_alone_never_founds_an_alteration_edge():
     """The invoice-id class, at the edge level rather than the verdict level.
 
@@ -1780,6 +1928,8 @@ TESTS = [
     test_an_invoice_list_is_document_evidence_and_decides_nothing,
     test_a_generic_dated_memo_is_not_a_payment_identity,
     test_the_advice_file_is_read_for_the_reference_column_and_nothing_else,
+    test_the_evidenced_rule_is_a_proper_subset_of_the_withdrawn_shape_rule,
+    test_every_identity_a_row_presents_is_one_an_entry_can_quote,
     test_an_invoice_number_does_not_decide_between_two_receipts_of_one_amount,
     test_a_cheque_number_does_decide_between_two_receipts_of_one_amount,
     test_two_partial_receipts_on_one_invoice_are_not_decided_by_the_invoice,

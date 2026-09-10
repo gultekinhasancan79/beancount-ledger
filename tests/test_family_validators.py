@@ -39,7 +39,8 @@ What is witnessed here:
     `IDENTIFY_VERSION` are unchanged while `REFERENCE_IDENTITY_VERSION` is
     2 and the family's admission declares it; the quotation rule
     (`_mentions`) needs the addendum's words in order, and a declared
-    single-token identifier is recognised as quoted too;
+    single-token identifier is recognised as quoted too, an ALL-DIGIT one
+    included (the half the first closure of that asymmetry missed);
   * Cases 1 and 2 first, then all five: `check_identifiable` over the
     ACTUAL projected bytes is unique with one reading, and the reading is
     exactly the planted bank-evidenced repairs under the shared repair key;
@@ -336,26 +337,33 @@ def test_the_payment_identity_is_evidenced_and_nothing_else_moved():
     # SYMMETRY. Every identity a row can present must be one an entry can be
     # found to quote, or the outstanding rule holds an identity no narration
     # can ever answer. The single-token declared identifier used to be that
-    # case; it is the third row here.
+    # case; it is the third row here. The ALL-DIGIT declared identifier was
+    # the half that closure missed — no letter, one token, not a trace, so it
+    # fell through to False while `_identity_reference` returned it — and it
+    # is the last two rows: declared, it is quoted; undeclared, a bare number
+    # the wording does not introduce is still a quantity.
     identity_quotes = [
-        ("Gannet Rigging Inc Customer payment, GR PAYRUN 0428", "GR PAYRUN 0428", True),
-        ("Gannet Rigging Inc Customer payment, TRC0428442 SI-3104 SI-3102", "TRC0428442", True),
-        ("Gannet Rigging Inc Customer payment, GRPAYRUN0428", "GRPAYRUN0428", True),
-        ("Gannet Rigging Inc Customer payment, GRPAYRUN0410", "GRPAYRUN0428", False),
-        ("November office rent, check 1037", "1037", True),
+        ("Gannet Rigging Inc Customer payment, GR PAYRUN 0428", "GR PAYRUN 0428", frozenset(), True),
+        ("Gannet Rigging Inc Customer payment, TRC0428442 SI-3104 SI-3102", "TRC0428442", frozenset(), True),
+        ("Gannet Rigging Inc Customer payment, GRPAYRUN0428", "GRPAYRUN0428", frozenset(), True),
+        ("Gannet Rigging Inc Customer payment, GRPAYRUN0410", "GRPAYRUN0428", frozenset(), False),
+        ("November office rent, check 1037", "1037", frozenset(), True),
         # a bare number the wording does not introduce is a quantity or a
         # year, and that has not changed
-        ("Deposit slip 1037", "1037", False),
+        ("Deposit slip 1037", "1037", frozenset(), False),
+        ("Part payment received on SI-1044, 0428442", "0428442", frozenset({"0428442"}), True),
+        ("Part payment received on SI-1044, 0428442", "0428442", frozenset(), False),
     ]
-    for haystack, token, want in identity_quotes:
-        if ID._quotes_identity(haystack, token) != want:
-            problems.append(f"_quotes_identity({haystack!r}, {token!r}) != {want}")
+    for haystack, token, declared, want in identity_quotes:
+        if ID._quotes_identity(haystack, token, declared) != want:
+            problems.append(f"_quotes_identity({haystack!r}, {token!r}, {sorted(declared)}) != {want}")
     return check("an instrument identity is what the advices DECLARE: the same addendum is an instrument with "
                  "RA-0428-GR and UNKNOWN without it, an invoice list is a document either way — appending a "
                  "junk token to one promotes nothing — Case 2's bank trace is the identity inside a reference "
                  "that also names invoices, the roles and IDENTIFY_VERSION 7 are unchanged while the rule "
                  "itself is REFERENCE_IDENTITY_VERSION 2 declared by the family's admission and not by the "
-                 "signed population's, and every identity a row can present is one an entry can quote",
+                 "signed population's, and every identity a row can present — a declared ALL-DIGIT token "
+                 "included, which the first closure missed — is one an entry can quote",
                  not problems, "\n".join(problems))
 
 
