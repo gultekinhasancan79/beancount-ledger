@@ -1,0 +1,25 @@
+eval_dataset is not set, falling back to train dataset
+budget calibration: kimi-k3 @ 25 turns / 40000 tokens; 6 worlds
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:18<00:00, 198.08s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:18<00:00, 198.08s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:18<00:00, 198.08s/it, reward=1]
+  cash_application_006 k=2 reward=1.0 turns=8.0 out_tokens=8232.0 stop=piv_submitted 198s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:20<00:00, 200.60s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:20<00:00, 200.60s/it, reward=0.64]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:20<00:00, 200.60s/it, reward=0.64]
+  cash_application_007 k=2 reward=0.64 turns=11.0 out_tokens=9407.0 stop=piv_submitted 201s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:36<00:00, 156.46s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:36<00:00, 156.46s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:36<00:00, 156.46s/it, reward=1]
+  cash_application_008 k=2 reward=1.0 turns=9.0 out_tokens=6464.0 stop=piv_submitted 157s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:43<00:00, 103.99s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:43<00:00, 103.99s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [01:43<00:00, 103.99s/it, reward=1]
+  cash_application_009 k=2 reward=1.0 turns=7.0 out_tokens=5036.0 stop=piv_submitted 104s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:33<00:00, 153.56s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:33<00:00, 153.56s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:33<00:00, 153.56s/it, reward=1]
+  cash_application_010 k=2 reward=1.0 turns=8.0 out_tokens=7784.0 stop=piv_submitted 154s
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts):   0%|          | 0/1 [03:03<?, ?it/s, reward=?]
+  cash_application_011 k=? reward=? turns=? out_tokens=? stop=PermissionDeniedError: Error code: 403 - {'error': {'message': 'Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the "use free tier only" mode in the  s
+
+6 episodes in 17 min; 5 scored, 1 failed/quarantined
+profile    k  n strict  mean reward  turns p50  tokens p50  cap hits
+standard   2  5   4/5         0.928          8        7784         0
+ALL           5   4/5         0.928
+exit=0

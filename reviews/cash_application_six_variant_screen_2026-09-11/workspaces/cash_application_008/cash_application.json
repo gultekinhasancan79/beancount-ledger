@@ -1,0 +1,136 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2026-06-10:MG PAYRUN 0610",
+   "applied": [
+    {
+     "invoice_id": "SI-5203",
+     "amount": "3780.00"
+    },
+    {
+     "invoice_id": "SI-5219",
+     "amount": "1260.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Remittance advice RA-0610-MG: SI-5203 settled in full; SI-5219 part payment pending spoilage allowance CN-0618."
+  },
+  {
+   "receipt_id": "2026-06-15:6153",
+   "applied": [
+    {
+     "invoice_id": "SI-5196",
+     "amount": "5250.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Remittance advice RA-0611-CC: check 6153 settles SI-5196 in full. Duplicate ledger posting removed; check cleared once."
+  },
+  {
+   "receipt_id": "2026-06-26:CC ACH 0626",
+   "applied": [
+    {
+     "invoice_id": "SI-5236",
+     "amount": "2100.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Remittance advice RA-0626-CC: instalment on SI-5236, balance to follow; no settled indication, no write-off."
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-0618",
+   "applied": [
+    {
+     "invoice_id": "SI-5188",
+     "amount": "1260.00"
+    },
+    {
+     "invoice_id": "SI-5219",
+     "amount": "1680.00"
+    }
+   ],
+   "unapplied_amount": "210.00",
+   "notes": "Applied to named SI-5219 up to its open balance; excess to Marchmont's oldest open invoice SI-5188; remainder held as unapplied credit of Marchmont Grocers Co-operative."
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-5188",
+   "customer": "Marchmont Grocers Co-operative",
+   "period_basis": "1260.00",
+   "applied_total": "0.00",
+   "credited": "1260.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5196",
+   "customer": "Corvid Coffee Houses LLC",
+   "period_basis": "5250.00",
+   "applied_total": "5250.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5203",
+   "customer": "Marchmont Grocers Co-operative",
+   "period_basis": "3780.00",
+   "applied_total": "3780.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5211",
+   "customer": "Ashgrove Halt Refreshments Ltd",
+   "period_basis": "1995.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1995.00"
+  },
+  {
+   "invoice_id": "SI-5219",
+   "customer": "Marchmont Grocers Co-operative",
+   "period_basis": "2940.00",
+   "applied_total": "1260.00",
+   "credited": "1680.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5227",
+   "customer": "Corvid Coffee Houses LLC",
+   "period_basis": "3150.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3150.00"
+  },
+  {
+   "invoice_id": "SI-5236",
+   "customer": "Corvid Coffee Houses LLC",
+   "period_basis": "4200.00",
+   "applied_total": "2100.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2100.00"
+  },
+  {
+   "invoice_id": "SI-5244",
+   "customer": "Marchmont Grocers Co-operative",
+   "period_basis": "2625.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2625.00"
+  }
+ ]
+}

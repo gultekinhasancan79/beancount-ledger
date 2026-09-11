@@ -1,0 +1,9 @@
+invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-4386,Pinefall Hospitality Partners,2026-03-24,2026-05-08,4240.00,4240.00
+SI-4371,Marrowbone Construction Group,2026-03-30,2026-04-29,18550.00,9300.00
+SI-4390,Pinefall Hospitality Partners,2026-04-03,2026-05-18,8480.00,8480.00
+SI-4377,Pinefall Hospitality Partners,2026-04-14,2026-05-29,6890.00,6890.00
+SI-4408,Marrowbone Construction Group,2026-04-22,2026-05-22,9540.00,9540.00
+SI-4383,Pinefall Hospitality Partners,2026-04-28,2026-06-12,5300.00,5300.00
+SI-4396,Marrowbone Construction Group,2026-05-06,2026-06-05,12720.00,12720.00
+SI-4402,Marrowbone Construction Group,2026-05-19,2026-06-18,7420.00,7420.00

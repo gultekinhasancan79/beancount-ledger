@@ -1,0 +1,7 @@
+invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-7218,Quillhaven Publishing House,2026-05-19,2026-06-18,6480.00,1620.00
+SI-7222,Broadmarsh Academy Trust,2026-05-27,2026-07-11,3780.00,3780.00
+SI-7226,Quillhaven Publishing House,2026-06-04,2026-07-04,5250.00,5250.00
+SI-7229,Broadmarsh Academy Trust,2026-06-11,2026-07-26,4410.00,4410.00
+SI-7231,Quillhaven Publishing House,2026-06-16,2026-07-16,7920.00,7920.00
+SI-7234,Pellow & Dunge Stationers,2026-06-23,2026-07-23,2835.00,2835.00

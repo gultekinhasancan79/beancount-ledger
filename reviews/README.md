@@ -304,6 +304,10 @@ bookkeeping.
 - `provider_failed_attempts_2026-08-31/` — the rows of confirmatory cells whose provider call failed before a rollout existed, kept beside the panel they belong to: a failed attempt records what the run met, never a result, and none of them enters an estimand
 - `resume_conductor.log` — the console log of the resumed confirmatory run of 2026-08-31, kept as the record of that resume
 - `oracle_budget_v9.json` — scripted strategies that know the answer, through the real door: turns and output tokens against the caps per (profile, k)
+- **The cash-application records.** Three dated notes, each with a self-contained evidence directory of the same name, and none of them establishing a population failure rate, accounting accreditation or a training benefit:
+  - `cash_application_screen_2026-09-10.{md,/}` — the three-episode Bowline screen (two complete deliveries, one register losing a single field), its rescore and single-field counterfactual, and a provenance sidecar that records every digest **at the revision the screen was measured at**;
+  - `cash_application_adjudication_2026-09-10.{md,/}` — the cold adjudication of the Bowline five: two models of different lineages, neither screen subject, shown only the eleven public files. Holds the predeclared rule, the runner as executed, every parsed answer, the original verdicts and the corrected comparison under the scorer's pre-existing zero-application normalisation, and identifies the input revision;
+  - `cash_application_six_variant_screen_2026-09-11.{md,/}` — the six-variant screen, published as an **INCOMPLETE DESCRIPTIVE SCREEN**: five scored deliveries and one cell lost to a provider 403, which stays missing. Holds the calibration JSON untouched, the run log, five delivered workspaces, the two executed `cash_application_007` scorer decompositions and a receipt check re-run at publication.
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 
 ## A note on citations inside the dated documents

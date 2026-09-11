@@ -1,0 +1,2 @@
+credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0714,2026-07-14,Broadmarsh Academy Trust,SI-7222,600.00,30.00,630.00,agreed allowance; returned custom-printed units received 14 July were unusable and had no recoverable resale or salvage value; no replacement goods were supplied

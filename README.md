@@ -8,7 +8,9 @@
 
 Version 0.2.0 includes 106 authored task IDs: 91 workflow tasks, four clean-month assurance tasks and eleven cash-application variants across four company-months (Bowline's five, then three matched pairs whose two variants differ in exactly one authored fact). The 95 legacy tasks retain episode contract 4; cash application uses contract 5 and combines the ledger and application scores multiplicatively. Authored tasks are public demonstrations and tests. The existing keyed bank-reconciliation population is separate; cash-application generation is not yet implemented.
 
-> **Version status.** `pyproject.toml` still declares `0.1.0`, and the published Hub package is still the earlier one. The paragraph above describes the release this branch is prepared for; bumping the version and pushing to the Environments Hub are the owner's decisions and have not been made. Until then, read "0.2.0" as the contents of this branch, not as what `pip install` gives you.
+> **Version status.** `pyproject.toml` declares `0.2.0` as of this branch. The published Hub package is still the earlier one: uploading is the owner's act and has not been done here. Until it is, read "0.2.0" as the contents of this branch, not as what `pip install` gives you.
+
+> **Compatibility.** This release targets the **v0 workflow** — `load_environment` discovered by name in the installed module, driven by `vf-eval`, configured by `[tool.verifiers.eval]`, against the pinned `verifiers==0.3.1`. Prime Intellect's current environment documentation lists that workflow under **Legacy** and identifies it as deprecated v0. Publishing 0.2.0 does **not** imply v1 support, and nothing here claims it: verified against this package's own entry points, `beancount_ledger/__init__.py` exports exactly one serving door (`load_environment`), `pyproject.toml` declares no `[project.entry-points]` group and no v1 protocol object, and every `verifiers` base the environment subclasses resolves into the framework's own legacy tree (`StatefulToolEnv` → `verifiers.legacy.envs.stateful_tool_env`, `Rubric` → `verifiers.legacy.rubrics.rubric`, `Environment` → `verifiers.legacy.envs.environment`, `stop` → `verifiers.legacy.decorators`; the framework's own loader logs under `verifiers.legacy.utils.env_utils`). A v1 migration is separate work and is deliberately not slipped into this frozen instrument. The documented versioned upload preserves earlier releases, so publishing 0.2.0 does not withdraw 0.1.0.
 
 No LLM judge: every discrepancy is planted by a generator or an author that knows the correct ledger, and the scorer pays exact partial credit against it.
 
@@ -40,7 +42,7 @@ uv run vf-eval beancount-ledger --env-args '{"task_id": "ap_payment_run_001"}'  
 
 ### Hand-authored tasks
 
-Ninety-one tasks ship in the wheel and need no secret: ten small companies, one month each, authored as facts only (`beancount_ledger/graph/worlds/`), and every company except the original Alpine world carries all ten accounting workflows over the SAME statement and the SAME facts. Each task plants two or three discrepancies (an omitted entry, a wrong amount, a duplicate), each of the ninety workflow tasks with two timing-difference traps to leave alone. Task ids are `<workflow>_<company>`; the ten original tasks keep their `_001` ids. Count them honestly: nine independently authored company-months plus Alpine, exercised through ninety workflow-conditioned variants, so split by world, never by task. The full 91-cell table, what each workflow plants and the split rules: [docs/REFERENCE.md](docs/REFERENCE.md#hand-authored-workflow-tasks).
+One hundred and six hand-authored tasks ship in the wheel and need no secret. **Ninety-one of them are the workflow grid** this section describes: ten small companies, one month each, authored as facts only (`beancount_ledger/graph/worlds/`), and every company except the original Alpine world carries all ten accounting workflows over the SAME statement and the SAME facts. Each task plants two or three discrepancies (an omitted entry, a wrong amount, a duplicate), each of the ninety workflow tasks with two timing-difference traps to leave alone. Task ids are `<workflow>_<company>`; the ten original tasks keep their `_001` ids. Count them honestly: nine independently authored company-months plus Alpine, exercised through ninety workflow-conditioned variants, so split by world, never by task. **The other fifteen** are the four-task clean-month pack (`clean_month_001`/`002`, `single_error_001`/`002`) and the eleven cash-application variants (`cash_application_001`..`011`), which serve eleven public files and a second deliverable under episode contract 5. The full 91-cell table, what each workflow plants and the split rules: [docs/REFERENCE.md](docs/REFERENCE.md#hand-authored-workflow-tasks).
 
 | Company | Month |
 |---|---|
@@ -61,7 +63,7 @@ The ten workflows, with their id prefixes: bank recon (`bank_recon`), AP run (`a
 
 A task resolves one of two profiles, and the profile fixes the tool surface, the deliverables and the envelopes. Nothing else about the loop differs: whole-file reads, the same stop conditions, the same malformed-call policy, the same budgets.
 
-| | `legacy` — the 95 workflow and clean-month tasks | `cash_application` — `cash_application_001`…`005` |
+| | `legacy` — the 95 workflow and clean-month tasks | `cash_application` — `cash_application_001`..`011` |
 |---|---|---|
 | Episode contract | 4, shape `piv.episode-contract/2`, digest `e8b8753d…` | 5, shape `piv.episode-contract/3`, digest `b11bc1ac…` |
 | Tools | `list_files`, `read_file`, `grep`, `run_beancount`, `write_ledger`, `submit` | the same six, plus `write_cash_application` |
@@ -73,7 +75,13 @@ A task resolves one of two profiles, and the profile fixes the tool surface, the
 
 Contract 4 is preserved byte for byte for the 95 legacy tasks, because they were measured under it; the two views are dispatched by profile and both digests are pinned in `tests/test_episode_contract.py`.
 
-**What has been measured on the cash-application profile.** One three-episode screen, on three of the five variants of the single authored company-month, one requested model, one attempt each: two complete two-artifact deliveries and one case where the ledger scored 1.0 while the application register lost a single field. Full note and archive: [reviews/cash_application_screen_2026-09-10.md](reviews/cash_application_screen_2026-09-10.md). It establishes that the second deliverable can fail on its own while the ledger is perfect. It establishes **no** difficulty level, no failure rate, no generalization beyond that company-month and no training utility.
+**What has been measured on the cash-application profile.** Two small screens and one cold adjudication, all zero-cost, one requested model ID each and one attempt per cell.
+
+- **Bowline, three episodes** on three of that company-month's five variants: two complete two-artifact deliveries and one case where the ledger scored 1.0 while the application register lost a single field — [reviews/cash_application_screen_2026-09-10.md](reviews/cash_application_screen_2026-09-10.md).
+- **The six new variants, one episode each** — an **incomplete descriptive screen**: five scored deliveries, four of them a complete 1.0, one (`cash_application_007`) scoring 0.64 on a complete ledger repair with two invoices missing from the closing register, and `cash_application_011` lost to a provider 403 with no delivery. That sixth cell stays missing — neither a zero nor an inferred success — [reviews/cash_application_six_variant_screen_2026-09-11.md](reviews/cash_application_six_variant_screen_2026-09-11.md).
+- **A cold adjudication of the Bowline five**, two models of different lineages, neither the screens' subject, each shown only the eleven public files — [reviews/cash_application_adjudication_2026-09-10.md](reviews/cash_application_adjudication_2026-09-10.md).
+
+Together these establish that the second deliverable can fail on its own while the ledger is perfect, and that two independent readers reconstructed the specified applications and closing balances from the public files alone on five authored cases. They establish **no** population failure rate, no difficulty level, no accounting accreditation, no generalization beyond these company-months and no training benefit. The accounting of the three new company-months carries a dated AI accounting-plausibility review, not a practising accountant's sign-off; practitioner validation is still outstanding.
 
 ### Desktop app
 

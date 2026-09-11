@@ -1,3 +1,205 @@
+# Release attestation — beancount-ledger v0.2.0 (2026-09-11)
+
+**Document order.** This 0.2.0 section is first. The v0.1.0 release attestation follows below it,
+then the dated branch attestations, errata and known-issue sets in the order they were written.
+Nothing below this section is rewritten: an earlier statement that later became false is superseded
+in place by a dated erratum, never deleted.
+
+## What 0.2.0 is
+- `pyproject.toml` version bumped `0.1.0` → `0.2.0`. **Nothing was pushed and nothing was uploaded
+  to the Environments Hub:** publishing is the owner's act and is not recorded here.
+- **106 hand-authored task ids** ship in the wheel and need no evaluator secret: 95 legacy (91
+  workflow tasks + the four-task clean-month pack) and **eleven cash-application tasks**
+  (`cash_application_001`..`011`) — Bowline Marine Supply Co. April 2026 in five variants, then
+  three matched pairs (Thornbury Glassworks LLC June 2026, Pennywhistle Bakehouse Co. June 2026,
+  Tallowmere Print & Bindery Co. July 2026). Each pair's two variants differ in one authored fact,
+  which defines the accounting distinction that pair is intended to test; that does **not**
+  guarantee that a solver's error concerns that distinction, and attribution requires inspection of
+  the delivered artifacts.
+- **Two episode profiles, two resolved views, two digests**, both pinned in
+  `tests/test_episode_contract.py`, which is parameterised over the profiles:
+  - `legacy`, episode contract **4**, shape `piv.episode-contract/2`, digest
+    `e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866` — the 95 legacy tasks and
+    every generated selector. **Preserved byte for byte**, because they were measured under it.
+  - `cash_application`, episode contract **5**, shape `piv.episode-contract/3`, digest
+    `b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f` — the eleven family tasks: a
+    seventh tool `write_cash_application`, eleven public files, a second deliverable
+    `cash_application.json` (`piv.cash-application/1`, write-only, optional at submit and required
+    for `complete`), scored by `application/1` and multiplied with the ledger's score by
+    `composite/1`.
+
+  Neither digest is in the manifest's `versions()`, which binds world semantics only.
+- component versions: `{'generator': 9, 'identify': 7, 'scorer_contract': 1, 'renderer': 1,
+  'task_contract': 1, 'manifest_schema': 2, 'preflight_contract': 1, 'gate_set': 'e2f26ab5cdf60d53'}`
+
+## Compatibility: this release is v0, and does not imply v1
+Prime Intellect's current environment documentation identifies the `load_environment` / `vf-eval`
+workflow this package uses as **deprecated v0, listed under Legacy**. 0.2.0 is published with that
+compatibility stated. It does **not** imply v1 support, and a v1 migration is separate work that is
+deliberately not slipped into this frozen instrument — a v1 port would move the episode-contract
+digest and is therefore a new measurement condition, not a packaging change. The documented
+versioned upload preserves earlier releases, so 0.2.0 does not withdraw 0.1.0.
+
+Verified against the repository's own entry points rather than asserted, on the pinned
+`verifiers==0.3.1`:
+- `beancount_ledger/__init__.py` exports one serving door, `load_environment`, plus the two
+  measurement helpers `tool_call_chars` and `library_versions`. There is no other entry point.
+- `pyproject.toml` declares no `[project.entry-points]` group, no console script and no v1 protocol
+  object; its only framework table is `[tool.verifiers.eval]`, the v0 eval config.
+- Every `verifiers` base the environment subclasses resolves into the framework's own **legacy**
+  tree: `vf.StatefulToolEnv` → `verifiers.legacy.envs.stateful_tool_env`, `vf.Rubric` →
+  `verifiers.legacy.rubrics.rubric`, `vf.Environment` → `verifiers.legacy.envs.environment`,
+  `vf.stop` → `verifiers.legacy.decorators`. The framework's own loader logs under
+  `verifiers.legacy.utils.env_utils`. (`verifiers` 0.3.1 ships `legacy/` and `v1/` side by side;
+  this package is entirely in the first.)
+
+## Artifacts (built from this checkout, `uv build`, hatchling, CPython 3.12.12)
+- wheel `beancount_ledger-0.2.0-py3-none-any.whl`: sha256
+  `8d8857e3cc2ec4bfaa532c21d522aa6982197c4f9b19960838322442880bc9f7`, 65 files; RECORD sha256
+  `faae068319346ca16ce186196a5a16ae16525d3c2d5c7f60c08810c8cc2207c5`
+- sdist `beancount_ledger-0.2.0.tar.gz`: sha256
+  `4f249490fc17dcd4854ff77b6ad5cc88cdd145cac3771b016ac30e2bba2fa329`, 66 files
+- **reproducible**: built twice from the same checkout, byte-identical both times
+- audit: neither artifact contains `tests/`, `reviews/`, a golden ledger, a `.pyc` or a secret
+- license: Apache-2.0 (SPDX), LICENSE sha256
+  `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
+
+## The installed-wheel check (2026-09-11): the eleven cash tasks score from the DISTRIBUTED artifact
+The CI artifact audit checks packaging exclusions and several legacy files. That alone does not
+establish that the expanded cash family works from the distributed artifact, so this was measured
+directly.
+
+Method: the wheel above installed into a **clean throwaway virtual environment** (CPython 3.12.12,
+nothing but the wheel and its pins; never the repository's own `.venv`), and a scripted conforming
+agent driven through the **real `env.evaluate()` door** from the installed package, with the
+repository asserted absent from `sys.path` and the package path asserted to be inside
+`site-packages`. Per task:
+
+    list_files → read_file(ledger) → write_ledger(golden) → write_cash_application(golden register) → submit
+
+Both deliverables are derived from the installed package's own world facts — no golden ships as
+data. The verdict is read back from the run's own `delivery.json`, not from the harness's return
+value.
+
+| tasks | turns | reward | `delivery.json` completion | contract digest | register |
+|---|---|---|---|---|---|
+| `cash_application_001`..`011` (all eleven) | 5 | **1.0** | `complete` | `b11bc1ac…` | `delivered` |
+| `bank_recon_001` (legacy control) | 4 | **1.0** | `complete` | `e8b8753d…` | absent, as a legacy receipt must be |
+
+Twelve of twelve. Every cash receipt carries its `application` block; the legacy receipt carries
+none. Each row's `score` on the receipt is `1`, and every episode stopped at `piv_submitted`. **The
+distributed artifact loads and scores the expanded family.**
+
+## Measurement records published with this release
+Three dated cash-application records live in `reviews/`, each with a self-contained evidence
+directory of the same name. **None of them establishes a population failure rate, accounting
+accreditation or a training benefit**, and none was a release prerequisite.
+- `cash_application_screen_2026-09-10.md` — the three-episode Bowline screen (published before this
+  release; unchanged here).
+- `cash_application_adjudication_2026-09-10.md` — the cold adjudication of the Bowline five. Two
+  requested model IDs of different lineages, neither screen subject, each shown only the eleven
+  public files. All ten parsed answers agree with the archived truth **under the scorer's
+  pre-existing zero-application normalisation** (`_canonical_items`, in place since `03f19ed` on
+  2026-09-09, the day before the run). The original comparator results are reported separately and
+  not replaced: as executed, seven passing answers and three cases passed by both models; under the
+  predeclared classification, Case 3 contested and Case 5 "both differ the same way", hence
+  defective pending examination. The runner classified every case without two passes as "contested"
+  and so did **not** implement the full written four-outcome rule; that discrepancy is preserved
+  rather than described as the rule executed exactly. The archive holds the predeclared note, the
+  runner as executed (two lines rewritten for publication, declared in its own header), every parsed
+  answer, the original verdicts and a corrected comparison that imports the normalisation from the
+  shipped package and reproduces every archived verdict in its as-executed column. The input
+  revision is identified: `26a5a9a`, so Case 2's answers carry `TRC0428442` and this adjudication
+  read the revised Case 2 reference, **not** the input the original Bowline screen was measured
+  against.
+- `cash_application_six_variant_screen_2026-09-11.md` — the six-variant screen, published as an
+  **INCOMPLETE DESCRIPTIVE SCREEN** with its artifact diagnosis and limitations. One subject, one
+  episode each, at `328d702`: five scored deliveries — four a complete `1.0` — and
+  `cash_application_011` lost to a provider 403 with no delivery. **That cell stays missing: neither
+  a zero nor an inferred success.** `cash_application_007` scored `0.64` on a complete ledger repair
+  whose closing register contains exactly the eight opening invoices and omits the two raised during
+  June, both unpaid at closing; the executed counterfactual that adds only those two rows scores
+  `L = A = total = 1`, so the omissions account for the whole of the loss — not for why the solver
+  omitted them. The delivered artifacts match their receipts' stored-byte and logical-text digests,
+  re-verified at publication (`verify_receipts.py` / `.json`, ten artifacts). The archive does not
+  contain full trajectories, the original submitted texts, untouched initial ledgers or a complete
+  runtime/task/scorer provenance record.
+
+**Where the dated sections below cite a `v10-codex/…` path** for the six-variant screen note, its
+evidence directory or the two `cash_application_007` decompositions, those records are now published
+at the `reviews/` paths above, and that is where a reader should go. The `v10-codex/` tree is the
+private working area; it is not part of the release, it ships in neither artifact, and the earlier
+citations are left standing as the dated history they are rather than rewritten.
+
+## The accounting review behind the three new company-months
+The packs carry a **dated AI accounting-plausibility review of 2026-09-11, not a practising
+accountant's sign-off.** It identifies the corrections that were applied before the packs were
+implemented, and it validates neither operational accounting, tax compliance nor
+financial-statement presentation. It is retained outside the public release, like the internal
+design-review log; what it changed is recorded in this document, and the six-variant screen's
+outcome is appended to the record rather than written back into the archived review.
+**Practitioner validation remains outstanding.**
+
+## The credit-basis guard, as it stands after the fix
+`schema.check_world` bounds a `CreditNote` against the original **SALE**, never the unpaid balance,
+and `schema.original_sale_basis(world, invoice_id)` establishes that sale **independently of the
+note being checked**: from the `Sale` the world authors for the invoice, or — for an invoice carried
+in from the prior period, which has no `Sale` and whose `Document` carries only a gross — by
+splitting that gross at the world's own single authored sales-tax rate. Where a world's sales carry
+several rates or none, no basis is established and the world **may not carry a credit note against
+that invoice at all**; the check says so rather than inventing a rate.
+- **What is enforced, and may now be claimed:** a note may not reverse more sales value than the
+  original sale carried, nor more tax than the original sale's tax, with the original sale
+  established independently of the note.
+- **What is not enforced, and is not claimed:** an original net and tax authored on the invoice
+  document itself. Adding fields to `Document` would move every world's graph digest, so the
+  prior-period basis rests on the world's rate being single and authored.
+- The superseded derivation (`original_net = invoice_gross / (1 + credit_note.tax_rate)`) took the
+  supposed basis from the note being checked, and would have admitted a 4,100.00 net credit at zero
+  tax against a 4,200.00 gross invoice whose actual basis was 4,000.00 net plus 200.00 tax. The
+  mismatched-rate negative control is now a test
+  (`tests/test_cash_application_worlds.py::test_the_credit_basis_guard_reads_an_independently_established_original_sale`),
+  which also pins that a note's own rate cannot move its bound at 0.00 / 0.05 / 0.20 / 1.00.
+- No shipped world's accounting or score changed; all eleven cash-application worlds return an empty
+  `check_world` before and after. The guard is a generator-side authoring check: it reads no
+  submission and enters no reward.
+
+## Suites and byte pins at this release
+- `tests/run_all.py`: **all 34 suites pass** on this checkout with the repository's own venv.
+- The eleven cash bundles re-derive unchanged: `001` `0a5c94fa`, `002` `a7153bca`, `003` `64956ef6`,
+  `004` `c5869203`, `005` `9189497e`, `006` `5fc4b055`, `007` `bd64e62d`, `008` `2573e334`,
+  `009` `ee1ca200`, `010` `f6e7616f`, `011` `2f7a27f6` — the same figures recorded before this
+  phase. (The recipe is `sha256` over the task's projected public files in sorted name order, each
+  contributing `name || 0x00 || content || 0x00`, truncated to eight hex digits.)
+- `tests/test_legacy_freeze.py` passes: the 760 legacy public files, `candidate/committed.py` and
+  the contract-4 episode view and digest are byte-identical. **This phase changed no served byte**:
+  it touched `pyproject.toml`, `README.md`, `docs/REFERENCE.md` and `reviews/`, and no file in the
+  wheel's `beancount_ledger/` tree beyond the version string.
+
+## Evidence files at this release (sha256 over the bytes git stores, LF)
+- README.md: `8a5c6f8ef8f00e36564e57e1202f7eb561db02d8ee59e2683a1306ef944a2ea2`
+- docs/REFERENCE.md: `aa9c72dce5ea7725eb433eb78abdf1a127907365408cff57af3f3fd5b8e23573`
+- pyproject.toml: `2cf4ff07601116b764a40c0a418a3a9d24f30f3191be5690b5ef636a19d8694d`
+- reviews/cash_application_adjudication_2026-09-10.md: `2b2ad0651bd90c42bc720ff0df327e6e784e65cf3cf531aff5dcbbed2d7bc3d6`
+- reviews/cash_application_six_variant_screen_2026-09-11.md: `835ab184dc61cf1fcd37ae657d2950e8d5585a15e4d1a7f2efb0fe97812e7eb8`
+- reviews/cash_application_adjudication_2026-09-10/corrected_comparison.json: `da42cdd4dc11c8a05029b6577a00cd2d463d0b3424f1f97141f1817c73452322`
+- reviews/cash_application_six_variant_screen_2026-09-11/verify_receipts.json: `181d7fb377c7f44cdb6b8e519aa8bddf1dd36866d31516cc8cb6bd34667ff5b7`
+- LICENSE: `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
+
+## Not done here, by design
+- **No push and no Hub upload.** Both are the owner's decisions.
+- No v1 migration, and no claim of v1 compatibility.
+- **No model or API call of any kind** was made in preparing this release; every measurement
+  recorded in this section is offline.
+- The missing `cash_application_011` screen cell was not refilled, no subject was substituted and no
+  episode was repeated.
+- The single `089873e0` figure recorded in an earlier section as a combined digest over the 95
+  legacy tasks has no recovered combining rule and stays independently uncheckable from this
+  document; the claim it summarises is carried by `tests/test_legacy_freeze.py`, which pins all 760
+  legacy public files individually and passes.
+
+---
+
 # Release attestation — beancount-ledger v0.1.0 (2026-09-01)
 
 ## Identities

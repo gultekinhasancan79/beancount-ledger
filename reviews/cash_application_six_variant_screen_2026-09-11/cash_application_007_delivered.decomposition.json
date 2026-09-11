@@ -1,0 +1,342 @@
+{
+  "schema": "piv.application-decomposition/1",
+  "case": "delivered",
+  "note": "The artifact as the 11 September screen delivered it. Its closing register carries exactly the eight invoices of the opening register and omits SI-4415 and SI-4419, both raised in June and both unpaid at closing. That omission is the whole of the loss: two INVOICE_MISSING rows take register_exact to 0.800000 and the 16,960.00 of receivables they carry trips ar_tie_break. The record does not establish why the rows were omitted.",
+  "task_id": "cash_application_007",
+  "world_id": "thornbury-2026-06-pf-b",
+  "measured_at_revision": "dc5f7ecba3fed2a1db245f60600098c21fe839e2",
+  "measured_at_revision_note": "dc5f7ecba3fed2a1db245f60600098c21fe839e2 is HEAD at the moment of measurement; the phase-B commit a19310d2d4b4e91bf8711a1a434d67ba93f16c0b, which records this file and the regression test, was present in the working tree as an uncommitted change. That change touches graph/schema.py (a world-authoring validator), two test suites and reviews/RELEASE_ATTESTATION.md; it touches no scorer, world, truth register or public byte, so the figures here are the figures at either revision. The eleven cash bundles re-derive unchanged at both.",
+  "recorded_in_revision": "a19310d2d4b4e91bf8711a1a434d67ba93f16c0b",
+  "measured_on": "2026-09-11",
+  "executed": "beancount_ledger.candidate.application.score_application and beancount_ledger.candidate.composite.compose, as shipped at this revision",
+  "document": {
+    "schema": "piv.cash-application/1",
+    "receipts": [
+      {
+        "receipt_id": "2026-06-08:MCG REMIT 0605",
+        "applied": [
+          {
+            "invoice_id": "SI-4371",
+            "amount": "5100.00"
+          },
+          {
+            "invoice_id": "SI-4396",
+            "amount": "4440.00"
+          }
+        ],
+        "written_off": [],
+        "unapplied_amount": "0.00",
+        "notes": "Advice RA-0605-MCG belongs (customer, ref, amount agree); applied per advice. SI-4402 line is 0.00 withheld. No invoice marked settled, no write-off."
+      },
+      {
+        "receipt_id": "2026-06-17:TRC0617318 SI-4383 SI-4390 SI-4377",
+        "applied": [
+          {
+            "invoice_id": "SI-4377",
+            "amount": "6890.00"
+          },
+          {
+            "invoice_id": "SI-4383",
+            "amount": "2650.00"
+          },
+          {
+            "invoice_id": "SI-4390",
+            "amount": "8480.00"
+          }
+        ],
+        "written_off": [],
+        "unapplied_amount": "0.00",
+        "notes": "No advice belongs; applied to reference invoices in invoice-date order (SI-4390, SI-4377, SI-4383), each up to open balance."
+      },
+      {
+        "receipt_id": "2026-06-25:TRC0625704 SI-4402 SI-4408 SI-4396",
+        "applied": [
+          {
+            "invoice_id": "SI-4396",
+            "amount": "8280.00"
+          },
+          {
+            "invoice_id": "SI-4402",
+            "amount": "4452.00"
+          },
+          {
+            "invoice_id": "SI-4408",
+            "amount": "8268.00"
+          }
+        ],
+        "written_off": [],
+        "unapplied_amount": "0.00",
+        "notes": "RA-0605-MCG does not belong to this payment; applied to reference invoices in invoice-date order (SI-4408, SI-4396, SI-4402) up to open balances."
+      }
+    ],
+    "credit_notes": [
+      {
+        "credit_note_id": "CN-0609",
+        "applied": [
+          {
+            "invoice_id": "SI-4408",
+            "amount": "1272.00"
+          }
+        ],
+        "unapplied_amount": "0.00",
+        "notes": "Applied in full to referenced invoice SI-4408 (open 9540.00); no excess."
+      }
+    ],
+    "closing_open_items": [
+      {
+        "invoice_id": "SI-4371",
+        "customer": "Marrowbone Construction Group",
+        "period_basis": "9300.00",
+        "applied_total": "5100.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "4200.00"
+      },
+      {
+        "invoice_id": "SI-4377",
+        "customer": "Pinefall Hospitality Partners",
+        "period_basis": "6890.00",
+        "applied_total": "6890.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "0.00"
+      },
+      {
+        "invoice_id": "SI-4383",
+        "customer": "Pinefall Hospitality Partners",
+        "period_basis": "5300.00",
+        "applied_total": "2650.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "2650.00"
+      },
+      {
+        "invoice_id": "SI-4386",
+        "customer": "Pinefall Hospitality Partners",
+        "period_basis": "4240.00",
+        "applied_total": "0.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "4240.00"
+      },
+      {
+        "invoice_id": "SI-4390",
+        "customer": "Pinefall Hospitality Partners",
+        "period_basis": "8480.00",
+        "applied_total": "8480.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "0.00"
+      },
+      {
+        "invoice_id": "SI-4396",
+        "customer": "Marrowbone Construction Group",
+        "period_basis": "12720.00",
+        "applied_total": "12720.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "0.00"
+      },
+      {
+        "invoice_id": "SI-4402",
+        "customer": "Marrowbone Construction Group",
+        "period_basis": "7420.00",
+        "applied_total": "4452.00",
+        "credited": "0.00",
+        "written_off": "0.00",
+        "remaining": "2968.00"
+      },
+      {
+        "invoice_id": "SI-4408",
+        "customer": "Marrowbone Construction Group",
+        "period_basis": "9540.00",
+        "applied_total": "8268.00",
+        "credited": "1272.00",
+        "written_off": "0.00",
+        "remaining": "0.00"
+      }
+    ]
+  },
+  "application": {
+    "engine": "application/1",
+    "status": "delivered",
+    "delivered": true,
+    "A_total": "0.640000",
+    "components": {
+      "receipts_exact": "1.000000",
+      "register_exact": "0.800000",
+      "credit_exact": "1.000000"
+    },
+    "penalties": [
+      [
+        "ar_tie_break",
+        "remaining 14058.00 - unapplied 0.00 != closing receivables 31018.00"
+      ]
+    ],
+    "receipt_states": [
+      [
+        "2026-06-08:MCG REMIT 0605",
+        "RECEIPT_EXACT"
+      ],
+      [
+        "2026-06-17:TRC0617318 SI-4383 SI-4390 SI-4377",
+        "RECEIPT_EXACT"
+      ],
+      [
+        "2026-06-25:TRC0625704 SI-4402 SI-4408 SI-4396",
+        "RECEIPT_EXACT"
+      ]
+    ],
+    "invoice_states": [
+      [
+        "SI-4371",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4377",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4383",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4386",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4390",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4396",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4402",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4408",
+        "INVOICE_EXACT"
+      ],
+      [
+        "SI-4415",
+        "INVOICE_MISSING"
+      ],
+      [
+        "SI-4419",
+        "INVOICE_MISSING"
+      ]
+    ],
+    "credit_states": [
+      [
+        "CN-0609",
+        "CREDIT_EXACT"
+      ]
+    ],
+    "tie_states": [
+      [
+        "ar",
+        "AR_TIE_CONTRADICTS"
+      ],
+      [
+        "writeoff",
+        "WRITEOFF_TIE_OK"
+      ]
+    ],
+    "application_states": [],
+    "canonical_digest": "66088b2cc8e18c7ce5793926e916ab6886115cda40b3fbf130c6964bc0377477",
+    "application_result_digest": "199e8af74b5553ad81074f71cbd5c60e5ab36190e608d21f8e72f9b0f51a6f77"
+  },
+  "ledger": {
+    "engine": "candidate/1",
+    "source": "the delivered ledger.beancount, unchanged in both cases",
+    "L_total": "1.000000",
+    "complete": true
+  },
+  "composite": {
+    "engine": "composite/1",
+    "engines": [
+      "candidate/1",
+      "application/1",
+      "composite/1"
+    ],
+    "L": "1.000000",
+    "A": "0.640000",
+    "total": "0.640000",
+    "complete": false
+  },
+  "delivery_receipt": {
+    "source": "workspaces/cash_application_007/delivery.json, the run's own receipt",
+    "rollout_id": "f2f7e5f6cada45b292383d77330708fc",
+    "application_score": "0.64",
+    "composite_score": "0.64",
+    "canonical_digest": "66088b2cc8e18c7ce5793926e916ab6886115cda40b3fbf130c6964bc0377477",
+    "application_result_digest": "199e8af74b5553ad81074f71cbd5c60e5ab36190e608d21f8e72f9b0f51a6f77",
+    "artifact_digests_agree": {
+      "application_stored_bytes": true,
+      "application_logical_text": true,
+      "ledger_stored_bytes": true,
+      "ledger_logical_text": true
+    },
+    "rescore_agrees": {
+      "A_total": true,
+      "canonical_digest": true,
+      "application_result_digest": true
+    },
+    "not_reproducible_by_rescore": [
+      "evaluation_receipt_digest, and with it the candidate/1 score_result_digest and the composite_result_digest. A re-score of these bytes reproduces the SCORES, the canonical_digest and the application_result_digest exactly; it does not return the evaluation_receipt_digest 647b58570cf50cf2... or the composite_result_digest a1e2864938db84cf... this receipt records. The cause is the replayed receipt IDENTITY, not a nonce: receipt_identity() at beancount_ledger/candidate/committed.py:875 binds rollout_id, committed_revision, submitted_text_digest, stored_bytes_digest and logical_text_digest, and deliberately EXCLUDES the PrivateReceipt's attempt_id. The archive holds the canonical stored artifact and not the original submitted text, so submitted_text_digest cannot be reconstructed from it - exactly what this note's Records section says the archive does not contain. Given an identity, these digests are deterministic."
+    ],
+    "superseded_claim": {
+      "text": "evaluation_receipt_digest, and with it the candidate/1 score_result_digest and the composite_result_digest: a PrivateReceipt carries a fresh uuid4 per evaluation, so a re-score of the same bytes reproduces the same SCORES and the same application digests, but never the same ledger or composite RESULT digest.",
+      "why_false": "The uuid4 (PrivateReceipt.attempt_id) binds nothing. receipt_identity() excludes it by design - 'The input receipt minus the attempt id: a replay of the same bytes for the same revision of the same rollout is the same evaluation' - and attempt_id appears nowhere else in the package beyond its field declaration at committed.py:775. MEASURED: scoring these identical ledger bytes twice with a fresh uuid4 each time gives the IDENTICAL evaluation receipt, ledger result and composite result digests. The OUTCOME the superseded text reports is true; its MECHANISM was false and 'never' overstated it.",
+      "also_published_in": [
+        "reviews/RELEASE_ATTESTATION.md lines 309-310 as published at a19310d2d4b4e91bf8711a1a434d67ba93f16c0b",
+        "the a19310d2d4b4e91bf8711a1a434d67ba93f16c0b commit message, which stands in history uncorrected"
+      ],
+      "corrected_on": "2026-09-11",
+      "corrected_in_revision": "24bb0204e6c8339e95a750def26f88977b9be96c"
+    },
+    "replay_identity_measurement": {
+      "note": "Offline re-execution over tests/observed/cash_application_007/ledger.beancount, which is byte-identical to workspaces/cash_application_007/ledger.beancount. No model or API call.",
+      "executed": "beancount_ledger.candidate.committed.new_receipt + commit + score_committed, and candidate.composite.compose, as shipped at the revision below",
+      "measured_at_revision": "24bb0204e6c8339e95a750def26f88977b9be96c",
+      "measured_on": "2026-09-11",
+      "fresh_uuid4_changes_nothing": true,
+      "identities": [
+        {
+          "label": "the regression test's identity, scored twice with a fresh uuid4 each time",
+          "rollout_id": "check",
+          "committed_revision": 1,
+          "evaluation_receipt_digest": "a97951b7a63df1a697e165c7877d66731d2ca9162b99312cfd25864aef0687e1",
+          "ledger_score_result_digest": "91d1378d799a93acdafbbc63bf4963ac66d2741c44ea1c4a5b17f06031022a96",
+          "composite_result_digest": "498f3fe89935138465ec58dde7ddb23c906d01fe11026fa5b6bf72535a015647"
+        },
+        {
+          "label": "the run's own rollout id, submitted text taken as the stored artifact",
+          "rollout_id": "f2f7e5f6cada45b292383d77330708fc",
+          "committed_revision": 1,
+          "evaluation_receipt_digest": "42c42917a2724db993e50d88bbf57d38847360609ddfc664f293d65e02a6c5ff",
+          "ledger_score_result_digest": "cfe5054f78da948fe5324cbf49119362ccf15a174dcff8fd5fda385f44089281",
+          "composite_result_digest": "f035479d0c4fca6c9084f47e0aeea9d4780ec679276a30d0ac108498cfa4dab9"
+        },
+        {
+          "label": "the run's own rollout id, one different submitted text - every digest moves",
+          "rollout_id": "f2f7e5f6cada45b292383d77330708fc",
+          "committed_revision": 1,
+          "evaluation_receipt_digest": "97aa0dcf49baffb83990c062768eaca60f0dc99c35ce3b784b4a8d9f1dfd71b4",
+          "ledger_score_result_digest": "d37eced84f9b0797c67fa397a055de028afa76baf76e70eff6e670ef59028085",
+          "composite_result_digest": "ca25015c6ca7b3adacd68cd8f19cb0172346243566575ca97874dfb008c69932"
+        }
+      ],
+      "recorded_by_the_delivery_receipt": {
+        "evaluation_receipt_digest": "647b58570cf50cf2d9f699f336e8fedfc74e40b932690902c82949c1b028ec7c",
+        "composite_result_digest": "a1e2864938db84cf278dd8be96eef6f59dca4de32fc3fbd7f2a52782e7843ea2",
+        "submitted_text_digest": null,
+        "submitted_text_digest_note": "The ledger delivery receipt records no submitted-text digest, and the archive keeps no original submitted text; ours over the stored artifact is f6d7a5c91eb7dda3...."
+      },
+      "pinned_by": "tests/test_cash_application_scoring.py::test_the_007_result_digests_replay_by_identity_not_by_nonce"
+    }
+  }
+}

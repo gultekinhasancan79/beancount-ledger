@@ -1,0 +1,128 @@
+{
+ "schema": "piv.cash-adjudication-corrected/1",
+ "what_this_is": "The archived adjudication answers re-compared under `application/1`'s pre-existing zero-application normalisation (`_canonical_items`, imported from the shipped package). No model is called. The `as_executed` column reproduces the original runner's verdicts from the same archived answers, so the two readings are comparable line by line.",
+ "normalisation": "beancount_ledger.candidate.application._canonical_items \u2014 sum by invoice, drop what sums to zero, order by invoice id; applied to every receipt's applied and written-off sets and to every credit note's applied set",
+ "cases": [
+  {
+   "case": "cash_application_001",
+   "models": {
+    "qwen3.7-max": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    },
+    "deepseek-v4-flash": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    }
+   },
+   "predeclared_classification_of_the_disagreements": "both pass - admissible",
+   "corrected_classification": "both pass - admissible",
+   "reproduces_the_archived_runner": true
+  },
+  {
+   "case": "cash_application_002",
+   "models": {
+    "qwen3.7-max": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    },
+    "deepseek-v4-flash": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    }
+   },
+   "predeclared_classification_of_the_disagreements": "both pass - admissible",
+   "corrected_classification": "both pass - admissible",
+   "reproduces_the_archived_runner": true
+  },
+  {
+   "case": "cash_application_003",
+   "models": {
+    "qwen3.7-max": {
+     "as_executed": "differs",
+     "as_executed_problems": [
+      "3900.00: applied [('SI-3100', '0.00'), ('SI-3101', '2400.00'), ('SI-3102', '1500.00')] != [['SI-3101', '2400.00'], ['SI-3102', '1500.00']]"
+     ],
+     "archived_runner_verdict": "differs",
+     "corrected": "pass",
+     "corrected_problems": []
+    },
+    "deepseek-v4-flash": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    }
+   },
+   "predeclared_classification_of_the_disagreements": "one passes, one differs - contested",
+   "corrected_classification": "both pass - admissible",
+   "reproduces_the_archived_runner": true
+  },
+  {
+   "case": "cash_application_004",
+   "models": {
+    "qwen3.7-max": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    },
+    "deepseek-v4-flash": {
+     "as_executed": "pass",
+     "as_executed_problems": [],
+     "archived_runner_verdict": "pass",
+     "corrected": "pass",
+     "corrected_problems": []
+    }
+   },
+   "predeclared_classification_of_the_disagreements": "both pass - admissible",
+   "corrected_classification": "both pass - admissible",
+   "reproduces_the_archived_runner": true
+  },
+  {
+   "case": "cash_application_005",
+   "models": {
+    "qwen3.7-max": {
+     "as_executed": "differs",
+     "as_executed_problems": [
+      "3900.00: applied [('SI-3100', '0.00'), ('SI-3101', '2400.00'), ('SI-3102', '1500.00')] != [['SI-3101', '2400.00'], ['SI-3102', '1500.00']]"
+     ],
+     "archived_runner_verdict": "differs",
+     "corrected": "pass",
+     "corrected_problems": []
+    },
+    "deepseek-v4-flash": {
+     "as_executed": "differs",
+     "as_executed_problems": [
+      "3900.00: applied [('SI-3100', '0.00'), ('SI-3101', '2400.00'), ('SI-3102', '1500.00')] != [['SI-3101', '2400.00'], ['SI-3102', '1500.00']]"
+     ],
+     "archived_runner_verdict": "differs",
+     "corrected": "pass",
+     "corrected_problems": []
+    }
+   },
+   "predeclared_classification_of_the_disagreements": "both differ the same way - defective pending examination of the evidence",
+   "corrected_classification": "both pass - admissible",
+   "reproduces_the_archived_runner": true
+  }
+ ],
+ "totals": {
+  "as_executed_passes": 7,
+  "corrected_passes": 10,
+  "answers": 10
+ }
+}
