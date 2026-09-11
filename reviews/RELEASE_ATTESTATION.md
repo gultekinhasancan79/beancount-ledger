@@ -55,11 +55,16 @@ Verified against the repository's own entry points rather than asserted, on the 
 
 ## Artifacts (built from this checkout, `uv build`, hatchling, CPython 3.12.12)
 - wheel `beancount_ledger-0.2.0-py3-none-any.whl`: sha256
-  `8d8857e3cc2ec4bfaa532c21d522aa6982197c4f9b19960838322442880bc9f7`, 65 files; RECORD sha256
-  `faae068319346ca16ce186196a5a16ae16525d3c2d5c7f60c08810c8cc2207c5`
+  `5a1171c5f6ac957e2c9d6b2e18dada34bb353a17718edc22c1a7251bb08161ef`, 65 files; RECORD sha256
+  `eedc849f134d2df2874f93c10967bf650e8d9602c6d8236b085d380423bb7a46`
 - sdist `beancount_ledger-0.2.0.tar.gz`: sha256
-  `4f249490fc17dcd4854ff77b6ad5cc88cdd145cac3771b016ac30e2bba2fa329`, 66 files
+  `2504efbbc219b19ffd27165463354ff96a319008cacd72111c6250ac2a82ffc1`, 66 files
 - **reproducible**: built twice from the same checkout, byte-identical both times
+- these three values were re-measured from this checkout at publication. `pyproject.toml` sets
+  `readme = "README.md"`, so README.md is embedded in the wheel's `dist-info/METADATA` and
+  shipped in the sdist: **any edit to README.md moves all three hashes**, even when no code changes.
+  Editing files under `reviews/` does not — `reviews/` is excluded from the sdist and absent from the
+  wheel, so this document can be corrected without invalidating the hashes it records.
 - audit: neither artifact contains `tests/`, `reviews/`, a golden ledger, a `.pyc` or a secret
 - license: Apache-2.0 (SPDX), LICENSE sha256
   `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
@@ -69,11 +74,13 @@ The CI artifact audit checks packaging exclusions and several legacy files. That
 establish that the expanded cash family works from the distributed artifact, so this was measured
 directly.
 
-Method: the wheel above installed into a **clean throwaway virtual environment** (CPython 3.12.12,
-nothing but the wheel and its pins; never the repository's own `.venv`), and a scripted conforming
-agent driven through the **real `env.evaluate()` door** from the installed package, with the
-repository asserted absent from `sys.path` and the package path asserted to be inside
-`site-packages`. Per task:
+Method: the wheel attested above — rebuilt from this checkout and re-checked after the last
+documentation correction, which moved only `dist-info/METADATA` and `RECORD`, every one of the 61
+`beancount_ledger/` members staying byte-identical — installed into a **clean throwaway virtual
+environment** (CPython 3.12.12, nothing but the wheel and its pins; never the repository's own
+`.venv`), and a scripted conforming agent driven through the **real `env.evaluate()` door** from
+the installed package, with the repository asserted absent from `sys.path` and the package path
+asserted to be inside `site-packages`. Per task:
 
     list_files → read_file(ledger) → write_ledger(golden) → write_cash_application(golden register) → submit
 
