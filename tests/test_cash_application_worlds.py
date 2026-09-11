@@ -1779,13 +1779,20 @@ def test_the_credit_basis_guard_reads_an_independently_established_original_sale
         problems.append(f"{notes} credit notes across the eleven worlds, not 11")
 
     # 2. the basis does not move when the NOTE's rate does. Pennywhistle's
-    #    SI-5219 is round 15's invoice: 4,200.00 gross, a 4,000.00 + 200.00
-    #    sale at the world's 5%.
+    #    SI-5219 is round 15's invoice: 4,200.00 gross, carried in from the
+    #    prior period. No Sale event is authored for it — as for every
+    #    shipped note's invoice — so its 4,000.00 + 200.00 basis comes from
+    #    the gross split at the world's single authored sales rate of 0.05,
+    #    not from a sale the world states. The `source` string below says
+    #    which branch established it, and this test reads it.
     penny = VARIANT_MODULE["cash_application_008"][1]
     note = next(e for e in penny.events if isinstance(e, S.CreditNote))
     basis = S.original_sale_basis(penny, note.invoice_id)
     if basis[:2] != (D("4000.00"), D("200.00")):
         problems.append(f"SI-5219's basis reads {basis}, not 4000.00 + 200.00")
+    if any(isinstance(e, S.Sale) and e.invoice_id == note.invoice_id for e in penny.events) \
+            or basis[2] != "4200.00 gross at this world's authored sales rate 0.05":
+        problems.append(f"SI-5219's basis is not the carried-in gross split it is described as: {basis[2]!r}")
     for rate in ("0.00", "0.05", "0.20", "1.00"):
         moved = S.original_sale_basis(
             dataclasses.replace(penny, events=tuple(
@@ -1837,7 +1844,8 @@ def test_the_credit_basis_guard_reads_an_independently_established_original_sale
     return check("the credit-basis guard bounds a note against an INDEPENDENTLY established original sale — the "
                  "world's authored sale, or a prior-period invoice's gross split at the world's own single sales "
                  "rate — so the note's own rate cannot move its bound; round 15's 4,100.00-at-zero-tax control "
-                 "against a 4,200.00 gross invoice whose sale was 4,000.00 + 200.00 is refused, an over-credited "
+                 "against a 4,200.00 gross carried-in invoice whose established basis is 4,000.00 + 200.00 is "
+                 "refused, an over-credited "
                  "tax leg is refused, a world with no established basis may not carry a note, and all eleven "
                  "shipped notes still pass with the bound at the SALE and not the unpaid balance",
                  not problems, "\n".join(problems))

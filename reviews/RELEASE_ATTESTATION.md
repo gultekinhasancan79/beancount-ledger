@@ -273,8 +273,12 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   `Document` carries a gross and nothing else, and adding fields to it would move every world's graph digest, so the
   prior-period basis rests on the world's rate being single and authored. The bound remains the SALE and never the
   unpaid BALANCE — Bowline's Case 5 credits 540.00 against an invoice with 300.00 outstanding and is correct.
-- **The negative control round 15 named is now a test.** Pennywhistle's SI-5219 is raised for 4,200.00 against a
-  4,000.00 + 200.00 sale at the world's 5%. A 4,100.00 net credit at a **zero** tax rate passed the superseded
+- **The negative control round 15 named is now a test.** Pennywhistle's SI-5219 is a 4,200.00 invoice **carried in
+  from the prior period**: the world authors no `Sale` for it, so — like all eleven shipped notes' invoices — its
+  basis comes from the gross-split branch above, 4,200.00 at the world's single authored sales rate of 0.05, i.e.
+  4,000.00 net and 200.00 tax. (Earlier wording here called that "a 4,000.00 + 200.00 sale at the world's 5%", which
+  reads as an authored sale event; the figures are right, the wording was not.) A 4,100.00 net credit at a **zero**
+  tax rate passed the superseded
   derivation (`4,200.00 / 1.00 = 4,200.00`) and is now refused: *"reverses 4100.00 of sales value against
   doc:si-5219, whose original sale is 4000.00 (4200.00 gross at this world's authored sales rate 0.05)"*. The same
   test pins that a note's rate cannot move its own bound at 0.00 / 0.05 / 0.20 / 1.00, that an over-credited tax leg
@@ -306,11 +310,41 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
 
   The re-score reproduces the delivery receipt's own `canonical_digest` `66088b2c…` and `application_result_digest`
   `199e8af7…` and its `0.64`. It does **not** reproduce the ledger's `score_result_digest` or the
-  `composite_result_digest`: a `PrivateReceipt` carries a fresh `uuid4` per evaluation and the ledger result digest
-  binds it, so identical bytes re-score to identical SCORES and a different result digest. Round 15 expected the
+  `composite_result_digest`; the reason is given in the correction immediately below. Round 15 expected the
   counterfactual at `L = A = total = 1`; the measurement agrees, and what it establishes is that the two omitted
   rows account for the **whole** of the loss — not why the solver omitted them.
   `tests/test_cash_application_scoring.py::test_the_observed_007_delivery_and_its_two_row_counterfactual`.
+- **CORRECTION, same day: the stated reason for that non-reproduction was false, and "never" overstated it.** The
+  outcome above is true — a re-score does not return the delivery receipt's ledger or composite result digest — but
+  the mechanism published for it was not. The superseded wording, which stood at lines 309–310 of this file, in the
+  archived decomposition JSON and in the `a19310d` commit message, read: *"a `PrivateReceipt` carries a fresh
+  `uuid4` per evaluation and the ledger result digest binds it"* / *"never the same ledger or composite RESULT
+  digest"*. **The `uuid4` binds nothing.** `receipt_identity()` at `beancount_ledger/candidate/committed.py:875`
+  deliberately EXCLUDES the receipt's `attempt_id` — its docstring is *"The input receipt minus the attempt id: a
+  replay of the same bytes for the same revision of the same rollout is the same evaluation"* — and `attempt_id`
+  appears nowhere else in the package beyond its field declaration at `committed.py:775`. MEASURED, by scoring the
+  identical fixture bytes twice with a fresh `uuid4` each time: the SAME evaluation receipt `a97951b7…`, the SAME
+  ledger result digest `91d1378d…` and the SAME composite `498f3fe8…` both times. What the evaluation receipt does
+  bind is the replayed identity — `rollout_id`, `committed_revision` and the three input digests — and that is what
+  differs here:
+
+  | identity scored | evaluation receipt | ledger result | composite result |
+  |---|---|---|---|
+  | the test's (`rollout_id="check"`, revision 1) | `a97951b7…` | `91d1378d…` | `498f3fe8…` |
+  | the run's own `f2f7e5f6cada45b292383d77330708fc`, revision 1 | `42c42917…` | `cfe5054f…` | `f035479d…` |
+  | what the delivery receipt records | `647b5857…` | — | `a1e28649…` |
+
+  Even under the run's own rollout id it does not reproduce, because `receipt_identity` also binds
+  `submitted_text_digest` (ours, over the stored artifact, is `f6d7a5c9…`) and the archive holds the canonical
+  stored artifact, **not the original submitted text** — which is exactly what round 15's own Records replacement
+  says the archive does not contain. Measured: holding the rollout id fixed and substituting any other submitted
+  text moves the evaluation receipt and both result digests. So these digests are **deterministic** given the
+  rollout id, the revision and the three input digests; what cannot be reconstructed from the archive is the
+  submitted text, and that is the honest limitation. The regression test never encoded the false claim; a second
+  test now pins the measured behaviour so the claim cannot come back —
+  `tests/test_cash_application_scoring.py::test_the_007_result_digests_replay_by_identity_not_by_nonce`. Nothing
+  about any score, byte or shipped artifact changes with this correction; the `a19310d` commit message stands in
+  history with the superseded wording and is corrected here rather than rewritten.
 - **The shipped bytes still did not move.** The eleven cash bundles re-derive to `0a5c94fa` / `a7153bca` /
   `64956ef6` / `c5869203` / `9189497e` / `5fc4b055` / `bd64e62d` / `2573e334` / `ee1ca200` / `f6e7616f` / `2f7a27f6`
   and `tests/test_legacy_freeze.py` holds the 760 legacy public files and `committed.py` byte-identical, before and

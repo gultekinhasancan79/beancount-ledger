@@ -1374,6 +1374,110 @@ def test_the_observed_007_delivery_and_its_two_row_counterfactual():
                  "L = A = total = 1.000000, complete", not problems, "\n".join(problems))
 
 
+#: The result digests the attestation's correction table publishes for the
+#: 007 fixture, as MEASURED. They are pinned here so the published table and
+#: the code cannot drift apart: if an evaluator identity in `env.versions()`
+#: ever legitimately moves, this fails and the table must be re-measured —
+#: which is the point of publishing digests at all.
+_007_BY_IDENTITY = {
+    ("check", 1): ("a97951b7", "91d1378d", "498f3fe8"),
+    ("f2f7e5f6cada45b292383d77330708fc", 1): ("42c42917", "cfe5054f", "f035479d"),
+}
+
+
+def test_the_007_result_digests_replay_by_identity_not_by_nonce():
+    """Why re-scoring the archived 007 bytes does not return the delivery
+    receipt's ledger and composite result digests — measured, because the
+    reason first published for it was false.
+
+    That wording said a `PrivateReceipt`'s fresh `uuid4` was bound into the
+    ledger result digest, so the same bytes could "never" re-score to the
+    same result digest. The `uuid4` binds nothing: `K.receipt_identity` is
+    the receipt MINUS `attempt_id`, exactly so that a replay of the same
+    bytes for the same revision of the same rollout is the same evaluation.
+
+    What this test measures instead:
+
+      * the same bytes under the same identity, scored twice with a fresh
+        `uuid4` each time, give the SAME evaluation receipt, ledger result
+        and composite result digests;
+      * those digests are a function of the replayed IDENTITY — rollout id,
+        revision and the three input digests. `"check"` and the run's own
+        rollout id give different ones, and both are pinned;
+      * the `submitted_text_digest` is part of that identity, and the
+        archive keeps the canonical stored artifact rather than the
+        original submitted text. That — not a nonce — is why neither
+        identity returns the delivery receipt's recorded digests, and it is
+        an archive limitation, not a nondeterministic scorer.
+    """
+    from beancount_ledger.candidate.normalise import Accepted, parse_once
+
+    problems = []
+    directory = ROOT / "tests" / "observed" / "cash_application_007"
+    ledger_raw = (directory / "ledger.beancount").read_bytes()
+    delivered_raw = (directory / "cash_application.json").read_bytes()
+    receipt_json = json.loads((directory / "delivery.json").read_text(encoding="utf-8"))
+    text = ledger_raw.decode("utf-8")
+
+    _inputs, env, truth, _task = variant("cash_application_007")
+    parsed = parse_once(env_mod.logical_text(ledger_raw))
+    if not isinstance(parsed, Accepted):
+        return check("the 007 result digests replay by identity", False, f"the fixture did not parse: {parsed}")
+    application = A.score_application(parse(json.loads(delivered_raw.decode("utf-8")), truth), truth,
+                                      expected_balances=env.expected_balances)
+
+    def score(rollout_id: str, revision: int, submitted: str):
+        """One full pass of the production door, at a stated identity."""
+        receipt = K.new_receipt(rollout_id, revision, env_mod.digests_of(ledger_raw, submitted=submitted))
+        committed = K.commit(parsed, env, receipt)
+        outcome = K.score_committed(committed)
+        outcome.verify()
+        composed = X.compose(outcome, application)
+        composed.verify()
+        return receipt, (committed.evaluation_receipt_digest, outcome.result_digest, composed.result_digest)
+
+    # 1. the nonce is not in the identity, and not in the digests
+    if "attempt_id" in K.receipt_identity(K.new_receipt("check", 1, env_mod.digests_of(ledger_raw, submitted=text))):
+        problems.append("receipt_identity carries attempt_id")
+    first_receipt, first = score("check", 1, text)
+    second_receipt, second = score("check", 1, text)
+    if first_receipt.attempt_id == second_receipt.attempt_id:
+        problems.append("the two receipts share an attempt id; the nonce is not fresh and nothing was tested")
+    if first != second:
+        problems.append(f"a fresh uuid4 moved the digests: {first} then {second}")
+
+    # 2. the digests ARE a function of the replayed identity, and are the
+    #    ones the attestation's correction table publishes
+    run_rollout = receipt_json["rollout_id"]
+    measured = {("check", 1): first, (run_rollout, receipt_json["committed_revision"]): score(run_rollout, 1, text)[1]}
+    for identity, digests in sorted(measured.items()):
+        want = _007_BY_IDENTITY.get(identity)
+        if want is None:
+            problems.append(f"no published digests for identity {identity}")
+        elif tuple(d[:8] for d in digests) != want:
+            problems.append(f"{identity}: measured {tuple(d[:8] for d in digests)}, the attestation publishes {want}")
+    if len(set(measured.values())) != 2:
+        problems.append("two different rollout ids produced the same digests")
+
+    # 3. the submitted text is in the identity too, and the archive does not
+    #    hold it — which is the whole of the non-reproduction
+    for other in (text + "\n", "; a differently formatted original submission\n" + text):
+        if score(run_rollout, 1, other)[1] == measured[(run_rollout, receipt_json["committed_revision"])]:
+            problems.append("a different submitted text left the digests where they were")
+    recorded = (receipt_json["evaluation_receipt_digest"], receipt_json["application"]["composite_result_digest"])
+    for identity, (evaluation, _ledger, composite) in measured.items():
+        if (evaluation, composite) == recorded:
+            problems.append(f"{identity} reproduced the delivery receipt's digests; the limitation is misstated")
+    if any(key.startswith("submitted") for key in receipt_json):
+        problems.append("the ledger delivery receipt records a submitted-text digest after all")
+
+    return check("the 007 ledger and composite result digests are deterministic under a fresh uuid4 (identical "
+                 "evaluation receipt, ledger and composite digests across two scorings) and are a function of the "
+                 "replayed identity: rollout id, revision and the three input digests, the submitted text among "
+                 "them. Neither identity reproduces the delivery receipt's digests because the archive holds the "
+                 "stored artifact, not the original submitted text", not problems, "\n".join(problems))
+
+
 def test_penalty_vocabulary_and_prices_are_the_declared_ones():
     problems = []
     if A.PENALTY_LABELS != ("fabricated_invoice", "fabricated_receipt", "fabricated_credit_note", "receipt_identity",
@@ -1424,6 +1528,7 @@ TESTS = [
     test_every_state_is_reached_and_everything_reached_is_a_state,
     test_penalty_vocabulary_and_prices_are_the_declared_ones,
     test_the_observed_007_delivery_and_its_two_row_counterfactual,
+    test_the_007_result_digests_replay_by_identity_not_by_nonce,
 ]
 
 
