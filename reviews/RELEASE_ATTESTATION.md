@@ -125,3 +125,54 @@ Open defects and limits, recorded here because a reader should not have to find 
 - FIXED 2026-09-07 (rode contract 3, see Errata): The six public tools' JSON schemas declare `required: []` beside an empty `properties` with `strict: true` for the parameterless tools; providers that validate strictly (Groq) refuse the request. Fixing the schema moves the episode-contract digest, so it waits for a contract version bump.
 - The reward lattice contains four subsets (of 82,016) where two unresolved transpositions cancel on the bank leg, so the bank balance is right while both items stay unresolved. The scorer measures balances, so this is its arithmetic, not a defect; a later generator can refuse equal-and-opposite bank residuals.
 - The hosted-model budget calibration is inconclusive (provider quotas and outages, see above); the scripted-oracle calibration is what the budget claim rests on.
+
+## Cash-application family: three more company-months, six variants (2026-09-11)
+The family is now **eleven** shipped ids, so the hand-authored surface is **106** tasks (95 legacy + 11 family).
+`cash_application_006`..`011` are three MATCHED PAIRS — two variants of one company-month differing in exactly one
+authored fact, every other authored fact held identical, so a solver's failure localises to the question that fact
+asks. Worlds `thornbury-2026-06-pf-a`/`-b` (policy fallback: R3 26,868.00 against 21,000.00 — does the fold continue
+past the invoices the statement reference names?), `pennywhistle-2026-06-cr-a`/`-b` (credit-note residue: CN-0618
+gross 3,150.00 against 2,940.00 — what happens to credit nothing absorbs?), `tallowmere-2026-07-ar-a`/`-b` (advice
+residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does not name left unapplied?). Modules
+`graph/worlds/thornbury_2026_06.py`, `pennywhistle_2026_06.py`, `tallowmere_2026_07.py`, each stating its pair as
+`WORLD_BY_TASK`, with the shared policy text and instruction in `_variant_pack.py`; served from
+`graph/worlds/REGISTRY` under episode contract 5 with **no evaluator secret**, exactly like the Bowline five.
+- **The specification is `v10-codex/six_variant_packs.md`, and every one of the 66 projected public files equals its
+  rendered file BYTE FOR BYTE** (11 files x 6 variants, checked file by file against the document). Nothing in the
+  pack was changed to make a world fit.
+- Gates: (l) the opening register ties to the opening entry on the public bytes and in the truth (63,890.00 /
+  18,375.00 / 25,815.00); (m) the shipped public fold over the projected bytes equals the truth folded from the
+  authored facts under independently built keys, and both close at the expected ledger's `Assets:AR` (25,150.00 /
+  31,018.00 / 9,660.00 / 9,870.00 / 5,130.00 / 5,130.00); (n) the narration rule over every narration, advice note
+  and credit memo; (o) no admitted baseline reaches any of the six truths, and the admitted SETS are the pack's
+  (all ten at Thornbury, three at Pennywhistle, five at Tallowmere).
+- Identifiability: `identify.check_identifiable` returns `unique`, ONE reading, on all six, and the reading is
+  exactly the planted bank-evidenced repairs. Every plant is covered by an explicit validator. The three
+  company-months carry three DIFFERENT two-plant recipes — omission + alteration (Thornbury), duplicate +
+  alteration (Pennywhistle), duplicate + omission (Tallowmere).
+- `Expenses:SmallBalanceWriteOffs` opens at ZERO in all three months — no opening leg, no carry-forward row — so its
+  expected closing balance IS its period movement: 0.00 / 0.00 / 15.00, which is what `candidate/application.py`
+  reads for `writeoff_tie_break`.
+- NEW authoring check, from the review's decision 5: `schema.check_world` refuses a `CreditNote` whose net exceeds
+  the named invoice's ORIGINAL net, or whose tax exceeds its original tax. The bound is the original SALE, never the
+  unpaid BALANCE — Bowline's Case 5 credits 540.00 against an invoice with 300.00 outstanding and is correct, and
+  capping at the balance would prohibit it.
+- `tests/world_checks.check_world_task` gained `co_authored`: a variant-pack module states TWO worlds, so the
+  derived-literal scan (gate (h)) must read the sibling's authored amounts as authored literals in that file. It is
+  load-bearing rather than vacuous, and `tests/test_family_validators.py` pins that it bites without it (Tallowmere
+  variant A's cost of sales folds to 4,560.00, which is variant B's advice cell).
+- **The shipped bytes did not move.** The five Bowline bundles' public bytes and the 95 legacy tasks' public bytes
+  are byte-identical before and after this phase (sha256 over name-and-content of every public file:
+  `cash_application_001` `0a5c94fa…`, `002` `a7153bca…`, `003` `64956ef6…`, `004` `c5869203…`, `005` `9189497e…`;
+  the 95 legacy together `089873e0…`). The archived Bowline measurement evidence therefore remains valid, and the
+  legacy episode-contract view and digest `e8b8753d…` are untouched.
+- Suites: `tests/run_all.py` 34/34. The family's four suites were extended rather than duplicated — the fold suite
+  folds all six packs from the projector's own bytes, the worlds suite runs (l)/(m)/(n)/(o) and the pair rules over
+  the six, the validators suite runs identifiability and plant coverage, and the scoring suite scores every
+  variant's golden at 1.000000 and complete through the frozen `candidate/1` and `application/1`.
+- **The packs carry a dated AI accounting-plausibility review, not a practising accountant's sign-off:** the review
+  is archived verbatim as `v10-codex/accounting_review_2026-09-11.md` under its own label sentence — it identifies
+  corrections required before implementing these synthetic examples and validates neither operational accounting,
+  tax compliance nor financial-statement presentation. Practitioner validation is still outstanding.
+- No model has been run on `cash_application_006`..`011`. This section attests the packs, the gates and the battery,
+  and no difficulty, failure rate or training utility.

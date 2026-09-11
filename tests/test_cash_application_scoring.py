@@ -61,7 +61,11 @@ from beancount_ledger.candidate import composite as X  # noqa: E402
 from beancount_ledger.graph import cash_application as CA  # noqa: E402
 from beancount_ledger.graph import project as PJ  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
-from beancount_ledger.graph.worlds import CASH_APPLICATION_MODULES, REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import (  # noqa: E402
+    CASH_APPLICATION_MODULES,
+    CASH_APPLICATION_PAIR_MODULES,
+    REGISTRY,
+)
 
 from world_checks import score_text  # noqa: E402
 
@@ -276,6 +280,77 @@ def test_every_golden_register_scores_one_and_completes_with_the_golden_ledger()
     return check("every case's golden register scores A = 1 (from the truth and from the public fold over the "
                  "actual bytes, one canonical digest), and with the golden ledger the composite is 1.000000 and "
                  "complete", not problems, "\n".join(problems))
+
+
+_VARIANTS: dict = {}
+
+
+def variant(task_id: str):
+    """(inputs, env, truth, task) for one variant-pack task — the same road
+    the five take: `derive_contract` for the bundle, `load_contract` for the
+    frozen scorer's environment."""
+    if task_id not in _VARIANTS:
+        module = next(m for m in CASH_APPLICATION_PAIR_MODULES if task_id in m.TASKS)
+        task = module.TASKS[task_id]
+        _bundle, inputs = derive_contract(module.WORLD_BY_TASK[task_id], task)
+        _VARIANTS[task_id] = (inputs, K.load_contract(inputs), inputs.application, task)
+    return _VARIANTS[task_id]
+
+
+VARIANT_IDS = tuple(f"cash_application_{n:03d}" for n in range(6, 12))
+#: The residue each variant's truth carries: Σ unapplied over receipts and
+#: credit notes. It is what the three pairs exist to price, so it is pinned
+#: on the SCORED truth as well as on the fold.
+VARIANT_RESIDUE = {"cash_application_006": "0.00", "cash_application_007": "0.00",
+                   "cash_application_008": "210.00", "cash_application_009": "0.00",
+                   "cash_application_010": "540.00", "cash_application_011": "0.00"}
+
+
+def test_every_variant_golden_scores_one_and_completes_with_the_golden_ledger():
+    problems = []
+    for task_id in VARIANT_IDS:
+        inputs, env, truth, task = variant(task_id)
+        parsed_truth = parse(golden_document(truth), truth)
+        out = A.score_application(parsed_truth, truth, expected_balances=env.expected_balances)
+        if out.total != ONE or out.penalties or not out.delivered:
+            problems.append(f"{task_id}: the truth's own register scores {out.total} {out.penalties}")
+        if set(out.states()) != {A.RECEIPT_EXACT, A.INVOICE_EXACT, A.CREDIT_EXACT, A.AR_TIE_OK, A.WRITEOFF_TIE_OK}:
+            problems.append(f"{task_id}: golden states {sorted(set(out.states()))}")
+        # the public fold over the ACTUAL projected bytes delivers the same document
+        public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+        kw = dict(bank_account=BANK, period_start=task.period.start, period_end=task.period.end)
+        parsed_fold = parse(CA.document_text(CA.fold(public, **kw)), truth)
+        if not isinstance(parsed_fold, A.ParsedApplication) \
+                or parsed_fold.canonical_digest != parsed_truth.canonical_digest:
+            problems.append(f"{task_id}: the public fold's document is not the truth's canonical document")
+        else:
+            fold_out = A.score_application(parsed_fold, truth, expected_balances=env.expected_balances)
+            if fold_out.total != ONE:
+                problems.append(f"{task_id}: the public fold's document scores {fold_out.total}")
+            if A.canonical_text(parsed_fold) != A.canonical_text(parsed_truth):
+                problems.append(f"{task_id}: canonical_text differs between the fold's and the truth's document")
+        # the composite with the golden ledger, through the frozen candidate/1
+        outcome, problem = score_text(inputs.golden_text, env, task_id)
+        if outcome is None:
+            problems.append(f"{task_id}: {problem}")
+            continue
+        comp = X.compose(outcome, out)
+        if outcome.total != ONE or not outcome.complete or comp.total != ONE or not comp.complete:
+            problems.append(f"{task_id}: golden ledger L={outcome.total} complete={outcome.complete}; "
+                            f"composite {comp.total} complete={comp.complete}")
+        if comp.engines != ("candidate/1", "application/1", "composite/1"):
+            problems.append(f"{task_id}: engines {comp.engines}")
+        comp.verify()
+        out.verify()
+        if parsed_truth.counts != (len(truth.receipts), len(truth.register), len(truth.credit_notes)):
+            problems.append(f"{task_id}: counts {parsed_truth.counts}")
+        residue = sum([r[6] for r in truth.receipts] + [c[5] for c in truth.credit_notes], D(0))
+        if residue != D(VARIANT_RESIDUE[task_id]):
+            problems.append(f"{task_id}: residue {residue}, expected {VARIANT_RESIDUE[task_id]}")
+    return check("every variant's golden register scores A = 1 (from the truth and from the public fold over the "
+                 "actual bytes, one canonical digest), the composite with the golden ledger is 1.000000 and "
+                 "complete through the frozen candidate/1 and application/1, and each pair's residue is the "
+                 "pack's — 0/0, 210/0, 540/0", not problems, "\n".join(problems))
 
 
 def test_worked_example_i_amount_matching_chained_from_the_opening():
@@ -1203,6 +1278,7 @@ def test_penalty_vocabulary_and_prices_are_the_declared_ones():
 
 TESTS = [
     test_every_golden_register_scores_one_and_completes_with_the_golden_ledger,
+    test_every_variant_golden_scores_one_and_completes_with_the_golden_ledger,
     test_worked_example_i_amount_matching_chained_from_the_opening,
     test_worked_example_ii_r2_omission_left_through_the_frozen_scorer,
     test_worked_example_iii_case_3_through_the_frozen_scorer,

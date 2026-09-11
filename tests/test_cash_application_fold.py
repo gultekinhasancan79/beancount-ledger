@@ -317,7 +317,114 @@ EXPECTED = {
 }
 
 
-def _compare(app: CA.Application, expected: dict, label: str) -> list:
+MARROWBONE, PINEFALL = "Marrowbone Construction Group", "Pinefall Hospitality Partners"
+MARCHMONT, CORVID, ASHGROVE = ("Marchmont Grocers Co-operative", "Corvid Coffee Houses LLC",
+                               "Ashgrove Halt Refreshments Ltd")
+QUILLHAVEN, BROADMARSH, PELLOW = ("Quillhaven Publishing House", "Broadmarsh Academy Trust",
+                                  "Pellow & Dunge Stationers")
+
+
+def _sorted_rows(*rows):
+    return tuple(sorted((_row(*r) for r in rows), key=lambda r: r.invoice_id))
+
+
+_THORNBURY_BASE = (
+    ("SI-4377", PINEFALL, "6890.00", "6890.00", "0.00", "0.00", "0.00"),
+    ("SI-4383", PINEFALL, "5300.00", "2650.00", "0.00", "0.00", "2650.00"),
+    ("SI-4386", PINEFALL, "4240.00", "0.00", "0.00", "0.00", "4240.00"),
+    ("SI-4390", PINEFALL, "8480.00", "8480.00", "0.00", "0.00", "0.00"),
+    ("SI-4396", MARROWBONE, "12720.00", "12720.00", "0.00", "0.00", "0.00"),
+    ("SI-4408", MARROWBONE, "9540.00", "8268.00", "1272.00", "0.00", "0.00"),
+    ("SI-4415", MARROWBONE, "6360.00", "0.00", "0.00", "0.00", "6360.00"),
+    ("SI-4419", PINEFALL, "10600.00", "0.00", "0.00", "0.00", "10600.00"),
+)
+_TALLOW_BASE = (
+    ("SI-7218", QUILLHAVEN, "1620.00", "0.00", "0.00", "0.00", "1620.00"),
+    ("SI-7222", BROADMARSH, "3780.00", "3150.00", "630.00", "0.00", "0.00"),
+    ("SI-7226", QUILLHAVEN, "5250.00", "5250.00", "0.00", "0.00", "0.00"),
+    ("SI-7229", BROADMARSH, "4410.00", "4395.00", "0.00", "15.00", "0.00"),
+    ("SI-7231", QUILLHAVEN, "7920.00", "7920.00", "0.00", "0.00", "0.00"),
+    ("SI-7234", PELLOW, "2835.00", "2745.00", "0.00", "0.00", "90.00"),
+    ("SI-7242", PELLOW, "3360.00", "0.00", "0.00", "0.00", "3360.00"),
+)
+_PENNY_REGISTER = _sorted_rows(
+    ("SI-5188", MARCHMONT, "1260.00", "0.00", "1260.00", "0.00", "0.00"),
+    ("SI-5196", CORVID, "5250.00", "5250.00", "0.00", "0.00", "0.00"),
+    ("SI-5203", MARCHMONT, "3780.00", "3780.00", "0.00", "0.00", "0.00"),
+    ("SI-5211", ASHGROVE, "1995.00", "0.00", "0.00", "0.00", "1995.00"),
+    ("SI-5219", MARCHMONT, "2940.00", "1260.00", "1680.00", "0.00", "0.00"),
+    ("SI-5227", CORVID, "3150.00", "0.00", "0.00", "0.00", "3150.00"),
+    ("SI-5236", CORVID, "4200.00", "2100.00", "0.00", "0.00", "2100.00"),
+    ("SI-5244", MARCHMONT, "2625.00", "0.00", "0.00", "0.00", "2625.00"),
+)
+_PENNY_RECEIPTS = {
+    "2026-06-10:MG PAYRUN 0610": (_pairs((("SI-5203", "3780.00"), ("SI-5219", "1260.00"))), (), "0.00"),
+    "2026-06-15:6153": (_pairs((("SI-5196", "5250.00"),)), (), "0.00"),
+    "2026-06-26:CC ACH 0626": (_pairs((("SI-5236", "2100.00"),)), (), "0.00"),
+}
+_THORNBURY_HEAD = {
+    "2026-06-08:MCG REMIT 0605": (_pairs((("SI-4371", "5100.00"), ("SI-4396", "4440.00"))), (), "0.00"),
+    "2026-06-17:TRC0617318 SI-4383 SI-4390 SI-4377":
+        (_pairs((("SI-4390", "8480.00"), ("SI-4377", "6890.00"), ("SI-4383", "2650.00"))), (), "0.00"),
+}
+_TALLOW_HEAD = {
+    "2026-07-09:QPH SETTLEMENT 0709": (_pairs((("SI-7231", "7920.00"), ("SI-7226", "1620.00"))), (), "0.00"),
+    "2026-07-20:4417": (_pairs((("SI-7222", "3150.00"),)), (), "0.00"),
+    "2026-07-22:BAT REMIT 0722": (_pairs((("SI-7229", "4395.00"),)), _pairs((("SI-7229", "15.00"),)), "0.00"),
+    "2026-07-24:PDS PAYRUN 0724": (_pairs((("SI-7234", "2745.00"),)), (), "0.00"),
+}
+
+#: `v10-codex/six_variant_packs.md`'s three "correct application" sections,
+#: transcribed. `residue` is Σ unapplied over receipts and credit notes: the
+#: one number each pair exists to price.
+VARIANT_PACKS = {
+    "cash_application_006": dict(
+        receipts=dict(_THORNBURY_HEAD, **{
+            "2026-06-25:TRC0625704 SI-4402 SI-4408 SI-4396":
+                (_pairs((("SI-4408", "8268.00"), ("SI-4396", "8280.00"), ("SI-4402", "7420.00"),
+                         ("SI-4371", "2900.00"))), (), "0.00")}),
+        credits={"CN-0609": (_pairs((("SI-4408", "1272.00"),)), "0.00")},
+        register=_sorted_rows(*_THORNBURY_BASE,
+                              ("SI-4371", MARROWBONE, "9300.00", "8000.00", "0.00", "0.00", "1300.00"),
+                              ("SI-4402", MARROWBONE, "7420.00", "7420.00", "0.00", "0.00", "0.00")),
+        opening="63890.00", closing="25150.00", residue="0.00"),
+    "cash_application_007": dict(
+        receipts=dict(_THORNBURY_HEAD, **{
+            "2026-06-25:TRC0625704 SI-4402 SI-4408 SI-4396":
+                (_pairs((("SI-4408", "8268.00"), ("SI-4396", "8280.00"), ("SI-4402", "4452.00"))), (), "0.00")}),
+        credits={"CN-0609": (_pairs((("SI-4408", "1272.00"),)), "0.00")},
+        register=_sorted_rows(*_THORNBURY_BASE,
+                              ("SI-4371", MARROWBONE, "9300.00", "5100.00", "0.00", "0.00", "4200.00"),
+                              ("SI-4402", MARROWBONE, "7420.00", "4452.00", "0.00", "0.00", "2968.00")),
+        opening="63890.00", closing="31018.00", residue="0.00"),
+    "cash_application_008": dict(
+        receipts=_PENNY_RECEIPTS,
+        credits={"CN-0618": (_pairs((("SI-5219", "1680.00"), ("SI-5188", "1260.00"))), "210.00")},
+        register=_PENNY_REGISTER, opening="18375.00", closing="9660.00", residue="210.00"),
+    "cash_application_009": dict(
+        receipts=_PENNY_RECEIPTS,
+        credits={"CN-0618": (_pairs((("SI-5219", "1680.00"), ("SI-5188", "1260.00"))), "0.00")},
+        register=_PENNY_REGISTER, opening="18375.00", closing="9870.00", residue="0.00"),
+    "cash_application_010": dict(
+        receipts=dict(_TALLOW_HEAD, **{
+            "2026-07-29:QPH SETTLEMENT 0729":
+                (_pairs((("SI-7226", "3630.00"), ("SI-7239", "4020.00"))), (), "540.00")}),
+        credits={"CN-0714": (_pairs((("SI-7222", "630.00"),)), "0.00")},
+        register=_sorted_rows(*_TALLOW_BASE,
+                              ("SI-7239", QUILLHAVEN, "4620.00", "4020.00", "0.00", "0.00", "600.00")),
+        opening="25815.00", closing="5130.00", residue="540.00"),
+    "cash_application_011": dict(
+        receipts=dict(_TALLOW_HEAD, **{
+            "2026-07-29:QPH SETTLEMENT 0729":
+                (_pairs((("SI-7226", "3630.00"), ("SI-7239", "4560.00"))), (), "0.00")}),
+        credits={"CN-0714": (_pairs((("SI-7222", "630.00"),)), "0.00")},
+        register=_sorted_rows(*_TALLOW_BASE,
+                              ("SI-7239", QUILLHAVEN, "4620.00", "4560.00", "0.00", "0.00", "60.00")),
+        opening="25815.00", closing="5130.00", residue="0.00"),
+}
+
+
+def _compare(app: CA.Application, expected: dict, label: str, opening: str = "9270.00") -> list:
     problems = []
     got_receipts = {r.receipt_id: (r.applied, r.written_off, r.unapplied) for r in app.receipts}
     for receipt_id, (applied, written_off, unapplied) in expected["receipts"].items():
@@ -344,8 +451,8 @@ def _compare(app: CA.Application, expected: dict, label: str) -> list:
             problems.append(f"{label}: {len(app.register)} rows, expected {len(expected['register'])}")
     if app.closing_ar != D(expected["closing"]):
         problems.append(f"{label}: closing AR {app.closing_ar}, expected {expected['closing']}")
-    if app.opening_ar != D("9270.00"):
-        problems.append(f"{label}: opening AR {app.opening_ar}, expected 9270.00")
+    if app.opening_ar != D(opening):
+        problems.append(f"{label}: opening AR {app.opening_ar}, expected {opening}")
     return problems
 
 
@@ -414,6 +521,52 @@ def test_the_five_cases_fold_to_section_7():
             problems.append(f"case {case}: closing_ar is not sum(remaining) - sum(unapplied)")
     return check("the five cases fold to section 7's applications, write-offs, credit applications, register rows "
                  "and closing AR", not problems, "\n".join(problems))
+
+
+def test_the_six_variant_packs_fold_to_their_documents():
+    """The three matched pairs of `v10-codex/six_variant_packs.md`, folded
+    from the bytes the projector actually emits.
+
+    The fold still sees only strings — the projector is called here to
+    PRODUCE those strings, exactly as the evaluator mounts them, and the
+    import is local so this suite's module surface stays the fold's alone.
+    What is asserted is the fold's own answer: the pack's applications,
+    write-offs, credit applications, residues, register rows and closing AR,
+    with no refusal and no WARN, on all six.
+    """
+    from beancount_ledger.graph.derive import derive_contract          # noqa: PLC0415  (see the docstring)
+    from beancount_ledger.graph.worlds import CASH_APPLICATION_PAIR_MODULES  # noqa: PLC0415
+
+    problems = []
+    seen = []
+    for module in CASH_APPLICATION_PAIR_MODULES:
+        for task_id in sorted(module.TASKS):
+            task = module.TASKS[task_id]
+            _bundle, inputs = derive_contract(module.WORLD_BY_TASK[task_id], task)
+            public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+            expected = VARIANT_PACKS[task_id]
+            try:
+                app = CA.fold(public, bank_account=BANK, period_start=task.period.start,
+                              period_end=task.period.end)
+            except Exception as exc:
+                problems.append(f"{task_id}: {type(exc).__name__}: {exc}")
+                continue
+            seen.append(task_id)
+            problems += _compare(app, expected, task_id, opening=expected["opening"])
+            if any(w.startswith("WARN") for w in app.warnings):
+                problems.append(f"{task_id}: warnings {app.warnings}")
+            if app.closing_ar != sum((r.remaining for r in app.register), D(0)) - sum(
+                    [r.unapplied for r in app.receipts] + [c.unapplied for c in app.credit_notes], D(0)):
+                problems.append(f"{task_id}: closing_ar is not sum(remaining) - sum(unapplied)")
+            residue = sum([r.unapplied for r in app.receipts] + [c.unapplied for c in app.credit_notes], D(0))
+            if residue != D(expected["residue"]):
+                problems.append(f"{task_id}: residue {residue}, expected {expected['residue']}")
+    if seen != sorted(VARIANT_PACKS):
+        problems.append(f"folded {seen}, expected {sorted(VARIANT_PACKS)}")
+    return check("the six variant packs fold to their documents over the projector's own bytes: the policy "
+                 "fallback's rung-(3) remainder and its absence, the credit note's 210.00 residue and its "
+                 "absence, the advice's 540.00 residue and its absence — no refusal, no WARN",
+                 not problems, "\n".join(problems))
 
 
 def test_case_1_document_is_the_spec_example():
@@ -1017,6 +1170,7 @@ def test_gate_o_narratives_cases_3_4_5():
 TESTS = [
     test_the_fold_holds_the_public_only_discipline,
     test_the_five_cases_fold_to_section_7,
+    test_the_six_variant_packs_fold_to_their_documents,
     test_case_1_document_is_the_spec_example,
     test_period_basis_is_the_balance_entering_the_period,
     test_every_refusal_fires_on_a_minimal_fixture,

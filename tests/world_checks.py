@@ -187,7 +187,7 @@ def _statement_amounts(text: str) -> list:
 # the checks
 # --------------------------------------------------------------------------
 
-def check_world_task(world, task, source_path=None):
+def check_world_task(world, task, source_path=None, co_authored=()):
     """Every gate a hand-authored (world, task) pair must pass.
 
     Returns `(problems, warnings)`: two lists of strings, each message naming
@@ -196,6 +196,14 @@ def check_world_task(world, task, source_path=None):
 
     `source_path` is the world module's .py file. When given, the
     derived-literal scan (h) runs; without it that one check is skipped.
+
+    `co_authored` are the OTHER worlds stated in that same source file. A
+    variant-pack module carries a matched pair — two variants of one
+    company-month differing in one authored fact — so the sibling's authored
+    amounts are authored literals in the file too, and gate (h) must not
+    read them as derived numbers typed in. Tallowmere is the case that needs
+    it: variant B's advice cell is 4,560.00 and variant A's cost of sales
+    folds to the same figure. Leave it empty for a module holding one world.
     """
     problems: list = []
     warnings: list = []
@@ -227,11 +235,11 @@ def check_world_task(world, task, source_path=None):
     except Exception as exc:
         problems.append(f"{where}: derive_contract failed: {type(exc).__name__}: {exc}")
         return problems, warnings
-    found, warned = check_derived(world, task, bundle, inputs, source_path=source_path)
+    found, warned = check_derived(world, task, bundle, inputs, source_path=source_path, co_authored=co_authored)
     return problems + found, warnings + warned
 
 
-def check_derived(world, task, bundle, inputs, source_path=None):
+def check_derived(world, task, bundle, inputs, source_path=None, co_authored=()):
     """Every gate past derivation — (b) the contract door onwards — over
     contract inputs that have ALREADY been derived from `world` and `task`.
 
@@ -456,20 +464,24 @@ def check_derived(world, task, bundle, inputs, source_path=None):
         derived.setdefault(abs(Decimal(inputs.statement_closing)), []).append("the statement closing balance")
         derived.setdefault(abs(Decimal(bundle.opening_bank_balance)), []).append("the derived opening bank balance")
         authored = set()
-        for event in world.events:
-            for attr in ("amount", "net", "cost"):
-                value = getattr(event, attr, None)
-                if isinstance(value, Decimal):
-                    authored.add(abs(value))
-            # an advice line's cash and claimed deduction are authored facts
-            # too: the 20.00 the policy writes off IS the 20.00 the customer
-            # claimed, not a derived literal
-            for line in getattr(event, "lines", ()):
-                authored.add(abs(line.amount))
-                authored.add(abs(line.deduction))
-        authored |= {abs(v) for _, v in world.opening.carried}
-        authored.add(abs(world.bank_opening.balance))
-        authored |= {abs(d.gross) for d in world.documents if d.gross is not None}
+        # `co_authored` extends the scan's authored set to the sibling
+        # variants stated in the SAME file: their amounts are authored
+        # literals there, not derived numbers typed in.
+        for stated in (world,) + tuple(co_authored):
+            for event in stated.events:
+                for attr in ("amount", "net", "cost"):
+                    value = getattr(event, attr, None)
+                    if isinstance(value, Decimal):
+                        authored.add(abs(value))
+                # an advice line's cash and claimed deduction are authored
+                # facts too: the 20.00 the policy writes off IS the 20.00 the
+                # customer claimed, not a derived literal
+                for line in getattr(event, "lines", ()):
+                    authored.add(abs(line.amount))
+                    authored.add(abs(line.deduction))
+            authored |= {abs(v) for _, v in stated.opening.carried}
+            authored.add(abs(stated.bank_opening.balance))
+            authored |= {abs(d.gross) for d in stated.documents if d.gross is not None}
         scan = {value: what for value, what in derived.items() if value not in authored}
         if not scan:
             problems.append(f"{where}: the derived-literal scan is vacuous — every derived number is also an "

@@ -407,7 +407,10 @@ def check_world(world: World) -> list[str]:
     elif world.account(world.bank_account).kind is not AccountKind.ASSET:
         problems.append("the bank account is not an asset")
     roles = dict(world.roles)
-    from .policy import OPTIONAL_ROLES, ROLES   # the policy declares what it needs; the world says which account plays it
+    # the policy declares what it needs; the world says which account plays it.
+    # `credit_note_amounts` is imported with them so the credit-basis check
+    # below forms a note's tax with the ONE formula the recognitions use.
+    from .policy import OPTIONAL_ROLES, ROLES, credit_note_amounts
     deduction_claimed = claims_deduction(world)
     for role in ROLES:
         if role not in roles:
@@ -558,6 +561,33 @@ def check_world(world: World) -> list[str]:
             if e.invoice_id in doc_ids and world.document(e.invoice_id).issued > e.date:
                 problems.append(f"{what}: {e.invoice_id} is raised {world.document(e.invoice_id).issued}, after "
                                 f"the credit note's date {e.date}")
+            # THE CREDIT'S ORIGINAL-SALE BASIS (accounting review of
+            # 2026-09-11, decision 5). A `CreditNote` carries one text field
+            # and no other stated basis, so every note this schema can hold
+            # is described SOLELY as the reversal of the sale it names —
+            # and a reversal cannot exceed that sale's own net or its own
+            # tax. The bound is the ORIGINAL sale, never the unpaid
+            # balance: a credit larger than what is still owed is not a
+            # defect (Bowline's Case 5 is exactly that and is correct), and
+            # capping at the balance would prohibit it. Nothing else
+            # supplies this — the public fold checks the note's customer,
+            # invoice identity, date and distribution and the projector
+            # checks its arithmetic, so both pass a note that reverses more
+            # sales value and tax than the named invoice ever carried. A
+            # credit a business means to be MORE than the reversal of one
+            # sale is legitimate, but it needs its own stated commercial
+            # and accounting basis, which this schema does not yet model.
+            if e.invoice_id in doc_ids and world.document(e.invoice_id).gross is not None:
+                gross = world.document(e.invoice_id).gross
+                original_net = (gross / (Decimal(1) + e.tax_rate)).quantize(Decimal("0.01"))
+                original_tax = gross - original_net
+                tax, _gross = credit_note_amounts(e)
+                if e.net > original_net:
+                    problems.append(f"{what}: reverses {e.net} of sales value against {e.invoice_id}, whose "
+                                    f"original sale is {original_net} ({gross} gross at {e.tax_rate})")
+                if tax > original_tax:
+                    problems.append(f"{what}: reverses {tax} of tax against {e.invoice_id}, whose original tax "
+                                    f"is {original_tax} ({gross} gross at {e.tax_rate})")
         if isinstance(e, (ExpensePayment, Prepayment)) and party_id in party_ids:
             party = world.party(party_id)
             if party.role is not PartyRole.VENDOR or party.default_account is None:

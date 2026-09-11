@@ -120,6 +120,7 @@ from beancount_ledger.graph import mint as MI  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.worlds import (  # noqa: E402
     CASH_APPLICATION_MODULES,
+    CASH_APPLICATION_PAIR_MODULES,
     LEGACY_TASK_IDS,
     REGISTRY,
 )
@@ -787,6 +788,119 @@ def test_every_plant_is_covered_by_an_explicit_validator():
                  not problems, "\n".join(problems))
 
 
+# --------------------------------------------------------------------------
+# the three variant packs of 2026-09: six variants, three plant recipes
+# --------------------------------------------------------------------------
+
+_VARIANTS: dict = {}
+
+
+def variant(task_id: str):
+    """(module, world, task, bundle, inputs, public) for one variant."""
+    if task_id not in _VARIANTS:
+        module = next(m for m in CASH_APPLICATION_PAIR_MODULES if task_id in m.TASKS)
+        world, task = module.WORLD_BY_TASK[task_id], module.TASKS[task_id]
+        bundle, inputs = derive_contract(world, task)
+        _VARIANTS[task_id] = (module, world, task, bundle, inputs, decoded_public(inputs))
+    return _VARIANTS[task_id]
+
+
+#: Three company-months, three DIFFERENT two-plant recipes — which is what
+#: keeps the family from being one reconciliation puzzle renamed. The kinds
+#: are `identify.repair_key`'s, read back from the public bytes alone.
+VARIANT_RECIPES = {
+    "cash_application_006": {"missing_entry", "wrong_amount"},
+    "cash_application_007": {"missing_entry", "wrong_amount"},
+    "cash_application_008": {"duplicate", "wrong_amount"},
+    "cash_application_009": {"duplicate", "wrong_amount"},
+    "cash_application_010": {"duplicate", "missing_entry"},
+    "cash_application_011": {"duplicate", "missing_entry"},
+}
+VARIANT_IDS = tuple(sorted(VARIANT_RECIPES))
+
+
+def test_the_six_variants_read_uniquely_as_planted():
+    problems = []
+    for task_id in VARIANT_IDS:
+        _, world, task, _, inputs, public = variant(task_id)
+        verdict = ID.check_identifiable(public, bank_account=world.bank_account,
+                                        period_start=task.period.start, period_end=task.period.end)
+        names = master_names(public)
+        want = sorted(planted_key(p, names, bank_account=world.bank_account) for p in inputs.planted
+                      if any(a == world.bank_account for a, _ in p.required))
+        got = read_keys(verdict)
+        if not verdict.unique or verdict.readings != 1:
+            problems.append(f"{task_id}: {verdict.readings} readings: {verdict.reason[:300]}")
+        if want != got:
+            problems.append(f"{task_id}: planted {want}\n  read {got}")
+        kinds = {k[0] for k in got}
+        if kinds != VARIANT_RECIPES[task_id]:
+            problems.append(f"{task_id}: the recipe reads back as {sorted(kinds)}, not "
+                            f"{sorted(VARIANT_RECIPES[task_id])}")
+        print(f"      {task_id}: unique={verdict.unique} readings={verdict.readings} "
+              f"repairs={sorted(r.kind for r in verdict.repairs)}")
+    if len({frozenset(VARIANT_RECIPES[pair[0]]) for pair in
+            (("cash_application_006",), ("cash_application_008",), ("cash_application_010",))}) != 3:
+        problems.append("the three company-months do not carry three distinct plant recipes")
+    return check("all six variants: check_identifiable over the projected bytes is unique with one reading and "
+                 "reads exactly the planted bank-evidenced repairs, and the three company-months carry three "
+                 "DIFFERENT two-plant recipes — omission+alteration, duplicate+alteration, duplicate+omission",
+                 not problems, "\n".join(problems))
+
+
+def test_every_plant_of_the_six_is_covered_by_an_explicit_validator():
+    problems = []
+    for task_id in VARIANT_IDS:
+        _, world, task, bundle, inputs, public = variant(task_id)
+        found, _ = check_derived(world, task, bundle, inputs)
+        if any("covered by no explicit validator" in p for p in found):
+            problems.append(f"{task_id}: {[p for p in found if 'covered by' in p]}")
+        if found:
+            problems.append(f"{task_id}: {found[:3]}")
+        bank = {p.id for p in inputs.planted if any(a == world.bank_account for a, _ in p.required)}
+        if bank != {p.id for p in inputs.planted} or len(bank) != 2:
+            problems.append(f"{task_id}: plants {[(p.id, p.required) for p in inputs.planted]} are not two "
+                            f"bank-evidenced items")
+    return check("every plant of the six variants is bank-evidenced and covered by gate (f); no variant plants a "
+                 "write-off, so gate (m) has none to validate and none is left uncovered",
+                 not problems, "\n".join(problems))
+
+
+def test_verify_world_accepts_the_three_variant_pack_modules():
+    problems = []
+    modules = ("thornbury_2026_06", "pennywhistle_2026_06", "tallowmere_2026_07")
+
+    def run(name):
+        result = subprocess.run([sys.executable, str(ROOT / "tests" / "verify_world.py"),
+                                 str(WORLDS_DIR / f"{name}.py")],
+                                capture_output=True, text=True, encoding="utf-8", errors="replace")
+        return name, result
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for name, result in pool.map(run, modules):
+            if result.returncode != 0 or "2 of 2 task(s) clean" not in result.stdout:
+                problems.append(f"{name}: verify_world exit {result.returncode}\n{result.stdout[-900:]}\n"
+                                f"{result.stderr[-400:]}")
+    for task_id in VARIANT_IDS:
+        module, world, task, *_ = variant(task_id)
+        name = module.__name__.rsplit(".", 1)[1]
+        siblings = tuple(w for tid, w in module.WORLD_BY_TASK.items() if tid != task_id)
+        found, warnings = check_world_task(world, task, source_path=WORLDS_DIR / f"{name}.py",
+                                           co_authored=siblings)
+        if found or not all(w.startswith("WARN:") for w in warnings):
+            problems.append(f"{task_id}: {found[:3]} {[w for w in warnings if not w.startswith('WARN:')]}")
+        # the derived-literal scan is load-bearing: WITHOUT the sibling, the
+        # advice-residue pair's own B-variant cell reads as A's cost of sales
+        if task_id == "cash_application_010":
+            alone, _ = check_world_task(world, task, source_path=WORLDS_DIR / f"{name}.py")
+            if not any("appears as a literal" in p for p in alone):
+                problems.append("the derived-literal scan does not bite without co_authored; the widening is "
+                                "either wrong or vacuous")
+    return check("tests/verify_world.py accepts each of the three variant-pack modules (exit 0, both tasks clean), "
+                 "check_world_task passes all six with warnings only, and the co_authored widening of the "
+                 "derived-literal scan is load-bearing rather than vacuous", not problems, "\n".join(problems))
+
+
 def test_verify_world_and_the_world_battery_accept_the_five():
     problems = []
 
@@ -825,6 +939,9 @@ TESTS = [
     test_the_write_off_plant_is_validated_through_the_public_fold,
     test_every_plant_is_covered_by_an_explicit_validator,
     test_verify_world_and_the_world_battery_accept_the_five,
+    test_the_six_variants_read_uniquely_as_planted,
+    test_every_plant_of_the_six_is_covered_by_an_explicit_validator,
+    test_verify_world_accepts_the_three_variant_pack_modules,
 ]
 
 
