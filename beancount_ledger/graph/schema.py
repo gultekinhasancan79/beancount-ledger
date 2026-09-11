@@ -369,6 +369,57 @@ def _money(value) -> bool:
     return isinstance(value, Decimal) and value.is_finite() and value == value.quantize(Decimal("0.01"))
 
 
+def original_sale_basis(world: World, invoice_id: str) -> tuple:
+    """A sales invoice's ORIGINAL net and tax, established WITHOUT READING
+    ANY CREDIT NOTE — the figure the credit-basis check below bounds a note
+    against. Returns `(net, tax, source)`, or `(None, None, why)` when the
+    world establishes no basis.
+
+    Two sources, in this order, and a credit note is neither of them:
+
+      * the `Sale` the world authors for the invoice. It carries the net the
+        seller invoiced and the rate they charged, so the basis is READ.
+        That is the whole story for an invoice raised inside the period. A
+        sale whose net and tax do not add up to the invoice's own gross
+        establishes nothing — the two authored facts disagree about what the
+        customer was billed, and the caller must say so.
+      * an invoice CARRIED IN from the prior period has no `Sale` in this
+        world (the opening position is what survives of it) and a `Document`
+        carries only a gross. Its basis is that gross split at THE WORLD'S
+        OWN authored sales-tax rate — a fact of the world's sales, identical
+        whatever rate a note happens to claim. This holds only while the
+        world's sales speak with ONE rate: several rates, or none, leave
+        nothing to split at, and inventing one would put us back where the
+        superseded derivation was.
+
+    What this is NOT is `gross / (1 + credit_note.tax_rate)`, which was the
+    derivation here until 11 September 2026. That manufactured the supposed
+    basis out of the note being checked, so a note at a rate the sale never
+    used moved its own bound: a 4,100.00 net credit at zero tax passed
+    against a 4,200.00 gross invoice whose sale was 4,000.00 net plus 200.00
+    tax. Every shipped note uses its invoice's rate and fits it, so no
+    shipped world's accounting or score moved when this replaced it; the
+    claim that the original sale was enforced is what was wrong.
+    """
+    document = next((d for d in world.documents if d.id == invoice_id), None)
+    if document is None or document.gross is None:
+        return None, None, f"{invoice_id} is not an invoice carrying a gross"
+    sale = next((e for e in world.events if isinstance(e, Sale) and e.invoice_id == invoice_id), None)
+    if sale is not None:
+        tax = (sale.net * sale.tax_rate).quantize(Decimal("0.01"))
+        if sale.net + tax != document.gross:
+            return None, None, (f"the sale {sale.id} bills {sale.net} + {tax} while {invoice_id} is raised for "
+                                f"{document.gross}")
+        return sale.net, tax, f"the authored sale {sale.id}, {sale.net} at {sale.tax_rate}"
+    rates = {e.tax_rate for e in world.events if isinstance(e, Sale)}
+    if len(rates) != 1:
+        return None, None, (f"{invoice_id} is carried in from the prior period and this world's sales are authored "
+                            f"at {len(rates)} tax rates, so its gross {document.gross} splits at none of them")
+    rate = next(iter(rates))
+    net = (document.gross / (Decimal(1) + rate)).quantize(Decimal("0.01"))
+    return net, document.gross - net, f"{document.gross} gross at this world's authored sales rate {rate}"
+
+
 def check_world(world: World) -> list[str]:
     """Referential integrity, canonical strings and numbers, kind requirements.
     Returns every problem; an empty list is the only acceptable answer."""
@@ -562,32 +613,42 @@ def check_world(world: World) -> list[str]:
                 problems.append(f"{what}: {e.invoice_id} is raised {world.document(e.invoice_id).issued}, after "
                                 f"the credit note's date {e.date}")
             # THE CREDIT'S ORIGINAL-SALE BASIS (accounting review of
-            # 2026-09-11, decision 5). A `CreditNote` carries one text field
-            # and no other stated basis, so every note this schema can hold
-            # is described SOLELY as the reversal of the sale it names —
-            # and a reversal cannot exceed that sale's own net or its own
-            # tax. The bound is the ORIGINAL sale, never the unpaid
-            # balance: a credit larger than what is still owed is not a
-            # defect (Bowline's Case 5 is exactly that and is correct), and
-            # capping at the balance would prohibit it. Nothing else
-            # supplies this — the public fold checks the note's customer,
-            # invoice identity, date and distribution and the projector
-            # checks its arithmetic, so both pass a note that reverses more
-            # sales value and tax than the named invoice ever carried. A
-            # credit a business means to be MORE than the reversal of one
-            # sale is legitimate, but it needs its own stated commercial
-            # and accounting basis, which this schema does not yet model.
+            # 2026-09-11, decision 5; round 15, decision 6). A `CreditNote`
+            # carries one text field and no other stated basis, so every
+            # note this schema can hold is described SOLELY as the reversal
+            # of the sale it names — and a reversal cannot exceed that
+            # sale's own net or its own tax. The bound is the ORIGINAL
+            # sale, never the unpaid balance: a credit larger than what is
+            # still owed is not a defect (Bowline's Case 5 is exactly that
+            # and is correct), and capping at the balance would prohibit
+            # it. Nothing else supplies this — the public fold checks the
+            # note's customer, invoice identity, date and distribution and
+            # the projector checks its arithmetic, so both pass a note that
+            # reverses more sales value and tax than the named invoice ever
+            # carried. A credit a business means to be MORE than the
+            # reversal of one sale is legitimate, but it needs its own
+            # stated commercial and accounting basis, which this schema
+            # does not yet model.
+            #
+            # The basis comes from `original_sale_basis`, which reads the
+            # WORLD'S sales and never this note; the note supplies only the
+            # amounts being bounded. A world that establishes no basis for
+            # the invoice may not carry a credit note against it — refusing
+            # to author is the honest answer, and manufacturing a basis out
+            # of the note is what this replaced.
             if e.invoice_id in doc_ids and world.document(e.invoice_id).gross is not None:
-                gross = world.document(e.invoice_id).gross
-                original_net = (gross / (Decimal(1) + e.tax_rate)).quantize(Decimal("0.01"))
-                original_tax = gross - original_net
+                original_net, original_tax, source = original_sale_basis(world, e.invoice_id)
                 tax, _gross = credit_note_amounts(e)
-                if e.net > original_net:
-                    problems.append(f"{what}: reverses {e.net} of sales value against {e.invoice_id}, whose "
-                                    f"original sale is {original_net} ({gross} gross at {e.tax_rate})")
-                if tax > original_tax:
-                    problems.append(f"{what}: reverses {tax} of tax against {e.invoice_id}, whose original tax "
-                                    f"is {original_tax} ({gross} gross at {e.tax_rate})")
+                if original_net is None:
+                    problems.append(f"{what}: no original sale is established for {e.invoice_id}, so there is no "
+                                    f"basis to credit against ({source})")
+                else:
+                    if e.net > original_net:
+                        problems.append(f"{what}: reverses {e.net} of sales value against {e.invoice_id}, whose "
+                                        f"original sale is {original_net} ({source})")
+                    if tax > original_tax:
+                        problems.append(f"{what}: reverses {tax} of tax against {e.invoice_id}, whose original tax "
+                                        f"is {original_tax} ({source})")
         if isinstance(e, (ExpensePayment, Prepayment)) and party_id in party_ids:
             party = world.party(party_id)
             if party.role is not PartyRole.VENDOR or party.default_account is None:

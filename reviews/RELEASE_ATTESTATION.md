@@ -251,3 +251,67 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   for the single `089873e0` figure over the 95 legacy tasks is not recorded anywhere and was not recovered**; that
   one number is therefore not independently checkable from this document, and the claim it summarises should be read
   against `tests/test_legacy_freeze.py`, which pins all 760 legacy public files individually and passes.
+
+## Errata (2026-09-11, fourth set: the credit-basis guard is now fixed, and 007 is a measured fixture)
+
+- **The credit-basis guard no longer derives the basis from the note being checked.** The third errata set above
+  recorded that `check_world` overstated what it enforced and left the guard unchanged; this set changes the guard.
+  `beancount_ledger/graph/schema.py` gains `original_sale_basis(world, invoice_id)`, which establishes an invoice's
+  original net and tax **from the world and never from a credit note**, and the `CreditNote` branch of `check_world`
+  bounds the note against what it returns. Two sources, in order:
+  - the `Sale` the world authors for that invoice — its own net at its own rate, READ rather than derived. This is
+    the whole basis for an invoice raised inside the period (Thornbury's SI-4415 is 6,000.00 at 6%). A sale whose
+    net and tax do not add up to the invoice's gross establishes nothing, and is reported as such.
+  - an invoice **carried in from the prior period** has no `Sale` in this world and a `Document` carries only a
+    gross, so its basis is that gross split at **the world's own single authored sales-tax rate** — a fact of the
+    world's sales, identical whatever rate a note claims. Every shipped credit note names such an invoice. Where a
+    world's sales are authored at several rates, or at none, no basis is established and the world **may not carry a
+    credit note against that invoice at all**: `check_world` says so rather than inventing a rate.
+  What is therefore enforced, and may now be claimed: a note may not reverse more sales value than the original sale
+  carried, nor more tax than the original sale's tax, with the original sale established independently of the note.
+  What is **not** enforced, and is not claimed: an original net and tax authored on the invoice document itself. A
+  `Document` carries a gross and nothing else, and adding fields to it would move every world's graph digest, so the
+  prior-period basis rests on the world's rate being single and authored. The bound remains the SALE and never the
+  unpaid BALANCE — Bowline's Case 5 credits 540.00 against an invoice with 300.00 outstanding and is correct.
+- **The negative control round 15 named is now a test.** Pennywhistle's SI-5219 is raised for 4,200.00 against a
+  4,000.00 + 200.00 sale at the world's 5%. A 4,100.00 net credit at a **zero** tax rate passed the superseded
+  derivation (`4,200.00 / 1.00 = 4,200.00`) and is now refused: *"reverses 4100.00 of sales value against
+  doc:si-5219, whose original sale is 4000.00 (4200.00 gross at this world's authored sales rate 0.05)"*. The same
+  test pins that a note's rate cannot move its own bound at 0.00 / 0.05 / 0.20 / 1.00, that an over-credited tax leg
+  is refused on that leg, that a two-rate world may not carry the note, and that Case 5's 540.00-against-300.00
+  credit still passes — `tests/test_cash_application_worlds.py::`
+  `test_the_credit_basis_guard_reads_an_independently_established_original_sale`.
+- **No shipped world's accounting or score changed, and this was verified rather than assumed.** All eleven
+  cash-application worlds return an empty `check_world` before and after. Each of the eleven notes fits a basis that
+  is now read rather than manufactured: CN-0412 250.00 + 20.00 against 3,333.33 + 266.67 (Bowline c1–c4), 500.00 +
+  40.00 against 1,000.00 + 80.00 (c5), CN-0609 1,200.00 + 72.00 against 9,000.00 + 540.00, CN-0618 3,000.00 + 150.00
+  and 2,800.00 + 140.00 against 4,000.00 + 200.00, CN-0714 600.00 + 30.00 against 3,600.00 + 180.00. The guard is a
+  generator-side authoring check; it reads no submission and enters no reward.
+- **`cash_application_007` is now an executed regression fixture, not an argument.** The 11 September screen's
+  Thornbury B delivery was re-scored through the **shipped** `application/1`, `candidate/1` and `composite/1` at
+  this revision, and the counterfactual that adds **only** the two omitted closing rows was scored the same way.
+  The delivered artifacts are copied verbatim to `tests/observed/cash_application_007/` (application, ledger and
+  the run's own delivery receipt) and checked against that receipt's stored-byte and logical-text digests, and the
+  two decompositions are archived as machine-readable JSON beside the screen evidence
+  (`v10-codex/six_screen_evidence/cash_application_007_{delivered,counterfactual}.decomposition.json`).
+
+  | | delivered | counterfactual (+ SI-4415 6,360.00, + SI-4419 10,600.00, all four outcome columns zero) |
+  |---|---|---|
+  | `L` (`candidate/1`, the delivered ledger, unchanged in both) | 1.000000, complete | 1.000000, complete |
+  | `receipts_exact` / `register_exact` / `credit_exact` | 1.000000 / 0.800000 / 1.000000 | 1.000000 / 1.000000 / 1.000000 |
+  | penalties | `ar_tie_break` (remaining 14,058.00 − unapplied 0.00 ≠ closing receivables 31,018.00) | none |
+  | invoice states | eight `INVOICE_EXACT`, SI-4415 and SI-4419 `INVOICE_MISSING` | ten `INVOICE_EXACT` |
+  | `A` (`application/1`) | 0.640000 | 1.000000 |
+  | composite | 0.640000, **not** complete | 1.000000, complete |
+
+  The re-score reproduces the delivery receipt's own `canonical_digest` `66088b2c…` and `application_result_digest`
+  `199e8af7…` and its `0.64`. It does **not** reproduce the ledger's `score_result_digest` or the
+  `composite_result_digest`: a `PrivateReceipt` carries a fresh `uuid4` per evaluation and the ledger result digest
+  binds it, so identical bytes re-score to identical SCORES and a different result digest. Round 15 expected the
+  counterfactual at `L = A = total = 1`; the measurement agrees, and what it establishes is that the two omitted
+  rows account for the **whole** of the loss — not why the solver omitted them.
+  `tests/test_cash_application_scoring.py::test_the_observed_007_delivery_and_its_two_row_counterfactual`.
+- **The shipped bytes still did not move.** The eleven cash bundles re-derive to `0a5c94fa` / `a7153bca` /
+  `64956ef6` / `c5869203` / `9189497e` / `5fc4b055` / `bd64e62d` / `2573e334` / `ee1ca200` / `f6e7616f` / `2f7a27f6`
+  and `tests/test_legacy_freeze.py` holds the 760 legacy public files and `committed.py` byte-identical, before and
+  after this phase. `tests/run_all.py`: 34 of 34 suites pass.

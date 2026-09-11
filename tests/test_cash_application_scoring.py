@@ -55,6 +55,7 @@ for _path in (str(ROOT), str(ROOT / "tests")):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from beancount_ledger import beancount_ledger as env_mod  # noqa: E402
 from beancount_ledger.candidate import application as A  # noqa: E402
 from beancount_ledger.candidate import committed as K  # noqa: E402
 from beancount_ledger.candidate import composite as X  # noqa: E402
@@ -1252,6 +1253,127 @@ def test_every_state_is_reached_and_everything_reached_is_a_state():
                  "fabricated, basis, customer)", not problems, "\n".join(problems))
 
 
+def test_the_observed_007_delivery_and_its_two_row_counterfactual():
+    """The 11 September screen's Thornbury B delivery, scored here rather than
+    reasoned about (round 15, decision 1).
+
+    `tests/observed/cash_application_007/` holds the artifacts exactly as they
+    were delivered — the application, the ledger and the delivery receipt —
+    and this test first checks them against that receipt's own digests, so a
+    drifted fixture fails loudly instead of quietly scoring something else.
+
+    Then two runs of the SHIPPED scorer:
+
+      * the delivery as it stands. `L = 1`, a complete ledger repair; `A` is
+        short only through the closing register, whose eight rows are the
+        OPENING register's eight invoices — SI-4415 and SI-4419, both raised
+        in June and both unpaid at closing, are absent. Two `INVOICE_MISSING`
+        rows take `register_exact` to 0.800000 and the missing 16,960.00 of
+        receivables trips `ar_tie_break`;
+      * the counterfactual that adds ONLY those two closing rows, at their
+        period basis with nothing applied, credited or written off. The
+        ledger, the three receipts, the credit-note application and the eight
+        existing rows are untouched, and this test asserts that before
+        scoring. `L = A = total = 1`, complete.
+
+    What the counterfactual shows is that the omission accounts for the WHOLE
+    of the loss. It does not establish why the solver omitted the two rows.
+    """
+    problems = []
+    directory = ROOT / "tests" / "observed" / "cash_application_007"
+    delivered_raw = (directory / "cash_application.json").read_bytes()
+    ledger_raw = (directory / "ledger.beancount").read_bytes()
+    receipt = json.loads((directory / "delivery.json").read_text(encoding="utf-8"))
+
+    # 1. the fixture IS the delivered artifact
+    app_digests, ledger_digests = env_mod.digests_of(delivered_raw), env_mod.digests_of(ledger_raw)
+    for what, got, want in (
+            ("application stored bytes", app_digests["stored_bytes_digest"],
+             receipt["application"]["artifact_stored_bytes_digest"]),
+            ("application logical text", app_digests["logical_text_digest"],
+             receipt["application"]["artifact_logical_text_digest"]),
+            ("ledger stored bytes", ledger_digests["stored_bytes_digest"], receipt["artifact_stored_bytes_digest"]),
+            ("ledger logical text", ledger_digests["logical_text_digest"], receipt["artifact_logical_text_digest"])):
+        if got != want:
+            problems.append(f"{what}: the fixture digests {got[:12]}, the delivery receipt {want[:12]}")
+
+    inputs, env, truth, _task = variant("cash_application_007")
+    outcome, problem = score_text(ledger_raw.decode("utf-8"), env, "cash_application_007 delivered ledger")
+    if outcome is None:
+        return check("the observed 007 delivery and its counterfactual", False, problem)
+    if outcome.total != ONE or not outcome.complete:
+        problems.append(f"the delivered ledger scores L={outcome.total} complete={outcome.complete}")
+
+    # 2. the delivery as it stands
+    delivered = json.loads(delivered_raw.decode("utf-8"))
+    parsed = parse(delivered, truth)
+    if not isinstance(parsed, A.ParsedApplication):
+        return check("the observed 007 delivery and its counterfactual", False,
+                     f"the delivered application did not parse: {parsed}")
+    out = A.score_application(parsed, truth, expected_balances=env.expected_balances)
+    out.verify()
+    comp = X.compose(outcome, out)
+    comp.verify()
+    if (str(out.total), dict(out.components)) != ("0.640000", {"receipts_exact": D("1.000000"),
+                                                              "register_exact": D("0.800000"),
+                                                              "credit_exact": D("1.000000")}):
+        problems.append(f"the delivery scores A={out.total} {out.components}")
+    if out.penalty_labels != ("ar_tie_break",) or dict(out.tie_states)[A.TIE_AR] is not A.AR_TIE_CONTRADICTS:
+        problems.append(f"the delivery's penalties are {out.penalties} / {out.tie_states}")
+    missing = tuple(sorted(i for i, state in out.invoice_states if state is A.INVOICE_MISSING))
+    if missing != ("SI-4415", "SI-4419") or len(out.invoice_states) != 10:
+        problems.append(f"the missing rows are {missing} of {len(out.invoice_states)}")
+    if {state for _s, state in out.receipt_states} != {A.RECEIPT_EXACT} \
+            or {state for _s, state in out.credit_states} != {A.CREDIT_EXACT}:
+        problems.append(f"the receipts/credits are not all exact: {out.receipt_states} {out.credit_states}")
+    # the scorer's own digests and the composite reproduce the delivery receipt's figures
+    if out.application_digest != receipt["application"]["canonical_digest"] \
+            or out.result_digest != receipt["application"]["application_result_digest"]:
+        problems.append(f"the rescored digests {out.application_digest[:12]} / {out.result_digest[:12]} are not the "
+                        f"receipt's {receipt['application']['canonical_digest'][:12]} / "
+                        f"{receipt['application']['application_result_digest'][:12]}")
+    if (str(comp.total)[:4], comp.complete) != (receipt["application"]["composite_score"], False):
+        problems.append(f"the composite is {comp.total} complete={comp.complete}, receipt "
+                        f"{receipt['application']['composite_score']}")
+
+    # 3. the counterfactual: ONLY the two closing rows are added
+    counterfactual = json.loads(delivered_raw.decode("utf-8"))
+    counterfactual["closing_open_items"] = list(counterfactual["closing_open_items"]) + [
+        row("SI-4415", "Marrowbone Construction Group", "6360.00", "0.00", "0.00", "0.00", "6360.00"),
+        row("SI-4419", "Pinefall Hospitality Partners", "10600.00", "0.00", "0.00", "0.00", "10600.00")]
+    if counterfactual["receipts"] != delivered["receipts"] \
+            or counterfactual["credit_notes"] != delivered["credit_notes"] \
+            or counterfactual["closing_open_items"][:8] != delivered["closing_open_items"] \
+            or len(counterfactual["closing_open_items"]) != 10:
+        problems.append("the counterfactual changed something other than the two closing rows")
+    parsed_counter = parse(counterfactual, truth)
+    if not isinstance(parsed_counter, A.ParsedApplication):
+        return check("the observed 007 delivery and its counterfactual", False,
+                     f"the counterfactual did not parse: {parsed_counter}")
+    counter = A.score_application(parsed_counter, truth, expected_balances=env.expected_balances)
+    counter.verify()
+    comp_counter = X.compose(outcome, counter)
+    comp_counter.verify()
+    if counter.total != ONE or counter.penalties or not counter.delivered:
+        problems.append(f"the counterfactual scores A={counter.total} {counter.penalties}")
+    if set(counter.states()) != {A.RECEIPT_EXACT, A.INVOICE_EXACT, A.CREDIT_EXACT, A.AR_TIE_OK, A.WRITEOFF_TIE_OK}:
+        problems.append(f"the counterfactual's states are {sorted(set(counter.states()))}")
+    if comp_counter.total != ONE or not comp_counter.complete or comp_counter.ledger_total != ONE:
+        problems.append(f"the counterfactual composite is {comp_counter.total} complete={comp_counter.complete}")
+    if comp_counter.engines != ("candidate/1", "application/1", "composite/1"):
+        problems.append(f"the counterfactual's engines are {comp_counter.engines}")
+    # the two rows are the whole difference: the delivery's own register is the
+    # counterfactual's minus them
+    if [r for r in counterfactual["closing_open_items"] if r["invoice_id"] not in missing] \
+            != delivered["closing_open_items"]:
+        problems.append("removing the two rows from the counterfactual does not give the delivered register")
+    return check("the observed cash_application_007 delivery rescores through the shipped application/1 to "
+                 "A = 0.640000 (register_exact 0.800000, SI-4415 and SI-4419 INVOICE_MISSING, ar_tie_break) with "
+                 "L = 1.000000 and composite 0.640000 incomplete, reproducing the delivery receipt's canonical and "
+                 "result digests; adding ONLY those two closing rows and changing nothing else gives "
+                 "L = A = total = 1.000000, complete", not problems, "\n".join(problems))
+
+
 def test_penalty_vocabulary_and_prices_are_the_declared_ones():
     problems = []
     if A.PENALTY_LABELS != ("fabricated_invoice", "fabricated_receipt", "fabricated_credit_note", "receipt_identity",
@@ -1301,6 +1423,7 @@ TESTS = [
     test_the_scorer_reads_expected_balances_and_refuses_a_truth_that_disagrees,
     test_every_state_is_reached_and_everything_reached_is_a_state,
     test_penalty_vocabulary_and_prices_are_the_declared_ones,
+    test_the_observed_007_delivery_and_its_two_row_counterfactual,
 ]
 
 

@@ -1733,6 +1733,116 @@ def test_gate_n_and_gate_o_over_the_six_variants():
                  "Tallowmere", not problems, "\n".join(problems))
 
 
+# --------------------------------------------------------------------------
+# the credit note's original-sale basis (round 15, decision 6)
+# --------------------------------------------------------------------------
+
+def test_the_credit_basis_guard_reads_an_independently_established_original_sale():
+    """`schema.original_sale_basis` establishes an invoice's original net and
+    tax from the WORLD — the sale it authors, or, for an invoice carried in
+    from the prior period, its gross split at the world's own single authored
+    sales rate — and never from the credit note being checked. The negative
+    control is round 15's own example, which the superseded derivation
+    (`gross / (1 + credit_note.tax_rate)`) admitted."""
+    problems = []
+    worlds = [m.WORLD for m in CASH_APPLICATION_MODULES]
+    for module in CASH_APPLICATION_PAIR_MODULES:
+        worlds += list(dict.fromkeys(module.WORLD_BY_TASK.values()))
+
+    # 1. nothing shipped moved: every world still passes, and every note still
+    #    fits a basis that is now READ rather than manufactured.
+    notes = 0
+    for world in worlds:
+        found = S.check_world(world)
+        if found:
+            problems.append(f"{world.id}: check_world now refuses it: {found[:2]}")
+        for event in world.events:
+            if not isinstance(event, S.CreditNote):
+                continue
+            notes += 1
+            net, tax_basis, source = S.original_sale_basis(world, event.invoice_id)
+            note_tax, _gross = P.credit_note_amounts(event)
+            if net is None:
+                problems.append(f"{world.id}: no basis for {event.number}: {source}")
+            elif event.net > net or note_tax > tax_basis:
+                problems.append(f"{world.id}: {event.number} {event.net}+{note_tax} exceeds its basis "
+                                f"{net}+{tax_basis}")
+            # the basis is a fact of the world: re-authoring the note at a
+            # rate its sale never used leaves the basis where it was
+            elsewhere = S.original_sale_basis(
+                dataclasses.replace(world, events=tuple(
+                    dataclasses.replace(e, tax_rate=D("0.00")) if e is event else e for e in world.events)),
+                event.invoice_id)
+            if elsewhere[:2] != (net, tax_basis):
+                problems.append(f"{world.id}: {event.number} at a zero rate moves its own basis to {elsewhere[:2]}")
+    if notes != 11:
+        problems.append(f"{notes} credit notes across the eleven worlds, not 11")
+
+    # 2. the basis does not move when the NOTE's rate does. Pennywhistle's
+    #    SI-5219 is round 15's invoice: 4,200.00 gross, a 4,000.00 + 200.00
+    #    sale at the world's 5%.
+    penny = VARIANT_MODULE["cash_application_008"][1]
+    note = next(e for e in penny.events if isinstance(e, S.CreditNote))
+    basis = S.original_sale_basis(penny, note.invoice_id)
+    if basis[:2] != (D("4000.00"), D("200.00")):
+        problems.append(f"SI-5219's basis reads {basis}, not 4000.00 + 200.00")
+    for rate in ("0.00", "0.05", "0.20", "1.00"):
+        moved = S.original_sale_basis(
+            dataclasses.replace(penny, events=tuple(
+                dataclasses.replace(e, tax_rate=D(rate)) if e is note else e for e in penny.events)),
+            note.invoice_id)
+        if moved[:2] != basis[:2]:
+            problems.append(f"a note at {rate} moved the basis to {moved[:2]}")
+
+    # 3. THE NEGATIVE CONTROL: a 4,100.00 net credit at zero tax against that
+    #    invoice. `gross / (1 + 0.00)` called the original net 4,200.00 and
+    #    admitted it; the sale was 4,000.00.
+    gross = penny.document(note.invoice_id).gross
+    if gross != D("4200.00") or not D("4100.00") <= (gross / (D(1) + D("0.00"))).quantize(D("0.01")):
+        problems.append("the superseded derivation would not have admitted the control; it is not a control")
+    mismatched = dataclasses.replace(penny, events=tuple(
+        dataclasses.replace(e, net=D("4100.00"), tax_rate=D("0.00")) if e is note else e for e in penny.events))
+    found = S.check_world(mismatched)
+    if not any("reverses 4100.00 of sales value" in p and "original sale is 4000.00" in p for p in found):
+        problems.append(f"the mismatched-rate credit was not refused: {found[:3]}")
+
+    # 4. a note whose TAX alone exceeds the sale's tax is refused on that leg,
+    #    and the bound is the SALE, never the unpaid balance: Bowline's Case 5
+    #    credits 540.00 against SI-3100, which has 300.00 outstanding.
+    over_tax = dataclasses.replace(penny, events=tuple(
+        dataclasses.replace(e, net=D("4000.00"), tax_rate=D("0.10")) if e is note else e for e in penny.events))
+    if not any("of tax against" in p and "original tax is 200.00" in p for p in S.check_world(over_tax)):
+        problems.append(f"a 400.00 tax credit against a 200.00 tax sale passed: {S.check_world(over_tax)[:3]}")
+    _m5, world5, *_ = case(5)
+    case_5_note = next(e for e in world5.events if isinstance(e, S.CreditNote))
+    _net5, _tax5, source5 = S.original_sale_basis(world5, case_5_note.invoice_id)
+    if S.check_world(world5) or _net5 != D("1000.00"):
+        problems.append(f"Case 5's 540.00 credit against a 300.00 balance is refused: {S.check_world(world5)[:2]}")
+
+    # 5. an invoice raised INSIDE the period is read off its own sale, not off
+    #    any rate arithmetic — Thornbury's SI-4415 is 6,000.00 at 6%.
+    thornbury = VARIANT_MODULE["cash_application_007"][1]
+    net, tax_basis, source = S.original_sale_basis(thornbury, "doc:si-4415")
+    if (net, tax_basis) != (D("6000.00"), D("360.00")) or "event:si-4415-sale" not in source:
+        problems.append(f"SI-4415's basis reads {net} + {tax_basis} from {source}")
+
+    # 6. a world that establishes NO basis may not carry a note against the
+    #    invoice: two authored sales rates leave the prior-period gross with
+    #    nothing to split at.
+    sales = [e for e in penny.events if isinstance(e, S.Sale)]
+    two_rates = dataclasses.replace(penny, events=tuple(
+        dataclasses.replace(e, tax_rate=D("0.07")) if e is sales[0] else e for e in penny.events))
+    if not any("no original sale is established" in p for p in S.check_world(two_rates)):
+        problems.append(f"a note against an unestablished basis passed: {S.check_world(two_rates)[:3]}")
+    return check("the credit-basis guard bounds a note against an INDEPENDENTLY established original sale — the "
+                 "world's authored sale, or a prior-period invoice's gross split at the world's own single sales "
+                 "rate — so the note's own rate cannot move its bound; round 15's 4,100.00-at-zero-tax control "
+                 "against a 4,200.00 gross invoice whose sale was 4,000.00 + 200.00 is refused, an over-credited "
+                 "tax leg is refused, a world with no established basis may not carry a note, and all eleven "
+                 "shipped notes still pass with the bound at the SALE and not the unpaid balance",
+                 not problems, "\n".join(problems))
+
+
 TESTS = [
     test_the_family_is_five_variants_of_one_company_month,
     test_every_gate_passes_for_all_five,
@@ -1756,6 +1866,7 @@ TESTS = [
     test_gate_m_and_l_over_the_six_variants,
     test_the_write_off_account_opens_at_zero_in_all_three_months,
     test_gate_n_and_gate_o_over_the_six_variants,
+    test_the_credit_basis_guard_reads_an_independently_established_original_sale,
 ]
 
 
