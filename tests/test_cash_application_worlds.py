@@ -1,5 +1,6 @@
-"""The cash-application company-month and its five variants, on the world
-machinery (spec section 8, implementation order step 3).
+"""The cash-application family on the world machinery: Bowline April 2026 and
+its five variants, and the three matched pairs of 2026-09 that carry six more
+(spec section 8, implementation order step 3).
 
 Bowline Marine Supply Co., April 2026, is authored once (`worlds/_bowline.py`)
 and varied five times (`bowline_2026_04_c1.py` .. `_c5.py`): the third
@@ -1656,8 +1657,35 @@ def test_the_write_off_account_opens_at_zero_in_all_three_months():
                  "register's written_off column sums to the same", not problems, "\n".join(problems))
 
 
+#: Gate (o), pinned per variant: the baselines the EVIDENCE admits, read off
+#: `six_variant_packs.md` section 4 against `cash_application.BASELINES`.
+#: Thornbury admits EIGHT of the ten, not all ten: `write_off_everything` and
+#: `write_off_nothing` are not admitted there, because no bound advice claims
+#: a deduction anywhere in that month. An empty `refused_by` would not catch
+#: an admitted set that silently grew or shrank, so the set itself is pinned.
+ADMITTED_BASELINES = {
+    "cash_application_006": ("amount_only", "credit_ignored", "hold_on_account", "mixed_amount_only",
+                             "mixed_oldest_first", "number_order", "oldest_first", "printed_order"),
+    "cash_application_008": ("amount_only", "credit_ignored", "oldest_first"),
+    "cash_application_010": ("amount_only", "credit_ignored", "oldest_first",
+                             "write_off_everything", "write_off_nothing"),
+}
+#: each pair's two variants differ in one authored fact, never in what the
+#: evidence admits.
+ADMITTED_BASELINES["cash_application_007"] = ADMITTED_BASELINES["cash_application_006"]
+ADMITTED_BASELINES["cash_application_009"] = ADMITTED_BASELINES["cash_application_008"]
+ADMITTED_BASELINES["cash_application_011"] = ADMITTED_BASELINES["cash_application_010"]
+
+
 def test_gate_n_and_gate_o_over_the_six_variants():
     problems = []
+    # every shipped baseline is admitted by at least one of the three months,
+    # so a baseline added or renamed upstream cannot slip past the pins below.
+    pinned = set().union(*(set(names) for names in ADMITTED_BASELINES.values()))
+    shipped = set(CA.BASELINE_NAMES) | set(CA.DIAGNOSTIC_BASELINE_NAMES)
+    if pinned != shipped:
+        problems.append(f"the shipped baselines are {sorted(shipped)}; the pinned admitted sets name "
+                        f"{sorted(pinned)}, so a baseline was added or renamed without pinning it here")
     for task_id in VARIANT_IDS:
         _, world, task, _, inputs, public = variant(task_id)
         # (n) the narration rule, over every receipt and write-off narration
@@ -1680,17 +1708,29 @@ def test_gate_n_and_gate_o_over_the_six_variants():
                           if r.event_id == event.id]
             for text in texts:
                 problems += [f"{task_id}: gate (n): {p}" for p in narration_problems(text, tied, notes, task_id)]
-        # (o) no admitted baseline reaches the truth
+        # (o) no admitted baseline reaches the truth — the DIAGNOSTIC one
+        # included, which `refused_by` ignores by construction — and the
+        # admitted SET is the pack's, name for name.
         report = CA.baseline_report(public, **kw(task))
         reached = CA.refused_by(report)
         if reached:
             problems.append(f"{task_id}: gate (o): reached by {reached}")
+        diagnostic_reach = tuple(name for name, r in report.items()
+                                 if r.admitted and r.diagnostic and r.reaches_truth)
+        if diagnostic_reach:
+            problems.append(f"{task_id}: gate (o): diagnostic baseline(s) {diagnostic_reach} reach the truth")
+        admitted = tuple(sorted(name for name, r in report.items() if r.admitted))
+        if admitted != tuple(sorted(ADMITTED_BASELINES[task_id])):
+            problems.append(f"{task_id}: gate (o): the evidence admits {admitted}, not the pack's "
+                            f"{tuple(sorted(ADMITTED_BASELINES[task_id]))}")
         print(f"      {task_id}: " + ", ".join(
             f"{name}={'-' if r.reaches_truth is None else ('REACHES' if r.reaches_truth else 'no')}"
             for name, r in report.items()))
     return check("gates (n) and (o) over the six variants: no narration, advice note or credit memo names an "
-                 "invoice the payment's own public documents do not tie to it or instructs an application, and no "
-                 "admitted baseline reaches any of the six truths", not problems, "\n".join(problems))
+                 "invoice the payment's own public documents do not tie to it or instructs an application, no "
+                 "admitted baseline (the diagnostic one included) reaches any of the six truths, and the admitted "
+                 "SETS are the pack's — eight of the ten at Thornbury, three at Pennywhistle, five at "
+                 "Tallowmere", not problems, "\n".join(problems))
 
 
 TESTS = [

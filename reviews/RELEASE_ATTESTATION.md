@@ -138,14 +138,19 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
 `WORLD_BY_TASK`, with the shared policy text and instruction in `_variant_pack.py`; served from
 `graph/worlds/REGISTRY` under episode contract 5 with **no evaluator secret**, exactly like the Bowline five.
 - **The specification is `v10-codex/six_variant_packs.md`, and every one of the 66 projected public files equals its
-  rendered file BYTE FOR BYTE** (11 files x 6 variants, checked file by file against the document). Nothing in the
-  pack was changed to make a world fit.
+  rendered file BYTE FOR BYTE** (11 files x 6 variants, checked file by file against the document). One of the 66
+  the pack prints as a patch rather than as a whole file — pair 1's variant-B `ledger.beancount`, given as a
+  two-posting delta on variant A's — and it is A plus that delta that matches. Nothing in the pack was changed to
+  make a world fit.
 - Gates: (l) the opening register ties to the opening entry on the public bytes and in the truth (63,890.00 /
   18,375.00 / 25,815.00); (m) the shipped public fold over the projected bytes equals the truth folded from the
   authored facts under independently built keys, and both close at the expected ledger's `Assets:AR` (25,150.00 /
   31,018.00 / 9,660.00 / 9,870.00 / 5,130.00 / 5,130.00); (n) the narration rule over every narration, advice note
-  and credit memo; (o) no admitted baseline reaches any of the six truths, and the admitted SETS are the pack's
-  (all ten at Thornbury, three at Pennywhistle, five at Tallowmere).
+  and credit memo; (o) no admitted baseline reaches any of the six truths — the diagnostic `number_order`
+  included, so the claim is not just an empty `refused_by` — and the admitted SETS are the pack's: EIGHT of the ten
+  at Thornbury, because `write_off_everything` and `write_off_nothing` are NOT admitted there (no bound advice claims
+  a deduction anywhere in that month, which is what `six_variant_packs.md` section 4 says of them), three at
+  Pennywhistle, five at Tallowmere. The worlds suite pins each of the three sets by name.
 - Identifiability: `identify.check_identifiable` returns `unique`, ONE reading, on all six, and the reading is
   exactly the planted bank-evidenced repairs. Every plant is covered by an explicit validator. The three
   company-months carry three DIFFERENT two-plant recipes — omission + alteration (Thornbury), duplicate +
@@ -176,3 +181,22 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   tax compliance nor financial-statement presentation. Practitioner validation is still outstanding.
 - No model has been run on `cash_application_006`..`011`. This section attests the packs, the gates and the battery,
   and no difficulty, failure rate or training utility.
+
+## Errata (2026-09-11, to the section above, same day)
+- The gate-(o) bullet first read "the admitted SETS are the pack's (all ten at Thornbury, three at Pennywhistle,
+  five at Tallowmere)". **Thornbury admits EIGHT of the ten**, not all ten: `write_off_everything` and
+  `write_off_nothing` are not admitted there, which `six_variant_packs.md` section 4 states in as many words ("no
+  bound advice claims a deduction anywhere in the month"). Measured with the shipped `cash_application.baseline_report`
+  over the projected bytes of `cash_application_006`/`007`. The bullet now says eight; Pennywhistle's three and
+  Tallowmere's five were right as written.
+- Nothing in the battery caught it, because the worlds suite asserted only that `refused_by` was empty. It now pins
+  the admitted SET of every variant by name, and that every shipped baseline is admitted somewhere, so a set that
+  grows, shrinks or is renamed fails `tests/test_cash_application_worlds.py`. The pin was checked against a negative
+  control: adding the two write-off baselines to Thornbury's pinned set fails the suite.
+- The byte-for-byte bullet now records that one of the 66 files, pair 1's variant-B `ledger.beancount`, is printed
+  in the pack as a two-posting delta on variant A's rather than as a whole file; it is A plus that delta that
+  matches byte for byte. No projected byte moved: the 95 legacy and the five Bowline public bundles hash exactly as
+  above (`089873e0…`, `0a5c94fa…`, `a7153bca…`, `64956ef6…`, `c5869203…`, `9189497e…`) before and after this
+  correction, and the six new ids are unchanged too.
+- `docs/REFERENCE.md` said "the 27-suite battery" — a pre-existing staleness, not from the variant work. The battery
+  is 34 suites (`len(tests/run_all.py::SUITES)`), and the line now says so.

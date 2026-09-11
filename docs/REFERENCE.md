@@ -126,7 +126,7 @@ For the capability *spread* (small models 0–17%, stronger 58–92%), see the s
 | Path | What it is |
 |---|---|
 | `beancount_ledger/` | The environment: world generator (`graph/`) and the hand-authored worlds, 106 tasks (`graph/worlds/`: 95 legacy, eleven cash-application), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
-| `tests/` | The 27-suite battery, the exploit corpus (14 constructions over 13 families), the adversary loop, the liveness witness, the preflight, sealing and audit scripts; about 110 tracked files. Not shipped. |
+| `tests/` | The 34-suite battery, the exploit corpus (14 constructions over 13 families), the adversary loop, the liveness witness, the preflight, sealing and audit scripts; about 110 tracked files. Not shipped. |
 | `reviews/` | Dated evidence: pre-registration, the sealed confirm1v4 schedule with its 143 executed cells, the pilot and budget records that preceded it, rendered arm tables, the release attestation, the reward-lattice audit and the audit receipt. The budget records were run on generator-8 worlds; under generator 9 the same selectors name different worlds, so nothing in them describes a world that is served today. Not shipped. |
 | `outputs/evals/` | Raw `vf-eval` transcripts on the demo task. |
 
