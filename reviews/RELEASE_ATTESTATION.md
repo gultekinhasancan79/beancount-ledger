@@ -177,8 +177,8 @@ that invoice at all**; the check says so rather than inventing a rate.
   wheel's `beancount_ledger/` tree beyond the version string.
 
 ## Evidence files at this release (sha256 over the bytes git stores, LF)
-- README.md: `8a5c6f8ef8f00e36564e57e1202f7eb561db02d8ee59e2683a1306ef944a2ea2`
-- docs/REFERENCE.md: `aa9c72dce5ea7725eb433eb78abdf1a127907365408cff57af3f3fd5b8e23573`
+- README.md: `2874b8a48ce8fd3f386263ba11c0328632b31a59a6c5680a30f941723603956a`
+- docs/REFERENCE.md: `c136da7a8d494b1e4f206cb8c8a7e3b5ebc32b8cac1a1e8f2008de8ed00469f3`
 - pyproject.toml: `2cf4ff07601116b764a40c0a418a3a9d24f30f3191be5690b5ef636a19d8694d`
 - reviews/cash_application_adjudication_2026-09-10.md: `2b2ad0651bd90c42bc720ff0df327e6e784e65cf3cf531aff5dcbbed2d7bc3d6`
 - reviews/cash_application_six_variant_screen_2026-09-11.md: `835ab184dc61cf1fcd37ae657d2950e8d5585a15e4d1a7f2efb0fe97812e7eb8`
