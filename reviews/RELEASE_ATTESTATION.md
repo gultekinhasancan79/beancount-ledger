@@ -217,3 +217,37 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   closing register. The missing 011 cell stays missing — neither a zero nor an inferred success — and the screen is
   an incomplete descriptive one. It attests no difficulty, failure rate, generalisation or training utility, and it
   is not a release prerequisite. The note is `v10-codex/six_screen.result.md`.
+
+## Errata (2026-09-11, third set, on review of the correction phase)
+- **The failure-localisation sentence in the six-variant section above is retracted.** That section opens by calling
+  `cash_application_006`..`011` three matched pairs "differing in exactly one authored fact, every other authored fact
+  held identical, so a solver's failure localises to the question that fact asks". The clause after "so" does not
+  follow and is withdrawn. **Each pair differs in one authored fact, which defines the accounting distinction it is
+  intended to test. This does not guarantee that a solver's error concerns that distinction. Attribution requires
+  inspection of the delivered artifacts.** The screen of 11 September showed the difference: `cash_application_007`'s
+  only error was an incomplete closing register, which is not the question that pair's differing fact asks. The same
+  correction is now written in place in `docs/REFERENCE.md`, and in `v10-codex/six_variant_packs.md` (introduction,
+  Thornbury's framing and the Tallowmere shortcut table), `v10-codex/accountant_review_pack.md` and
+  `beancount_ledger/graph/worlds/_variant_pack.py`.
+- **The `check_world` credit-note bullet above overstates the guard, and is corrected here.** It says the check
+  refuses a `CreditNote` whose net exceeds the named invoice's ORIGINAL net or whose tax exceeds its original tax.
+  `beancount_ledger/graph/schema.py:582-583` derives that supposed basis from the invoice's GROSS at the CREDIT
+  NOTE's own rate — `original_net = (gross / (1 + credit_note.tax_rate))`, then `original_tax = gross - original_net`
+  — and a `Document` carries only a gross, never its own net or rate, so the check does not independently establish
+  the original sale's net and tax. At a credit-note rate of zero, a 4,100.00 net credit passes against a 4,200.00
+  gross invoice whose actual basis was 4,000.00 net plus 200.00 tax. What the check does enforce is a bound derived
+  from the named invoice's gross at the note's own rate, and — deliberately — no cap at the invoice's unpaid balance
+  (Bowline's Case 5 credits 540.00 against an invoice with 300.00 outstanding and is correct). Every credit note in
+  the shipped worlds uses its invoice's rate and fits that invoice, so this changes no shipped world's accounting and
+  no screen score. Validating against an independently established original-sale basis, and adding a mismatched-rate
+  negative control, are outstanding before the requirement may be called enforced. The guard itself is unchanged in
+  this phase; only the claim about it is.
+- **The bundle digests above had no stated recipe; here it is, for the five that reproduce.** Each
+  `cash_application_00N` figure is `sha256` over the task's projected public files taken in sorted name order, each
+  contributing `name || 0x00 || content || 0x00`, truncated to eight hex digits. Re-derived from `REGISTRY` through
+  `graph.derive.derive_contract` at this revision, that recipe reproduces all five exactly — `001` `0a5c94fa`, `002`
+  `a7153bca`, `003` `64956ef6`, `004` `c5869203`, `005` `9189497e` — and yields `006` `5fc4b055`, `007` `bd64e62d`,
+  `008` `2573e334`, `009` `ee1ca200`, `010` `f6e7616f`, `011` `2f7a27f6` for the six new ids. The **combining rule
+  for the single `089873e0` figure over the 95 legacy tasks is not recorded anywhere and was not recovered**; that
+  one number is therefore not independently checkable from this document, and the claim it summarises should be read
+  against `tests/test_legacy_freeze.py`, which pins all 760 legacy public files individually and passes.
