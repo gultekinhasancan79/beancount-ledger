@@ -558,3 +558,55 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   `64956ef6` / `c5869203` / `9189497e` / `5fc4b055` / `bd64e62d` / `2573e334` / `ee1ca200` / `f6e7616f` / `2f7a27f6`
   and `tests/test_legacy_freeze.py` holds the 760 legacy public files and `committed.py` byte-identical, before and
   after this phase. `tests/run_all.py`: 34 of 34 suites pass.
+
+## Errata (2026-09-11, fifth set: the 007 correction table was CPython-3.12-only, and CI caught it)
+- **CORRECTION: the table published two errata up was measured on CPython 3.12 / Unicode 15.0.0 only, and did not
+  say so.** PR #4's CI failed on ubuntu CPython 3.11 and ubuntu CPython 3.13, and passed on 3.12 (both OSes), on
+  `tests/test_cash_application_scoring.py::test_the_007_result_digests_replay_by_identity_not_by_nonce`. The cause
+  is exactly the class of mistake the errata at "2026-09-10" (immediately below the correction table above) already
+  fixed for `tests/legacy_freeze.json`: the module-level `_007_BY_IDENTITY` pinned absolute 8-hex prefixes of the
+  evaluation-receipt, ledger-result and composite-result digests, and those digests embed `scorer_contract_digest`,
+  which embeds `parse_policy_digest`, which records `unicodedata.unidata_version` as part of the parse policy's
+  identity (`candidate/canonical.py`, `parse_policy_view()`). The immediately preceding erratum's table —
+  *"MEASURED, by scoring the identical fixture bytes twice with a fresh `uuid4` each time: the SAME evaluation
+  receipt `a97951b7…`, the SAME ledger result digest `91d1378d…` and the SAME composite `498f3fe8…` both times"*,
+  and the table beneath it giving `a97951b7…` / `91d1378d…` / `498f3fe8…` for `("check", 1)` and `42c42917…` /
+  `cfe5054f…` / `f035479d…` for the run's own rollout id — is not wrong, but it is incomplete: those values hold
+  only on CPython 3.12 (Unicode 15.0.0), the interpreter that measured them, and the table did not say so. Restated
+  correctly, scoped by Unicode database:
+
+  | identity scored | Unicode database | evaluation receipt | ledger result | composite result |
+  |---|---|---|---|---|
+  | the test's (`rollout_id="check"`, revision 1) | 14.0.0 (CPython 3.11) | `d4718c74…` | `a7d84212…` | `20a78c57…` |
+  | the test's (`rollout_id="check"`, revision 1) | 15.0.0 (CPython 3.12) | `a97951b7…` | `91d1378d…` | `498f3fe8…` |
+  | the test's (`rollout_id="check"`, revision 1) | 15.1.0 (CPython 3.13) | `d59d85e5…` | `cb7e52db…` | `49eab16d…` |
+  | the run's own `f2f7e5f6cada45b292383d77330708fc`, revision 1 | 14.0.0 (CPython 3.11) | `424cf7a9…` | `48c764da…` | `62cb942a…` |
+  | the run's own `f2f7e5f6cada45b292383d77330708fc`, revision 1 | 15.0.0 (CPython 3.12) | `42c42917…` | `cfe5054f…` | `f035479d…` |
+  | the run's own `f2f7e5f6cada45b292383d77330708fc`, revision 1 | 15.1.0 (CPython 3.13) | `363f1da2…` | `3ac24e73…` | `90e3dab1…` |
+
+  The 15.0.0 row is the one already published two errata up, unchanged, and is NATIVE (this repository's own
+  interpreter). The 14.0.0 and 15.1.0 rows were DERIVED by substitution on that same CPython 3.12 machine — patching
+  the stdlib `unicodedata.unidata_version` attribute so both the test module and `candidate/canonical.py` see the
+  substituted string, exactly as `tests/test_legacy_freeze.py`'s `substituted_unicode_version` does for the legacy
+  fixture — and cross-checked against the per-interpreter `scorer_contract_digest` values the "2026-09-10" errata
+  already publishes above (14.0.0 `d1b7131a…`, 15.1.0 `3f12c01c…`): both derived rows reproduced those digests
+  exactly, so the two corrections are consistent with each other. `tests/test_cash_application_scoring.py` now pins
+  this table itself, keyed by `unicodedata.unidata_version`, as `_007_BY_IDENTITY_UNICODE_SCOPED`; a Unicode
+  database that mapping does not carry FAILS the test, naming the version and saying a row must be added under
+  review, the same way an unpinned database fails `tests/legacy_freeze.json` — it is never silently accepted, and
+  the running interpreter's own digests are never substituted as their own expectation.
+- **Swept for the same mistake elsewhere and found none unscoped.** Every other reference to
+  `parse_policy_digest`, `scorer_contract_digest`, `task_contract_digest` and `environment_digest` in the test suite
+  and in this file is either already Unicode-scoped (the "2026-09-10" errata above, and
+  `tests/legacy_freeze.json`'s `unicode_scoped`) or a relative comparison — two freshly computed digests checked
+  against each other, never an absolute literal — which cannot go stale this way. `runtime_environment_digest`
+  (`tests/schedule_arms.py`, `tests/measure_budget.py`, `tests/run_arms.py`) is an unrelated digest family, over the
+  bytes of installed distributions, and does not embed the parse policy. `EPISODE_CONTRACT_DIGEST` and
+  `EPISODE_CONTRACT_DIGEST_CASH_APPLICATION` (`tests/test_episode_contract.py`) and the content-library digest
+  (`tests/test_generator.py`) are likewise unrelated families, already attested above as identical on all three
+  interpreters.
+- **Nothing about any score, byte or shipped artifact changes with this correction**, exactly as the preceding
+  erratum said of itself. `tests/run_all.py`: 34 of 34 suites pass natively on this CPython 3.12 machine; the fixed
+  test additionally passes with `unicodedata.unidata_version` patched to `"14.0.0"` and to `"15.1.0"`, and fails —
+  naming the version and telling a reviewer to add the row — with it patched to an unpinned value such as
+  `"99.0.0"`.

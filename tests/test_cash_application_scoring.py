@@ -47,6 +47,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import sys
+import unicodedata
 from decimal import Decimal as D
 from pathlib import Path
 
@@ -1375,14 +1376,69 @@ def test_the_observed_007_delivery_and_its_two_row_counterfactual():
 
 
 #: The result digests the attestation's correction table publishes for the
-#: 007 fixture, as MEASURED. They are pinned here so the published table and
-#: the code cannot drift apart: if an evaluator identity in `env.versions()`
+#: 007 fixture, as MEASURED — scoped by `unicodedata.unidata_version`, the
+#: same way `tests/legacy_freeze.json`'s `unicode_scoped` is (see
+#: `tests/test_legacy_freeze.py`). All three digests here — the evaluation
+#: receipt, the ledger result and the composite result — embed
+#: `scorer_contract_digest`, which embeds `parse_policy_digest`, which
+#: records `unicodedata.unidata_version` as part of the parse policy's
+#: identity (`candidate/canonical.py`, `parse_policy_view()`): a CPython
+#: upgrade moves these prefixes even though nothing about the 007 fixture or
+#: the scorer changed. They are pinned here so the published table and the
+#: code cannot drift apart: if an evaluator identity in `env.versions()`
 #: ever legitimately moves, this fails and the table must be re-measured —
 #: which is the point of publishing digests at all.
-_007_BY_IDENTITY = {
-    ("check", 1): ("a97951b7", "91d1378d", "498f3fe8"),
-    ("f2f7e5f6cada45b292383d77330708fc", 1): ("42c42917", "cfe5054f", "f035479d"),
+#:
+#: The 15.0.0 row is NATIVE (this repository's own CPython 3.12
+#: interpreter). The 14.0.0 and 15.1.0 rows were DERIVED by substitution on
+#: that same CPython 3.12 interpreter — patching the stdlib
+#: `unicodedata.unidata_version` attribute so both this module and
+#: `candidate/canonical.py` see the substituted string, exactly as
+#: `tests/test_legacy_freeze.py`'s `substituted_unicode_version` does — and
+#: cross-checked against the per-interpreter `scorer_contract_digest` values
+#: `reviews/RELEASE_ATTESTATION.md` already publishes (14.0.0 `d1b7131a…`,
+#: 15.1.0 `3f12c01c…`): both derived rows reproduced those digests exactly.
+#: A Unicode version this mapping does not carry FAILS the test below,
+#: naming the version — see `_resolve_007_unicode_scoped`. It is never
+#: silently accepted, and the running interpreter's own digests are never
+#: substituted as their own expectation.
+_007_BY_IDENTITY_UNICODE_SCOPED = {
+    "14.0.0": {  # CPython 3.11 — derived by substitution on CPython 3.12 (15.0.0)
+        ("check", 1): ("d4718c74", "a7d84212", "20a78c57"),
+        ("f2f7e5f6cada45b292383d77330708fc", 1): ("424cf7a9", "48c764da", "62cb942a"),
+    },
+    "15.0.0": {  # CPython 3.12 — observed natively
+        ("check", 1): ("a97951b7", "91d1378d", "498f3fe8"),
+        ("f2f7e5f6cada45b292383d77330708fc", 1): ("42c42917", "cfe5054f", "f035479d"),
+    },
+    "15.1.0": {  # CPython 3.13 — derived by substitution on CPython 3.12 (15.0.0)
+        ("check", 1): ("d59d85e5", "cb7e52db", "49eab16d"),
+        ("f2f7e5f6cada45b292383d77330708fc", 1): ("363f1da2", "3ac24e73", "90e3dab1"),
+    },
 }
+
+
+def _resolve_007_unicode_scoped(version: str, problems: list) -> dict | None:
+    """The pinned `{identity: (evaluation, ledger, composite)}` row for
+    `version`, or `None` — which appends a problem naming the version and
+    leaves the caller to fail. No fallback, on purpose, for the same reason
+    `tests/test_legacy_freeze.py`'s `resolve_unicode_scoped` has none: these
+    digests embed `parse_policy_digest`, which records
+    `unicodedata.unidata_version`, so a Unicode database this mapping has
+    never been reviewed against is an UNVERIFIED runtime, not a verified
+    one — the running interpreter's own digests are not evidence about
+    themselves, and are never substituted as the expectation."""
+    if version in _007_BY_IDENTITY_UNICODE_SCOPED:
+        return _007_BY_IDENTITY_UNICODE_SCOPED[version]
+    problems.append(
+        f"unicode {version} is NOT pinned in _007_BY_IDENTITY_UNICODE_SCOPED "
+        f"(tests/test_cash_application_scoring.py). This runtime's Unicode database has never been reviewed "
+        f"against this fixture: parse_policy_digest records unicodedata.unidata_version, so identical source can "
+        f"embed different scorer digests under a different database, and the running interpreter's own digests "
+        f"are not evidence about themselves. Add a row for unicode {version} deliberately, under review — the way "
+        f"tests/legacy_freeze.json's unicode_scoped rows are added — and commit it. "
+        f"Pinned versions: {sorted(_007_BY_IDENTITY_UNICODE_SCOPED)}")
+    return None
 
 
 def test_the_007_result_digests_replay_by_identity_not_by_nonce():
@@ -1447,15 +1503,20 @@ def test_the_007_result_digests_replay_by_identity_not_by_nonce():
         problems.append(f"a fresh uuid4 moved the digests: {first} then {second}")
 
     # 2. the digests ARE a function of the replayed identity, and are the
-    #    ones the attestation's correction table publishes
+    #    ones the attestation's correction table publishes — scoped by this
+    #    interpreter's Unicode database (see _007_BY_IDENTITY_UNICODE_SCOPED)
     run_rollout = receipt_json["rollout_id"]
     measured = {("check", 1): first, (run_rollout, receipt_json["committed_revision"]): score(run_rollout, 1, text)[1]}
-    for identity, digests in sorted(measured.items()):
-        want = _007_BY_IDENTITY.get(identity)
-        if want is None:
-            problems.append(f"no published digests for identity {identity}")
-        elif tuple(d[:8] for d in digests) != want:
-            problems.append(f"{identity}: measured {tuple(d[:8] for d in digests)}, the attestation publishes {want}")
+    running_version = unicodedata.unidata_version
+    pinned_by_identity = _resolve_007_unicode_scoped(running_version, problems)
+    if pinned_by_identity is not None:
+        for identity, digests in sorted(measured.items()):
+            want = pinned_by_identity.get(identity)
+            if want is None:
+                problems.append(f"no published digests for identity {identity} at unicode {running_version}")
+            elif tuple(d[:8] for d in digests) != want:
+                problems.append(f"{identity} @ unicode {running_version}: measured {tuple(d[:8] for d in digests)}, "
+                                f"the attestation publishes {want}")
     if len(set(measured.values())) != 2:
         problems.append("two different rollout ids produced the same digests")
 
