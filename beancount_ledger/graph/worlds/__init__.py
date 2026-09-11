@@ -84,8 +84,10 @@ CASH_APPLICATION_MODULES = (
 # The three VARIANT PACKS of 2026-09 (`v10-codex/six_variant_packs.md`,
 # corrected after the accounting review of 2026-09-11). Each module carries a
 # matched PAIR — two variants of one company-month differing in exactly one
-# authored fact, with every other authored fact held identical — so a
-# solver's failure localises to the question that fact asks. A pair module
+# authored fact, with every other authored fact held identical. That fact
+# defines the accounting distinction the pair is intended to test; it does
+# NOT guarantee that a solver's error concerns that distinction, and
+# attribution requires inspection of the delivered artifacts. A pair module
 # therefore states TWO worlds and exposes them as `WORLD_BY_TASK` rather
 # than one `WORLD`; the shared facts are stated once in the module and the
 # shared policy and instruction once in `_variant_pack.py`.

@@ -200,3 +200,20 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   correction, and the six new ids are unchanged too.
 - `docs/REFERENCE.md` said "the 27-suite battery" — a pre-existing staleness, not from the variant work. The battery
   is 34 suites (`len(tests/run_all.py::SUITES)`), and the line now says so.
+
+## Errata (2026-09-11, second set, after the six-variant screen)
+- **The Bowline validity inference above is too broad and is qualified here.** The bullet says the shipped bytes did
+  not move "therefore" the archived Bowline measurement evidence remains valid. The hashes are correct and unchanged:
+  this phase preserved the Bowline bytes as they stood immediately before it. It did **not** undo the Case 2
+  payment-reference change made earlier the same week, which `reviews/cash_application_screen_2026-09-10.md` and its
+  sidecar already document — that screen was measured where the 28 April row's reference reads `SI-3104 SI-3102`,
+  and this source folds the receipt as `2026-04-28:TRC0428442 SI-3104 SI-3102`. Historical evidence remains valid
+  **at its recorded revision**, not automatically against every later checkout. Unchanged bytes across one phase are
+  evidence about that phase and about nothing before it.
+- **"No model has been run on `cash_application_006`..`011`" was true when written and is now superseded.** One
+  screen has since been run against the six variants at `328d702`, one subject and one episode each:
+  **five variants produced scored deliveries and `cash_application_011` ended with a provider 403 and no delivery.**
+  Four scored a complete `1.0`; `cash_application_007` scored `0.64` on a complete ledger repair with an incomplete
+  closing register. The missing 011 cell stays missing — neither a zero nor an inferred success — and the screen is
+  an incomplete descriptive one. It attests no difficulty, failure rate, generalisation or training utility, and it
+  is not a release prerequisite. The note is `v10-codex/six_screen.result.md`.

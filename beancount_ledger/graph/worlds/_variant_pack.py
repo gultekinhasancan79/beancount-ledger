@@ -5,7 +5,9 @@ PAIRS — Thornbury Glassworks LLC June 2026, Pennywhistle Bakehouse Co. June
 2026 and Tallowmere Print & Bindery Co. July 2026 — and every one of the
 eleven public files it renders is the byte the projector must emit. Each pair
 is two variants of ONE company-month differing in exactly one authored fact,
-so a solver's failure localises to the question that fact asks.
+which defines the accounting distinction it is intended to test. This does
+not guarantee that a solver's error concerns that distinction; attribution
+requires inspection of the delivered artifacts.
 
 Two things are identical across all three months and are therefore stated
 here once rather than three times: the bookkeeping policy, which differs only
