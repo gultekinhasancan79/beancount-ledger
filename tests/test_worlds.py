@@ -6,10 +6,15 @@ is the planted one. A hand-authored world is written by a person and put
 straight into `worlds.REGISTRY`, so the same properties have to be asserted
 somewhere or they are simply assumed. This is that somewhere, over every
 registry entry rather than over Alpine by name — the 95 legacy tasks of
-`REGISTRY` and the five cash-application tasks of
-`CASH_APPLICATION_REGISTRY`, held to one gate (the family's own gates (l),
+`REGISTRY` and the eleven cash-application tasks of
+`CASH_APPLICATION_REGISTRY` (Bowline's five, then the three matched pairs of
+the 2026-09 variant packs), held to one gate (the family's own gates (l),
 (m), (n) and the plant-coverage rule run for a world the family is inferred
 from, and for no other).
+
+A variant-pack module states TWO worlds, so the derived-literal scan is
+given the sibling as `co_authored`: an amount authored in variant B is an
+authored literal in that file, not a derived number typed in.
 
 What is checked per entry lives in `tests/world_checks.py` — the world
 schema, derivation and the contract door, the golden at 1.0 and complete,
@@ -52,13 +57,16 @@ def check(name, ok, detail=""):
 
 
 def module_by_task_id() -> dict:
-    """task id -> the .py file that authored it.
+    """task id -> [(the .py file that authored it, its module), ...].
 
     The `World` class is shared by every world, so the source file cannot be
     recovered from the object; the modules are scanned instead, and a task
     id is claimed by the module whose `TASKS` carries it. A registry entry
     no module claims is itself a failure (below): the derived-literal scan
-    would silently not run for it.
+    would silently not run for it. The module comes back with the path
+    because a variant-pack module states a PAIR of worlds, and the
+    derived-literal scan has to know that the sibling's authored amounts are
+    authored literals in that file too.
     """
     owners: dict = {}
     for path in sorted(WORLDS_DIR.glob("*.py")):
@@ -66,8 +74,14 @@ def module_by_task_id() -> dict:
             continue
         module = importlib.import_module(f"{WORLDS_PACKAGE}.{path.stem}")
         for task_id in getattr(module, "TASKS", {}):
-            owners.setdefault(task_id, []).append(path)
+            owners.setdefault(task_id, []).append((path, module))
     return owners
+
+
+def siblings_of(module, world) -> tuple:
+    """The other worlds this module states — empty for a module with one."""
+    by_task = getattr(module, "WORLD_BY_TASK", None) or {}
+    return tuple(w for w in by_task.values() if w.id != world.id)
 
 
 def test_every_registered_world_and_task():
@@ -82,9 +96,9 @@ def test_every_registered_world_and_task():
     # subset rather than a second registry that happens to agree.
     registered = dict(REGISTRY)
     legacy = [task_id for task_id in REGISTRY if task_id not in CASH_APPLICATION_REGISTRY]
-    if len(legacy) != 95 or len(CASH_APPLICATION_REGISTRY) != 5 or len(registered) != 100:
+    if len(legacy) != 95 or len(CASH_APPLICATION_REGISTRY) != 11 or len(registered) != 106:
         problems.append(f"the registry carries {len(legacy)} legacy and {len(CASH_APPLICATION_REGISTRY)} "
-                        f"cash-application tasks ({len(registered)} distinct), not 95 and 5")
+                        f"cash-application tasks ({len(registered)} distinct), not 95 and 11")
     if set(LEGACY_TASK_IDS) != set(legacy):
         problems.append(f"LEGACY_TASK_IDS is not the registry minus the family: "
                         f"{sorted(set(LEGACY_TASK_IDS) ^ set(legacy))}")
@@ -96,11 +110,10 @@ def test_every_registered_world_and_task():
         claimed = owners.get(task_id, [])
         if len(claimed) != 1:
             problems.append(f"{task_id}: {len(claimed)} world module(s) in {WORLDS_DIR.name}/ define this task id "
-                            f"({[p.name for p in claimed]}); the source of the task is ambiguous")
-            source = claimed[0] if claimed else None
-        else:
-            source = claimed[0]
-        found, warnings = check_world_task(world, task, source_path=source)
+                            f"({[p.name for p, _ in claimed]}); the source of the task is ambiguous")
+        source, module = claimed[0] if claimed else (None, None)
+        found, warnings = check_world_task(world, task, source_path=source,
+                                           co_authored=siblings_of(module, world) if module else ())
         problems.extend(found)
         warned.extend(warnings)
         results.append((task_id, world.id, source.name if source else "?", len(found), len(warnings)))

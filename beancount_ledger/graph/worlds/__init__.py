@@ -81,20 +81,46 @@ CASH_APPLICATION_MODULES = (
     bowline_2026_04_c5,   # cash_application_005  a credit exceeding the invoice's remaining balance
 )
 
+# The three VARIANT PACKS of 2026-09 (`v10-codex/six_variant_packs.md`,
+# corrected after the accounting review of 2026-09-11). Each module carries a
+# matched PAIR — two variants of one company-month differing in exactly one
+# authored fact, with every other authored fact held identical. That fact
+# defines the accounting distinction the pair is intended to test; it does
+# NOT guarantee that a solver's error concerns that distinction, and
+# attribution requires inspection of the delivered artifacts. A pair module
+# therefore states TWO worlds and exposes them as `WORLD_BY_TASK` rather
+# than one `WORLD`; the shared facts are stated once in the module and the
+# shared policy and instruction once in `_variant_pack.py`.
+from . import (  # noqa: E402
+    pennywhistle_2026_06,
+    tallowmere_2026_07,
+    thornbury_2026_06,
+)
+
+CASH_APPLICATION_PAIR_MODULES = (
+    thornbury_2026_06,     # cash_application_006 / 007  policy fallback: does the fold pass rung (2)?
+    pennywhistle_2026_06,  # cash_application_008 / 009  credit-note residue: credit nothing absorbs
+    tallowmere_2026_07,    # cash_application_010 / 011  advice residue: cash rung (1) does not name
+)
+
 #: The 95 shipped ids, frozen at the moment before the family joins them:
 #: `tests/test_legacy_freeze.py` and `tests/test_worlds.py` read this to say
 #: "the legacy surface" without listing ninety-five strings.
 LEGACY_TASK_IDS = tuple(REGISTRY)
 
 CASH_APPLICATION_REGISTRY: dict = {}
-for _module in CASH_APPLICATION_MODULES:
+for _module in CASH_APPLICATION_MODULES + CASH_APPLICATION_PAIR_MODULES:
+    _worlds = getattr(_module, "WORLD_BY_TASK", None)
+    if _worlds is not None and sorted(_worlds) != sorted(_module.TASKS):
+        raise RuntimeError(f"{_module.__name__}: WORLD_BY_TASK keys {sorted(_worlds)} are not its task ids "
+                           f"{sorted(_module.TASKS)}")
     for _task_id, _task in _module.TASKS.items():
         if _task_id in REGISTRY or _task_id in CASH_APPLICATION_REGISTRY:
             raise RuntimeError(f"task id {_task_id!r} is registered twice (second time by {_module.__name__})")
-        _entry = (_module.WORLD, _task)
+        _entry = (_worlds[_task_id] if _worlds is not None else _module.WORLD, _task)
         CASH_APPLICATION_REGISTRY[_task_id] = _entry
         REGISTRY[_task_id] = _entry
-del _module, _task_id, _task, _entry
+del _module, _worlds, _task_id, _task, _entry
 
 # `LEGACY_TASK_IDS = tuple(REGISTRY)` above is a SNAPSHOT taken at a point in
 # this module's import order, and a snapshot is only as good as the ordering

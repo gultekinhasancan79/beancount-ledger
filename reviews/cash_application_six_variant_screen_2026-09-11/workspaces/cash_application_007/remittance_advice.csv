@@ -1,0 +1,4 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4371,5100.00,no,0.00,Partial payment of the invoiced work; the remaining balance is outstanding and is not subject to retention or a completion condition.
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4396,4440.00,no,0.00,part payment on account; balance to follow on the next payment run
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4402,0.00,no,0.00,withheld; site access charge disputed

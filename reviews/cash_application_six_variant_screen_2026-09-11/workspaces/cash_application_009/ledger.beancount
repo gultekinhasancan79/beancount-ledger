@@ -1,0 +1,68 @@
+option "title" "Pennywhistle Bakehouse Co. - FY2026"
+option "operating_currency" "USD"
+
+2026-01-01 open Assets:AR                              USD
+2026-01-01 open Assets:Bank:Checking                   USD
+2026-01-01 open Assets:Inventory                       USD
+2026-01-01 open Assets:Prepayments                     USD
+2026-01-01 open Equity:Opening                         USD
+2026-01-01 open Expenses:BankFees                      USD
+2026-01-01 open Expenses:COGS                          USD
+2026-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2026-01-01 open Income:Sales                           USD
+2026-01-01 open Liabilities:AP                         USD
+2026-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-06-01 * "Opening balance" "Carried forward from May close"
+  Assets:Bank:Checking                         41250.00 USD
+  Assets:AR                                    18375.00 USD
+  Assets:Inventory                             31600.00 USD
+  Liabilities:AP                              -14900.00 USD
+  Equity:Opening                              -76325.00 USD
+
+2026-06-05 * "Kirtle Mill Flour Company" "Payment of purchase invoice PI-2417"
+  Liabilities:AP                                6480.00 USD
+  Assets:Bank:Checking                         -6480.00 USD
+
+2026-06-10 * "Marchmont Grocers Co-operative" "Customer payment, MG PAYRUN 0610"
+  Assets:Bank:Checking                          5040.00 USD
+  Assets:AR                                    -5040.00 USD
+
+2026-06-15 * "Corvid Coffee Houses LLC" "Customer check 6153"
+  Assets:Bank:Checking                          5250.00 USD
+  Assets:AR                                    -5250.00 USD
+
+2026-06-17 * "Corvid Coffee Houses LLC" "Cost of goods sold on SI-5236"
+  Expenses:COGS                                 2520.00 USD
+  Assets:Inventory                             -2520.00 USD
+
+2026-06-17 * "Corvid Coffee Houses LLC" "Sale SI-5236"
+  Assets:AR                                     4200.00 USD
+  Income:Sales                                 -4000.00 USD
+  Liabilities:SalesTax-Payable                  -200.00 USD
+
+2026-06-18 * "Marchmont Grocers Co-operative" "Credit note CN-0618 against SI-5219: spoilage allowance on the chilled range"
+  Income:Sales                                  2800.00 USD
+  Liabilities:SalesTax-Payable                   140.00 USD
+  Assets:AR                                    -2940.00 USD
+
+2026-06-19 * "Redgate Packaging Supply" "Payment of purchase invoice PI-2426"
+  Liabilities:AP                                2315.00 USD
+  Assets:Bank:Checking                         -2315.00 USD
+
+2026-06-22 * "Marchmont Grocers Co-operative" "Cost of goods sold on SI-5244"
+  Expenses:COGS                                 1500.00 USD
+  Assets:Inventory                             -1500.00 USD
+
+2026-06-22 * "Marchmont Grocers Co-operative" "Sale SI-5244"
+  Assets:AR                                     2625.00 USD
+  Income:Sales                                 -2500.00 USD
+  Liabilities:SalesTax-Payable                  -125.00 USD
+
+2026-06-26 * "Corvid Coffee Houses LLC" "Customer payment, CC ACH 0626"
+  Assets:Bank:Checking                          2100.00 USD
+  Assets:AR                                    -2100.00 USD
+
+2026-06-30 * "Fenland Mutual Bank" "Monthly account service charge"
+  Expenses:BankFees                               38.00 USD
+  Assets:Bank:Checking                           -38.00 USD

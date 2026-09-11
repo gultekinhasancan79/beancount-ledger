@@ -1,0 +1,5 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0610-MG,Marchmont Grocers Co-operative,2026-06-10,ACH,MG PAYRUN 0610,5040.00,SI-5203,3780.00,yes,0.00,
+RA-0610-MG,Marchmont Grocers Co-operative,2026-06-10,ACH,MG PAYRUN 0610,5040.00,SI-5219,1260.00,no,0.00,part payment; balance held pending the agreed spoilage allowance
+RA-0611-CC,Corvid Coffee Houses LLC,2026-06-11,CHECK,6153,5250.00,SI-5196,5250.00,yes,0.00,
+RA-0626-CC,Corvid Coffee Houses LLC,2026-06-26,ACH,CC ACH 0626,2100.00,SI-5236,2100.00,no,0.00,instalment on the June delivery; balance to follow

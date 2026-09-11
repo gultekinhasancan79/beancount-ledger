@@ -1,0 +1,9 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0709-QP,Quillhaven Publishing House,2026-07-09,ACH,QPH SETTLEMENT 0709,9540.00,SI-7231,7920.00,yes,0.00,
+RA-0709-QP,Quillhaven Publishing House,2026-07-09,ACH,QPH SETTLEMENT 0709,9540.00,SI-7226,1620.00,no,0.00,part payment; balance held pending the reprint reconciliation
+RA-0716-BA,Broadmarsh Academy Trust,2026-07-16,CHECK,4417,3150.00,SI-7222,3150.00,yes,0.00,net of credit note CN-0714
+RA-0722-BA,Broadmarsh Academy Trust,2026-07-22,ACH,BAT REMIT 0722,4395.00,SI-7229,4395.00,yes,15.00,Customer claims a minor carriage discrepancy; the seller has not approved a price reduction.
+RA-0724-PD,Pellow & Dunge Stationers,2026-07-24,ACH,PDS PAYRUN 0724,2745.00,SI-7234,2745.00,yes,90.00,damaged spines claimed; credit requested
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7226,3630.00,yes,0.00,balance of the reprint reconciliation
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7239,4020.00,no,0.00,on account against the July binding run
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7218,0.00,no,0.00,withheld; disputed trimming charge; credit requested

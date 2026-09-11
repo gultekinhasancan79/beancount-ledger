@@ -1,0 +1,165 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2026-07-09:QPH SETTLEMENT 0709",
+   "applied": [
+    {
+     "invoice_id": "SI-7226",
+     "amount": "1620.00"
+    },
+    {
+     "invoice_id": "SI-7231",
+     "amount": "7920.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Advice RA-0709-QP: SI-7231 settled in full; SI-7226 part payment, balance pending reprint reconciliation."
+  },
+  {
+   "receipt_id": "2026-07-20:4417",
+   "applied": [
+    {
+     "invoice_id": "SI-7222",
+     "amount": "3150.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Advice RA-0716-BA: settles SI-7222 net of credit note CN-0714; invoice closed."
+  },
+  {
+   "receipt_id": "2026-07-22:BAT REMIT 0722",
+   "applied": [
+    {
+     "invoice_id": "SI-7229",
+     "amount": "4395.00"
+    }
+   ],
+   "written_off": [
+    {
+     "invoice_id": "SI-7229",
+     "amount": "15.00"
+    }
+   ],
+   "unapplied_amount": "0.00",
+   "notes": "Advice RA-0722-BA marks SI-7229 settled; 15.00 shortfall within 25.00 tolerance, written off."
+  },
+  {
+   "receipt_id": "2026-07-24:PDS PAYRUN 0724",
+   "applied": [
+    {
+     "invoice_id": "SI-7234",
+     "amount": "2745.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Advice RA-0724-PD marks SI-7234 settled, but 90.00 shortfall exceeds 25.00 tolerance; no write-off, balance stays open."
+  },
+  {
+   "receipt_id": "2026-07-29:QPH SETTLEMENT 0729",
+   "applied": [
+    {
+     "invoice_id": "SI-7226",
+     "amount": "3630.00"
+    },
+    {
+     "invoice_id": "SI-7239",
+     "amount": "4020.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "540.00",
+   "notes": "Advice RA-0729-QP: SI-7226 settled; SI-7239 on account; SI-7218 withheld (disputed). 540.00 not named by the advice, held as unapplied credit of Quillhaven Publishing House."
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-0714",
+   "applied": [
+    {
+     "invoice_id": "SI-7222",
+     "amount": "630.00"
+    }
+   ],
+   "unapplied_amount": "0.00",
+   "notes": "Agreed allowance against SI-7222; invoice open balance absorbed the full gross amount."
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-7218",
+   "customer": "Quillhaven Publishing House",
+   "period_basis": "1620.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1620.00"
+  },
+  {
+   "invoice_id": "SI-7222",
+   "customer": "Broadmarsh Academy Trust",
+   "period_basis": "3780.00",
+   "applied_total": "3150.00",
+   "credited": "630.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7226",
+   "customer": "Quillhaven Publishing House",
+   "period_basis": "5250.00",
+   "applied_total": "5250.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7229",
+   "customer": "Broadmarsh Academy Trust",
+   "period_basis": "4410.00",
+   "applied_total": "4395.00",
+   "credited": "0.00",
+   "written_off": "15.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7231",
+   "customer": "Quillhaven Publishing House",
+   "period_basis": "7920.00",
+   "applied_total": "7920.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7234",
+   "customer": "Pellow & Dunge Stationers",
+   "period_basis": "2835.00",
+   "applied_total": "2745.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "90.00"
+  },
+  {
+   "invoice_id": "SI-7239",
+   "customer": "Quillhaven Publishing House",
+   "period_basis": "4620.00",
+   "applied_total": "4020.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "600.00"
+  },
+  {
+   "invoice_id": "SI-7242",
+   "customer": "Pellow & Dunge Stationers",
+   "period_basis": "3360.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3360.00"
+  }
+ ]
+}

@@ -97,21 +97,33 @@ def main(argv=None) -> int:
         path = (Path.cwd() / path).resolve()
     module = load_world_module(path)
 
+    # A module states one world (`WORLD`) or, for the variant packs, a pair
+    # of them keyed by task (`WORLD_BY_TASK`): two variants of one
+    # company-month differing in exactly one authored fact, stated together
+    # so what they share is stated once.
+    by_task = getattr(module, "WORLD_BY_TASK", None)
     world = getattr(module, "WORLD", None)
-    if world is None:
-        print(f"FAIL  {path}: the module defines no WORLD")
+    if world is None and not by_task:
+        print(f"FAIL  {path}: the module defines no WORLD and no WORLD_BY_TASK")
         return 1
     tasks = tasks_of(module)
     if not tasks:
         print(f"FAIL  {path}: the module defines no TASKS (and no module-level TaskSpec)")
         return 1
+    if by_task and sorted(by_task) != sorted(tasks):
+        print(f"FAIL  {path}: WORLD_BY_TASK keys {sorted(by_task)} are not the task ids {sorted(tasks)}")
+        return 1
 
-    print(f"world {world.id}   module {path}")
+    worlds = by_task or {task_id: world for task_id in tasks}
+    print(f"world{'s' if len(set(w.id for w in worlds.values())) > 1 else ''} "
+          f"{', '.join(sorted({w.id for w in worlds.values()}))}   module {path}")
     print(f"tasks {', '.join(sorted(tasks))}")
     failed = 0
     for task_id in sorted(tasks):
         task = tasks[task_id]
-        problems, warnings = check_world_task(world, task, source_path=path)
+        world = worlds[task_id]
+        siblings = tuple(w for tid, w in worlds.items() if tid != task_id and w.id != world.id)
+        problems, warnings = check_world_task(world, task, source_path=path, co_authored=siblings)
         status = "PASS" if not problems else "FAIL"
         note = "no problems" if not problems else f"{len(problems)} problem(s)"
         if warnings:

@@ -1,0 +1,64 @@
+option "title" "Thornbury Glassworks LLC - FY2026"
+option "operating_currency" "USD"
+
+2026-01-01 open Assets:AR                              USD
+2026-01-01 open Assets:Bank:Checking                   USD
+2026-01-01 open Assets:Inventory                       USD
+2026-01-01 open Assets:Prepayments                     USD
+2026-01-01 open Equity:Opening                         USD
+2026-01-01 open Expenses:BankFees                      USD
+2026-01-01 open Expenses:COGS                          USD
+2026-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2026-01-01 open Income:Sales                           USD
+2026-01-01 open Liabilities:AP                         USD
+2026-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-06-01 * "Opening balance" "Carried forward from May close"
+  Assets:Bank:Checking                        128400.00 USD
+  Assets:AR                                    63890.00 USD
+  Assets:Inventory                             41800.00 USD
+  Liabilities:AP                              -18250.00 USD
+  Equity:Opening                             -215840.00 USD
+
+2026-06-05 * "Ridgeway Sash & Hardware Co" "Payment of purchase invoice PI-9214"
+  Liabilities:AP                               12640.00 USD
+  Assets:Bank:Checking                        -12640.00 USD
+
+2026-06-08 * "Marrowbone Construction Group" "Customer payment, MCG REMIT 0605"
+  Assets:Bank:Checking                          9540.00 USD
+  Assets:AR                                    -9540.00 USD
+
+2026-06-09 * "Marrowbone Construction Group" "Credit note CN-0609 against SI-4408: Agreed price allowance for site-damaged glazing retained by the customer; no return or replacement goods."
+  Income:Sales                                  1200.00 USD
+  Liabilities:SalesTax-Payable                    72.00 USD
+  Assets:AR                                    -1272.00 USD
+
+2026-06-11 * "Marrowbone Construction Group" "Sale SI-4415"
+  Assets:AR                                     6360.00 USD
+  Income:Sales                                 -6000.00 USD
+  Liabilities:SalesTax-Payable                  -360.00 USD
+
+2026-06-11 * "Marrowbone Construction Group" "Cost of goods sold on SI-4415"
+  Expenses:COGS                                 3720.00 USD
+  Assets:Inventory                             -3720.00 USD
+
+2026-06-16 * "Pinefall Hospitality Partners" "Sale SI-4419"
+  Assets:AR                                    10600.00 USD
+  Income:Sales                                -10000.00 USD
+  Liabilities:SalesTax-Payable                  -600.00 USD
+
+2026-06-16 * "Pinefall Hospitality Partners" "Cost of goods sold on SI-4419"
+  Expenses:COGS                                 6200.00 USD
+  Assets:Inventory                             -6200.00 USD
+
+2026-06-17 * "Pinefall Hospitality Partners" "Customer payment, TRC0617318 SI-4383 SI-4390 SI-4377"
+  Assets:Bank:Checking                         18020.00 USD
+  Assets:AR                                   -18020.00 USD
+
+2026-06-25 * "Marrowbone Construction Group" "Customer payment, TRC0625704 SI-4402 SI-4408 SI-4396"
+  Assets:Bank:Checking                         26868.00 USD
+  Assets:AR                                   -26868.00 USD
+
+2026-06-30 * "Trellis State Bank" "Monthly account service charge"
+  Expenses:BankFees                               85.00 USD
+  Assets:Bank:Checking                           -85.00 USD

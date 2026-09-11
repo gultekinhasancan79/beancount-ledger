@@ -1,0 +1,7 @@
+invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-5188,Marchmont Grocers Co-operative,2026-04-22,2026-06-06,4410.00,1260.00
+SI-5196,Corvid Coffee Houses LLC,2026-04-29,2026-05-29,5250.00,5250.00
+SI-5203,Marchmont Grocers Co-operative,2026-05-06,2026-06-20,3780.00,3780.00
+SI-5211,Ashgrove Halt Refreshments Ltd,2026-05-12,2026-06-11,1995.00,1995.00
+SI-5219,Marchmont Grocers Co-operative,2026-05-19,2026-07-03,4200.00,2940.00
+SI-5227,Corvid Coffee Houses LLC,2026-05-26,2026-06-25,3150.00,3150.00

@@ -47,6 +47,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import sys
+import unicodedata
 from decimal import Decimal as D
 from pathlib import Path
 
@@ -55,13 +56,18 @@ for _path in (str(ROOT), str(ROOT / "tests")):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from beancount_ledger import beancount_ledger as env_mod  # noqa: E402
 from beancount_ledger.candidate import application as A  # noqa: E402
 from beancount_ledger.candidate import committed as K  # noqa: E402
 from beancount_ledger.candidate import composite as X  # noqa: E402
 from beancount_ledger.graph import cash_application as CA  # noqa: E402
 from beancount_ledger.graph import project as PJ  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
-from beancount_ledger.graph.worlds import CASH_APPLICATION_MODULES, REGISTRY  # noqa: E402
+from beancount_ledger.graph.worlds import (  # noqa: E402
+    CASH_APPLICATION_MODULES,
+    CASH_APPLICATION_PAIR_MODULES,
+    REGISTRY,
+)
 
 from world_checks import score_text  # noqa: E402
 
@@ -276,6 +282,77 @@ def test_every_golden_register_scores_one_and_completes_with_the_golden_ledger()
     return check("every case's golden register scores A = 1 (from the truth and from the public fold over the "
                  "actual bytes, one canonical digest), and with the golden ledger the composite is 1.000000 and "
                  "complete", not problems, "\n".join(problems))
+
+
+_VARIANTS: dict = {}
+
+
+def variant(task_id: str):
+    """(inputs, env, truth, task) for one variant-pack task — the same road
+    the five take: `derive_contract` for the bundle, `load_contract` for the
+    frozen scorer's environment."""
+    if task_id not in _VARIANTS:
+        module = next(m for m in CASH_APPLICATION_PAIR_MODULES if task_id in m.TASKS)
+        task = module.TASKS[task_id]
+        _bundle, inputs = derive_contract(module.WORLD_BY_TASK[task_id], task)
+        _VARIANTS[task_id] = (inputs, K.load_contract(inputs), inputs.application, task)
+    return _VARIANTS[task_id]
+
+
+VARIANT_IDS = tuple(f"cash_application_{n:03d}" for n in range(6, 12))
+#: The residue each variant's truth carries: Σ unapplied over receipts and
+#: credit notes. It is what the three pairs exist to price, so it is pinned
+#: on the SCORED truth as well as on the fold.
+VARIANT_RESIDUE = {"cash_application_006": "0.00", "cash_application_007": "0.00",
+                   "cash_application_008": "210.00", "cash_application_009": "0.00",
+                   "cash_application_010": "540.00", "cash_application_011": "0.00"}
+
+
+def test_every_variant_golden_scores_one_and_completes_with_the_golden_ledger():
+    problems = []
+    for task_id in VARIANT_IDS:
+        inputs, env, truth, task = variant(task_id)
+        parsed_truth = parse(golden_document(truth), truth)
+        out = A.score_application(parsed_truth, truth, expected_balances=env.expected_balances)
+        if out.total != ONE or out.penalties or not out.delivered:
+            problems.append(f"{task_id}: the truth's own register scores {out.total} {out.penalties}")
+        if set(out.states()) != {A.RECEIPT_EXACT, A.INVOICE_EXACT, A.CREDIT_EXACT, A.AR_TIE_OK, A.WRITEOFF_TIE_OK}:
+            problems.append(f"{task_id}: golden states {sorted(set(out.states()))}")
+        # the public fold over the ACTUAL projected bytes delivers the same document
+        public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+        kw = dict(bank_account=BANK, period_start=task.period.start, period_end=task.period.end)
+        parsed_fold = parse(CA.document_text(CA.fold(public, **kw)), truth)
+        if not isinstance(parsed_fold, A.ParsedApplication) \
+                or parsed_fold.canonical_digest != parsed_truth.canonical_digest:
+            problems.append(f"{task_id}: the public fold's document is not the truth's canonical document")
+        else:
+            fold_out = A.score_application(parsed_fold, truth, expected_balances=env.expected_balances)
+            if fold_out.total != ONE:
+                problems.append(f"{task_id}: the public fold's document scores {fold_out.total}")
+            if A.canonical_text(parsed_fold) != A.canonical_text(parsed_truth):
+                problems.append(f"{task_id}: canonical_text differs between the fold's and the truth's document")
+        # the composite with the golden ledger, through the frozen candidate/1
+        outcome, problem = score_text(inputs.golden_text, env, task_id)
+        if outcome is None:
+            problems.append(f"{task_id}: {problem}")
+            continue
+        comp = X.compose(outcome, out)
+        if outcome.total != ONE or not outcome.complete or comp.total != ONE or not comp.complete:
+            problems.append(f"{task_id}: golden ledger L={outcome.total} complete={outcome.complete}; "
+                            f"composite {comp.total} complete={comp.complete}")
+        if comp.engines != ("candidate/1", "application/1", "composite/1"):
+            problems.append(f"{task_id}: engines {comp.engines}")
+        comp.verify()
+        out.verify()
+        if parsed_truth.counts != (len(truth.receipts), len(truth.register), len(truth.credit_notes)):
+            problems.append(f"{task_id}: counts {parsed_truth.counts}")
+        residue = sum([r[6] for r in truth.receipts] + [c[5] for c in truth.credit_notes], D(0))
+        if residue != D(VARIANT_RESIDUE[task_id]):
+            problems.append(f"{task_id}: residue {residue}, expected {VARIANT_RESIDUE[task_id]}")
+    return check("every variant's golden register scores A = 1 (from the truth and from the public fold over the "
+                 "actual bytes, one canonical digest), the composite with the golden ledger is 1.000000 and "
+                 "complete through the frozen candidate/1 and application/1, and each pair's residue is the "
+                 "pack's — 0/0, 210/0, 540/0", not problems, "\n".join(problems))
 
 
 def test_worked_example_i_amount_matching_chained_from_the_opening():
@@ -1177,6 +1254,291 @@ def test_every_state_is_reached_and_everything_reached_is_a_state():
                  "fabricated, basis, customer)", not problems, "\n".join(problems))
 
 
+def test_the_observed_007_delivery_and_its_two_row_counterfactual():
+    """The 11 September screen's Thornbury B delivery, scored here rather than
+    reasoned about (round 15, decision 1).
+
+    `tests/observed/cash_application_007/` holds the artifacts exactly as they
+    were delivered — the application, the ledger and the delivery receipt —
+    and this test first checks them against that receipt's own digests, so a
+    drifted fixture fails loudly instead of quietly scoring something else.
+
+    Then two runs of the SHIPPED scorer:
+
+      * the delivery as it stands. `L = 1`, a complete ledger repair; `A` is
+        short only through the closing register, whose eight rows are the
+        OPENING register's eight invoices — SI-4415 and SI-4419, both raised
+        in June and both unpaid at closing, are absent. Two `INVOICE_MISSING`
+        rows take `register_exact` to 0.800000 and the missing 16,960.00 of
+        receivables trips `ar_tie_break`;
+      * the counterfactual that adds ONLY those two closing rows, at their
+        period basis with nothing applied, credited or written off. The
+        ledger, the three receipts, the credit-note application and the eight
+        existing rows are untouched, and this test asserts that before
+        scoring. `L = A = total = 1`, complete.
+
+    What the counterfactual shows is that the omission accounts for the WHOLE
+    of the loss. It does not establish why the solver omitted the two rows.
+    """
+    problems = []
+    directory = ROOT / "tests" / "observed" / "cash_application_007"
+    delivered_raw = (directory / "cash_application.json").read_bytes()
+    ledger_raw = (directory / "ledger.beancount").read_bytes()
+    receipt = json.loads((directory / "delivery.json").read_text(encoding="utf-8"))
+
+    # 1. the fixture IS the delivered artifact
+    app_digests, ledger_digests = env_mod.digests_of(delivered_raw), env_mod.digests_of(ledger_raw)
+    for what, got, want in (
+            ("application stored bytes", app_digests["stored_bytes_digest"],
+             receipt["application"]["artifact_stored_bytes_digest"]),
+            ("application logical text", app_digests["logical_text_digest"],
+             receipt["application"]["artifact_logical_text_digest"]),
+            ("ledger stored bytes", ledger_digests["stored_bytes_digest"], receipt["artifact_stored_bytes_digest"]),
+            ("ledger logical text", ledger_digests["logical_text_digest"], receipt["artifact_logical_text_digest"])):
+        if got != want:
+            problems.append(f"{what}: the fixture digests {got[:12]}, the delivery receipt {want[:12]}")
+
+    inputs, env, truth, _task = variant("cash_application_007")
+    outcome, problem = score_text(ledger_raw.decode("utf-8"), env, "cash_application_007 delivered ledger")
+    if outcome is None:
+        return check("the observed 007 delivery and its counterfactual", False, problem)
+    if outcome.total != ONE or not outcome.complete:
+        problems.append(f"the delivered ledger scores L={outcome.total} complete={outcome.complete}")
+
+    # 2. the delivery as it stands
+    delivered = json.loads(delivered_raw.decode("utf-8"))
+    parsed = parse(delivered, truth)
+    if not isinstance(parsed, A.ParsedApplication):
+        return check("the observed 007 delivery and its counterfactual", False,
+                     f"the delivered application did not parse: {parsed}")
+    out = A.score_application(parsed, truth, expected_balances=env.expected_balances)
+    out.verify()
+    comp = X.compose(outcome, out)
+    comp.verify()
+    if (str(out.total), dict(out.components)) != ("0.640000", {"receipts_exact": D("1.000000"),
+                                                              "register_exact": D("0.800000"),
+                                                              "credit_exact": D("1.000000")}):
+        problems.append(f"the delivery scores A={out.total} {out.components}")
+    if out.penalty_labels != ("ar_tie_break",) or dict(out.tie_states)[A.TIE_AR] is not A.AR_TIE_CONTRADICTS:
+        problems.append(f"the delivery's penalties are {out.penalties} / {out.tie_states}")
+    missing = tuple(sorted(i for i, state in out.invoice_states if state is A.INVOICE_MISSING))
+    if missing != ("SI-4415", "SI-4419") or len(out.invoice_states) != 10:
+        problems.append(f"the missing rows are {missing} of {len(out.invoice_states)}")
+    if {state for _s, state in out.receipt_states} != {A.RECEIPT_EXACT} \
+            or {state for _s, state in out.credit_states} != {A.CREDIT_EXACT}:
+        problems.append(f"the receipts/credits are not all exact: {out.receipt_states} {out.credit_states}")
+    # the scorer's own digests and the composite reproduce the delivery receipt's figures
+    if out.application_digest != receipt["application"]["canonical_digest"] \
+            or out.result_digest != receipt["application"]["application_result_digest"]:
+        problems.append(f"the rescored digests {out.application_digest[:12]} / {out.result_digest[:12]} are not the "
+                        f"receipt's {receipt['application']['canonical_digest'][:12]} / "
+                        f"{receipt['application']['application_result_digest'][:12]}")
+    if (str(comp.total)[:4], comp.complete) != (receipt["application"]["composite_score"], False):
+        problems.append(f"the composite is {comp.total} complete={comp.complete}, receipt "
+                        f"{receipt['application']['composite_score']}")
+
+    # 3. the counterfactual: ONLY the two closing rows are added
+    counterfactual = json.loads(delivered_raw.decode("utf-8"))
+    counterfactual["closing_open_items"] = list(counterfactual["closing_open_items"]) + [
+        row("SI-4415", "Marrowbone Construction Group", "6360.00", "0.00", "0.00", "0.00", "6360.00"),
+        row("SI-4419", "Pinefall Hospitality Partners", "10600.00", "0.00", "0.00", "0.00", "10600.00")]
+    if counterfactual["receipts"] != delivered["receipts"] \
+            or counterfactual["credit_notes"] != delivered["credit_notes"] \
+            or counterfactual["closing_open_items"][:8] != delivered["closing_open_items"] \
+            or len(counterfactual["closing_open_items"]) != 10:
+        problems.append("the counterfactual changed something other than the two closing rows")
+    parsed_counter = parse(counterfactual, truth)
+    if not isinstance(parsed_counter, A.ParsedApplication):
+        return check("the observed 007 delivery and its counterfactual", False,
+                     f"the counterfactual did not parse: {parsed_counter}")
+    counter = A.score_application(parsed_counter, truth, expected_balances=env.expected_balances)
+    counter.verify()
+    comp_counter = X.compose(outcome, counter)
+    comp_counter.verify()
+    if counter.total != ONE or counter.penalties or not counter.delivered:
+        problems.append(f"the counterfactual scores A={counter.total} {counter.penalties}")
+    if set(counter.states()) != {A.RECEIPT_EXACT, A.INVOICE_EXACT, A.CREDIT_EXACT, A.AR_TIE_OK, A.WRITEOFF_TIE_OK}:
+        problems.append(f"the counterfactual's states are {sorted(set(counter.states()))}")
+    if comp_counter.total != ONE or not comp_counter.complete or comp_counter.ledger_total != ONE:
+        problems.append(f"the counterfactual composite is {comp_counter.total} complete={comp_counter.complete}")
+    if comp_counter.engines != ("candidate/1", "application/1", "composite/1"):
+        problems.append(f"the counterfactual's engines are {comp_counter.engines}")
+    # the two rows are the whole difference: the delivery's own register is the
+    # counterfactual's minus them
+    if [r for r in counterfactual["closing_open_items"] if r["invoice_id"] not in missing] \
+            != delivered["closing_open_items"]:
+        problems.append("removing the two rows from the counterfactual does not give the delivered register")
+    return check("the observed cash_application_007 delivery rescores through the shipped application/1 to "
+                 "A = 0.640000 (register_exact 0.800000, SI-4415 and SI-4419 INVOICE_MISSING, ar_tie_break) with "
+                 "L = 1.000000 and composite 0.640000 incomplete, reproducing the delivery receipt's canonical and "
+                 "result digests; adding ONLY those two closing rows and changing nothing else gives "
+                 "L = A = total = 1.000000, complete", not problems, "\n".join(problems))
+
+
+#: The result digests the attestation's correction table publishes for the
+#: 007 fixture, as MEASURED — scoped by `unicodedata.unidata_version`, the
+#: same way `tests/legacy_freeze.json`'s `unicode_scoped` is (see
+#: `tests/test_legacy_freeze.py`). All three digests here — the evaluation
+#: receipt, the ledger result and the composite result — embed
+#: `scorer_contract_digest`, which embeds `parse_policy_digest`, which
+#: records `unicodedata.unidata_version` as part of the parse policy's
+#: identity (`candidate/canonical.py`, `parse_policy_view()`): a CPython
+#: upgrade moves these prefixes even though nothing about the 007 fixture or
+#: the scorer changed. They are pinned here so the published table and the
+#: code cannot drift apart: if an evaluator identity in `env.versions()`
+#: ever legitimately moves, this fails and the table must be re-measured —
+#: which is the point of publishing digests at all.
+#:
+#: The 15.0.0 row is NATIVE (this repository's own CPython 3.12
+#: interpreter). The 14.0.0 and 15.1.0 rows were DERIVED by substitution on
+#: that same CPython 3.12 interpreter — patching the stdlib
+#: `unicodedata.unidata_version` attribute so both this module and
+#: `candidate/canonical.py` see the substituted string, exactly as
+#: `tests/test_legacy_freeze.py`'s `substituted_unicode_version` does — and
+#: cross-checked against the per-interpreter `scorer_contract_digest` values
+#: `reviews/RELEASE_ATTESTATION.md` already publishes (14.0.0 `d1b7131a…`,
+#: 15.1.0 `3f12c01c…`): both derived rows reproduced those digests exactly.
+#: A Unicode version this mapping does not carry FAILS the test below,
+#: naming the version — see `_resolve_007_unicode_scoped`. It is never
+#: silently accepted, and the running interpreter's own digests are never
+#: substituted as their own expectation.
+_007_BY_IDENTITY_UNICODE_SCOPED = {
+    "14.0.0": {  # CPython 3.11 — derived by substitution on CPython 3.12 (15.0.0)
+        ("check", 1): ("d4718c74", "a7d84212", "20a78c57"),
+        ("f2f7e5f6cada45b292383d77330708fc", 1): ("424cf7a9", "48c764da", "62cb942a"),
+    },
+    "15.0.0": {  # CPython 3.12 — observed natively
+        ("check", 1): ("a97951b7", "91d1378d", "498f3fe8"),
+        ("f2f7e5f6cada45b292383d77330708fc", 1): ("42c42917", "cfe5054f", "f035479d"),
+    },
+    "15.1.0": {  # CPython 3.13 — derived by substitution on CPython 3.12 (15.0.0)
+        ("check", 1): ("d59d85e5", "cb7e52db", "49eab16d"),
+        ("f2f7e5f6cada45b292383d77330708fc", 1): ("363f1da2", "3ac24e73", "90e3dab1"),
+    },
+}
+
+
+def _resolve_007_unicode_scoped(version: str, problems: list) -> dict | None:
+    """The pinned `{identity: (evaluation, ledger, composite)}` row for
+    `version`, or `None` — which appends a problem naming the version and
+    leaves the caller to fail. No fallback, on purpose, for the same reason
+    `tests/test_legacy_freeze.py`'s `resolve_unicode_scoped` has none: these
+    digests embed `parse_policy_digest`, which records
+    `unicodedata.unidata_version`, so a Unicode database this mapping has
+    never been reviewed against is an UNVERIFIED runtime, not a verified
+    one — the running interpreter's own digests are not evidence about
+    themselves, and are never substituted as the expectation."""
+    if version in _007_BY_IDENTITY_UNICODE_SCOPED:
+        return _007_BY_IDENTITY_UNICODE_SCOPED[version]
+    problems.append(
+        f"unicode {version} is NOT pinned in _007_BY_IDENTITY_UNICODE_SCOPED "
+        f"(tests/test_cash_application_scoring.py). This runtime's Unicode database has never been reviewed "
+        f"against this fixture: parse_policy_digest records unicodedata.unidata_version, so identical source can "
+        f"embed different scorer digests under a different database, and the running interpreter's own digests "
+        f"are not evidence about themselves. Add a row for unicode {version} deliberately, under review — the way "
+        f"tests/legacy_freeze.json's unicode_scoped rows are added — and commit it. "
+        f"Pinned versions: {sorted(_007_BY_IDENTITY_UNICODE_SCOPED)}")
+    return None
+
+
+def test_the_007_result_digests_replay_by_identity_not_by_nonce():
+    """Why re-scoring the archived 007 bytes does not return the delivery
+    receipt's ledger and composite result digests — measured, because the
+    reason first published for it was false.
+
+    That wording said a `PrivateReceipt`'s fresh `uuid4` was bound into the
+    ledger result digest, so the same bytes could "never" re-score to the
+    same result digest. The `uuid4` binds nothing: `K.receipt_identity` is
+    the receipt MINUS `attempt_id`, exactly so that a replay of the same
+    bytes for the same revision of the same rollout is the same evaluation.
+
+    What this test measures instead:
+
+      * the same bytes under the same identity, scored twice with a fresh
+        `uuid4` each time, give the SAME evaluation receipt, ledger result
+        and composite result digests;
+      * those digests are a function of the replayed IDENTITY — rollout id,
+        revision and the three input digests. `"check"` and the run's own
+        rollout id give different ones, and both are pinned;
+      * the `submitted_text_digest` is part of that identity, and the
+        archive keeps the canonical stored artifact rather than the
+        original submitted text. That — not a nonce — is why neither
+        identity returns the delivery receipt's recorded digests, and it is
+        an archive limitation, not a nondeterministic scorer.
+    """
+    from beancount_ledger.candidate.normalise import Accepted, parse_once
+
+    problems = []
+    directory = ROOT / "tests" / "observed" / "cash_application_007"
+    ledger_raw = (directory / "ledger.beancount").read_bytes()
+    delivered_raw = (directory / "cash_application.json").read_bytes()
+    receipt_json = json.loads((directory / "delivery.json").read_text(encoding="utf-8"))
+    text = ledger_raw.decode("utf-8")
+
+    _inputs, env, truth, _task = variant("cash_application_007")
+    parsed = parse_once(env_mod.logical_text(ledger_raw))
+    if not isinstance(parsed, Accepted):
+        return check("the 007 result digests replay by identity", False, f"the fixture did not parse: {parsed}")
+    application = A.score_application(parse(json.loads(delivered_raw.decode("utf-8")), truth), truth,
+                                      expected_balances=env.expected_balances)
+
+    def score(rollout_id: str, revision: int, submitted: str):
+        """One full pass of the production door, at a stated identity."""
+        receipt = K.new_receipt(rollout_id, revision, env_mod.digests_of(ledger_raw, submitted=submitted))
+        committed = K.commit(parsed, env, receipt)
+        outcome = K.score_committed(committed)
+        outcome.verify()
+        composed = X.compose(outcome, application)
+        composed.verify()
+        return receipt, (committed.evaluation_receipt_digest, outcome.result_digest, composed.result_digest)
+
+    # 1. the nonce is not in the identity, and not in the digests
+    if "attempt_id" in K.receipt_identity(K.new_receipt("check", 1, env_mod.digests_of(ledger_raw, submitted=text))):
+        problems.append("receipt_identity carries attempt_id")
+    first_receipt, first = score("check", 1, text)
+    second_receipt, second = score("check", 1, text)
+    if first_receipt.attempt_id == second_receipt.attempt_id:
+        problems.append("the two receipts share an attempt id; the nonce is not fresh and nothing was tested")
+    if first != second:
+        problems.append(f"a fresh uuid4 moved the digests: {first} then {second}")
+
+    # 2. the digests ARE a function of the replayed identity, and are the
+    #    ones the attestation's correction table publishes — scoped by this
+    #    interpreter's Unicode database (see _007_BY_IDENTITY_UNICODE_SCOPED)
+    run_rollout = receipt_json["rollout_id"]
+    measured = {("check", 1): first, (run_rollout, receipt_json["committed_revision"]): score(run_rollout, 1, text)[1]}
+    running_version = unicodedata.unidata_version
+    pinned_by_identity = _resolve_007_unicode_scoped(running_version, problems)
+    if pinned_by_identity is not None:
+        for identity, digests in sorted(measured.items()):
+            want = pinned_by_identity.get(identity)
+            if want is None:
+                problems.append(f"no published digests for identity {identity} at unicode {running_version}")
+            elif tuple(d[:8] for d in digests) != want:
+                problems.append(f"{identity} @ unicode {running_version}: measured {tuple(d[:8] for d in digests)}, "
+                                f"the attestation publishes {want}")
+    if len(set(measured.values())) != 2:
+        problems.append("two different rollout ids produced the same digests")
+
+    # 3. the submitted text is in the identity too, and the archive does not
+    #    hold it — which is the whole of the non-reproduction
+    for other in (text + "\n", "; a differently formatted original submission\n" + text):
+        if score(run_rollout, 1, other)[1] == measured[(run_rollout, receipt_json["committed_revision"])]:
+            problems.append("a different submitted text left the digests where they were")
+    recorded = (receipt_json["evaluation_receipt_digest"], receipt_json["application"]["composite_result_digest"])
+    for identity, (evaluation, _ledger, composite) in measured.items():
+        if (evaluation, composite) == recorded:
+            problems.append(f"{identity} reproduced the delivery receipt's digests; the limitation is misstated")
+    if any(key.startswith("submitted") for key in receipt_json):
+        problems.append("the ledger delivery receipt records a submitted-text digest after all")
+
+    return check("the 007 ledger and composite result digests are deterministic under a fresh uuid4 (identical "
+                 "evaluation receipt, ledger and composite digests across two scorings) and are a function of the "
+                 "replayed identity: rollout id, revision and the three input digests, the submitted text among "
+                 "them. Neither identity reproduces the delivery receipt's digests because the archive holds the "
+                 "stored artifact, not the original submitted text", not problems, "\n".join(problems))
+
+
 def test_penalty_vocabulary_and_prices_are_the_declared_ones():
     problems = []
     if A.PENALTY_LABELS != ("fabricated_invoice", "fabricated_receipt", "fabricated_credit_note", "receipt_identity",
@@ -1203,6 +1565,7 @@ def test_penalty_vocabulary_and_prices_are_the_declared_ones():
 
 TESTS = [
     test_every_golden_register_scores_one_and_completes_with_the_golden_ledger,
+    test_every_variant_golden_scores_one_and_completes_with_the_golden_ledger,
     test_worked_example_i_amount_matching_chained_from_the_opening,
     test_worked_example_ii_r2_omission_left_through_the_frozen_scorer,
     test_worked_example_iii_case_3_through_the_frozen_scorer,
@@ -1225,6 +1588,8 @@ TESTS = [
     test_the_scorer_reads_expected_balances_and_refuses_a_truth_that_disagrees,
     test_every_state_is_reached_and_everything_reached_is_a_state,
     test_penalty_vocabulary_and_prices_are_the_declared_ones,
+    test_the_observed_007_delivery_and_its_two_row_counterfactual,
+    test_the_007_result_digests_replay_by_identity_not_by_nonce,
 ]
 
 

@@ -2,7 +2,7 @@
 name = "beancount-ledger"
 description = "Bank reconciliation and month-end close on a Beancount ledger, scored deterministically"
 tags = ["accounting", "tool-use", "multi-turn", "train", "eval"]
-version = "0.1.0"
+version = "0.2.0"
 license = {text = "Apache-2.0"}
 readme = "README.md"
 authors = [{name = "Hasancan Gültekin", email = "gultekinhasancan79@gmail.com"}]

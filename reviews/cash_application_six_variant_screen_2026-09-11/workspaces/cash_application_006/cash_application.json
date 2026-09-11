@@ -1,0 +1,170 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2026-06-08:MCG REMIT 0605",
+   "applied": [
+    {
+     "invoice_id": "SI-4371",
+     "amount": "5100.00"
+    },
+    {
+     "invoice_id": "SI-4396",
+     "amount": "4440.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "Applied per remittance advice RA-0605-MCG; line naming SI-4402 paid 0.00 (disputed, withheld)."
+  },
+  {
+   "receipt_id": "2026-06-17:TRC0617318 SI-4383 SI-4390 SI-4377",
+   "applied": [
+    {
+     "invoice_id": "SI-4377",
+     "amount": "6890.00"
+    },
+    {
+     "invoice_id": "SI-4383",
+     "amount": "2650.00"
+    },
+    {
+     "invoice_id": "SI-4390",
+     "amount": "8480.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "No matching advice; quoted invoices applied in invoice-date order up to open balances."
+  },
+  {
+   "receipt_id": "2026-06-25:TRC0625704 SI-4402 SI-4408 SI-4396",
+   "applied": [
+    {
+     "invoice_id": "SI-4371",
+     "amount": "2900.00"
+    },
+    {
+     "invoice_id": "SI-4396",
+     "amount": "8280.00"
+    },
+    {
+     "invoice_id": "SI-4402",
+     "amount": "7420.00"
+    },
+    {
+     "invoice_id": "SI-4408",
+     "amount": "8268.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00",
+   "notes": "No matching advice; quoted invoices in invoice-date order, remainder to oldest open invoice SI-4371."
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-0609",
+   "applied": [
+    {
+     "invoice_id": "SI-4408",
+     "amount": "1272.00"
+    }
+   ],
+   "unapplied_amount": "0.00",
+   "notes": "Applied in full to referenced invoice SI-4408, within its open balance."
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-4371",
+   "customer": "Marrowbone Construction Group",
+   "period_basis": "9300.00",
+   "applied_total": "8000.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1300.00"
+  },
+  {
+   "invoice_id": "SI-4377",
+   "customer": "Pinefall Hospitality Partners",
+   "period_basis": "6890.00",
+   "applied_total": "6890.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-4383",
+   "customer": "Pinefall Hospitality Partners",
+   "period_basis": "5300.00",
+   "applied_total": "2650.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2650.00"
+  },
+  {
+   "invoice_id": "SI-4386",
+   "customer": "Pinefall Hospitality Partners",
+   "period_basis": "4240.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "4240.00"
+  },
+  {
+   "invoice_id": "SI-4390",
+   "customer": "Pinefall Hospitality Partners",
+   "period_basis": "8480.00",
+   "applied_total": "8480.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-4396",
+   "customer": "Marrowbone Construction Group",
+   "period_basis": "12720.00",
+   "applied_total": "12720.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-4402",
+   "customer": "Marrowbone Construction Group",
+   "period_basis": "7420.00",
+   "applied_total": "7420.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-4408",
+   "customer": "Marrowbone Construction Group",
+   "period_basis": "9540.00",
+   "applied_total": "8268.00",
+   "credited": "1272.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-4415",
+   "customer": "Marrowbone Construction Group",
+   "period_basis": "6360.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "6360.00"
+  },
+  {
+   "invoice_id": "SI-4419",
+   "customer": "Pinefall Hospitality Partners",
+   "period_basis": "10600.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "10600.00"
+  }
+ ]
+}

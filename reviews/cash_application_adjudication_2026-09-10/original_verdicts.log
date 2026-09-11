@@ -1,0 +1,24 @@
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 498.55 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 335.01 examples/s]
+  cash_application_001   qwen3.7-max        PASS 
+  cash_application_001   deepseek-v4-flash  PASS 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 398.81 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 199.93 examples/s]
+  cash_application_002   qwen3.7-max        PASS 
+  cash_application_002   deepseek-v4-flash  PASS 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 503.94 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 325.67 examples/s]
+  cash_application_003   qwen3.7-max        differs | 3900.00: applied [('SI-3100', '0.00'), ('SI-3101', '2400.00'), ('SI-3102', '1500.00')] != [('SI-3101', '2400.00'), ('SI-3102', '1500.00')]
+  cash_application_003   deepseek-v4-flash  PASS 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 497.31 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 398.51 examples/s]
+  cash_application_004   qwen3.7-max        PASS 
+  cash_application_004   deepseek-v4-flash  PASS 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.20 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 661.04 examples/s]
+  cash_application_005   qwen3.7-max        differs | 3900.00: applied [('SI-3100', '0.00'), ('SI-3101', '2400.00'), ('SI-3102', '1500.00')] != [('SI-3101', '2400.00'), ('SI-3102', '1500.00')]
+  cash_application_005   deepseek-v4-flash  differs | 3900.00: applied [('SI-3100', '0.00'), ('SI-3101', '2400.00'), ('SI-3102', '1500.00')] != [('SI-3101', '2400.00'), ('SI-3102', '1500.00')]
+
+admissible (both pass): ['cash_application_001', 'cash_application_002', 'cash_application_004']
+contested: ['cash_application_003', 'cash_application_005']
+exit=0

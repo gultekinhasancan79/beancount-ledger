@@ -1,0 +1,12 @@
+account,type,description
+Assets:Bank:Checking,asset,Primary operating checking account held at Trellis State Bank
+Assets:AR,asset,Trade receivables from customers
+Assets:Inventory,asset,Fabricated glazing units and stock materials held for contracts
+Assets:Prepayments,asset,Amounts paid in advance of the period they relate to
+Liabilities:AP,liability,Trade payables to suppliers
+Liabilities:SalesTax-Payable,liability,Sales tax collected from customers and owed to the state
+Income:Sales,income,Revenue from fabricated glazing supplied to contracts
+Expenses:COGS,expense,Cost of goods sold
+Expenses:BankFees,expense,Bank service charges and transaction fees
+Expenses:SmallBalanceWriteOffs,expense,Short payments within the cash application tolerance written off on receipt
+Equity:Opening,equity,Opening balance equity

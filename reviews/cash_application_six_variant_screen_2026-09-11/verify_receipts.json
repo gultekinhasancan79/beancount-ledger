@@ -1,0 +1,103 @@
+{
+ "schema": "piv.six-screen-receipt-check/1",
+ "what_this_is": "Each archived delivered artifact re-hashed through the shipped package's own `digests_of` and compared with the `delivery.json` the run wrote beside it. `submitted_reproduced` is expected to be false everywhere: the archive holds the canonical register, never the agent's submitted text.",
+ "files": [
+  {
+   "workspace": "cash_application_006",
+   "file": "ledger.beancount",
+   "bytes": 3382,
+   "stored_bytes_digest": "ee6ddc8cd24dfb95a52128bcab1f7bd4bb8ed968c55d881a8607ae255a4ba9fa",
+   "logical_text_digest": "99eb5f554107ec52e79f1ee044fad8c13be598bf5202f6c1c1d9690cd2d14477",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true
+  },
+  {
+   "workspace": "cash_application_006",
+   "file": "cash_application.json",
+   "bytes": 3912,
+   "stored_bytes_digest": "ee30f7ec6f6d02c74286229a5643360af05fdd24cc64401baebcbb309c7237e6",
+   "logical_text_digest": "9cc6b564f5484d04bead13002d59096c2b7fa873677edc3287a87057ef0c5d9d",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true,
+   "submitted_reproduced": false
+  },
+  {
+   "workspace": "cash_application_007",
+   "file": "ledger.beancount",
+   "bytes": 3382,
+   "stored_bytes_digest": "acca4ba0755cb0bbe3a9d24dd910cabf6e377673f084c63df08f3711870ce5d6",
+   "logical_text_digest": "5e8e644a3786257014681293ef2a37ab3336712816561d686e071649ca8250d5",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true
+  },
+  {
+   "workspace": "cash_application_007",
+   "file": "cash_application.json",
+   "bytes": 3548,
+   "stored_bytes_digest": "35b6dd1dcf0582d69077936954eba639d03eb3f92962b20511f3a2f8065acfa9",
+   "logical_text_digest": "ef1d08987834392ba60977543604e8f15107587df830acae7d78b7d65d90ac2c",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true,
+   "submitted_reproduced": false
+  },
+  {
+   "workspace": "cash_application_008",
+   "file": "ledger.beancount",
+   "bytes": 3444,
+   "stored_bytes_digest": "7638ad7a2953caf5ab4cc77aaddd1e39d3644b6bca547236fb920e31d586bef4",
+   "logical_text_digest": "033bd16f6409e7c861b77fb8d142362c493b418343c7600275c19ccbe3fce772",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true
+  },
+  {
+   "workspace": "cash_application_008",
+   "file": "cash_application.json",
+   "bytes": 3292,
+   "stored_bytes_digest": "857fd1ad609c03726c2d08ace47d412be6044c9f2bcc5ecd528c978aedad53c6",
+   "logical_text_digest": "6acc663b576d262d06a70d0d15cd854a7640ddae27f0b1c355f75fbd8b177ade",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true,
+   "submitted_reproduced": false
+  },
+  {
+   "workspace": "cash_application_009",
+   "file": "ledger.beancount",
+   "bytes": 3444,
+   "stored_bytes_digest": "75f288475a9f6b1cfc253954c4054b8d46bdb8dfa24de84db2a031aae4375896",
+   "logical_text_digest": "af16aa476c63b4ebb828fa54d7bd3a48117ddbd70512d0716e3caef9f4bd84f8",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true
+  },
+  {
+   "workspace": "cash_application_009",
+   "file": "cash_application.json",
+   "bytes": 3216,
+   "stored_bytes_digest": "1603e0369c60493b11392467cf71a471616cae7badf9c3e5755f25bc363e9ed3",
+   "logical_text_digest": "7bc0d9a18da29f2e8925f06159e301d54f86ac400410b819e86b733075211ef8",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true,
+   "submitted_reproduced": false
+  },
+  {
+   "workspace": "cash_application_010",
+   "file": "ledger.beancount",
+   "bytes": 4000,
+   "stored_bytes_digest": "1197c7459fcd87557713dd4a6e0eff195e048078ba8e07d8017f62b92cc37169",
+   "logical_text_digest": "1b9ecdc06649b49534c82afd971a9c9e05081d038cedb4f0fbb9a2b344b373a8",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true
+  },
+  {
+   "workspace": "cash_application_010",
+   "file": "cash_application.json",
+   "bytes": 3929,
+   "stored_bytes_digest": "2b211cc99ef1d88dd446a0ecfe083495e12bf02828b2f7e4c5b36d55472d6ae7",
+   "logical_text_digest": "2096c2828c16652b63ba53bb154a3b0ab1fd5a7991f5cf03bef48d05e1036f6f",
+   "stored_matches_receipt": true,
+   "logical_matches_receipt": true,
+   "submitted_reproduced": false
+  }
+ ],
+ "checked": 10,
+ "problems": []
+}

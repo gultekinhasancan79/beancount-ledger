@@ -1,0 +1,76 @@
+option "title" "Tallowmere Print & Bindery Co. - FY2026"
+option "operating_currency" "USD"
+
+2026-01-01 open Assets:AR                              USD
+2026-01-01 open Assets:Bank:Checking                   USD
+2026-01-01 open Assets:Inventory                       USD
+2026-01-01 open Assets:Prepayments                     USD
+2026-01-01 open Equity:Opening                         USD
+2026-01-01 open Expenses:BankFees                      USD
+2026-01-01 open Expenses:COGS                          USD
+2026-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2026-01-01 open Income:Sales                           USD
+2026-01-01 open Liabilities:AP                         USD
+2026-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-07-01 * "Opening balance" "Carried forward from June close"
+  Assets:Bank:Checking                         96250.00 USD
+  Assets:AR                                    25815.00 USD
+  Assets:Inventory                             36480.00 USD
+  Liabilities:AP                              -18900.00 USD
+  Equity:Opening                             -139645.00 USD
+
+2026-07-06 * "Meridian Paper Mills" "Payment of purchase invoice PI-9451"
+  Liabilities:AP                                7840.00 USD
+  Assets:Bank:Checking                         -7840.00 USD
+
+2026-07-08 * "Quillhaven Publishing House" "Cost of goods sold on SI-7239"
+  Expenses:COGS                                 2640.00 USD
+  Assets:Inventory                             -2640.00 USD
+
+2026-07-08 * "Quillhaven Publishing House" "Sale SI-7239"
+  Assets:AR                                     4620.00 USD
+  Income:Sales                                 -4400.00 USD
+  Liabilities:SalesTax-Payable                  -220.00 USD
+
+2026-07-09 * "Quillhaven Publishing House" "Customer payment, QPH SETTLEMENT 0709"
+  Assets:Bank:Checking                          9540.00 USD
+  Assets:AR                                    -9540.00 USD
+
+2026-07-14 * "Broadmarsh Academy Trust" "Credit note CN-0714 against SI-7222: agreed allowance; returned custom-printed units received 14 July were unusable and had no recoverable resale or salvage value; no replacement goods were supplied"
+  Income:Sales                                   600.00 USD
+  Liabilities:SalesTax-Payable                    30.00 USD
+  Assets:AR                                     -630.00 USD
+
+2026-07-15 * "Pellow & Dunge Stationers" "Sale SI-7242"
+  Assets:AR                                     3360.00 USD
+  Income:Sales                                 -3200.00 USD
+  Liabilities:SalesTax-Payable                  -160.00 USD
+
+2026-07-15 * "Pellow & Dunge Stationers" "Cost of goods sold on SI-7242"
+  Expenses:COGS                                 1920.00 USD
+  Assets:Inventory                             -1920.00 USD
+
+2026-07-20 * "Broadmarsh Academy Trust" "Customer check 4417"
+  Assets:Bank:Checking                          3150.00 USD
+  Assets:AR                                    -3150.00 USD
+
+2026-07-22 * "Broadmarsh Academy Trust" "Customer payment, BAT REMIT 0722"
+  Assets:Bank:Checking                          4395.00 USD
+  Assets:AR                                    -4395.00 USD
+
+2026-07-22 * "Broadmarsh Academy Trust" "Short payment on SI-7229 written off under the cash application policy"
+  Expenses:SmallBalanceWriteOffs                  15.00 USD
+  Assets:AR                                      -15.00 USD
+
+2026-07-24 * "Pellow & Dunge Stationers" "Customer payment, PDS PAYRUN 0724"
+  Assets:Bank:Checking                          2745.00 USD
+  Assets:AR                                    -2745.00 USD
+
+2026-07-29 * "Quillhaven Publishing House" "Customer payment, QPH SETTLEMENT 0729"
+  Assets:Bank:Checking                          8190.00 USD
+  Assets:AR                                    -8190.00 USD
+
+2026-07-31 * "Alderwick Mutual Bank" "Monthly account service charge"
+  Expenses:BankFees                               62.00 USD
+  Assets:Bank:Checking                           -62.00 USD

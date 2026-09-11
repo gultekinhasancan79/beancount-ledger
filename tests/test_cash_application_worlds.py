@@ -1,5 +1,6 @@
-"""The cash-application company-month and its five variants, on the world
-machinery (spec section 8, implementation order step 3).
+"""The cash-application family on the world machinery: Bowline April 2026 and
+its five variants, and the three matched pairs of 2026-09 that carry six more
+(spec section 8, implementation order step 3).
 
 Bowline Marine Supply Co., April 2026, is authored once (`worlds/_bowline.py`)
 and varied five times (`bowline_2026_04_c1.py` .. `_c5.py`): the third
@@ -108,19 +109,22 @@ from beancount_ledger.graph.derive import DerivationError, TaskSpec, derive_cont
 from beancount_ledger.graph.project import MutationPlan, project  # noqa: E402
 from beancount_ledger.graph.worlds import (  # noqa: E402
     CASH_APPLICATION_MODULES,
+    CASH_APPLICATION_PAIR_MODULES,
     CASH_APPLICATION_REGISTRY,
     LEGACY_TASK_IDS,
     REGISTRY,
     WORLD_MODULES,
     _bowline as B,
+    _variant_pack as VP,
 )
 
-from world_checks import check_world_task, narration_problems  # noqa: E402
+from world_checks import check_world_task, narration_problems, public_ties  # noqa: E402
 
 FREEZE = ROOT / "tests" / "legacy_freeze.json"
 WORLDS_DIR = ROOT / "beancount_ledger" / "graph" / "worlds"
 GANNET, SHEARWATER = "Gannet Rigging Inc", "Shearwater Bay Charters LLC"
 AR, BANK = "Assets:AR", "Assets:Bank:Checking"
+WRITE_OFFS = "Expenses:SmallBalanceWriteOffs"
 R1, R2, R3 = "2026-04-10:GR PAYRUN 0410", "2026-04-21:2291", "2026-04-28:GR PAYRUN 0428"
 #: Case 2 has no advice for R3, so its identity is the bank's own trace,
 #: printed ahead of the invoice list rung (2) reads.
@@ -292,8 +296,12 @@ def test_the_family_is_five_variants_of_one_company_month():
     problems = []
     if [m.WORLD.id for m in CASH_APPLICATION_MODULES] != [f"bowline-2026-04-c{n}" for n in range(1, 6)]:
         problems.append(f"world ids {[m.WORLD.id for m in CASH_APPLICATION_MODULES]}")
-    if sorted(CASH_APPLICATION_REGISTRY) != [f"cash_application_{n:03d}" for n in range(1, 6)]:
+    if sorted(CASH_APPLICATION_REGISTRY) != [f"cash_application_{n:03d}" for n in range(1, 12)]:
         problems.append(f"task ids {sorted(CASH_APPLICATION_REGISTRY)}")
+    if [m.TASKS and sorted(m.TASKS) for m in CASH_APPLICATION_MODULES] != [[f"cash_application_{n:03d}"]
+                                                                           for n in range(1, 6)]:
+        problems.append(f"the Bowline modules no longer carry 001..005: "
+                        f"{[sorted(m.TASKS) for m in CASH_APPLICATION_MODULES]}")
     # The five are served ids like any other now, so what has to hold is
     # that they did not DISPLACE any of the 95: the legacy surface is
     # `LEGACY_TASK_IDS` (the registry as it stood before the family joined),
@@ -302,9 +310,9 @@ def test_the_family_is_five_variants_of_one_company_month():
         problems.append(f"the legacy surface carries {len(LEGACY_TASK_IDS)} tasks and shares "
                         f"{sorted(set(CASH_APPLICATION_REGISTRY) & set(LEGACY_TASK_IDS))}")
     if set(REGISTRY) != set(LEGACY_TASK_IDS) | set(CASH_APPLICATION_REGISTRY):
-        problems.append("REGISTRY is not the 95 legacy ids plus the five family ids")
+        problems.append("REGISTRY is not the 95 legacy ids plus the eleven family ids")
     worlds = [m.WORLD for m in CASH_APPLICATION_MODULES]
-    tasks = [t for _, t in CASH_APPLICATION_REGISTRY.values()]
+    tasks = [m.TASKS[f"cash_application_{n:03d}"] for n, m in enumerate(CASH_APPLICATION_MODULES, start=1)]
     shared = ("title", "currency", "bank_account", "bank_party_id", "accounts", "parties", "documents",
               "bank_opening", "opening", "roles", "policy_text")
     for attr in shared:
@@ -340,7 +348,8 @@ def test_the_family_is_five_variants_of_one_company_month():
                 problems.append(f"{name!r} is drawn by the generator's {pool}")
     return check("five worlds bowline-2026-04-c1..c5 / tasks cash_application_001..005: one chart, one set of "
                  "parties, documents, March, R1, R2 and sales, one prompt, family inferred from the events, no "
-                 "field added, none in the legacy registry of 95", not problems, "\n".join(problems))
+                 "field added, none in the legacy registry of 95, and the family registry is those five plus the "
+                 "six variant-pack ids", not problems, "\n".join(problems))
 
 
 def test_every_gate_passes_for_all_five():
@@ -1166,6 +1175,682 @@ def test_gate_o_on_the_actual_bytes():
                  not problems, "\n".join(problems))
 
 
+# --------------------------------------------------------------------------
+# the three variant packs of 2026-09: six variants, three matched pairs
+#
+# `v10-codex/six_variant_packs.md`, corrected after the accounting review of
+# 2026-09-11, is the specification; the tables below are its section 3 / 2 /
+# "the correct application" transcribed, and the gates the five Bowline
+# cases pass above are re-run over the six here rather than in a parallel
+# suite.
+# --------------------------------------------------------------------------
+
+MARROWBONE, PINEFALL = "Marrowbone Construction Group", "Pinefall Hospitality Partners"
+MARCHMONT, CORVID, ASHGROVE = ("Marchmont Grocers Co-operative", "Corvid Coffee Houses LLC",
+                               "Ashgrove Halt Refreshments Ltd")
+QUILLHAVEN, BROADMARSH, PELLOW = ("Quillhaven Publishing House", "Broadmarsh Academy Trust",
+                                  "Pellow & Dunge Stationers")
+
+#: task id -> (module, world, pair label, variant letter)
+VARIANT_MODULE = {task_id: (module, module.WORLD_BY_TASK[task_id])
+                  for module in CASH_APPLICATION_PAIR_MODULES for task_id in module.TASKS}
+PAIR_IDS = (("cash_application_006", "cash_application_007"),
+            ("cash_application_008", "cash_application_009"),
+            ("cash_application_010", "cash_application_011"))
+VARIANT_IDS = tuple(task_id for pair in PAIR_IDS for task_id in pair)
+
+_VARIANTS: dict = {}
+
+
+def variant(task_id: str):
+    """(module, world, task, bundle, inputs, public) for one variant."""
+    if task_id not in _VARIANTS:
+        module, world = VARIANT_MODULE[task_id]
+        task = module.TASKS[task_id]
+        bundle, inputs = derive_contract(world, task)
+        public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+        _VARIANTS[task_id] = (module, world, task, bundle, inputs, public)
+    return _VARIANTS[task_id]
+
+
+THORNBURY_R = ("2026-06-08:MCG REMIT 0605", "2026-06-17:TRC0617318 SI-4383 SI-4390 SI-4377",
+               "2026-06-25:TRC0625704 SI-4402 SI-4408 SI-4396")
+PENNY_R = ("2026-06-10:MG PAYRUN 0610", "2026-06-15:6153", "2026-06-26:CC ACH 0626")
+TALLOW_R = ("2026-07-09:QPH SETTLEMENT 0709", "2026-07-20:4417", "2026-07-22:BAT REMIT 0722",
+            "2026-07-24:PDS PAYRUN 0724", "2026-07-29:QPH SETTLEMENT 0729")
+
+
+def _register(*rows):
+    return tuple(sorted(row(*r) for r in rows))
+
+
+THORNBURY_BASE = (
+    ("SI-4377", PINEFALL, "6890.00", "6890.00", "0.00", "0.00", "0.00"),
+    ("SI-4383", PINEFALL, "5300.00", "2650.00", "0.00", "0.00", "2650.00"),
+    ("SI-4386", PINEFALL, "4240.00", "0.00", "0.00", "0.00", "4240.00"),
+    ("SI-4390", PINEFALL, "8480.00", "8480.00", "0.00", "0.00", "0.00"),
+    ("SI-4396", MARROWBONE, "12720.00", "12720.00", "0.00", "0.00", "0.00"),
+    ("SI-4408", MARROWBONE, "9540.00", "8268.00", "1272.00", "0.00", "0.00"),
+    ("SI-4415", MARROWBONE, "6360.00", "0.00", "0.00", "0.00", "6360.00"),
+    ("SI-4419", PINEFALL, "10600.00", "0.00", "0.00", "0.00", "10600.00"),
+)
+PENNY_REGISTER = _register(
+    ("SI-5188", MARCHMONT, "1260.00", "0.00", "1260.00", "0.00", "0.00"),
+    ("SI-5196", CORVID, "5250.00", "5250.00", "0.00", "0.00", "0.00"),
+    ("SI-5203", MARCHMONT, "3780.00", "3780.00", "0.00", "0.00", "0.00"),
+    ("SI-5211", ASHGROVE, "1995.00", "0.00", "0.00", "0.00", "1995.00"),
+    ("SI-5219", MARCHMONT, "2940.00", "1260.00", "1680.00", "0.00", "0.00"),
+    ("SI-5227", CORVID, "3150.00", "0.00", "0.00", "0.00", "3150.00"),
+    ("SI-5236", CORVID, "4200.00", "2100.00", "0.00", "0.00", "2100.00"),
+    ("SI-5244", MARCHMONT, "2625.00", "0.00", "0.00", "0.00", "2625.00"),
+)
+TALLOW_BASE = (
+    ("SI-7218", QUILLHAVEN, "1620.00", "0.00", "0.00", "0.00", "1620.00"),
+    ("SI-7222", BROADMARSH, "3780.00", "3150.00", "630.00", "0.00", "0.00"),
+    ("SI-7226", QUILLHAVEN, "5250.00", "5250.00", "0.00", "0.00", "0.00"),
+    ("SI-7229", BROADMARSH, "4410.00", "4395.00", "0.00", "15.00", "0.00"),
+    ("SI-7231", QUILLHAVEN, "7920.00", "7920.00", "0.00", "0.00", "0.00"),
+    ("SI-7234", PELLOW, "2835.00", "2745.00", "0.00", "0.00", "90.00"),
+    ("SI-7242", PELLOW, "3360.00", "0.00", "0.00", "0.00", "3360.00"),
+)
+PENNY_CREDIT = pairs(("SI-5219", "1680.00"), ("SI-5188", "1260.00"))
+
+#: Per variant: the receipts, the credit note, the closing register, the
+#: closing `Assets:AR`, the opening `Assets:AR`, the statement's close and
+#: the `Expenses:SmallBalanceWriteOffs` MOVEMENT (which equals its closing
+#: balance, because the account opens at zero in all three months).
+PACK = {
+    "cash_application_006": dict(
+        receipts={THORNBURY_R[0]: (pairs(("SI-4371", "5100.00"), ("SI-4396", "4440.00")), (), "0.00"),
+                  THORNBURY_R[1]: (pairs(("SI-4390", "8480.00"), ("SI-4377", "6890.00"),
+                                         ("SI-4383", "2650.00")), (), "0.00"),
+                  THORNBURY_R[2]: (pairs(("SI-4408", "8268.00"), ("SI-4396", "8280.00"), ("SI-4402", "7420.00"),
+                                         ("SI-4371", "2900.00")), (), "0.00")},
+        credits={"CN-0609": (pairs(("SI-4408", "1272.00")), D("0.00"))},
+        register=_register(*THORNBURY_BASE,
+                           ("SI-4371", MARROWBONE, "9300.00", "8000.00", "0.00", "0.00", "1300.00"),
+                           ("SI-4402", MARROWBONE, "7420.00", "7420.00", "0.00", "0.00", "0.00")),
+        opening="63890.00", closing="25150.00", statement="170103.00", written_off="0.00"),
+    "cash_application_007": dict(
+        receipts={THORNBURY_R[0]: (pairs(("SI-4371", "5100.00"), ("SI-4396", "4440.00")), (), "0.00"),
+                  THORNBURY_R[1]: (pairs(("SI-4390", "8480.00"), ("SI-4377", "6890.00"),
+                                         ("SI-4383", "2650.00")), (), "0.00"),
+                  THORNBURY_R[2]: (pairs(("SI-4408", "8268.00"), ("SI-4396", "8280.00"),
+                                         ("SI-4402", "4452.00")), (), "0.00")},
+        credits={"CN-0609": (pairs(("SI-4408", "1272.00")), D("0.00"))},
+        register=_register(*THORNBURY_BASE,
+                           ("SI-4371", MARROWBONE, "9300.00", "5100.00", "0.00", "0.00", "4200.00"),
+                           ("SI-4402", MARROWBONE, "7420.00", "4452.00", "0.00", "0.00", "2968.00")),
+        opening="63890.00", closing="31018.00", statement="164235.00", written_off="0.00"),
+    "cash_application_008": dict(
+        receipts={PENNY_R[0]: (pairs(("SI-5203", "3780.00"), ("SI-5219", "1260.00")), (), "0.00"),
+                  PENNY_R[1]: (pairs(("SI-5196", "5250.00")), (), "0.00"),
+                  PENNY_R[2]: (pairs(("SI-5236", "2100.00")), (), "0.00")},
+        credits={"CN-0618": (PENNY_CREDIT, D("210.00"))},
+        register=PENNY_REGISTER,
+        opening="18375.00", closing="9660.00", statement="44807.00", written_off="0.00"),
+    "cash_application_009": dict(
+        receipts={PENNY_R[0]: (pairs(("SI-5203", "3780.00"), ("SI-5219", "1260.00")), (), "0.00"),
+                  PENNY_R[1]: (pairs(("SI-5196", "5250.00")), (), "0.00"),
+                  PENNY_R[2]: (pairs(("SI-5236", "2100.00")), (), "0.00")},
+        credits={"CN-0618": (PENNY_CREDIT, D("0.00"))},
+        register=PENNY_REGISTER,
+        opening="18375.00", closing="9870.00", statement="44807.00", written_off="0.00"),
+    "cash_application_010": dict(
+        receipts={TALLOW_R[0]: (pairs(("SI-7231", "7920.00"), ("SI-7226", "1620.00")), (), "0.00"),
+                  TALLOW_R[1]: (pairs(("SI-7222", "3150.00")), (), "0.00"),
+                  TALLOW_R[2]: (pairs(("SI-7229", "4395.00")), pairs(("SI-7229", "15.00")), "0.00"),
+                  TALLOW_R[3]: (pairs(("SI-7234", "2745.00")), (), "0.00"),
+                  TALLOW_R[4]: (pairs(("SI-7226", "3630.00"), ("SI-7239", "4020.00")), (), "540.00")},
+        credits={"CN-0714": (pairs(("SI-7222", "630.00")), D("0.00"))},
+        register=_register(*TALLOW_BASE,
+                           ("SI-7239", QUILLHAVEN, "4620.00", "4020.00", "0.00", "0.00", "600.00")),
+        opening="25815.00", closing="5130.00", statement="116368.00", written_off="15.00"),
+    "cash_application_011": dict(
+        receipts={TALLOW_R[0]: (pairs(("SI-7231", "7920.00"), ("SI-7226", "1620.00")), (), "0.00"),
+                  TALLOW_R[1]: (pairs(("SI-7222", "3150.00")), (), "0.00"),
+                  TALLOW_R[2]: (pairs(("SI-7229", "4395.00")), pairs(("SI-7229", "15.00")), "0.00"),
+                  TALLOW_R[3]: (pairs(("SI-7234", "2745.00")), (), "0.00"),
+                  TALLOW_R[4]: (pairs(("SI-7226", "3630.00"), ("SI-7239", "4560.00")), (), "0.00")},
+        credits={"CN-0714": (pairs(("SI-7222", "630.00")), D("0.00"))},
+        register=_register(*TALLOW_BASE,
+                           ("SI-7239", QUILLHAVEN, "4620.00", "4560.00", "0.00", "0.00", "60.00")),
+        opening="25815.00", closing="5130.00", statement="116368.00", written_off="0.00"),
+}
+#: variant B of the advice-residue pair still writes off SI-7229's 15.00 —
+#: only R5's residue moves — so its write-off movement is 15.00 too.
+PACK["cash_application_011"]["written_off"] = "15.00"
+
+#: What a pair is allowed to differ in, as the pack states it: the FILES,
+#: and for the one-cell pairs the number of differing lines.
+PAIR_DIFFERS = {
+    ("cash_application_006", "cash_application_007"): {"bank_statement.csv": 2, "ledger.beancount": 2},
+    ("cash_application_008", "cash_application_009"): {"credit_notes.csv": 1, "ledger.beancount": 3},
+    ("cash_application_010", "cash_application_011"): {"remittance_advice.csv": 1},
+}
+
+
+#: `six_variant_packs.md`'s three EVIDENCE files per variant, byte for byte,
+#: and the three manifest rows that count them. The document is the
+#: specification and lives outside the wheel, so the bytes it renders are
+#: pinned HERE: a projector change that moved one of them would otherwise be
+#: invisible to the battery and visible only to a scratch run.
+PACK_FAMILY_FILES = {
+    "cash_application_006": {
+        "open_items.csv": """invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-4386,Pinefall Hospitality Partners,2026-03-24,2026-05-08,4240.00,4240.00
+SI-4371,Marrowbone Construction Group,2026-03-30,2026-04-29,18550.00,9300.00
+SI-4390,Pinefall Hospitality Partners,2026-04-03,2026-05-18,8480.00,8480.00
+SI-4377,Pinefall Hospitality Partners,2026-04-14,2026-05-29,6890.00,6890.00
+SI-4408,Marrowbone Construction Group,2026-04-22,2026-05-22,9540.00,9540.00
+SI-4383,Pinefall Hospitality Partners,2026-04-28,2026-06-12,5300.00,5300.00
+SI-4396,Marrowbone Construction Group,2026-05-06,2026-06-05,12720.00,12720.00
+SI-4402,Marrowbone Construction Group,2026-05-19,2026-06-18,7420.00,7420.00
+""",
+        "remittance_advice.csv": """remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4371,5100.00,no,0.00,Partial payment of the invoiced work; the remaining balance is outstanding and is not subject to retention or a completion condition.
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4396,4440.00,no,0.00,part payment on account; balance to follow on the next payment run
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4402,0.00,no,0.00,withheld; site access charge disputed
+""",
+        "credit_notes.csv": """credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0609,2026-06-09,Marrowbone Construction Group,SI-4408,1200.00,72.00,1272.00,Agreed price allowance for site-damaged glazing retained by the customer; no return or replacement goods.
+""",
+    },
+    "cash_application_007": {
+        "open_items.csv": """invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-4386,Pinefall Hospitality Partners,2026-03-24,2026-05-08,4240.00,4240.00
+SI-4371,Marrowbone Construction Group,2026-03-30,2026-04-29,18550.00,9300.00
+SI-4390,Pinefall Hospitality Partners,2026-04-03,2026-05-18,8480.00,8480.00
+SI-4377,Pinefall Hospitality Partners,2026-04-14,2026-05-29,6890.00,6890.00
+SI-4408,Marrowbone Construction Group,2026-04-22,2026-05-22,9540.00,9540.00
+SI-4383,Pinefall Hospitality Partners,2026-04-28,2026-06-12,5300.00,5300.00
+SI-4396,Marrowbone Construction Group,2026-05-06,2026-06-05,12720.00,12720.00
+SI-4402,Marrowbone Construction Group,2026-05-19,2026-06-18,7420.00,7420.00
+""",
+        "remittance_advice.csv": """remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4371,5100.00,no,0.00,Partial payment of the invoiced work; the remaining balance is outstanding and is not subject to retention or a completion condition.
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4396,4440.00,no,0.00,part payment on account; balance to follow on the next payment run
+RA-0605-MCG,Marrowbone Construction Group,2026-06-05,ACH,MCG REMIT 0605,9540.00,SI-4402,0.00,no,0.00,withheld; site access charge disputed
+""",
+        "credit_notes.csv": """credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0609,2026-06-09,Marrowbone Construction Group,SI-4408,1200.00,72.00,1272.00,Agreed price allowance for site-damaged glazing retained by the customer; no return or replacement goods.
+""",
+    },
+    "cash_application_008": {
+        "open_items.csv": """invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-5188,Marchmont Grocers Co-operative,2026-04-22,2026-06-06,4410.00,1260.00
+SI-5196,Corvid Coffee Houses LLC,2026-04-29,2026-05-29,5250.00,5250.00
+SI-5203,Marchmont Grocers Co-operative,2026-05-06,2026-06-20,3780.00,3780.00
+SI-5211,Ashgrove Halt Refreshments Ltd,2026-05-12,2026-06-11,1995.00,1995.00
+SI-5219,Marchmont Grocers Co-operative,2026-05-19,2026-07-03,4200.00,2940.00
+SI-5227,Corvid Coffee Houses LLC,2026-05-26,2026-06-25,3150.00,3150.00
+""",
+        "remittance_advice.csv": """remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0610-MG,Marchmont Grocers Co-operative,2026-06-10,ACH,MG PAYRUN 0610,5040.00,SI-5203,3780.00,yes,0.00,
+RA-0610-MG,Marchmont Grocers Co-operative,2026-06-10,ACH,MG PAYRUN 0610,5040.00,SI-5219,1260.00,no,0.00,part payment; balance held pending the agreed spoilage allowance
+RA-0611-CC,Corvid Coffee Houses LLC,2026-06-11,CHECK,6153,5250.00,SI-5196,5250.00,yes,0.00,
+RA-0626-CC,Corvid Coffee Houses LLC,2026-06-26,ACH,CC ACH 0626,2100.00,SI-5236,2100.00,no,0.00,instalment on the June delivery; balance to follow
+""",
+        "credit_notes.csv": """credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0618,2026-06-18,Marchmont Grocers Co-operative,SI-5219,3000.00,150.00,3150.00,spoilage allowance on the chilled range
+""",
+    },
+    "cash_application_009": {
+        "open_items.csv": """invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-5188,Marchmont Grocers Co-operative,2026-04-22,2026-06-06,4410.00,1260.00
+SI-5196,Corvid Coffee Houses LLC,2026-04-29,2026-05-29,5250.00,5250.00
+SI-5203,Marchmont Grocers Co-operative,2026-05-06,2026-06-20,3780.00,3780.00
+SI-5211,Ashgrove Halt Refreshments Ltd,2026-05-12,2026-06-11,1995.00,1995.00
+SI-5219,Marchmont Grocers Co-operative,2026-05-19,2026-07-03,4200.00,2940.00
+SI-5227,Corvid Coffee Houses LLC,2026-05-26,2026-06-25,3150.00,3150.00
+""",
+        "remittance_advice.csv": """remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0610-MG,Marchmont Grocers Co-operative,2026-06-10,ACH,MG PAYRUN 0610,5040.00,SI-5203,3780.00,yes,0.00,
+RA-0610-MG,Marchmont Grocers Co-operative,2026-06-10,ACH,MG PAYRUN 0610,5040.00,SI-5219,1260.00,no,0.00,part payment; balance held pending the agreed spoilage allowance
+RA-0611-CC,Corvid Coffee Houses LLC,2026-06-11,CHECK,6153,5250.00,SI-5196,5250.00,yes,0.00,
+RA-0626-CC,Corvid Coffee Houses LLC,2026-06-26,ACH,CC ACH 0626,2100.00,SI-5236,2100.00,no,0.00,instalment on the June delivery; balance to follow
+""",
+        "credit_notes.csv": """credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0618,2026-06-18,Marchmont Grocers Co-operative,SI-5219,2800.00,140.00,2940.00,spoilage allowance on the chilled range
+""",
+    },
+    "cash_application_010": {
+        "open_items.csv": """invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-7218,Quillhaven Publishing House,2026-05-19,2026-06-18,6480.00,1620.00
+SI-7222,Broadmarsh Academy Trust,2026-05-27,2026-07-11,3780.00,3780.00
+SI-7226,Quillhaven Publishing House,2026-06-04,2026-07-04,5250.00,5250.00
+SI-7229,Broadmarsh Academy Trust,2026-06-11,2026-07-26,4410.00,4410.00
+SI-7231,Quillhaven Publishing House,2026-06-16,2026-07-16,7920.00,7920.00
+SI-7234,Pellow & Dunge Stationers,2026-06-23,2026-07-23,2835.00,2835.00
+""",
+        "remittance_advice.csv": """remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0709-QP,Quillhaven Publishing House,2026-07-09,ACH,QPH SETTLEMENT 0709,9540.00,SI-7231,7920.00,yes,0.00,
+RA-0709-QP,Quillhaven Publishing House,2026-07-09,ACH,QPH SETTLEMENT 0709,9540.00,SI-7226,1620.00,no,0.00,part payment; balance held pending the reprint reconciliation
+RA-0716-BA,Broadmarsh Academy Trust,2026-07-16,CHECK,4417,3150.00,SI-7222,3150.00,yes,0.00,net of credit note CN-0714
+RA-0722-BA,Broadmarsh Academy Trust,2026-07-22,ACH,BAT REMIT 0722,4395.00,SI-7229,4395.00,yes,15.00,Customer claims a minor carriage discrepancy; the seller has not approved a price reduction.
+RA-0724-PD,Pellow & Dunge Stationers,2026-07-24,ACH,PDS PAYRUN 0724,2745.00,SI-7234,2745.00,yes,90.00,damaged spines claimed; credit requested
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7226,3630.00,yes,0.00,balance of the reprint reconciliation
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7239,4020.00,no,0.00,on account against the July binding run
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7218,0.00,no,0.00,withheld; disputed trimming charge; credit requested
+""",
+        "credit_notes.csv": """credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0714,2026-07-14,Broadmarsh Academy Trust,SI-7222,600.00,30.00,630.00,agreed allowance; returned custom-printed units received 14 July were unusable and had no recoverable resale or salvage value; no replacement goods were supplied
+""",
+    },
+    "cash_application_011": {
+        "open_items.csv": """invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-7218,Quillhaven Publishing House,2026-05-19,2026-06-18,6480.00,1620.00
+SI-7222,Broadmarsh Academy Trust,2026-05-27,2026-07-11,3780.00,3780.00
+SI-7226,Quillhaven Publishing House,2026-06-04,2026-07-04,5250.00,5250.00
+SI-7229,Broadmarsh Academy Trust,2026-06-11,2026-07-26,4410.00,4410.00
+SI-7231,Quillhaven Publishing House,2026-06-16,2026-07-16,7920.00,7920.00
+SI-7234,Pellow & Dunge Stationers,2026-06-23,2026-07-23,2835.00,2835.00
+""",
+        "remittance_advice.csv": """remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0709-QP,Quillhaven Publishing House,2026-07-09,ACH,QPH SETTLEMENT 0709,9540.00,SI-7231,7920.00,yes,0.00,
+RA-0709-QP,Quillhaven Publishing House,2026-07-09,ACH,QPH SETTLEMENT 0709,9540.00,SI-7226,1620.00,no,0.00,part payment; balance held pending the reprint reconciliation
+RA-0716-BA,Broadmarsh Academy Trust,2026-07-16,CHECK,4417,3150.00,SI-7222,3150.00,yes,0.00,net of credit note CN-0714
+RA-0722-BA,Broadmarsh Academy Trust,2026-07-22,ACH,BAT REMIT 0722,4395.00,SI-7229,4395.00,yes,15.00,Customer claims a minor carriage discrepancy; the seller has not approved a price reduction.
+RA-0724-PD,Pellow & Dunge Stationers,2026-07-24,ACH,PDS PAYRUN 0724,2745.00,SI-7234,2745.00,yes,90.00,damaged spines claimed; credit requested
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7226,3630.00,yes,0.00,balance of the reprint reconciliation
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7239,4560.00,no,0.00,on account against the July binding run
+RA-0729-QP,Quillhaven Publishing House,2026-07-29,ACH,QPH SETTLEMENT 0729,8190.00,SI-7218,0.00,no,0.00,withheld; disputed trimming charge; credit requested
+""",
+        "credit_notes.csv": """credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-0714,2026-07-14,Broadmarsh Academy Trust,SI-7222,600.00,30.00,630.00,agreed allowance; returned custom-printed units received 14 July were unusable and had no recoverable resale or salvage value; no replacement goods were supplied
+""",
+    },
+}
+
+PACK_MANIFEST_ROWS = {
+    "cash_application_006": (
+        "| `open_items.csv` | Open sales-invoice register at 2026-06-01. 8 rows. Columns: invoice_id, customer, invoice_date, due_date, original_amount, open_balance. |",
+        "| `remittance_advice.csv` | Customer remittance advices, one row per advice line. 3 rows. Columns: remittance_id, customer, remittance_date, payment_method, payment_reference, payment_amount, invoice_id, amount_paid, settles_invoice, deduction_amount, note. |",
+        "| `credit_notes.csv` | Credit notes issued in the period. 1 row. Columns: credit_note_id, date, customer, invoice_id, net_amount, tax_amount, gross_amount, reason. |",
+    ),
+    "cash_application_007": (
+        "| `open_items.csv` | Open sales-invoice register at 2026-06-01. 8 rows. Columns: invoice_id, customer, invoice_date, due_date, original_amount, open_balance. |",
+        "| `remittance_advice.csv` | Customer remittance advices, one row per advice line. 3 rows. Columns: remittance_id, customer, remittance_date, payment_method, payment_reference, payment_amount, invoice_id, amount_paid, settles_invoice, deduction_amount, note. |",
+        "| `credit_notes.csv` | Credit notes issued in the period. 1 row. Columns: credit_note_id, date, customer, invoice_id, net_amount, tax_amount, gross_amount, reason. |",
+    ),
+    "cash_application_008": (
+        "| `open_items.csv` | Open sales-invoice register at 2026-06-01. 6 rows. Columns: invoice_id, customer, invoice_date, due_date, original_amount, open_balance. |",
+        "| `remittance_advice.csv` | Customer remittance advices, one row per advice line. 4 rows. Columns: remittance_id, customer, remittance_date, payment_method, payment_reference, payment_amount, invoice_id, amount_paid, settles_invoice, deduction_amount, note. |",
+        "| `credit_notes.csv` | Credit notes issued in the period. 1 row. Columns: credit_note_id, date, customer, invoice_id, net_amount, tax_amount, gross_amount, reason. |",
+    ),
+    "cash_application_009": (
+        "| `open_items.csv` | Open sales-invoice register at 2026-06-01. 6 rows. Columns: invoice_id, customer, invoice_date, due_date, original_amount, open_balance. |",
+        "| `remittance_advice.csv` | Customer remittance advices, one row per advice line. 4 rows. Columns: remittance_id, customer, remittance_date, payment_method, payment_reference, payment_amount, invoice_id, amount_paid, settles_invoice, deduction_amount, note. |",
+        "| `credit_notes.csv` | Credit notes issued in the period. 1 row. Columns: credit_note_id, date, customer, invoice_id, net_amount, tax_amount, gross_amount, reason. |",
+    ),
+    "cash_application_010": (
+        "| `open_items.csv` | Open sales-invoice register at 2026-07-01. 6 rows. Columns: invoice_id, customer, invoice_date, due_date, original_amount, open_balance. |",
+        "| `remittance_advice.csv` | Customer remittance advices, one row per advice line. 8 rows. Columns: remittance_id, customer, remittance_date, payment_method, payment_reference, payment_amount, invoice_id, amount_paid, settles_invoice, deduction_amount, note. |",
+        "| `credit_notes.csv` | Credit notes issued in the period. 1 row. Columns: credit_note_id, date, customer, invoice_id, net_amount, tax_amount, gross_amount, reason. |",
+    ),
+    "cash_application_011": (
+        "| `open_items.csv` | Open sales-invoice register at 2026-07-01. 6 rows. Columns: invoice_id, customer, invoice_date, due_date, original_amount, open_balance. |",
+        "| `remittance_advice.csv` | Customer remittance advices, one row per advice line. 8 rows. Columns: remittance_id, customer, remittance_date, payment_method, payment_reference, payment_amount, invoice_id, amount_paid, settles_invoice, deduction_amount, note. |",
+        "| `credit_notes.csv` | Credit notes issued in the period. 1 row. Columns: credit_note_id, date, customer, invoice_id, net_amount, tax_amount, gross_amount, reason. |",
+    ),
+}
+
+
+def test_each_variant_pack_is_two_variants_of_one_company_month():
+    problems = []
+    if [m.__name__.rsplit(".", 1)[1] for m in CASH_APPLICATION_PAIR_MODULES] != \
+            ["thornbury_2026_06", "pennywhistle_2026_06", "tallowmere_2026_07"]:
+        problems.append(f"pair modules {[m.__name__ for m in CASH_APPLICATION_PAIR_MODULES]}")
+    want_worlds = {("cash_application_006", "cash_application_007"): ("thornbury-2026-06-pf-a", "thornbury-2026-06-pf-b"),
+                   ("cash_application_008", "cash_application_009"): ("pennywhistle-2026-06-cr-a", "pennywhistle-2026-06-cr-b"),
+                   ("cash_application_010", "cash_application_011"): ("tallowmere-2026-07-ar-a", "tallowmere-2026-07-ar-b")}
+    shared = ("title", "currency", "bank_account", "bank_party_id", "accounts", "parties", "documents",
+              "bank_opening", "opening", "roles", "policy_text")
+    for pair in PAIR_IDS:
+        a, b = (variant(task_id) for task_id in pair)
+        (_, world_a, task_a, _, _, public_a) = a
+        (_, world_b, task_b, _, _, public_b) = b
+        if (world_a.id, world_b.id) != want_worlds[pair]:
+            problems.append(f"{pair}: world ids {(world_a.id, world_b.id)}")
+        for attr in shared:
+            if repr(getattr(world_a, attr)) != repr(getattr(world_b, attr)):
+                problems.append(f"{pair}: the two variants differ in {attr}, which the pair holds identical")
+        if task_a.prompt != task_b.prompt or task_a.type != task_b.type != "bank_reconciliation" \
+                or task_a.period != task_b.period:
+            problems.append(f"{pair}: the two tasks do not share one prompt, one type and one period")
+        if not P.is_cash_application_world(world_a) or not P.is_cash_application_world(world_b):
+            problems.append(f"{pair}: the family is not inferred from the events")
+        # exactly one authored fact moves, and exactly the pack's files with it
+        differ = {name: sum(1 for x, y in zip(public_a[name].splitlines(), public_b[name].splitlines()) if x != y)
+                  for name in public_a if public_a[name] != public_b[name]}
+        if differ != PAIR_DIFFERS[pair]:
+            problems.append(f"{pair}: the variants differ in {differ}, not {PAIR_DIFFERS[pair]}")
+        if len(public_a) != 11 or set(public_a) != set(public_b):
+            problems.append(f"{pair}: {len(public_a)} public files")
+        # the pack's own evidence files, byte for byte
+        for task_id, public in zip(pair, (public_a, public_b)):
+            for name, want in PACK_FAMILY_FILES[task_id].items():
+                if public[name] != want:
+                    problems.append(f"{task_id}: {name} is not the pack's bytes")
+            manifest = public["manifest.md"]
+            for line in PACK_MANIFEST_ROWS[task_id]:
+                if line not in manifest:
+                    problems.append(f"{task_id}: manifest row absent: {line}")
+    # the instruction is Bowline's, month for month, and nothing else
+    for task_id in VARIANT_IDS:
+        _, _, task, *_ = variant(task_id)
+        month = task.period.label.split()[0]
+        if task.prompt != VP.prompt(month) or VP.prompt("April") != B.PROMPT:
+            problems.append(f"{task_id}: the prompt is not the shared instruction for {month}")
+        for word in ("write-off", "written off", "transpos", "missing", "duplicat", "unapplied cash", "rung",
+                     "SI-4", "SI-5", "SI-7", "residue"):
+            if word.lower() in task.prompt.lower() and word not in ("written off",):
+                problems.append(f"{task_id}: the prompt reveals {word!r}")
+    return check("the three variant packs: six worlds thornbury/pennywhistle/tallowmere -a and -b, tasks "
+                 "cash_application_006..011, each pair one chart, one set of parties, documents, opening and "
+                 "policy, one prompt (Bowline's, month for month), eleven public files, exactly the pack's "
+                 "files differing, and open_items.csv, remittance_advice.csv and credit_notes.csv the pack's "
+                 "bytes", not problems, "\n".join(problems))
+
+
+def test_every_gate_passes_for_all_six_variants():
+    problems = []
+    for task_id in VARIANT_IDS:
+        module, world, task, *_ = variant(task_id)
+        source = WORLDS_DIR / f"{module.__name__.rsplit('.', 1)[1]}.py"
+        siblings = tuple(w for tid, w in module.WORLD_BY_TASK.items() if tid != task_id)
+        found, warnings = check_world_task(world, task, source_path=source, co_authored=siblings)
+        problems += [f"{task_id}: {p}" for p in found]
+        for w in warnings:
+            print(f"      {task_id}: {w[:200]}")
+        # the shared policy/instruction module is scanned for derived literals too
+        found_shared, _ = check_world_task(world, task, source_path=WORLDS_DIR / "_variant_pack.py",
+                                           co_authored=siblings)
+        problems += [f"{task_id} (_variant_pack.py): {p}" for p in found_shared
+                     if "appears as" in p and "literal" in p]
+    return check("every world gate — schema, derivation, golden 1.0, original unresolved, merged trap, scoped (f), "
+                 "private ids, derived literals (the pair module and _variant_pack.py), name pools, headings, the "
+                 "family's (l), (m), (n) and plant coverage — passes for all six variants",
+                 not problems, "\n".join(problems))
+
+
+def test_gate_m_and_l_over_the_six_variants():
+    problems = []
+    for task_id in VARIANT_IDS:
+        _, world, task, _, inputs, public = variant(task_id)
+        want = PACK[task_id]
+        truth = inputs.application
+        try:
+            app = CA.fold(public, **kw(task))
+        except Exception as exc:
+            problems.append(f"{task_id}: the public fold refused the projected bytes: {exc}")
+            continue
+        if CA.application_key(app) != truth.application_key():
+            problems.append(f"{task_id}: public {CA.application_key(app)}\n  truth {truth.application_key()}")
+        # gate (m): the truth is the pack's tables, receipt by receipt
+        got = {r[0]: (r[4], r[5], r[6]) for r in truth.receipts}
+        for receipt_id, (applied, written_off, unapplied) in want["receipts"].items():
+            if got.get(receipt_id) != (applied, written_off, D(unapplied)):
+                problems.append(f"{task_id}: receipt {receipt_id} {got.get(receipt_id)} != "
+                                f"{(applied, written_off, D(unapplied))}")
+        if set(got) != set(want["receipts"]):
+            problems.append(f"{task_id}: receipts {sorted(got)} != {sorted(want['receipts'])}")
+        credits = {c[0]: (c[4], c[5]) for c in truth.credit_notes}
+        if credits != want["credits"]:
+            problems.append(f"{task_id}: credit applications {credits} != {want['credits']}")
+        if tuple(truth.register) != want["register"]:
+            for a, b in zip(truth.register, want["register"]):
+                if a != b:
+                    problems.append(f"{task_id}: row {a} != {b}")
+            if len(truth.register) != len(want["register"]):
+                problems.append(f"{task_id}: {len(truth.register)} register rows, not {len(want['register'])}")
+        expected_ar = dict(inputs.expected_balances)[AR]
+        if not (app.closing_ar == truth.closing_ar == expected_ar == D(want["closing"])):
+            problems.append(f"{task_id}: closing AR public {app.closing_ar} truth {truth.closing_ar} ledger "
+                            f"{expected_ar} pack {want['closing']}")
+        if D(inputs.statement_closing) != D(want["statement"]):
+            problems.append(f"{task_id}: statement closes {inputs.statement_closing}, not {want['statement']}")
+        # gate (l): the register ties to the opening entry on both sides
+        ev = CA.read_evidence(public, **kw(task))
+        opening = D(want["opening"])
+        if not (ev.opening_ar == truth.opening_ar == dict(world.opening.carried)[AR] == opening):
+            problems.append(f"{task_id}: opening AR public {ev.opening_ar} truth {truth.opening_ar} "
+                            f"entry {dict(world.opening.carried)[AR]} pack {opening}")
+        if sum((r[5] for r in truth.opening_register), D(0)) != opening:
+            problems.append(f"{task_id}: the truth's opening register does not sum to the opening entry")
+        doc = CA.document(app)
+        if doc["schema"] != "piv.cash-application/1" or len(doc["closing_open_items"]) != len(want["register"]):
+            problems.append(f"{task_id}: document {doc['schema']} with {len(doc['closing_open_items'])} rows")
+    return check("gates (m) and (l) over the six variants: the public fold over the projected bytes equals the "
+                 "truth folded from the authored facts, both close at the expected ledger's AR, the truth is the "
+                 "pack's receipts, write-offs, credit applications, residues and register rows, and the register "
+                 "ties to the opening entry", not problems, "\n".join(problems))
+
+
+def test_the_write_off_account_opens_at_zero_in_all_three_months():
+    problems = []
+    for task_id in VARIANT_IDS:
+        _, world, task, bundle, inputs, public = variant(task_id)
+        want = D(PACK[task_id]["written_off"])
+        write_offs = dict(world.roles)["small_balance_write_offs"]
+        if write_offs != WRITE_OFFS:
+            problems.append(f"{task_id}: the write-off role names {write_offs}")
+        # nothing carried into the period on that account, so its expected
+        # CLOSING balance is also its period movement — which is what
+        # `candidate/application.py` reads for `writeoff_tie_break`.
+        if any(account == write_offs for account, _ in world.opening.carried):
+            problems.append(f"{task_id}: the opening position carries a leg for {write_offs}")
+        opening = next(r for r in bundle.recognitions if r.rule == "opening")
+        if any(leg.account == write_offs for leg in opening.legs):
+            problems.append(f"{task_id}: the opening entry carries a leg for {write_offs}")
+        carry_forward = public["ledger.beancount"].split(PJ.BANNER)[0]
+        if f"\n  {write_offs}" in carry_forward:
+            problems.append(f"{task_id}: the opening ledger's carry-forward names {write_offs}")
+        closing = dict(inputs.expected_balances)[write_offs]
+        movement = sum((amount for r in inputs.application.receipts for _, amount in r[5]), D(0))
+        if not (closing == movement == want):
+            problems.append(f"{task_id}: write-off closing {closing}, movement {movement}, pack {want}")
+        if sum((r[5] for r in inputs.application.register), D(0)) != want:
+            problems.append(f"{task_id}: the register's written_off column does not sum to {want}")
+    return check("the write-off account opens at ZERO in all three months — no opening leg, no carry-forward "
+                 "row — so its expected closing balance is its period movement: 0.00 / 0.00 / 15.00, and the "
+                 "register's written_off column sums to the same", not problems, "\n".join(problems))
+
+
+#: Gate (o), pinned per variant: the baselines the EVIDENCE admits, read off
+#: `six_variant_packs.md` section 4 against `cash_application.BASELINES`.
+#: Thornbury admits EIGHT of the ten, not all ten: `write_off_everything` and
+#: `write_off_nothing` are not admitted there, because no bound advice claims
+#: a deduction anywhere in that month. An empty `refused_by` would not catch
+#: an admitted set that silently grew or shrank, so the set itself is pinned.
+ADMITTED_BASELINES = {
+    "cash_application_006": ("amount_only", "credit_ignored", "hold_on_account", "mixed_amount_only",
+                             "mixed_oldest_first", "number_order", "oldest_first", "printed_order"),
+    "cash_application_008": ("amount_only", "credit_ignored", "oldest_first"),
+    "cash_application_010": ("amount_only", "credit_ignored", "oldest_first",
+                             "write_off_everything", "write_off_nothing"),
+}
+#: each pair's two variants differ in one authored fact, never in what the
+#: evidence admits.
+ADMITTED_BASELINES["cash_application_007"] = ADMITTED_BASELINES["cash_application_006"]
+ADMITTED_BASELINES["cash_application_009"] = ADMITTED_BASELINES["cash_application_008"]
+ADMITTED_BASELINES["cash_application_011"] = ADMITTED_BASELINES["cash_application_010"]
+
+
+def test_gate_n_and_gate_o_over_the_six_variants():
+    problems = []
+    # every shipped baseline is admitted by at least one of the three months,
+    # so a baseline added or renamed upstream cannot slip past the pins below.
+    pinned = set().union(*(set(names) for names in ADMITTED_BASELINES.values()))
+    shipped = set(CA.BASELINE_NAMES) | set(CA.DIAGNOSTIC_BASELINE_NAMES)
+    if pinned != shipped:
+        problems.append(f"the shipped baselines are {sorted(shipped)}; the pinned admitted sets name "
+                        f"{sorted(pinned)}, so a baseline was added or renamed without pinning it here")
+    for task_id in VARIANT_IDS:
+        _, world, task, _, inputs, public = variant(task_id)
+        # (n) the narration rule, over every receipt and write-off narration
+        # the expected ledger carries, and every advice note and credit memo
+        notes = frozenset(c[0] for c in inputs.application.credit_notes)
+        for event in world.events:
+            if not isinstance(event, (S.AppliedReceipt, S.CreditNote)):
+                continue
+            if isinstance(event, S.CreditNote):
+                tied = frozenset({world.document(event.invoice_id).number})
+                texts = [f"Credit note {event.number} against {world.document(event.invoice_id).number}: "
+                         f"{event.memo}", event.memo]
+            else:
+                receipt_id = f"{event.settlement.cleared_on}:" + (
+                    world.document(event.settlement.cheque_id).number
+                    if event.settlement.rail is S.Rail.CHEQUE else event.bank_reference)
+                tied = public_ties(CA.read_evidence(public, **kw(task)), receipt_id)
+                texts = [event.memo] + [line.note for line in event.lines if line.note]
+                texts += [r.narration for r in derive_contract(world, task)[0].recognitions
+                          if r.event_id == event.id]
+            for text in texts:
+                problems += [f"{task_id}: gate (n): {p}" for p in narration_problems(text, tied, notes, task_id)]
+        # (o) no admitted baseline reaches the truth — the DIAGNOSTIC one
+        # included, which `refused_by` ignores by construction — and the
+        # admitted SET is the pack's, name for name.
+        report = CA.baseline_report(public, **kw(task))
+        reached = CA.refused_by(report)
+        if reached:
+            problems.append(f"{task_id}: gate (o): reached by {reached}")
+        diagnostic_reach = tuple(name for name, r in report.items()
+                                 if r.admitted and r.diagnostic and r.reaches_truth)
+        if diagnostic_reach:
+            problems.append(f"{task_id}: gate (o): diagnostic baseline(s) {diagnostic_reach} reach the truth")
+        admitted = tuple(sorted(name for name, r in report.items() if r.admitted))
+        if admitted != tuple(sorted(ADMITTED_BASELINES[task_id])):
+            problems.append(f"{task_id}: gate (o): the evidence admits {admitted}, not the pack's "
+                            f"{tuple(sorted(ADMITTED_BASELINES[task_id]))}")
+        print(f"      {task_id}: " + ", ".join(
+            f"{name}={'-' if r.reaches_truth is None else ('REACHES' if r.reaches_truth else 'no')}"
+            for name, r in report.items()))
+    return check("gates (n) and (o) over the six variants: no narration, advice note or credit memo names an "
+                 "invoice the payment's own public documents do not tie to it or instructs an application, no "
+                 "admitted baseline (the diagnostic one included) reaches any of the six truths, and the admitted "
+                 "SETS are the pack's — eight of the ten at Thornbury, three at Pennywhistle, five at "
+                 "Tallowmere", not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# the credit note's original-sale basis (round 15, decision 6)
+# --------------------------------------------------------------------------
+
+def test_the_credit_basis_guard_reads_an_independently_established_original_sale():
+    """`schema.original_sale_basis` establishes an invoice's original net and
+    tax from the WORLD — the sale it authors, or, for an invoice carried in
+    from the prior period, its gross split at the world's own single authored
+    sales rate — and never from the credit note being checked. The negative
+    control is round 15's own example, which the superseded derivation
+    (`gross / (1 + credit_note.tax_rate)`) admitted."""
+    problems = []
+    worlds = [m.WORLD for m in CASH_APPLICATION_MODULES]
+    for module in CASH_APPLICATION_PAIR_MODULES:
+        worlds += list(dict.fromkeys(module.WORLD_BY_TASK.values()))
+
+    # 1. nothing shipped moved: every world still passes, and every note still
+    #    fits a basis that is now READ rather than manufactured.
+    notes = 0
+    for world in worlds:
+        found = S.check_world(world)
+        if found:
+            problems.append(f"{world.id}: check_world now refuses it: {found[:2]}")
+        for event in world.events:
+            if not isinstance(event, S.CreditNote):
+                continue
+            notes += 1
+            net, tax_basis, source = S.original_sale_basis(world, event.invoice_id)
+            note_tax, _gross = P.credit_note_amounts(event)
+            if net is None:
+                problems.append(f"{world.id}: no basis for {event.number}: {source}")
+            elif event.net > net or note_tax > tax_basis:
+                problems.append(f"{world.id}: {event.number} {event.net}+{note_tax} exceeds its basis "
+                                f"{net}+{tax_basis}")
+            # the basis is a fact of the world: re-authoring the note at a
+            # rate its sale never used leaves the basis where it was
+            elsewhere = S.original_sale_basis(
+                dataclasses.replace(world, events=tuple(
+                    dataclasses.replace(e, tax_rate=D("0.00")) if e is event else e for e in world.events)),
+                event.invoice_id)
+            if elsewhere[:2] != (net, tax_basis):
+                problems.append(f"{world.id}: {event.number} at a zero rate moves its own basis to {elsewhere[:2]}")
+    if notes != 11:
+        problems.append(f"{notes} credit notes across the eleven worlds, not 11")
+
+    # 2. the basis does not move when the NOTE's rate does. Pennywhistle's
+    #    SI-5219 is round 15's invoice: 4,200.00 gross, carried in from the
+    #    prior period. No Sale event is authored for it — as for every
+    #    shipped note's invoice — so its 4,000.00 + 200.00 basis comes from
+    #    the gross split at the world's single authored sales rate of 0.05,
+    #    not from a sale the world states. The `source` string below says
+    #    which branch established it, and this test reads it.
+    penny = VARIANT_MODULE["cash_application_008"][1]
+    note = next(e for e in penny.events if isinstance(e, S.CreditNote))
+    basis = S.original_sale_basis(penny, note.invoice_id)
+    if basis[:2] != (D("4000.00"), D("200.00")):
+        problems.append(f"SI-5219's basis reads {basis}, not 4000.00 + 200.00")
+    if any(isinstance(e, S.Sale) and e.invoice_id == note.invoice_id for e in penny.events) \
+            or basis[2] != "4200.00 gross at this world's authored sales rate 0.05":
+        problems.append(f"SI-5219's basis is not the carried-in gross split it is described as: {basis[2]!r}")
+    for rate in ("0.00", "0.05", "0.20", "1.00"):
+        moved = S.original_sale_basis(
+            dataclasses.replace(penny, events=tuple(
+                dataclasses.replace(e, tax_rate=D(rate)) if e is note else e for e in penny.events)),
+            note.invoice_id)
+        if moved[:2] != basis[:2]:
+            problems.append(f"a note at {rate} moved the basis to {moved[:2]}")
+
+    # 3. THE NEGATIVE CONTROL: a 4,100.00 net credit at zero tax against that
+    #    invoice. `gross / (1 + 0.00)` called the original net 4,200.00 and
+    #    admitted it; the sale was 4,000.00.
+    gross = penny.document(note.invoice_id).gross
+    if gross != D("4200.00") or not D("4100.00") <= (gross / (D(1) + D("0.00"))).quantize(D("0.01")):
+        problems.append("the superseded derivation would not have admitted the control; it is not a control")
+    mismatched = dataclasses.replace(penny, events=tuple(
+        dataclasses.replace(e, net=D("4100.00"), tax_rate=D("0.00")) if e is note else e for e in penny.events))
+    found = S.check_world(mismatched)
+    if not any("reverses 4100.00 of sales value" in p and "original sale is 4000.00" in p for p in found):
+        problems.append(f"the mismatched-rate credit was not refused: {found[:3]}")
+
+    # 4. a note whose TAX alone exceeds the sale's tax is refused on that leg,
+    #    and the bound is the SALE, never the unpaid balance: Bowline's Case 5
+    #    credits 540.00 against SI-3100, which has 300.00 outstanding.
+    over_tax = dataclasses.replace(penny, events=tuple(
+        dataclasses.replace(e, net=D("4000.00"), tax_rate=D("0.10")) if e is note else e for e in penny.events))
+    if not any("of tax against" in p and "original tax is 200.00" in p for p in S.check_world(over_tax)):
+        problems.append(f"a 400.00 tax credit against a 200.00 tax sale passed: {S.check_world(over_tax)[:3]}")
+    _m5, world5, *_ = case(5)
+    case_5_note = next(e for e in world5.events if isinstance(e, S.CreditNote))
+    _net5, _tax5, source5 = S.original_sale_basis(world5, case_5_note.invoice_id)
+    if S.check_world(world5) or _net5 != D("1000.00"):
+        problems.append(f"Case 5's 540.00 credit against a 300.00 balance is refused: {S.check_world(world5)[:2]}")
+
+    # 5. an invoice raised INSIDE the period is read off its own sale, not off
+    #    any rate arithmetic — Thornbury's SI-4415 is 6,000.00 at 6%.
+    thornbury = VARIANT_MODULE["cash_application_007"][1]
+    net, tax_basis, source = S.original_sale_basis(thornbury, "doc:si-4415")
+    if (net, tax_basis) != (D("6000.00"), D("360.00")) or "event:si-4415-sale" not in source:
+        problems.append(f"SI-4415's basis reads {net} + {tax_basis} from {source}")
+
+    # 6. a world that establishes NO basis may not carry a note against the
+    #    invoice: two authored sales rates leave the prior-period gross with
+    #    nothing to split at.
+    sales = [e for e in penny.events if isinstance(e, S.Sale)]
+    two_rates = dataclasses.replace(penny, events=tuple(
+        dataclasses.replace(e, tax_rate=D("0.07")) if e is sales[0] else e for e in penny.events))
+    if not any("no original sale is established" in p for p in S.check_world(two_rates)):
+        problems.append(f"a note against an unestablished basis passed: {S.check_world(two_rates)[:3]}")
+    return check("the credit-basis guard bounds a note against an INDEPENDENTLY established original sale — the "
+                 "world's authored sale, or a prior-period invoice's gross split at the world's own single sales "
+                 "rate — so the note's own rate cannot move its bound; round 15's 4,100.00-at-zero-tax control "
+                 "against a 4,200.00 gross carried-in invoice whose established basis is 4,000.00 + 200.00 is "
+                 "refused, an over-credited "
+                 "tax leg is refused, a world with no established basis may not carry a note, and all eleven "
+                 "shipped notes still pass with the bound at the SALE and not the unpaid balance",
+                 not problems, "\n".join(problems))
+
+
 TESTS = [
     test_the_family_is_five_variants_of_one_company_month,
     test_every_gate_passes_for_all_five,
@@ -1184,6 +1869,12 @@ TESTS = [
     test_the_write_off_rule_and_the_optional_role,
     test_roles_and_digests_of_the_shipped_worlds,
     test_gate_o_on_the_actual_bytes,
+    test_each_variant_pack_is_two_variants_of_one_company_month,
+    test_every_gate_passes_for_all_six_variants,
+    test_gate_m_and_l_over_the_six_variants,
+    test_the_write_off_account_opens_at_zero_in_all_three_months,
+    test_gate_n_and_gate_o_over_the_six_variants,
+    test_the_credit_basis_guard_reads_an_independently_established_original_sale,
 ]
 
 
