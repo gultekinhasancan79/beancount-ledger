@@ -39,6 +39,20 @@ SUITES = [
     ("test_family_validators", "step 4 of the cash-application spec, as corrected: an EVIDENCED payment identity makes the five cases identifiable with one reading (Cases 1 and 2 first, then all five) and reaches no shipped task; the write-off plant is validated through the public fold on amount, invoice, date, customer and shape; every plant is covered by an explicit validator; verify_world accepts the five modules"),
     ("test_cash_application_scoring", "step 5 of the cash-application spec: application/1 parses and scores cash_application.json (schema, duplicate members and keys, canonicalisation by invoice, the five identities as REJECTIONS) and composite/1 multiplies it with the frozen candidate/1; every S-row of section 6 and the three worked examples reproduce their stated values through the ACTUAL candidate/1 for L; every golden register scores 1; the composite is monotone and complete iff 1; every catalogue state is reached"),
     ("test_cash_application_route", "step 6 of the cash-application spec, through the REAL evaluate door: cash_application_001 with the golden ledger and the golden register scores 1.0 and completes; the same case with the ledger alone scores 0 with L reported diagnostically and the register APPLICATION_ABSENT; a stored invalid register supersedes an accepted one (A = 0, no fallback) and an over-envelope request is refused before storage; a non-protocol ending scores the last committed revision of each artifact; score_core composes and _publish writes the canonical register and both digests into delivery.json; the malformed-call path and the per-tool one-write-per-turn rule cover the seventh tool"),
+    ("test_cash_family_identity", "phase A of the generated cash-application population: cash_application/1 is a "
+                                  "separate versioned implementation with its own seed and manifest-signing "
+                                  "domains; the construction identity binds decision 2's eight components and "
+                                  "nothing else; the seed is keyed and no private selector reaches a surface; "
+                                  "both variants share one parent world; token budgets do not move the world; "
+                                  "the split map is a frozen 60/20/20 by structural-template family, stratified "
+                                  "across the three mechanisms, and a renamed or rescaled cross-split sibling is "
+                                  "refused by canonical structure"),
+    ("test_cash_family_manifest", "the family manifest schema and preflight contract, both version 1: a record "
+                                  "binds the construction identity, public-content digest, parent/variant, "
+                                  "split-map digest, profile, baseline catalogue, exact gate set and every "
+                                  "semantic component; admission reads today's gate set, not the record's own "
+                                  "flag; runtime-dependent evidence is Unicode-scoped through the one shared "
+                                  "convention; GENERATOR_VERSION 9 and the bank manifest are untouched"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),

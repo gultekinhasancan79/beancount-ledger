@@ -150,13 +150,19 @@ def family_admission_versions() -> dict:
     checker build it rides on, unchanged at 7 and still bound by `versions()`
     for the old population.
 
-    NOT YET SIGNED BY ANYTHING, and said plainly rather than implied: the
-    reviewer's decision 3 defers the family's own namespace and manifest
-    until three further company-months survive review, so today this is the
-    declaration that manifest will bind, and the place a later change to
-    either rule has to move a number. It is exercised by
-    `tests/test_family_validators.py`, which is what keeps it honest in the
-    meantime.
+    AN UNSIGNED STARTING DECLARATION, NOT AN ADMISSION MECHANISM. Round 16,
+    decision 2, in its own words: "The existing family version declaration is
+    explicitly unsigned today. It is a starting declaration, not an existing
+    cash-family admission mechanism." Nothing here signs anything, nothing
+    here admits anything, and no caller may read it as evidence that a
+    cash-application world was preflighted. The family's real admission
+    mechanism is `graph/cash_manifest.py` — a separate manifest schema and
+    preflight contract, both version 1, with its own signing domain, its own
+    file and its own `semantic_components()`, which is where these numbers
+    are actually bound and checked. This function survives as the earlier
+    declaration it always was, and as the place a change to the fold's or the
+    reference identity's rule still has to move a number. It is exercised by
+    `tests/test_family_validators.py`.
     """
     from .cash_application import CASH_APPLICATION_VERSION
     from .identify import REFERENCE_IDENTITY_VERSION
