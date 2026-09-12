@@ -520,10 +520,16 @@ def test_the_split_map_is_sixty_twenty_twenty_within_every_mechanism():
     # map: pinning the code to itself asserts what the code does.
     if json.loads(FREEZE_PATH.read_text(encoding="utf-8"))["digest"] != CS.SPLIT_MAP.digest():
         problems.append("the shipped split map is no longer the map tests/cash_split_freeze.json froze")
-    if CS.TEMPLATE_ROSTER:
-        problems.append("phase A declares template families: the deliverable is the machinery and no instances")
+    # Phase B declares the roster: fifteen families, five per stratum, which
+    # is the one roster size that apportions to 3/1/1 exactly.
+    if len(CS.TEMPLATE_ROSTER) != 15:
+        problems.append(f"the roster declares {len(CS.TEMPLATE_ROSTER)} families, not the fifteen phase B seals")
+    for mechanism, counts in CS.SPLIT_MAP.counts().items():
+        if counts != {"train": 3, "development": 1, "evaluation": 1}:
+            problems.append(f"the shipped map splits {mechanism} {counts}, not 3/1/1")
     return check("the split map is 60/20/20 by structural-template family, stratified across the three "
-                 "mechanisms, each stratum within one family of its exact share, and phase A seals it empty",
+                 "mechanisms, each stratum within one family of its exact share, and the shipped roster of "
+                 "fifteen seals to exactly 3/1/1 in every stratum",
                  not problems, "\n".join(problems))
 
 

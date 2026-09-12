@@ -1,8 +1,84 @@
 {
- "_note": "The frozen cash-application template-to-split map, checked in so that the freeze is evidence rather than procedure. seal() is monotone only against a previous map; graph/cash_split.py holds the same rows as FROZEN_ASSIGNMENTS and passes them as previous=. This file and that tuple must agree, and tests/test_cash_family_identity.py fails the battery if either moves without the other. Empty at phase A: no structural-template family has been declared yet.",
- "digest": "b56cbf5578990ea6440fcd9098b165ca",
+ "_note": "The frozen cash-application template-to-split map, checked in so that the freeze is evidence rather than procedure. seal() is monotone only against a previous map; graph/cash_split.py holds the same rows as FROZEN_ASSIGNMENTS and passes them as previous=. This file and that tuple must agree, and tests/test_cash_family_identity.py fails the battery if either moves without the other. Fifteen families were declared in phase B, five per mechanism stratum, apportioning to exactly 3 train / 1 development / 1 evaluation in each.",
+ "digest": "c41f5d150aec53ccce514f7123206ac5",
  "map": {
-  "assignments": [],
+  "assignments": [
+   [
+    "ar-coldharbour",
+    "advice_residue",
+    "evaluation"
+   ],
+   [
+    "ar-quillmarsh",
+    "advice_residue",
+    "train"
+   ],
+   [
+    "ar-saltgrave",
+    "advice_residue",
+    "train"
+   ],
+   [
+    "ar-tenterhook",
+    "advice_residue",
+    "development"
+   ],
+   [
+    "ar-wickenhall",
+    "advice_residue",
+    "train"
+   ],
+   [
+    "cr-ashenford",
+    "credit_residue",
+    "train"
+   ],
+   [
+    "cr-brindlecote",
+    "credit_residue",
+    "train"
+   ],
+   [
+    "cr-gallowtree",
+    "credit_residue",
+    "train"
+   ],
+   [
+    "cr-oysterbank",
+    "credit_residue",
+    "evaluation"
+   ],
+   [
+    "cr-pikestaff",
+    "credit_residue",
+    "development"
+   ],
+   [
+    "fc-harrowfield",
+    "fallback_continuation",
+    "evaluation"
+   ],
+   [
+    "fc-lintelgate",
+    "fallback_continuation",
+    "train"
+   ],
+   [
+    "fc-marlowbridge",
+    "fallback_continuation",
+    "train"
+   ],
+   [
+    "fc-quarrymill",
+    "fallback_continuation",
+    "development"
+   ],
+   [
+    "fc-sedgewick",
+    "fallback_continuation",
+    "train"
+   ]
+  ],
   "schema": 1,
   "weights": [
    [

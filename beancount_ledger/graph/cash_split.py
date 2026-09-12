@@ -571,21 +571,67 @@ class SplitMap:
 #: here, verbatim, and the seal below carries them. Phase B appends to
 #: `TEMPLATE_ROSTER`, re-seals, and copies the resulting rows into this tuple;
 #: from then on a family's split is frozen by a line of source rather than by
-#: a procedure somebody has to remember. Empty today because no family has
-#: been declared yet, which is why the freeze is currently latent rather than
-#: absent. `tests/cash_split_freeze.json` holds the same map as external
-#: evidence, in the shape `tests/legacy_freeze.json` uses, and the battery
-#: fails if either side moves without the other.
-FROZEN_ASSIGNMENTS: tuple = ()
+#: a procedure somebody has to remember. `tests/cash_split_freeze.json` holds
+#: the same map as external evidence, in the shape `tests/legacy_freeze.json`
+#: uses, and the battery fails if either side moves without the other.
+#:
+#: Written in phase B from the seal of the fifteen-family roster below. From
+#: here on, appending a family and re-sealing cannot move any of these fifteen
+#: — `seal` carries `previous` verbatim and refuses a roster that drops a
+#: sealed family or moves one between strata.
+FROZEN_ASSIGNMENTS: tuple = (
+    ("ar-coldharbour", "advice_residue", "evaluation"),
+    ("ar-quillmarsh", "advice_residue", "train"),
+    ("ar-saltgrave", "advice_residue", "train"),
+    ("ar-tenterhook", "advice_residue", "development"),
+    ("ar-wickenhall", "advice_residue", "train"),
+    ("cr-ashenford", "credit_residue", "train"),
+    ("cr-brindlecote", "credit_residue", "train"),
+    ("cr-gallowtree", "credit_residue", "train"),
+    ("cr-oysterbank", "credit_residue", "evaluation"),
+    ("cr-pikestaff", "credit_residue", "development"),
+    ("fc-harrowfield", "fallback_continuation", "evaluation"),
+    ("fc-lintelgate", "fallback_continuation", "train"),
+    ("fc-marlowbridge", "fallback_continuation", "train"),
+    ("fc-quarrymill", "fallback_continuation", "development"),
+    ("fc-sedgewick", "fallback_continuation", "train"),
+)
 
 FROZEN_SPLIT_MAP = SplitMap(FROZEN_ASSIGNMENTS)
 
-#: The frozen roster. EMPTY at phase A, deliberately: decision 2 requires the
-#: map to be frozen BEFORE any instance is drawn, and this phase draws none.
-#: Phase B declares the structural-template families here, re-seals, and every
-#: family manifest record minted afterwards binds the new `split_map_digest` —
-#: which is exactly the re-preflight the move should cost.
-TEMPLATE_ROSTER: tuple = ()
+#: The frozen roster: fifteen structural-template families, five per mechanism
+#: stratum, declared in phase B before any instance is drawn.
+#:
+#: NAMES AND MECHANISMS ONLY. The SHAPE each family stands for — how many
+#: customers, how many invoices are carried and how many raised in the month,
+#: how many receipts, which of them carry an advice, where the two plants sit
+#: — is declared in `graph/cash_construct.SHAPES`, keyed by these names.
+#: Keeping the shape out of this module is what lets the map be sealed without
+#: importing the construction path, and `tests/test_cash_construction.py`
+#: asserts the two lists agree in BOTH directions, so a family can neither be
+#: sealed without a recipe nor drawn without a split.
+#:
+#: Five per stratum apportions to exactly 3 train / 1 development / 1
+#: evaluation under the 3:1:1 weights — decision 2's 60/20/20 exactly, not by
+#: rounding. Extension stays monotone: a later phase may append families and
+#: re-seal, and every assignment below keeps its split.
+TEMPLATE_ROSTER: tuple = (
+    TemplateFamily("fc-sedgewick", "fallback_continuation"),
+    TemplateFamily("fc-quarrymill", "fallback_continuation"),
+    TemplateFamily("fc-lintelgate", "fallback_continuation"),
+    TemplateFamily("fc-harrowfield", "fallback_continuation"),
+    TemplateFamily("fc-marlowbridge", "fallback_continuation"),
+    TemplateFamily("cr-gallowtree", "credit_residue"),
+    TemplateFamily("cr-pikestaff", "credit_residue"),
+    TemplateFamily("cr-brindlecote", "credit_residue"),
+    TemplateFamily("cr-oysterbank", "credit_residue"),
+    TemplateFamily("cr-ashenford", "credit_residue"),
+    TemplateFamily("ar-quillmarsh", "advice_residue"),
+    TemplateFamily("ar-tenterhook", "advice_residue"),
+    TemplateFamily("ar-wickenhall", "advice_residue"),
+    TemplateFamily("ar-coldharbour", "advice_residue"),
+    TemplateFamily("ar-saltgrave", "advice_residue"),
+)
 
 SPLIT_MAP = SplitMap.seal(TEMPLATE_ROSTER, previous=FROZEN_SPLIT_MAP)
 
