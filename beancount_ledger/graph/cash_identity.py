@@ -44,15 +44,30 @@ WHAT IT DELIBERATELY DOES NOT BIND:
   * **episode settings.** Token budgets, turn caps, temperature and the
     episode-contract digest belong to the EXPERIMENT RECORD, never to
     population identity: a different budget must never generate a different
-    accounting world. `refuse_episode_settings` is the enforcement, and
-    `tests/test_cash_family_identity.py` pins it.
+    accounting world. THE ENFORCEMENT IS THE CLOSED KEY SET, not a filter:
+    `view()` emits eight fixed keys, `EPISODE_SETTING_KEYS` names none of
+    them, and `parent_seed` HMACs over `view()` alone — so an ambient budget
+    has no door to walk through. `refuse_episode_settings` is a BOUNDARY
+    check for payloads that arrive from OUTSIDE (a caller's dict, a record
+    body assembled elsewhere); called on `view()` it cannot fire, and stands
+    there as an assertion that the two key sets remain disjoint rather than
+    as a live filter. `tests/test_cash_family_identity.py` drives it over
+    outside payloads and pins the real property by moving the real episode
+    ceiling.
   * **the evaluator secret itself, or anything derived from it that a public
     surface could carry.** `identity_leaks` is the literal check; the keyed
     seed is what defeats enumeration.
 
 No private selector or seed may reach the agent's workspace or observations.
-`identity_leaks` checks that literally over whatever surfaces it is handed,
-the way `mint.literal_provenance_leaks` does for the bank family.
+`identity_leaks` checks that literally over whatever surfaces it is handed —
+`str` OR `bytes`, because the shipped projection hands out bytes
+(`derive_contract(...).public_files` is a tuple of `(name, bytes)`) while a
+prompt or a task id is text. A surface it cannot read as either is REFUSED BY
+NAME rather than skipped: a skipped surface is an unchecked surface, and a
+check that quietly skips one reports "no leaks" about a file it never read.
+`mint.literal_provenance_leaks` does not face the question because it decodes
+the minted public files itself before searching; this one is handed its
+surfaces and therefore has to say what it could not read.
 """
 
 from __future__ import annotations
@@ -233,6 +248,9 @@ class ConstructionIdentity:
             value = getattr(self, name)
             if type(value) is not int or value < 0:
                 raise IdentityError(f"{name} is {value!r}: a non-negative int")
+        # A standing assertion, not a filter: `view()`'s key set is fixed and
+        # disjoint from EPISODE_SETTING_KEYS, so this cannot fire today. It
+        # fires the day somebody widens one of the two sets into the other.
         refuse_episode_settings("the construction identity", self.view())
 
     # -- the closed view ---------------------------------------------------
@@ -294,9 +312,18 @@ def refuse_episode_settings(where: str, payload) -> None:
     generate a different accounting world." The bank family learned this the
     expensive way — `manifest.versions()` bound the episode contract once,
     and the binding could not hold because `load_environment` admitted
-    before it constructed the environment. Here the rule is enforced at
-    construction: a budget cannot reach the seed because it cannot reach the
-    identity.
+    before it constructed the environment.
+
+    WHAT ACTUALLY ENFORCES THE RULE HERE is the closed key set: `view()`
+    emits eight fixed keys, `parent_seed` hashes `view()` and nothing else,
+    and no budget has a door. This function is the BOUNDARY check for
+    payloads that come from outside — a caller's own dict, a record body
+    assembled in another module, a fixture someone pasted a budget into. On
+    a payload built from a fixed key set it can never fire, and the calls on
+    such payloads (`ConstructionIdentity.__post_init__`,
+    `cash_manifest.record`) are standing assertions that the fixed sets and
+    `EPISODE_SETTING_KEYS` stay disjoint, not live filters. The suites drive
+    it over outside payloads, which is the shape that can fail.
 
     Checked on nested mappings too, since a record is a nested mapping.
     """
@@ -421,22 +448,52 @@ def private_tokens(ident: ConstructionIdentity, seed: int | None = None) -> tupl
     return tuple(t for t in tokens if isinstance(t, str) and len(t) >= 3)
 
 
+def _readable(value):
+    """One surface as `(text, raw_bytes_or_None)`, or `None` if it cannot be
+    read as either.
+
+    `str` and `bytes` are both real shapes here: the projection the agent is
+    actually served is bytes (`derive_contract(...).public_files`), while the
+    prompt and task id are text. Bytes are decoded with `errors="replace"`,
+    which cannot hide an ASCII token — a UTF-8 decoder never consumes a byte
+    below 0x80 as part of an invalid sequence — and the raw bytes are handed
+    back as well so a non-ASCII token is searched in its own encoding rather
+    than against a replacement character."""
+    if isinstance(value, str):
+        return value, None
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        raw = bytes(value)
+        return raw.decode("utf-8", "replace"), raw
+    return None
+
+
 def identity_leaks(surfaces: dict, ident: ConstructionIdentity, seed: int | None = None) -> list:
-    """LITERAL leakage only, over `surfaces` (name -> text): the workspace
-    files, the prompt, the task id, any observation the agent can read.
+    """LITERAL leakage only, over `surfaces` (name -> text or bytes): the
+    workspace files, the prompt, the task id, any observation the agent can
+    read.
 
     It cannot see an enumeration attack — that is what the keyed
     `parent_seed` is for. It catches the ordinary way a private selector
     reaches a public file, which is somebody interpolating it into a
-    filename, a narration or a document reference."""
+    filename, a narration or a document reference.
+
+    A surface whose type it cannot read is REPORTED, not skipped. Skipping
+    would make the check answer "no leaks" about a file it never looked at,
+    and the shipped projection is exactly the shape that would have been
+    skipped."""
     problems = []
     tokens = private_tokens(ident, seed)
     for name in sorted(surfaces):
-        text = surfaces[name]
-        if not isinstance(text, str):
+        value = surfaces[name]
+        readable = _readable(value)
+        if readable is None:
+            problems.append(f"{name} is a {type(value).__name__}, which the leakage check cannot read as text "
+                            f"or bytes: an unreadable surface is an UNCHECKED surface, so it is refused here "
+                            f"rather than passed over")
             continue
+        text, raw = readable
         for token in tokens:
-            if token in text:
+            if token in text or (raw is not None and token.encode("utf-8") in raw):
                 problems.append(f"{name} carries the private construction token {token[:16]}…")
     return problems
 

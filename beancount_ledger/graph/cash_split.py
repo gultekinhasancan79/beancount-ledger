@@ -33,11 +33,26 @@ HOW THE CANONICAL DESCRIPTION IS BUILT
                        set of distinct dates — ordering preserved exactly,
                        calendar position discarded;
     amounts            replaced by their RANK in the sorted set of distinct
-                       amounts, which is invariant under any strictly
-                       increasing rescale and preserves every equality
-                       (the coincidences gate (o) turns on: a receipt whose
-                       amount equals an exact subset of open balances stays
-                       a coincidence after the rescale that hid it);
+                       amounts. That preserves the ORDER of the amounts and
+                       equality between two individual amounts — and nothing
+                       more. It does NOT preserve SUMS: a rank carries no
+                       arithmetic, and a strictly increasing rescale need not
+                       be affine. So the exact-subset-sum coincidence that
+                       gate (o)'s amount-only branching enumerates ("every
+                       exact subset of the payer's open balances", declared
+                       in `cash_manifest.baseline_catalogue_view`) is NOT
+                       part of the canonical form. Open balances 100/200/300
+                       with a receipt of 300, which IS an exact subset sum,
+                       and open balances 100/201/999 with a receipt of 999,
+                       which is not, canonicalise to the same bytes. The
+                       error runs in the COARSE direction — the two count as
+                       aliases — so the cross-split check refuses pairs it
+                       did not strictly have to. That is the safe direction
+                       for split hygiene and is not a way for a sibling to
+                       slip across; it is the reason this description is not
+                       a statement about accounting equivalence. The suite's
+                       `test_the_canonical_form_does_not_preserve_subset_sums`
+                       pins it as the counterexample above;
     settlement         kept in full: who owns what, which receipt or note
                        names which invoice, in which PRINTED position, for
                        which amount rank, with which settles flag and
@@ -479,6 +494,27 @@ class SplitMap:
     def digest(self) -> str:
         return domain_digest(_SPLIT_MAP_DOMAIN, canonical_bytes(self.view()))[:32]
 
+    @classmethod
+    def from_view(cls, view: dict) -> "SplitMap":
+        """The inverse of `view()`, for a map read back from a checked-in
+        freeze. The schema and the weights are CHECKED rather than assumed: a
+        map apportioned under other weights is not this map, and silently
+        adopting its rows would be the reassignment the freeze exists to
+        prevent."""
+        if not isinstance(view, dict):
+            raise SplitMapError("a split-map view is a mapping")
+        if view.get("schema") != SPLIT_MAP_SCHEMA:
+            raise SplitMapError(f"the frozen map declares schema {view.get('schema')!r}, "
+                                f"not {SPLIT_MAP_SCHEMA}")
+        weights = [[name, weight] for name, weight in SPLIT_WEIGHTS]
+        if view.get("weights") != weights:
+            raise SplitMapError(f"the frozen map was sealed under weights {view.get('weights')!r}, not "
+                                f"today's {weights}: re-apportioning it here would move assignments")
+        rows = view.get("assignments")
+        if not isinstance(rows, list) or any(not isinstance(row, list) or len(row) != 3 for row in rows):
+            raise SplitMapError("a frozen map's assignments are [family, mechanism, split] triples")
+        return cls(tuple(tuple(row) for row in rows))
+
     # -- sealing ----------------------------------------------------------
     @classmethod
     def seal(cls, roster, previous: "SplitMap | None" = None) -> "SplitMap":
@@ -525,6 +561,25 @@ class SplitMap:
                                 for name, (mechanism, split) in assignments.items())))
 
 
+#: THE SHIPPED ANCHOR of "frozen for the life of the family".
+#:
+#: `seal` is monotone only against a `previous` map. With no `previous` it
+#: apportions the WHOLE roster from scratch in declaration order, so a single
+#: edit that both adds and REORDERS families would silently reassign the old
+#: ones — the only alarm being a moved split-map digest that re-preflights
+#: everything after the fact. So the assignments already made are checked in
+#: here, verbatim, and the seal below carries them. Phase B appends to
+#: `TEMPLATE_ROSTER`, re-seals, and copies the resulting rows into this tuple;
+#: from then on a family's split is frozen by a line of source rather than by
+#: a procedure somebody has to remember. Empty today because no family has
+#: been declared yet, which is why the freeze is currently latent rather than
+#: absent. `tests/cash_split_freeze.json` holds the same map as external
+#: evidence, in the shape `tests/legacy_freeze.json` uses, and the battery
+#: fails if either side moves without the other.
+FROZEN_ASSIGNMENTS: tuple = ()
+
+FROZEN_SPLIT_MAP = SplitMap(FROZEN_ASSIGNMENTS)
+
 #: The frozen roster. EMPTY at phase A, deliberately: decision 2 requires the
 #: map to be frozen BEFORE any instance is drawn, and this phase draws none.
 #: Phase B declares the structural-template families here, re-seals, and every
@@ -532,7 +587,7 @@ class SplitMap:
 #: which is exactly the re-preflight the move should cost.
 TEMPLATE_ROSTER: tuple = ()
 
-SPLIT_MAP = SplitMap.seal(TEMPLATE_ROSTER)
+SPLIT_MAP = SplitMap.seal(TEMPLATE_ROSTER, previous=FROZEN_SPLIT_MAP)
 
 
 # --------------------------------------------------------------------------
@@ -596,5 +651,6 @@ __all__ = [
     "StructureError", "StructureTooAmbiguous", "StructuralAliasError", "SplitMapError",
     "InvoiceShape", "AdviceLineShape", "ReceiptShape", "CreditNoteShape", "PlantShape", "StructuralTemplate",
     "canonical_structure", "structure_digest",
-    "TemplateFamily", "SplitMap", "TEMPLATE_ROSTER", "SPLIT_MAP", "StructureLedger",
+    "TemplateFamily", "SplitMap", "FROZEN_ASSIGNMENTS", "FROZEN_SPLIT_MAP",
+    "TEMPLATE_ROSTER", "SPLIT_MAP", "StructureLedger",
 ]

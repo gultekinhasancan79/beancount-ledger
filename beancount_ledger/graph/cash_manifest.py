@@ -58,6 +58,15 @@ WHAT THE RECORD BINDS, and why each one is here rather than assumed:
                               record's runtime-dependent evidence was taken
                               under.
 
+"BOUND" MEANS CHECKED, NOT MERELY SIGNED. A signature binds whatever it is
+handed: a record signed with `structure_digest=None`, an empty public id, an
+attempt ordinal of 9999 or a `profile` naming a profile the world was never
+drawn under verifies perfectly and publishes exactly those claims. So the
+free-text fields go through `_bound_field_problems` in `record` AND again in
+`admit`, and `admit`'s `content_digest` argument is required rather than
+optional — an optional check at the serving door is enforced only when the
+caller remembers to pass it.
+
 WHAT IT REFUSES TO BIND: episode settings. Token budgets, turn caps and the
 episode-contract digest identify an EPISODE and live in the experiment record.
 `cash_identity.refuse_episode_settings` runs over every record built here, so
@@ -91,6 +100,8 @@ from ..candidate.canonical import canonical_bytes, domain_digest
 from .cash_identity import (
     FAMILY,
     FAMILY_GENERATOR_VERSION,
+    MAX_LAYOUT_ATTEMPTS,
+    PROFILES,
     VARIANTS,
     ConstructionIdentity,
     refuse_episode_settings,
@@ -208,10 +219,23 @@ FAMILY_GATES = family_gates()
 
 
 def gate_set_digest() -> str:
-    """A canonical digest of the gate names AND the group each belongs to,
-    plus the preflight contract version — so renaming a group, moving a gate
-    between groups, or changing a gate's meaning under an unchanged name all
-    invalidate every record that bound this."""
+    """A canonical digest of the gate NAMES, the GROUP each belongs to, and
+    the preflight contract version. Those three inputs, and nothing else.
+
+    So adding a gate, dropping one, renaming a gate or a group, and moving a
+    gate between groups each invalidate every record that bound this. A gate
+    whose IMPLEMENTATION or predicate changes under an unchanged name does
+    NOT: the names are identical and this digest never sees a predicate.
+    That change invalidates records only when a human bumps
+    `FAMILY_PREFLIGHT_CONTRACT` — a declaration, not a measurement. The
+    suite's probe bumps it and watches the digest move, which is a fact about
+    this function rather than about the gate that changed.
+
+    Contrast `baseline_catalogue_digest`, which digests strategies and
+    admission predicates themselves and therefore moves on its own when one
+    of them changes. The gate set could be built that way too, by digesting
+    each gate's implementation; it is not, today, and a reader should not be
+    told otherwise."""
     payload = canonical_bytes({"preflight_contract": FAMILY_PREFLIGHT_CONTRACT,
                                "groups": [[group, list(names)] for group, names in GATE_GROUPS]})
     return domain_digest(_GATE_SET_DOMAIN, payload)[:16]
@@ -344,6 +368,55 @@ REQUIRED_RECORD_FIELDS = (
 )
 
 
+#: Widths of the two digests a record carries as free strings: the structural
+#: description's (`cash_split.structure_digest`, 32) and the public content's
+#: (`public_content_digest`, a full SHA-256).
+STRUCTURE_DIGEST_WIDTH = 32
+CONTENT_DIGEST_WIDTH = 64
+_HEX = frozenset("0123456789abcdef")
+
+
+def _hex_problem(field: str, value, width: int) -> str | None:
+    if not isinstance(value, str) or len(value) != width or not set(value) <= _HEX:
+        return f"{field} is {value!r}, not a {width}-character lowercase-hex digest"
+    return None
+
+
+def _bound_field_problems(*, structure_digest, public_id, content_digest,
+                          profile_name, profile_digest, attempt) -> list:
+    """Every field a record carries as free text, checked against what it is
+    supposed to be.
+
+    The module docstring presents these as BOUND, and a signature binds only
+    what it is given: a record signed with `structure_digest=None`, an empty
+    public id or a `profile` naming a profile that was never used publishes
+    exactly that, correctly signed. `record` raises on these and `admit`
+    refuses on them, so the same list is the door at both ends. (The bank
+    family's `record` is equally lax; this is the inherited shape being
+    closed before instances exist, not a regression being fixed.)"""
+    problems = []
+    problem = _hex_problem("the structure digest", structure_digest, STRUCTURE_DIGEST_WIDTH)
+    if problem:
+        problems.append(problem)
+    problem = _hex_problem("the public-content digest", content_digest, CONTENT_DIGEST_WIDTH)
+    if problem:
+        problems.append(problem)
+    if not isinstance(public_id, str) or not public_id.strip() or public_id != public_id.strip():
+        problems.append(f"the public id is {public_id!r}, not a non-empty string without surrounding space")
+    declared = PROFILES.get(profile_name) if isinstance(profile_name, str) else None
+    if declared is None:
+        problems.append(f"the profile is {profile_name!r}, which is not one of the declared profiles "
+                        f"{sorted(PROFILES)}")
+    elif declared.digest() != profile_digest:
+        problems.append(f"the record names profile {profile_name!r} and the identity's profile digest is "
+                        f"{profile_digest!r}, which is not that profile's {declared.digest()!r}: a record "
+                        f"may not publish a profile name the world was not drawn under")
+    if type(attempt) is not int or not 0 <= attempt < MAX_LAYOUT_ATTEMPTS:
+        problems.append(f"the attempt ordinal is {attempt!r}, not an int in [0, {MAX_LAYOUT_ATTEMPTS}) — "
+                        f"decision 3 fixes {MAX_LAYOUT_ATTEMPTS} deterministic attempts per parent pair")
+    return problems
+
+
 def public_content_digest(public_files: dict, prompt: str) -> str:
     """A digest of exactly what the model is shown: the public files and the
     instruction. Never the seed, the identity, the truth register or the
@@ -376,11 +449,21 @@ def record(ident: ConstructionIdentity, variant: str, *, public_id: str, content
     `is True` / `is False`, not truthiness: a gate whose result is `1`, `"ok"`
     or a diagnostics object is a preflight that did not answer the question
     asked, and coercing it here would sign the coercion — `admit` compares the
-    same way."""
+    same way.
+
+    The free-text fields — `structure_digest`, `public_id`, `content_digest`,
+    `profile_name`, `attempt` — are checked by `_bound_field_problems` rather
+    than trusted. Signing binds whatever it is handed, so an unchecked field
+    is published, correctly signed, and read as attested."""
     if not isinstance(ident, ConstructionIdentity):
         raise FamilyManifestError(f"record needs a ConstructionIdentity, not {type(ident).__name__}")
     if variant not in VARIANTS:
         raise FamilyManifestError(f"variant is {variant!r}, not one of {list(VARIANTS)}")
+    bad = _bound_field_problems(structure_digest=structure_digest, public_id=public_id,
+                                content_digest=content_digest, profile_name=profile_name,
+                                profile_digest=ident.profile_digest, attempt=attempt)
+    if bad:
+        raise FamilyManifestError("a family record may not bind " + "; ".join(bad))
     declared = family_gates()
     if set(gates) != set(declared):
         missing = sorted(set(declared) - set(gates))
@@ -416,9 +499,14 @@ def record(ident: ConstructionIdentity, variant: str, *, public_id: str, content
         "gates": {g: gates[g] for g in declared},
         "semantic_components": semantic_components(),
         "runtime_scope": runtime_scope(),
-        "attempt": int(attempt),
+        "attempt": attempt,
         "passed": all(gates[g] is True for g in declared),
     }
+    # A standing assertion, like the one in `ConstructionIdentity`: this body's
+    # keys are `REQUIRED_RECORD_FIELDS` plus gate names, all fixed and disjoint
+    # from EPISODE_SETTING_KEYS, so the call cannot fire on a record built
+    # here. It fires when somebody widens one of those sets, and the suite
+    # drives the function over payloads that come from outside.
     refuse_episode_settings("a family manifest record", body)
     missing = sorted(set(REQUIRED_RECORD_FIELDS) - set(body))
     if missing:
@@ -505,9 +593,16 @@ def load_active(secret: bytes, path: Path | None = None) -> dict | None:
 
 
 def admit(secret: bytes, ident: ConstructionIdentity, variant: str, public_id: str,
-          content_digest: str | None = None, *, split_map: SplitMap = SPLIT_MAP) -> tuple[bool, str]:
+          content_digest: str, *, split_map: SplitMap = SPLIT_MAP) -> tuple[bool, str]:
     """May this freshly minted world be served? Every refusal names its
     reason; none of them reveals anything about the world.
+
+    `content_digest` is REQUIRED. It was optional once, defaulting to `None`
+    and compared only when a caller passed it — and an optional check at the
+    serving door is enforced only when the caller remembers. The digest is
+    bound in the signed record either way, so tampering breaks the signature;
+    what an optional argument loses is the comparison between the record and
+    the world actually being served.
 
     There is no development bypass here. `manifest.py` has one because the
     bank family's suites mint under a test secret and must run; this
@@ -527,6 +622,15 @@ def admit(secret: bytes, ident: ConstructionIdentity, variant: str, public_id: s
         return False, "family manifest record signature does not verify under this key"
     if rec.get("identity") != ident.view():
         return False, "family manifest record was minted under another construction identity"
+    # The free-text fields, at the serving door as well as at the signing one:
+    # a signature binds what it was given, so a record may carry a structure
+    # digest that is not a digest, an attempt ordinal outside the bounded 64,
+    # or a profile name the world was never drawn under, and still verify.
+    bad = _bound_field_problems(structure_digest=rec.get("structure_digest"), public_id=rec.get("public_id"),
+                                content_digest=rec.get("public_content_digest"), profile_name=rec.get("profile"),
+                                profile_digest=ident.profile_digest, attempt=rec.get("attempt"))
+    if bad:
+        return False, "family manifest record binds " + "; ".join(bad)
     current = semantic_components()
     if rec.get("semantic_components") != current:
         was = rec.get("semantic_components") if isinstance(rec.get("semantic_components"), dict) else {}
@@ -558,7 +662,7 @@ def admit(secret: bytes, ident: ConstructionIdentity, variant: str, public_id: s
         return False, "selector failed preflight gates: the record's gates and its passed flag disagree"
     if rec.get("public_id") != public_id:
         return False, "family manifest public id differs from the minted world"
-    if content_digest is not None and rec.get("public_content_digest") != content_digest:
+    if rec.get("public_content_digest") != content_digest:
         return False, "family manifest public-content digest differs from the minted world"
     return True, "cash-application family manifest"
 
@@ -569,6 +673,7 @@ __all__ = [
     "GATE_GROUPS", "FAMILY_GATES", "family_gates", "gate_set_digest",
     "baseline_catalogue_view", "baseline_catalogue_digest",
     "semantic_components", "runtime_scope", "runtime_scope_key",
-    "REQUIRED_RECORD_FIELDS", "public_content_digest", "parent_digest", "family_selector_key",
+    "REQUIRED_RECORD_FIELDS", "STRUCTURE_DIGEST_WIDTH", "CONTENT_DIGEST_WIDTH",
+    "public_content_digest", "parent_digest", "family_selector_key",
     "record", "sign", "verify", "manifest_path", "write", "load_active", "admit",
 ]

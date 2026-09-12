@@ -1,0 +1,22 @@
+{
+ "_note": "The frozen cash-application template-to-split map, checked in so that the freeze is evidence rather than procedure. seal() is monotone only against a previous map; graph/cash_split.py holds the same rows as FROZEN_ASSIGNMENTS and passes them as previous=. This file and that tuple must agree, and tests/test_cash_family_identity.py fails the battery if either moves without the other. Empty at phase A: no structural-template family has been declared yet.",
+ "digest": "b56cbf5578990ea6440fcd9098b165ca",
+ "map": {
+  "assignments": [],
+  "schema": 1,
+  "weights": [
+   [
+    "train",
+    3
+   ],
+   [
+    "development",
+    1
+   ],
+   [
+    "evaluation",
+    1
+   ]
+  ]
+ }
+}

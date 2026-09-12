@@ -28,6 +28,7 @@ What has to be true before a single instance is drawn:
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -81,6 +82,12 @@ from beancount_ledger.graph.cash_split import (  # noqa: E402
 
 SECRET = b"cash-application-phase-a-test-secret-0123456789"
 OTHER_SECRET = b"a-quite-different-evaluator-secret-9876543210!!"
+
+#: The checked-in freeze of the template-to-split map, in the shape
+#: `tests/legacy_freeze.json` uses. `cash_split.FROZEN_ASSIGNMENTS` holds the
+#: same rows and the shipped `SPLIT_MAP` is sealed against them; this file is
+#: the external evidence, and the battery fails if the two diverge.
+FREEZE_PATH = Path(__file__).resolve().parent / "cash_split_freeze.json"
 
 
 def check(name, ok, detail=""):
@@ -351,10 +358,39 @@ def test_no_private_selector_or_seed_reaches_an_agent_surface():
             problems.append(f"{label} on a public surface was not caught")
     if not identity_leaks({"prompt": clean["prompt"] + f" cm-{ident.company_month_index}"}, ident, seed):
         problems.append("an interpolated company-month selector was not caught")
+
+    # THE SHAPE THE CODEBASE ACTUALLY SERVES. A check exercised only over
+    # `str` proves the rule over the representation that happens to work:
+    # `derive_contract(...).public_files` is (name, BYTES) pairs, and that is
+    # what reaches the agent's workspace. So the same claim is made again over
+    # a real projection through the production door.
+    from beancount_ledger.graph.derive import derive_contract
+    from beancount_ledger.graph.worlds import REGISTRY
+    world, task = REGISTRY["cash_application_001"]
+    shipped = dict(derive_contract(world, task)[1].public_files)
+    kinds = sorted({type(v).__name__ for v in shipped.values()})
+    if kinds != ["bytes"]:
+        problems.append(f"the shipped public projection is {kinds}, not bytes: this probe is no longer "
+                        f"exercising the representation the agent is served")
+    found = identity_leaks(shipped, ident, seed)
+    if found:
+        problems.append(f"a real public projection was reported as leaking: {found}")
+    target = sorted(shipped)[0]
+    for label, token in leaks.items():
+        poisoned = dict(shipped)
+        poisoned[target] = shipped[target] + f"\n; generated from {token}\n".encode("utf-8")
+        if not identity_leaks(poisoned, ident, seed):
+            problems.append(f"{label} in the BYTES a public file is actually served as was not caught")
+    # And a surface it cannot read is named, not skipped: skipping is how the
+    # bytes hole reported "no leaks" about every file it never looked at.
+    unreadable = identity_leaks({"ledger.beancount": 17, "open_items.csv": None}, ident, seed)
+    if len(unreadable) != 2 or not all("UNCHECKED" in problem for problem in unreadable):
+        problems.append(f"surfaces the check cannot read were not refused by name: {unreadable}")
     return check("no private selector or seed reaches the agent's workspace or observations: the literal check "
-                 "passes a clean pack and catches the seed in both bases, the identity digest, the selector "
-                 "label, the population, the template family and the profile digest",
-                 not problems, "\n".join(problems))
+                 "passes a clean pack and a real bytes projection through derive_contract, catches the seed in "
+                 "both bases, the identity digest, the selector label, the population, the template family and "
+                 "the profile digest in BOTH str and bytes surfaces, and refuses a surface it cannot read "
+                 "rather than skipping it", not problems, "\n".join(problems))
 
 
 def test_episode_settings_are_not_population_identity():
@@ -369,26 +405,46 @@ def test_episode_settings_are_not_population_identity():
         problems.append("an ordinary construction key was refused as an episode setting")
 
     # The claim decision 2 actually makes: a different token budget must never
-    # generate a different accounting world. The EPISODE digest moves; the
-    # identity, the seed and every substream do not.
-    from beancount_ledger.beancount_ledger import episode_contract_digest
-    episodes = {budget: episode_contract_digest(budget) for budget in (8_000, 24_000, 40_000)}
+    # generate a different accounting world. Driven through the REAL knob —
+    # `episode_contract(max_episode_output_tokens=...)` for the explicit form
+    # and the module global `MAX_EPISODE_OUTPUT_TOKENS` for the ambient one,
+    # which `load_environment` reads at call time. A probe environment
+    # variable nothing reads would recompute a constant three times.
+    import beancount_ledger.beancount_ledger as env_mod
+    budgets = (8_000, 24_000, 40_000)
+    episodes = {budget: env_mod.episode_contract_digest(budget) for budget in budgets}
     if len(set(episodes.values())) != len(episodes):
-        problems.append(f"the episode digests did not separate the budgets: {episodes}")
+        problems.append(f"the episode digests did not separate the budgets, so this probe moved nothing: "
+                        f"{episodes}")
+    for budget, digest in episodes.items():
+        if env_mod.episode_contract(budget)["budgets"]["max_episode_output_tokens"] != budget:
+            problems.append(f"the episode contract did not take the {budget} ceiling")
     ident = an_identity()
-    worlds = set()
-    for budget in episodes:
-        os.environ["PIV_PROBE_MAX_EPISODE_OUTPUT_TOKENS"] = str(budget)
-        try:
-            seed = parent_seed(ident, SECRET)
-            worlds.add((an_identity().digest(), seed, stream(seed, "parties"), layout_attempt_stream(seed, 0)))
-        finally:
-            os.environ.pop("PIV_PROBE_MAX_EPISODE_OUTPUT_TOKENS", None)
+    worlds, ambient = set(), set()
+    ceiling = env_mod.MAX_EPISODE_OUTPUT_TOKENS
+    try:
+        for budget in budgets:
+            env_mod.MAX_EPISODE_OUTPUT_TOKENS = budget
+            ambient.add(env_mod.MAX_EPISODE_OUTPUT_TOKENS)
+            seed = parent_seed(an_identity(), SECRET)
+            worlds.add((an_identity().digest(), seed, stream(seed, "parties"),
+                        layout_attempt_stream(seed, 0), variant_fact_stream(seed, "a", "wording")))
+    finally:
+        env_mod.MAX_EPISODE_OUTPUT_TOKENS = ceiling
+    if ambient != set(budgets):
+        problems.append(f"the ambient ceiling did not move: {sorted(ambient)}")
     if len(worlds) != 1:
         problems.append(f"a token budget moved the accounting world: {len(worlds)} distinct constructions")
+    if env_mod.MAX_EPISODE_OUTPUT_TOKENS != ceiling:
+        problems.append("the probe left the episode ceiling moved")
+    # And the episode contract itself cannot be smuggled in as material.
+    if raises(IdentityError, refuse_episode_settings, "a probe",
+              {"episode_contract": env_mod.episode_contract(8_000)}) is None:
+        problems.append("an episode contract pasted into construction material was accepted")
     return check("episode settings belong to the experiment record, not to population identity: every budget "
-                 "and turn cap is refused inside construction material, and three budgets that move the "
-                 "episode-contract digest leave the identity, the seed and every substream identical",
+                 "and turn cap is refused inside construction material, and three budgets that really move "
+                 "the episode-contract digest — through the contract's own argument and the ambient ceiling "
+                 "load_environment reads — leave the identity, the seed and every substream identical",
                  not problems, "\n".join(problems))
 
 
@@ -460,8 +516,10 @@ def test_the_split_map_is_sixty_twenty_twenty_within_every_mechanism():
                 if abs(counts[split] - share) >= 1:
                     problems.append(f"{per} families in {mechanism}: {split} got {counts[split]}, more than "
                                     f"one away from its exact share {share}")
-    if SPLIT_MAP_EMPTY_DIGEST != CS.SPLIT_MAP.digest():
-        problems.append("the shipped split map is no longer the empty frozen map phase A seals")
+    # Against the checked-in freeze, not against a freshly constructed empty
+    # map: pinning the code to itself asserts what the code does.
+    if json.loads(FREEZE_PATH.read_text(encoding="utf-8"))["digest"] != CS.SPLIT_MAP.digest():
+        problems.append("the shipped split map is no longer the map tests/cash_split_freeze.json froze")
     if CS.TEMPLATE_ROSTER:
         problems.append("phase A declares template families: the deliverable is the machinery and no instances")
     return check("the split map is 60/20/20 by structural-template family, stratified across the three "
@@ -535,6 +593,59 @@ def test_a_sealed_assignment_is_frozen_for_the_life_of_the_family():
     return check("a sealed assignment is frozen for the life of the family: extension carries every prior "
                  "assignment verbatim and moves the map digest, and dropping, re-stratifying or duplicating "
                  "a family is refused by name", not problems, "\n".join(problems))
+
+
+def test_the_frozen_map_has_a_checked_in_anchor():
+    """`seal` is monotone only against a `previous` map, so "frozen for the
+    life of the family" needs something checked in to be previous TO.
+
+    Without one, a roster edit that both adds and reorders families silently
+    reassigns the old ones and the only alarm is a moved digest after the
+    fact. `cash_split.FROZEN_ASSIGNMENTS` is that anchor and
+    `tests/cash_split_freeze.json` is its external evidence, in the shape
+    `tests/legacy_freeze.json` uses."""
+    problems = []
+    frozen = json.loads(FREEZE_PATH.read_text(encoding="utf-8"))
+    if frozen["map"] != CS.SPLIT_MAP.view():
+        problems.append(f"the checked-in freeze and the shipped split map disagree: {frozen['map']} vs "
+                        f"{CS.SPLIT_MAP.view()}")
+    if frozen["digest"] != CS.SPLIT_MAP.digest():
+        problems.append(f"the checked-in freeze pins digest {frozen['digest']} and the shipped map is "
+                        f"{CS.SPLIT_MAP.digest()}")
+    if SplitMap.from_view(frozen["map"]).assignments != CS.SPLIT_MAP.assignments:
+        problems.append("the freeze does not round-trip through SplitMap.from_view")
+    if tuple(CS.FROZEN_ASSIGNMENTS) != CS.SPLIT_MAP.assignments:
+        problems.append(f"FROZEN_ASSIGNMENTS {CS.FROZEN_ASSIGNMENTS} is not what the shipped map carries: the "
+                        f"anchor is not what the seal is anchored to")
+    for bad in ({"schema": 2, "weights": frozen["map"]["weights"], "assignments": []},
+                {"schema": 1, "weights": [["train", 1], ["development", 1], ["evaluation", 1]],
+                 "assignments": []},
+                {"schema": 1, "weights": frozen["map"]["weights"], "assignments": [["f", "credit_residue"]]}):
+        if raises(SplitMapError, SplitMap.from_view, bad) is None:
+            problems.append(f"a freeze declaring {bad['schema']}/{bad['weights']} was adopted unchecked")
+
+    # The property the anchor buys, demonstrated on a roster that has families
+    # in it: reordering a roster REASSIGNS without a previous map, and does
+    # not with one.
+    roster = tuple(TemplateFamily(f"anchor_{n}", "credit_residue") for n in range(5))
+    sealed = SplitMap.seal(roster)
+    reversed_roster = tuple(reversed(roster))
+    if SplitMap.seal(reversed_roster).assignments == sealed.assignments:
+        problems.append("reordering this roster did not reassign it even without a previous map, so it does "
+                        "not demonstrate what the anchor is for: pick a roster that does")
+    carried = SplitMap.seal(reversed_roster, previous=SplitMap.from_view(json.loads(json.dumps(sealed.view()))))
+    if carried.assignments != sealed.assignments:
+        problems.append(f"a reordered roster sealed against the checked-in map still moved assignments: "
+                        f"{carried.assignments} vs {sealed.assignments}")
+    # An anchor naming a family the roster no longer declares is refused, not
+    # dropped: that is the other way a frozen assignment disappears.
+    if raises(SplitMapError, SplitMap.seal, roster[:3], sealed) is None:
+        problems.append("a roster that drops an anchored family was accepted")
+    return check("the frozen split map has a checked-in anchor: FROZEN_ASSIGNMENTS is what the shipped seal "
+                 "carries as `previous`, tests/cash_split_freeze.json pins the same map and digest, a freeze "
+                 "under another schema or other weights is refused, and a reordered roster that would be "
+                 "reassigned without the anchor keeps every assignment with it",
+                 not problems, "\n".join(problems))
 
 
 # --------------------------------------------------------------------------
@@ -625,6 +736,48 @@ def test_the_canonical_description_strips_names_dates_and_scale():
                  "relationships, printed order and the plants", not problems, "\n".join(problems))
 
 
+def test_the_canonical_form_does_not_preserve_subset_sums():
+    """The counterexample the module docstring now states, as a measurement.
+
+    Rank encoding preserves the ORDER of amounts and equality between two
+    individual amounts. It does not preserve SUMS — so the exact-subset-sum
+    coincidence gate (o)'s amount-only branching enumerates is NOT part of the
+    canonical form, and the file whose job is saying what "alias" means must
+    not claim otherwise. The error runs coarse (the two templates below count
+    as aliases), which over-refuses; that is the safe direction, and it is
+    pinned here so the docstring describes the code that exists."""
+    problems = []
+
+    def money_template(balances, receipt_amount, family="sums_probe"):
+        return StructuralTemplate(
+            family=family, version=1, mechanism="credit_residue",
+            invoices=tuple(InvoiceShape(f"SI-{n}", "Acme Marine Co", "2026-04-01", "2026-05-01", value, value)
+                           for n, value in enumerate(balances)),
+            receipts=(ReceiptShape("R1", "Acme Marine Co", "2026-04-10", receipt_amount, "bare", (), ()),))
+
+    # 300 IS an exact subset sum of {100, 200, 300}; 999 is not a subset sum of
+    # {100, 201, 999} beyond itself — and both canonicalise to the same bytes.
+    coincidence = money_template(["100.00", "200.00", "300.00"], "300.00")
+    plain = money_template(["100.00", "201.00", "999.00"], "999.00")
+    if structure_digest(coincidence) != structure_digest(plain):
+        problems.append("the canonical form now separates a subset-sum coincidence from a non-coincidence: "
+                        "cash_split.py's docstring says it does NOT, and one of the two is wrong")
+    # What rank encoding DOES preserve, and the reason the claim was tempting:
+    # equality between two individual amounts.
+    equal_pair = money_template(["100.00", "100.00", "300.00"], "300.00")
+    if structure_digest(equal_pair) == structure_digest(coincidence):
+        problems.append("two equal open balances canonicalised the same as two distinct ones: rank encoding "
+                        "does preserve equality between individual amounts, and that is now lost too")
+    # And ordering still survives, which is what the rest of the module leans on.
+    reordered = money_template(["300.00", "200.00", "100.00"], "300.00")
+    if structure_digest(reordered) != structure_digest(coincidence):
+        problems.append("reordering the declaration of equal-ranked invoices moved the structure")
+    return check("rank-encoded amounts preserve order and individual equality and NOT sums: a receipt equal "
+                 "to an exact subset of the open balances canonicalises identically to one that is not, so "
+                 "the alias check over-refuses rather than claiming an arithmetic it does not have",
+                 not problems, "\n".join(problems))
+
+
 def test_a_cross_split_structural_sibling_cannot_become_held_out():
     problems = []
     roster = (TemplateFamily("trained_month", "fallback_continuation"),
@@ -690,8 +843,6 @@ def test_the_labelling_search_refuses_rather_than_guessing():
                  not problems, "\n".join(problems))
 
 
-SPLIT_MAP_EMPTY_DIGEST = CS.SplitMap(()).digest()
-
 TESTS = [
     test_the_family_is_a_separate_versioned_implementation,
     test_the_identity_binds_exactly_decision_twos_eight_components,
@@ -705,7 +856,9 @@ TESTS = [
     test_the_split_map_is_sixty_twenty_twenty_within_every_mechanism,
     test_the_split_map_survives_key_rotation_and_descendant_versions,
     test_a_sealed_assignment_is_frozen_for_the_life_of_the_family,
+    test_the_frozen_map_has_a_checked_in_anchor,
     test_the_canonical_description_strips_names_dates_and_scale,
+    test_the_canonical_form_does_not_preserve_subset_sums,
     test_a_cross_split_structural_sibling_cannot_become_held_out,
     test_the_labelling_search_refuses_rather_than_guessing,
 ]

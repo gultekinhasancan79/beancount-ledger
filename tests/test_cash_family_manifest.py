@@ -27,6 +27,7 @@ What has to be true before a single instance is drawn:
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import os
 import sys
@@ -39,6 +40,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from beancount_ledger.candidate.canonical import canonical_bytes, domain_digest  # noqa: E402
 from beancount_ledger.graph import cash_application as CA  # noqa: E402
 from beancount_ledger.graph import cash_manifest as FM  # noqa: E402
 from beancount_ledger.graph import identify as ID  # noqa: E402
@@ -68,6 +70,12 @@ PROBE_FAMILY = PROBE_MAP.families()[0]
 PUBLIC = {"ledger.beancount": '2026-04-10 * "Gannet Rigging Inc" "Customer receipt"\n',
           "open_items.csv": "invoice_id,customer\nSI-3100,Gannet Rigging Inc\n"}
 PROMPT = "Correct the ledger and deliver the application register."
+#: `admit` requires this now. An optional comparison at the serving door is
+#: enforced only when the caller remembers to pass it.
+CONTENT = FM.public_content_digest(PUBLIC, PROMPT)
+#: A well-formed structure digest for the probes — the width
+#: `cash_split.structure_digest` produces.
+STRUCTURE = "0" * FM.STRUCTURE_DIGEST_WIDTH
 
 #: The family manifest's runtime-scoped evidence, under the ONE convention.
 #: `parse_policy_view()` records `unicodedata.unidata_version`, so the parser
@@ -120,9 +128,8 @@ def all_gates(value=True) -> dict:
 
 def a_record(ident=None, variant="a", gates=None, **changes) -> dict:
     ident = ident or an_identity()
-    return FM.record(ident, variant, public_id="task-cash-0001",
-                     content_digest=FM.public_content_digest(PUBLIC, PROMPT),
-                     structure_digest="0" * 32, profile_name=BOUNDED_V1.name, attempt=0,
+    return FM.record(ident, variant, public_id="task-cash-0001", content_digest=CONTENT,
+                     structure_digest=STRUCTURE, profile_name=BOUNDED_V1.name, attempt=0,
                      gates=gates if gates is not None else all_gates(), split_map=PROBE_MAP, **changes)
 
 
@@ -323,13 +330,28 @@ def test_the_gate_set_is_decision_threes_six_headings_plus_gate_o():
         FM.GATE_GROUPS = original_groups
         FM.FAMILY_PREFLIGHT_CONTRACT = original_contract + 1
         if FM.gate_set_digest() == baseline:
-            problems.append("bumping the preflight contract did not move the gate-set digest: a gate whose "
-                            "SEMANTICS change under an unchanged name would keep admitting")
+            problems.append("bumping the preflight contract did not move the gate-set digest")
+        # And the LIMIT, measured rather than glossed. The digest's inputs are
+        # exactly {preflight_contract, groups} — recomputed here from those two
+        # alone. No predicate is among them, so a gate whose meaning changes
+        # under an unchanged name moves nothing until a human bumps the
+        # contract; `baseline_catalogue_digest` is the one that digests
+        # strategies and predicates themselves.
+        FM.FAMILY_PREFLIGHT_CONTRACT = original_contract
+        recomputed = domain_digest(
+            FM._GATE_SET_DOMAIN,
+            canonical_bytes({"preflight_contract": FM.FAMILY_PREFLIGHT_CONTRACT,
+                             "groups": [[group, list(names)] for group, names in FM.GATE_GROUPS]}))[:16]
+        if recomputed != baseline:
+            problems.append("the gate-set digest is no longer a digest of exactly the gate names, their "
+                            "groups and the preflight contract version: whatever else it now binds, the "
+                            "docstring's account of what invalidates a record is wrong")
     finally:
         FM.GATE_GROUPS, FM.FAMILY_PREFLIGHT_CONTRACT = original_groups, original_contract
     return check(f"the exact gate set is decision 3's six admissibility headings plus gate (o), "
                  f"{len(FM.FAMILY_GATES)} named gates, and its digest binds each gate's name, its group and "
-                 f"the preflight contract version", not problems, "\n".join(problems))
+                 f"the preflight contract version — those three and nothing else, so a changed predicate "
+                 f"under an unchanged name needs a contract bump", not problems, "\n".join(problems))
 
 
 def test_the_baseline_catalogue_binds_more_than_names():
@@ -403,13 +425,13 @@ def test_semantic_components_name_every_declared_component():
     # A bump in any of them refuses a record signed before it.
     with a_manifest([a_record()]) as _:
         ident = an_identity()
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if not ok:
             problems.append(f"a valid record was not admitted: {why}")
         original = CA.CASH_APPLICATION_VERSION
         try:
             CA.CASH_APPLICATION_VERSION = original + 1
-            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
             if ok or "semantic components" not in why:
                 problems.append(f"a bumped public fold still admitted: {ok} / {why}")
         finally:
@@ -427,34 +449,33 @@ def test_admit_reads_todays_gate_set_and_not_the_records_own_flag():
     problems = []
     ident = an_identity()
     with a_manifest([a_record(ident)]):
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001",
-                           FM.public_content_digest(PUBLIC, PROMPT), split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if not ok:
             problems.append(f"a fully passed record was not admitted: {why}")
         for variant, expect in (("b", "absent from the family manifest"),):
-            ok, why = FM.admit(SECRET, ident, variant, "task-cash-0001", split_map=PROBE_MAP)
+            ok, why = FM.admit(SECRET, ident, variant, "task-cash-0001", CONTENT, split_map=PROBE_MAP)
             if ok or expect not in why:
                 problems.append(f"variant {variant} of an unpreflighted pair: {ok} / {why}")
-        ok, why = FM.admit(SECRET, ident, "a", "task-other", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-other", CONTENT, split_map=PROBE_MAP)
         if ok or "public id" not in why:
             problems.append(f"another public id still admitted: {ok} / {why}")
         ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", "0" * 64, split_map=PROBE_MAP)
         if ok or "public-content digest" not in why:
             problems.append(f"another public-content digest still admitted: {ok} / {why}")
-        ok, why = FM.admit(OTHER_SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(OTHER_SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok:
             problems.append("a record admitted under another evaluator key")
-        ok, why = FM.admit(SECRET, an_identity(index=4), "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, an_identity(index=4), "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok or "absent" not in why:
             problems.append(f"a selector nobody preflighted admitted: {ok} / {why}")
     # A gate recorded False, and the "gates all true, passed false" disagreement.
     with a_manifest([a_record(ident, gates=dict(all_gates(), ar_reconciles=False))]):
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok or "ar_reconciles" not in why:
             problems.append(f"a failed gate still admitted: {ok} / {why}")
     with a_manifest([a_record(ident)]) as path:
         rewrite(path, lambda body: body["records"][0].__setitem__("passed", False))
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok:
             problems.append("a tampered record admitted despite an invalid signature")
         elif "signature" not in why:
@@ -466,14 +487,13 @@ def test_admit_reads_todays_gate_set_and_not_the_records_own_flag():
     try:
         FM.GATE_GROUPS = tuple((g, n) for g, n in original if g != "baseline_resistance")
         old_gates = tuple(n for _, names in FM.GATE_GROUPS for n in names)
-        stale = FM.record(ident, "a", public_id="task-cash-0001",
-                          content_digest=FM.public_content_digest(PUBLIC, PROMPT),
-                          structure_digest="0" * 32, profile_name=BOUNDED_V1.name, attempt=0,
+        stale = FM.record(ident, "a", public_id="task-cash-0001", content_digest=CONTENT,
+                          structure_digest=STRUCTURE, profile_name=BOUNDED_V1.name, attempt=0,
                           gates={g: True for g in old_gates}, split_map=PROBE_MAP)
     finally:
         FM.GATE_GROUPS = original
     with a_manifest([stale]):
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok:
             problems.append("a record preflighted against a SMALLER gate set kept admitting: the manifest "
                             "would be asserting gates the record was never tested against")
@@ -488,13 +508,13 @@ def test_admit_refuses_a_moved_split_map_catalogue_or_rotation():
     with a_manifest([a_record(ident)]):
         grown = SplitMap.seal(PROBE_ROSTER + (TemplateFamily("probe_later", "credit_residue"),),
                               previous=PROBE_MAP)
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=grown)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=grown)
         if ok or "split map" not in why:
             problems.append(f"a re-sealed split map still admitted: {ok} / {why}")
         original = CA.MAX_BASELINE_READINGS
         try:
             CA.MAX_BASELINE_READINGS = 512
-            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
             if ok or "baseline catalogue" not in why:
                 problems.append(f"a changed baseline catalogue still admitted: {ok} / {why}")
         finally:
@@ -502,24 +522,100 @@ def test_admit_refuses_a_moved_split_map_catalogue_or_rotation():
     # Another rotation: the file is simply not the active one.
     with a_manifest([a_record(ident)], rotation="another-rotation-0002"):
         os.environ["PIV_KEY_ID"] = ROTATION
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok or "no cash-application release manifest" not in why:
             problems.append(f"a manifest for another rotation was treated as active: {ok} / {why}")
     # Duplicates refuse the WHOLE manifest.
     with a_manifest([a_record(ident), a_record(ident)]):
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok or "duplicate" not in why:
             problems.append(f"a manifest holding two records for one selector still admitted: {ok} / {why}")
     # A manifest for the wrong family or schema is not the active one either.
     for field, value in (("family", "bank_reconciliation"), ("schema", 2), ("family_generator_version", 2)):
         with a_manifest([a_record(ident)]) as path:
             rewrite(path, lambda body, f=field, v=value: body.__setitem__(f, v))
-            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
             if ok:
                 problems.append(f"a manifest whose {field} is {value!r} was treated as active")
     return check("admission refuses a re-sealed split map, a changed baseline catalogue, a manifest for "
                  "another rotation, family, schema or generator version, and a manifest holding duplicate "
                  "records for one selector", not problems, "\n".join(problems))
+
+
+def test_a_record_may_not_publish_a_field_nobody_checked():
+    """The free-text fields, at both doors.
+
+    A signature binds whatever it is handed. `record` once accepted
+    `structure_digest=None` or `""`, a `public_id` of `None`, an `attempt` of
+    9999 against decision 3's bounded 64, and a `profile` naming a profile the
+    identity was never drawn under — each signing and verifying perfectly, and
+    three of them never read by `admit` at all. The module docstring presents
+    all of them as bound, so they are checked."""
+    problems = []
+    ident = an_identity()
+
+    def make(**changes):
+        kwargs = dict(public_id="task-cash-0001", content_digest=CONTENT, structure_digest=STRUCTURE,
+                      profile_name=BOUNDED_V1.name, attempt=0, gates=all_gates(), split_map=PROBE_MAP)
+        kwargs.update(changes)
+        return FM.record(ident, "a", **kwargs)
+
+    refused = {
+        "a structure digest of None": dict(structure_digest=None),
+        "an empty structure digest": dict(structure_digest=""),
+        "a truncated structure digest": dict(structure_digest="0" * 31),
+        "an upper-case structure digest": dict(structure_digest="A" * 32),
+        "a public id of None": dict(public_id=None),
+        "a blank public id": dict(public_id="   "),
+        "a public id with surrounding space": dict(public_id=" task-cash-0001"),
+        "a content digest of None": dict(content_digest=None),
+        "a half-width content digest": dict(content_digest="0" * 32),
+        "a profile name nobody declared": dict(profile_name="hard-v9"),
+        "an attempt beyond the bounded 64": dict(attempt=FM.MAX_LAYOUT_ATTEMPTS),
+        "a negative attempt": dict(attempt=-5),
+        "an attempt that is not an int": dict(attempt="0"),
+    }
+    for label, change in refused.items():
+        if raises(FM.FamilyManifestError, make, **change) is None:
+            problems.append(f"record() signed {label}")
+    if make() is None:
+        problems.append("a well-formed record was refused")
+    # The reviewer's exact case: a declared profile NAME whose bounds are not
+    # the ones this identity was drawn under.
+    tweaked = dataclasses.replace(BOUNDED_V1, max_dependency_depth=BOUNDED_V1.max_dependency_depth + 1)
+    elsewhere = identity(population="dev-96", split=PROBE_MAP.split_of(PROBE_FAMILY),
+                         template_family=PROBE_FAMILY, template_version=1, company_month_index=0,
+                         profile=tweaked)
+    message = raises(FM.FamilyManifestError, FM.record, elsewhere, "a", public_id="task-cash-0001",
+                     content_digest=CONTENT, structure_digest=STRUCTURE, profile_name=BOUNDED_V1.name,
+                     attempt=0, gates=all_gates(), split_map=PROBE_MAP)
+    if message is None:
+        problems.append("a record published the profile name 'bounded-v1' for a world drawn under other bounds")
+
+    # And at the SERVING door, on records that are correctly signed: the
+    # signature is not the check, because the signature binds the defect.
+    for label, field, value in (("a structure digest that is not a digest", "structure_digest", None),
+                                ("an attempt beyond the bounded 64", "attempt", 9999),
+                                ("a profile the world was never drawn under", "profile", "hard-v9")):
+        forged = copy.deepcopy(a_record(ident))
+        forged[field] = value
+        with a_manifest([forged]):
+            ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
+            if not FM.verify(FM.sign(forged, SECRET), SECRET):
+                problems.append(f"the probe for {label} did not produce a signable record")
+            if ok:
+                problems.append(f"admit served a correctly signed record binding {label}")
+            elif "binds" not in why:
+                problems.append(f"{label} was refused for another reason: {why}")
+    # The public-content digest is no longer something a caller can forget.
+    with a_manifest([a_record(ident)]):
+        if raises(TypeError, FM.admit, SECRET, ident, "a", "task-cash-0001") is None:
+            problems.append("admit still accepts a call with no public-content digest: a comparison enforced "
+                            "only when the caller remembers is not a binding at the serving door")
+    return check("a record may not publish a field nobody checked: record() refuses a malformed structure or "
+                 "content digest, an empty public id, an out-of-range attempt and a profile name the world "
+                 "was not drawn under, admit refuses the same on a correctly signed record, and the "
+                 "public-content digest is a required argument", not problems, "\n".join(problems))
 
 
 # --------------------------------------------------------------------------
@@ -554,7 +650,7 @@ def test_runtime_dependent_evidence_uses_the_one_unicode_convention():
     with a_manifest([a_record(ident)]) as path:
         rewrite(path, lambda body: body["records"][0]["runtime_scope"].__setitem__(
             "unicode_database", "16.0.0"))
-        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", split_map=PROBE_MAP)
+        ok, why = FM.admit(SECRET, ident, "a", "task-cash-0001", CONTENT, split_map=PROBE_MAP)
         if ok:
             problems.append("a record whose runtime-dependent evidence came from another Unicode database "
                             "was admitted")
@@ -576,18 +672,33 @@ def test_episode_settings_never_enter_a_family_record():
     injected["experiment"] = {"max_total_completion_tokens": 40_000}
     if raises(IdentityError, FM.refuse_episode_settings, "a probe record", injected) is None:
         problems.append("an episode setting pasted into a record was not refused")
-    # Two records built under different ambient budgets are byte-identical.
+    # Records built under different budgets are byte-identical. Driven through
+    # the REAL knob: the ambient `MAX_EPISODE_OUTPUT_TOKENS` that
+    # `load_environment` reads at call time, with the moved episode digests
+    # measured alongside so the probe cannot silently move nothing.
+    import beancount_ledger.beancount_ledger as env_mod
+    budgets = (8_000, 24_000, 40_000)
+    episodes = {budget: env_mod.episode_contract_digest(budget) for budget in budgets}
+    if len(set(episodes.values())) != len(episodes):
+        problems.append(f"the episode digests did not separate the budgets, so nothing moved: {episodes}")
     built = set()
-    for budget in ("8000", "24000", "40000"):
-        os.environ["PIV_PROBE_MAX_EPISODE_OUTPUT_TOKENS"] = budget
-        try:
+    ceiling = env_mod.MAX_EPISODE_OUTPUT_TOKENS
+    try:
+        for budget in budgets:
+            env_mod.MAX_EPISODE_OUTPUT_TOKENS = budget
             built.add(json.dumps(a_record(), sort_keys=True))
-        finally:
-            os.environ.pop("PIV_PROBE_MAX_EPISODE_OUTPUT_TOKENS", None)
+    finally:
+        env_mod.MAX_EPISODE_OUTPUT_TOKENS = ceiling
     if len(built) != 1:
         problems.append(f"a token budget changed the record: {len(built)} distinct bodies")
+    # No record may carry any of those three digests either, under any key.
+    body = json.dumps(a_record(), sort_keys=True)
+    for budget, digest in episodes.items():
+        if digest in body:
+            problems.append(f"the record carries the episode-contract digest for the {budget} ceiling")
     return check("episode settings never enter a family record: none of the budget or turn-cap keys appears "
-                 "in one, pasting one in is refused, and three budgets produce byte-identical records",
+                 "in one, pasting one in is refused, no episode-contract digest appears under any key, and "
+                 "three budgets that really move that digest produce byte-identical records",
                  not problems, "\n".join(problems))
 
 
@@ -616,6 +727,7 @@ TESTS = [
     test_semantic_components_name_every_declared_component,
     test_admit_reads_todays_gate_set_and_not_the_records_own_flag,
     test_admit_refuses_a_moved_split_map_catalogue_or_rotation,
+    test_a_record_may_not_publish_a_field_nobody_checked,
     test_runtime_dependent_evidence_uses_the_one_unicode_convention,
     test_episode_settings_never_enter_a_family_record,
     test_the_public_content_digest_binds_only_what_the_model_is_shown,
