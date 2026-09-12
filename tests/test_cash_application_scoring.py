@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import re
 import sys
 import unicodedata
 from decimal import Decimal as D
@@ -69,6 +70,8 @@ from beancount_ledger.graph.worlds import (  # noqa: E402
     REGISTRY,
 )
 
+from unicode_pins import (ANCHOR_UNICODE_VERSION, UnicodeScopedPins,  # noqa: E402
+                          derived, observed)
 from world_checks import score_text  # noqa: E402
 
 BANK, AR, WRITE_OFFS, SALES = "Assets:Bank:Checking", "Assets:AR", "Expenses:SmallBalanceWriteOffs", "Income:Sales"
@@ -1376,10 +1379,10 @@ def test_the_observed_007_delivery_and_its_two_row_counterfactual():
 
 
 #: The result digests the attestation's correction table publishes for the
-#: 007 fixture, as MEASURED — scoped by `unicodedata.unidata_version`, the
-#: same way `tests/legacy_freeze.json`'s `unicode_scoped` is (see
-#: `tests/test_legacy_freeze.py`). All three digests here — the evaluation
-#: receipt, the ledger result and the composite result — embed
+#: 007 fixture, as MEASURED — a runtime-scoped pin on the SHARED convention
+#: in `tests/unicode_pins.py`, the same one `tests/legacy_freeze.json`'s
+#: `unicode_scoped` map now uses. All three digests in a row — the
+#: evaluation receipt, the ledger result and the composite result — embed
 #: `scorer_contract_digest`, which embeds `parse_policy_digest`, which
 #: records `unicodedata.unidata_version` as part of the parse policy's
 #: identity (`candidate/canonical.py`, `parse_policy_view()`): a CPython
@@ -1389,56 +1392,71 @@ def test_the_observed_007_delivery_and_its_two_row_counterfactual():
 #: ever legitimately moves, this fails and the table must be re-measured —
 #: which is the point of publishing digests at all.
 #:
-#: The 15.0.0 row is NATIVE (this repository's own CPython 3.12
-#: interpreter). The 14.0.0 and 15.1.0 rows were DERIVED by substitution on
-#: that same CPython 3.12 interpreter — patching the stdlib
-#: `unicodedata.unidata_version` attribute so both this module and
-#: `candidate/canonical.py` see the substituted string, exactly as
-#: `tests/test_legacy_freeze.py`'s `substituted_unicode_version` does — and
-#: cross-checked against the per-interpreter `scorer_contract_digest` values
-#: `reviews/RELEASE_ATTESTATION.md` already publishes (14.0.0 `d1b7131a…`,
-#: 15.1.0 `3f12c01c…`): both derived rows reproduced those digests exactly.
-#: A Unicode version this mapping does not carry FAILS the test below,
-#: naming the version — see `_resolve_007_unicode_scoped`. It is never
-#: silently accepted, and the running interpreter's own digests are never
-#: substituted as their own expectation.
-_007_BY_IDENTITY_UNICODE_SCOPED = {
-    "14.0.0": {  # CPython 3.11 — derived by substitution on CPython 3.12 (15.0.0)
-        ("check", 1): ("d4718c74", "a7d84212", "20a78c57"),
-        ("f2f7e5f6cada45b292383d77330708fc", 1): ("424cf7a9", "48c764da", "62cb942a"),
+#: Every row declares its own provenance rather than explaining itself in a
+#: comment: `native` where an interpreter shipping that database computed
+#: it, `derived-by-substitution` where the version string was substituted on
+#: another one. A derived row's `native_confirmation` stays PENDING until a
+#: runtime that really ships the database runs this suite; the cross-check
+#: against the attestation's published `scorer_contract_digest` values is
+#: recorded as a `cross_check`, which is evidence that the declared views
+#: did not drift and is NOT a native confirmation. A Unicode version this
+#: table does not carry FAILS the test below, naming the version. It is
+#: never silently accepted, and the running interpreter's own digests are
+#: never substituted as their own expectation.
+_007_PINS = UnicodeScopedPins(
+    name="the 007 result-digest pins",
+    source="tests/test_cash_application_scoring.py",
+    value_keys=("by_identity",),
+    anchor=ANCHOR_UNICODE_VERSION,
+    how_to_add="add a row for unicode {version} to _007_PINS in "
+               "tests/test_cash_application_scoring.py, the way tests/legacy_freeze.json's "
+               "unicode_scoped rows are added",
+    rows={
+        "14.0.0": {                                                   # CPython 3.11
+            "provenance": derived(
+                "CPython 3.12 (Windows, unicode 15.0.0), by substituting the version string",
+                cross_check="reproduces the CPython 3.11 scorer_contract_digest d1b7131a… that "
+                            "reviews/RELEASE_ATTESTATION.md publishes; the declared views did not drift"),
+            "by_identity": {
+                ("check", 1): ("d4718c74", "a7d84212", "20a78c57"),
+                ("f2f7e5f6cada45b292383d77330708fc", 1): ("424cf7a9", "48c764da", "62cb942a"),
+            },
+        },
+        "15.0.0": {                                                   # CPython 3.12
+            "provenance": observed(
+                "CPython 3.12 (Windows, unicode 15.0.0)",
+                "observed natively on this repository's own CPython 3.12, which ships unicode 15.0.0"),
+            "by_identity": {
+                ("check", 1): ("a97951b7", "91d1378d", "498f3fe8"),
+                ("f2f7e5f6cada45b292383d77330708fc", 1): ("42c42917", "cfe5054f", "f035479d"),
+            },
+        },
+        "15.1.0": {                                                   # CPython 3.13
+            "provenance": derived(
+                "CPython 3.12 (Windows, unicode 15.0.0), by substituting the version string",
+                cross_check="reproduces the CPython 3.13 scorer_contract_digest 3f12c01c… that "
+                            "reviews/RELEASE_ATTESTATION.md publishes; the declared views did not drift"),
+            "by_identity": {
+                ("check", 1): ("d59d85e5", "cb7e52db", "49eab16d"),
+                ("f2f7e5f6cada45b292383d77330708fc", 1): ("363f1da2", "3ac24e73", "90e3dab1"),
+            },
+        },
     },
-    "15.0.0": {  # CPython 3.12 — observed natively
-        ("check", 1): ("a97951b7", "91d1378d", "498f3fe8"),
-        ("f2f7e5f6cada45b292383d77330708fc", 1): ("42c42917", "cfe5054f", "f035479d"),
-    },
-    "15.1.0": {  # CPython 3.13 — derived by substitution on CPython 3.12 (15.0.0)
-        ("check", 1): ("d59d85e5", "cb7e52db", "49eab16d"),
-        ("f2f7e5f6cada45b292383d77330708fc", 1): ("363f1da2", "3ac24e73", "90e3dab1"),
-    },
-}
+)
 
 
 def _resolve_007_unicode_scoped(version: str, problems: list) -> dict | None:
-    """The pinned `{identity: (evaluation, ledger, composite)}` row for
+    """The pinned `{identity: (evaluation, ledger, composite)}` mapping for
     `version`, or `None` — which appends a problem naming the version and
-    leaves the caller to fail. No fallback, on purpose, for the same reason
-    `tests/test_legacy_freeze.py`'s `resolve_unicode_scoped` has none: these
-    digests embed `parse_policy_digest`, which records
-    `unicodedata.unidata_version`, so a Unicode database this mapping has
-    never been reviewed against is an UNVERIFIED runtime, not a verified
-    one — the running interpreter's own digests are not evidence about
-    themselves, and are never substituted as the expectation."""
-    if version in _007_BY_IDENTITY_UNICODE_SCOPED:
-        return _007_BY_IDENTITY_UNICODE_SCOPED[version]
-    problems.append(
-        f"unicode {version} is NOT pinned in _007_BY_IDENTITY_UNICODE_SCOPED "
-        f"(tests/test_cash_application_scoring.py). This runtime's Unicode database has never been reviewed "
-        f"against this fixture: parse_policy_digest records unicodedata.unidata_version, so identical source can "
-        f"embed different scorer digests under a different database, and the running interpreter's own digests "
-        f"are not evidence about themselves. Add a row for unicode {version} deliberately, under review — the way "
-        f"tests/legacy_freeze.json's unicode_scoped rows are added — and commit it. "
-        f"Pinned versions: {sorted(_007_BY_IDENTITY_UNICODE_SCOPED)}")
-    return None
+    leaves the caller to fail. The refusal is the shared convention's
+    (`UnicodeScopedPins.resolve`), and there is no fallback, for the same
+    reason the freeze has none: these digests embed `parse_policy_digest`,
+    which records `unicodedata.unidata_version`, so a Unicode database this
+    table has never been reviewed against is an UNVERIFIED runtime, not a
+    verified one — the running interpreter's own digests are not evidence
+    about themselves, and are never substituted as the expectation."""
+    row = _007_PINS.resolve(version, problems)
+    return None if row is None else row["by_identity"]
 
 
 def test_the_007_result_digests_replay_by_identity_not_by_nonce():
@@ -1563,6 +1581,54 @@ def test_penalty_vocabulary_and_prices_are_the_declared_ones():
                  "and composite/1; schema piv.cash-application/1", not problems, "\n".join(problems))
 
 
+def test_the_007_pins_follow_the_runtime_scoped_convention():
+    """The 007 digests are a RUNTIME-SCOPED pin, and they are pinned the one
+    way this repository pins those: `tests/unicode_pins.py`.
+
+    Reviewer decision 6 (round 16): the Unicode-pin mistake had been made
+    twice, each time with its own bespoke table, so the convention was
+    factored into one place and both tables moved onto it. This checks the
+    007 table against that convention — a plausible version key, exactly a
+    `provenance` block and a `by_identity` mapping, a provenance block that
+    says `native` or `derived-by-substitution` and where a runtime shipping
+    the database confirmed it, and a natively observed anchor — and drives
+    the refusal with a version no database will ever carry, so an unseen
+    runtime is proved to fail rather than certify itself on every run.
+
+    No pinned value is read here. This is about the shape of the pin.
+    """
+    problems: list = []
+
+    def value_check(version, key, value, found):
+        if not isinstance(value, dict) or not value:
+            found.append(f"unicode {version}: by_identity is {value!r}, not a non-empty mapping")
+            return
+        for identity, digests in value.items():
+            if not (isinstance(identity, tuple) and len(identity) == 2 and isinstance(identity[0], str)
+                    and isinstance(identity[1], int)):
+                found.append(f"unicode {version}: {identity!r} is not a (rollout id, revision) identity")
+            if not (isinstance(digests, tuple) and len(digests) == 3
+                    and all(isinstance(d, str) and re.fullmatch(r"[0-9a-f]{8}", d) for d in digests)):
+                found.append(f"unicode {version}: {identity!r} pins {digests!r}, not three 8-hex-digit "
+                             f"prefixes (evaluation receipt, ledger result, composite result)")
+
+    _007_PINS.check_shape(problems, value_check=value_check)
+    _007_PINS.check_refuses_an_unpinned_version(problems, must_say=("_007_PINS",))
+    # a derived row may never call the attestation cross-check a native
+    # confirmation: the two are separate fields for a reason
+    for version in _007_PINS.versions():
+        prov = _007_PINS.row(version)["provenance"]
+        if prov["method"] == "derived-by-substitution" and "cross_check" not in prov:
+            problems.append(f"unicode {version} is derived but records no cross_check")
+        if prov["method"] == "derived-by-substitution" and not prov["native_confirmation"].startswith("PENDING"):
+            problems.append(f"unicode {version} is derived yet claims a native confirmation: "
+                            f"{prov['native_confirmation']!r}")
+    return check(f"the 007 result-digest pins are a runtime-scoped pin on the shared convention "
+                 f"(tests/unicode_pins.py): versions {_007_PINS.versions()}, anchor "
+                 f"{ANCHOR_UNICODE_VERSION} observed natively, derived rows labelled as derived, and an "
+                 f"unpinned Unicode database refused by name", not problems, "\n".join(problems))
+
+
 TESTS = [
     test_every_golden_register_scores_one_and_completes_with_the_golden_ledger,
     test_every_variant_golden_scores_one_and_completes_with_the_golden_ledger,
@@ -1590,6 +1656,7 @@ TESTS = [
     test_penalty_vocabulary_and_prices_are_the_declared_ones,
     test_the_observed_007_delivery_and_its_two_row_counterfactual,
     test_the_007_result_digests_replay_by_identity_not_by_nonce,
+    test_the_007_pins_follow_the_runtime_scoped_convention,
 ]
 
 

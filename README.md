@@ -8,13 +8,13 @@
 
 Version 0.2.0 includes 106 authored task IDs: 91 workflow tasks, four clean-month assurance tasks and eleven cash-application variants across four company-months (Bowline's five, then three matched pairs whose two variants differ in exactly one authored fact). The 95 legacy tasks retain episode contract 4; cash application uses contract 5 and combines the ledger and application scores multiplicatively. Authored tasks are public demonstrations and tests. The existing keyed bank-reconciliation population is separate; cash-application generation is not yet implemented.
 
-> **Version status.** `pyproject.toml` declares `0.2.0` as of this branch. The published Hub package is still the earlier one: uploading is the owner's act and has not been done here. Until it is, read "0.2.0" as the contents of this branch, not as what `pip install` gives you.
+> Version 0.2.0 is published on the Environments Hub as `cangultekn/beancount-ledger`. It contains 106 authored tasks and the separate keyed bank-reconciliation generator v9. Cash-application generation is not included. This release uses the deprecated verifiers v0 interface and does not provide v1 compatibility.
 
 > **Compatibility.** This release targets the **v0 workflow** — `load_environment` discovered by name in the installed module, driven by `vf-eval`, configured by `[tool.verifiers.eval]`, against the pinned `verifiers==0.3.1`. Prime Intellect's current environment documentation lists that workflow under **Legacy** and identifies it as deprecated v0. Publishing 0.2.0 does **not** imply v1 support, and nothing here claims it: verified against this package's own entry points, `beancount_ledger/__init__.py` exports exactly one serving door (`load_environment`), `pyproject.toml` declares no `[project.entry-points]` group and no v1 protocol object, and every `verifiers` base the environment subclasses resolves into the framework's own legacy tree (`StatefulToolEnv` → `verifiers.legacy.envs.stateful_tool_env`, `Rubric` → `verifiers.legacy.rubrics.rubric`, `Environment` → `verifiers.legacy.envs.environment`, `stop` → `verifiers.legacy.decorators`; the framework's own loader logs under `verifiers.legacy.utils.env_utils`). A v1 migration is separate work and is deliberately not slipped into this frozen instrument. The documented versioned upload preserves earlier releases, so publishing 0.2.0 does not withdraw 0.1.0.
 
 No LLM judge: every discrepancy is planted by a generator or an author that knows the correct ledger, and the scorer pays exact partial credit against it.
 
-Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `beancount-ledger`. Apache-2.0.
+Built on [Prime Intellect's `verifiers`](https://github.com/PrimeIntellect-ai/verifiers). Published on the Environments Hub as `cangultekn/beancount-ledger`. Apache-2.0.
 
 ### Why this is hard to game
 

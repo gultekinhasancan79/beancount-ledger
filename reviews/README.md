@@ -308,6 +308,12 @@ bookkeeping.
   - `cash_application_screen_2026-09-10.{md,/}` — the three-episode Bowline screen (two complete deliveries, one register losing a single field), its rescore and single-field counterfactual, and a provenance sidecar that records every digest **at the revision the screen was measured at**;
   - `cash_application_adjudication_2026-09-10.{md,/}` — the cold adjudication of the Bowline five: two models of different lineages, neither screen subject, shown only the eleven public files. Holds the predeclared rule, the runner as executed, every parsed answer, the original verdicts and the corrected comparison under the scorer's pre-existing zero-application normalisation, and identifies the input revision;
   - `cash_application_six_variant_screen_2026-09-11.{md,/}` — the six-variant screen, published as an **INCOMPLETE DESCRIPTIVE SCREEN**: five scored deliveries and one cell lost to a provider 403, which stays missing. Holds the calibration JSON untouched, the run log, five delivered workspaces, the two executed `cash_application_007` scorer decompositions and a receipt check re-run at publication.
+- `installed_wheel_check_2026-09-12/` — the installed-wheel check, published with its attribution: the runner
+  and two bound records, twelve of twelve each, one against the wheel **uploaded** to the Hub (`1c83e4c5…`)
+  and one against the build the attestation names (`5a1171c5…`). Each record binds the artifact it tested
+  by comparing every runtime member of the wheel with the installed file, and each row's contract digest is
+  captured from the episode's own state column rather than declared. See the publication record at the end
+  of `RELEASE_ATTESTATION.md` for why the two wheels differ.
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 
 ## A note on citations inside the dated documents

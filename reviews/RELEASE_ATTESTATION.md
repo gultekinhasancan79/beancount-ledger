@@ -57,6 +57,12 @@ Verified against the repository's own entry points rather than asserted, on the 
 - wheel `beancount_ledger-0.2.0-py3-none-any.whl`: sha256
   `5a1171c5f6ac957e2c9d6b2e18dada34bb353a17718edc22c1a7251bb08161ef`, 65 files; RECORD sha256
   `eedc849f134d2df2874f93c10967bf650e8d9602c6d8236b085d380423bb7a46`
+  - **SUPERSEDED (2026-09-12) as the identity of the artifact that was actually PUBLISHED.** The two
+    hashes above are kept, not erased, and remain the correct identity of the build made from this
+    checkout with an LF working tree. The wheel uploaded to the Environments Hub hashes to
+    `1c83e4c5…` with RECORD `78d05932…`. Both are 0.2.0, both were built from commit `b74219c`, and
+    both score twelve of twelve from the installed artifact. What differs, and why, is measured in
+    **"Publication record — 0.2.0 as uploaded (2026-09-12)"** at the end of this document.
 - sdist `beancount_ledger-0.2.0.tar.gz`: sha256
   `2504efbbc219b19ffd27165463354ff96a319008cacd72111c6250ac2a82ffc1`, 66 files
 - **reproducible**: built twice from the same checkout, byte-identical both times
@@ -610,3 +616,200 @@ residue: one advice cell, 4,020.00 against 4,560.00 — is cash rung (1) does no
   test additionally passes with `unicodedata.unidata_version` patched to `"14.0.0"` and to `"15.1.0"`, and fails —
   naming the version and telling a reviewer to add the row — with it patched to an unpinned value such as
   `"99.0.0"`.
+
+---
+
+# Publication record — 0.2.0 as uploaded (2026-09-12)
+
+0.2.0 is **retained** publicly. This record identifies the artifact that was uploaded, the commit it
+was built from, the conditions it was built under and the evidence that validates it. It replaces
+no artifact: **0.2.0 was not rebuilt, not re-uploaded and not withdrawn**, and no hash recorded
+earlier in this document has been deleted.
+
+## The uploaded artifact is not the artifact this document attested
+
+Three identities, each measured here rather than recalled:
+
+| | value | where it was read |
+|---|---|---|
+| upload record | `cangultekn/beancount-ledger` 0.2.0, environment `fv9m1f3tke0b41xmofm5lqfn`, `pushed_at` `2026-09-11T22:42:50.560482`, `wheel_sha256` `1c83e4c5…` | `.prime/.env-metadata.json` in the upload checkout (untracked; absent from the uploaded wheel's 65 members) |
+| uploaded wheel | sha256 `1c83e4c5134b7d24ddb8e0ac0ec260108f23ebed2a2ec2ecaeb9071822e630a9`, 527,497 bytes, RECORD sha256 `78d0593222dece87cb5be4ac813db3f0046d3b1c7d1970e630a8439dbce203b1` | `dist/beancount_ledger-0.2.0-py3-none-any.whl` in the upload checkout, hashed |
+| attested wheel | sha256 `5a1171c5f6ac957e2c9d6b2e18dada34bb353a17718edc22c1a7251bb08161ef`, 527,487 bytes, RECORD sha256 `eedc849f134d2df2874f93c10967bf650e8d9602c6d8236b085d380423bb7a46` | the "Artifacts" block above, and the build still on disk, hashed |
+
+The upload record and the wheel in the upload checkout agree exactly. The attestation names a
+different build. Both files were opened side by side and compared member by member.
+
+**They differ in exactly two members of sixty-five.** Same names, same order, same compression, same
+(2020-02-02) entry stamps, identical `METADATA` (`c10b7c8b…`, so the embedded README is the same
+text), identical `WHEEL` and identical `LICENSE`. The two that differ are
+`beancount_ledger/tasks/bank_recon_001.json` and the `RECORD` line that hashes it.
+
+**The difference is line endings, and nothing else.** The uploaded copy of that task file is 3,943
+bytes with 88 CRLF pairs; the attested copy is 3,855 bytes with none, and is byte-identical to the
+blob git stores. Replacing CRLF with LF makes the two byte-identical; parsed, they are the same
+object with the same canonical serialisation. **No served public file changes**: a JSON string
+literal cannot contain a raw newline, so those line endings are whitespace of the container file and
+never reach a rendered public byte.
+
+**Why the two builds diverged, measured.** `.gitattributes` declares `* text=auto eol=lf`. In the
+upload checkout `git ls-files --eol` reports `i/lf w/crlf` for that one file — git calls the tree
+clean because it normalises on read, while the file on disk carries CRLF. It is the only file under
+`beancount_ledger/` in that checkout in that state: 281 of its 1,171 tracked files carry CRLF on
+disk, and the other 280 are all under `tests/`, `reviews/` and `outputs/`, none of which ships. A
+wheel is built from the WORKING TREE, so
+the build that was uploaded embedded the CRLF copy; the development worktree, whose copy is LF,
+produced the attested one.
+
+**What this finding is not.** It is not a runtime defect. Every one of the 61 `beancount_ledger/`
+members of the uploaded wheel is byte-identical to the corresponding file in the checkout it was
+built from, and the twelve-episode check below scores the uploaded artifact twelve of twelve. The
+finding is that this document identified the wrong build.
+
+## The uploaded artifact, bound
+
+- **artifact**: `beancount_ledger-0.2.0-py3-none-any.whl`, sha256 `1c83e4c5…`, 65 members, 61 of them
+  runtime files, RECORD `78d05932…`, METADATA `c10b7c8b…`.
+- **commit**: `b74219c8ba1db4bc0bbbab1cf13bdf42fe90ed21` ("Merge pull request #4 from
+  gultekinhasancan79/feat/dense-rewards"), tracked tree clean at upload. The only divergence between
+  that checkout's working tree and the blobs git stores is the line endings described above.
+- **build conditions**: hatchling 1.32.0, `Metadata-Version` 2.5, CPython 3.12.12 on Windows; every
+  zip entry deflate-compressed and stamped (2020-02-02) — all read out of the uploaded wheel itself.
+- **validation evidence**: `reviews/installed_wheel_check_2026-09-12/uploaded_0.2.0.json` — the
+  eleven cash-application tasks and the legacy control, each scored through the real `env.evaluate()`
+  door of the installed package, twelve of twelve, `failures: []`.
+- **the earlier build is preserved as earlier evidence**, not overwritten: its hashes stay in the
+  "Artifacts" block above with a supersession note beside them, and
+  `reviews/installed_wheel_check_2026-09-12/attested_build_0.2.0.json` records the same twelve
+  episodes against `5a1171c5…`.
+
+**A wheel built from THIS commit will hash to neither.** The corrections recorded below edit
+`README.md`, which `pyproject.toml` embeds in `dist-info/METADATA`. That is expected, and it is not a
+re-release: 0.2.0 on the Hub stays the artifact identified above.
+
+## The installed-wheel evidence, published with its attribution
+
+`reviews/installed_wheel_check_2026-09-12/` now holds the runner and its records.
+
+- `installed_wheel_check.py` — the runner. Its scoring path is byte-identical to the one that
+  produced the 2026-09-11 result; its docstring declares what was added for publication.
+- `uploaded_0.2.0.json`, `attested_build_0.2.0.json` — twelve of twelve each, one per wheel.
+
+**The tested artifact is bound, not asserted.** `--wheel` hashes the wheel, its RECORD and its
+METADATA, then compares every `beancount_ledger/` member of it with the installed file at the same
+path; a single mismatch aborts before any task is scored. `every_runtime_member_matches_the_installed_file`
+is that comparison having passed over all 61 members.
+
+**Captured is distinguished from declared.** Every row's `contract_digest` is captured from that
+episode's own `piv_episode_contract_digest` state column, and each row says so in its own
+`contract_digest_source` field. Correcting an earlier impression this document could have left:
+three `wheel_check*.json` records made on 2026-09-11 in the private working area each hold twelve
+complete successes, and **those twelve successes stand** — but their runner read
+`episode_contract_digest` from the top level of the publication manifest, where the field does not
+live, and recorded `contract_digest: null` twelve times. For those three runs the contract digests
+were **declared, never captured**. They are not republished as though they had been recorded. The
+`b11bc1ac…` / `e8b8753d…` column of the 2026-09-11 table above is reproduced by the two bound
+records published here, which did capture it.
+
+## Where the native CI matrix's run evidence is
+
+The native CI matrix's runs are at
+<https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml> — the battery job
+runs there on CPython 3.11, 3.12 and 3.13, on every push to main, every v* tag, and every pull
+request.
+
+Which job is the native evidence for which pinned Unicode row:
+
+| job | Unicode database | the row it natively confirms |
+|---|---|---|
+| ubuntu, python 3.11 | 14.0.0 | `unicode_scoped["14.0.0"]`, derived on 3.12 |
+| ubuntu, python 3.12 | 15.0.0 | the anchor row, which is native anyway |
+| windows, python 3.12 | 15.0.0 | the anchor row, on the other OS |
+| ubuntu, python 3.13 | 15.1.0 | `unicode_scoped["15.1.0"]`, derived on 3.12 |
+
+A derived row and a subsequent native confirmation are separate things and are recorded separately:
+`provenance.method` says how a row was produced, `provenance.native_confirmation` says whether a
+runtime shipping that database has since run the battery against it, and a derived row that nothing
+has confirmed says `PENDING`. Reading a green job on that page is what turns the first into the
+second; this document does not assert the outcome of any particular run, and a reader should look.
+
+## One convention for runtime-scoped pins
+
+The Unicode-scoped pin had been written twice with its own bespoke table each time. It is now one
+module, `tests/unicode_pins.py`, and both tables are on it:
+
+- the version key, the `native` / `derived-by-substitution` vocabulary, the `PENDING` confirmation,
+  the `substituted_unicode_version` context manager, the shape validator and the refusal live there;
+- `tests/test_legacy_freeze.py` builds its `unicode_scoped` map as a `UnicodeScopedPins` table and
+  delegates the row shape, the provenance check, the natively-observed anchor rule and the
+  unpinned-version refusal to it;
+- `tests/test_cash_application_scoring.py`'s 007 result digests are now `_007_PINS`, the same kind of
+  table, with per-row provenance instead of a comment. The attestation cross-check against the
+  published per-interpreter `scorer_contract_digest` values is recorded as a `cross_check` and is
+  **not** a native confirmation. `test_the_007_pins_follow_the_runtime_scoped_convention` checks the
+  shape and drives the refusal with `99.0.0` on every run.
+
+**No pinned value moved.** `tests/legacy_freeze.json` is untouched, and every 007 digest prefix is
+the one published above. The erratum immediately preceding this section names that table
+`_007_BY_IDENTITY_UNICODE_SCOPED`; that name is superseded by `_007_PINS`, and the sentence is left
+standing as the dated record it is.
+
+## Corrections to the published prose
+
+- **README publication status.** The paragraph that said "The published Hub package is still the
+  earlier one: uploading is the owner's act and has not been done here" was false once 0.2.0 was
+  uploaded. It is replaced by: "Version 0.2.0 is published on the Environments Hub as
+  `cangultekn/beancount-ledger`. It contains 106 authored tasks and the separate keyed
+  bank-reconciliation generator v9. Cash-application generation is not included. This release uses
+  the deprecated verifiers v0 interface and does not provide v1 compatibility." The Hub name lower
+  in the README is likewise qualified with its owner.
+- **The absolute regeneration claim in `docs/REFERENCE.md`.** Two instances survived the README
+  correction — "Nothing the agent sees regenerates an answer" and "nothing an agent observes
+  regenerates an answer". Both now read: "HMAC protects private generation identity against
+  reconstruction from enumerable selectors. It does not prevent solving the accounting from public
+  evidence. The public cash-application fold intentionally reconstructs the application register
+  from those files." The same claim in a code comment at `beancount_ledger/beancount_ledger.py`'s
+  serving door is corrected to say the same thing. A sweep for the claim elsewhere found the two
+  remaining `graph/mint.py` sentences, which describe the enumeration attack that keying defeats —
+  what the corrected wording affirms — and are left as they are.
+- **Two sentences in the six-variant screen note** (`reviews/cash_application_six_variant_screen_2026-09-11.md`).
+  "All four outcome columns zero" was wrong, because `remaining` is not zero; it now reads: "The
+  counterfactual adds SI-4415 and SI-4419 with `period_basis` and `remaining` equal to 6,360.00 and
+  10,600.00 respectively, and `applied_total`, `credited` and `written_off` all zero." Verified
+  against the archived decomposition: both rows carry `period_basis` = `remaining` = 6360.00 and
+  10600.00, with the other three columns `0.00`. The archive inventory claimed eleven immutable
+  public inputs while the same note explained that the initial ledger had been overwritten; it now
+  reads: "Each archived workspace contains ten unchanged supporting input files, the canonical
+  delivered ledger and application register, and the delivery receipt. The untouched initial ledger
+  and original submitted texts are not archived." Verified by re-projecting each task through
+  `derive_contract` and comparing: of the eleven public inputs, ten are byte-identical in all five
+  archived workspaces and only `ledger.beancount` differs, and it differs because it holds the
+  delivery. The private working copy of that note in the `v10-codex/` tree carries neither sentence,
+  so there was nothing to correct there.
+
+## Evidence files after these corrections (sha256 over the bytes git stores, LF)
+
+The values recorded at release are correct for the release and are not restated as wrong; these are
+the same files after the corrections above.
+
+| file | at release | now |
+|---|---|---|
+| README.md | `2874b8a4…` | `479bf43f11c6a459a0cd9cc9b9504a32534cb24f473d98ee0f40eeea98f74b68` |
+| docs/REFERENCE.md | `c136da7a…` | `34d419fa965e0f09d938b8cb89c3bad50a6c9a6d3a244310eed95a94054ef98f` |
+| reviews/cash_application_six_variant_screen_2026-09-11.md | `835ab184…` | `4a2b42fa95a6b90905d1888e9621d1e648da900dfa06dc79b3673dbe40efa890` |
+| reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py | new | `27004bc7f62bb3108b6090e50d3c6a4f35467ca50819506041f4ec6ec471fbb8` |
+| reviews/installed_wheel_check_2026-09-12/uploaded_0.2.0.json | new | `d31b81af47cfe32d67f1b76a4261bca49f95bea4ef97f4cdd90a1fdaed9d6fdb` |
+| reviews/installed_wheel_check_2026-09-12/attested_build_0.2.0.json | new | `4246c6be1a12edc1dda8fb14da2498baa3d1a10b7394296273f33577165c8cac` |
+| tests/unicode_pins.py | new | `cf40b8674e8f69a5208093937c38fe5c5d2548f8567ddc7ce66a342220f29393` |
+| reviews/README.md (index; not recorded at release) | — | `33b5a00943d98b1efc106667a8e4f4d8e0ad6285f8b3ad5a326120c7f313e217` |
+
+`reviews/` ships in neither artifact, so correcting this document moves no artifact hash. `README.md`
+and `docs/REFERENCE.md` are a different matter and are covered above.
+
+## What did not happen here
+
+- **No rebuild, no re-upload, no withdrawal of 0.2.0**, and no deletion of an earlier hash.
+- **No served byte moved.** `tests/test_legacy_freeze.py` passes: the 760 legacy public files,
+  `candidate/committed.py` and the contract-4 episode view are byte-identical, and the eleven cash
+  bundles re-derive to the same public digests.
+- **No model or API call.** The twelve-episode runs are scripted and offline.
+- `tests/run_all.py`: **34 of 34 suites pass** on this checkout with the repository's own venv.

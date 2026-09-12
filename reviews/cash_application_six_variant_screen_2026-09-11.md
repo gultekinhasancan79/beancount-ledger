@@ -73,8 +73,9 @@ attribution requires inspection of the delivered artifacts — which is what thi
 The delivery was turned into a regression fixture rather than left as an argument. The delivered
 artifacts are copied verbatim to `tests/observed/cash_application_007/`, checked against the run's
 own delivery receipt, and scored through the **shipped** `candidate/1`, `application/1` and
-`composite/1`; the counterfactual adds **only** the two omitted closing rows, at their period basis
-with all four outcome columns zero, and is scored the same way.
+`composite/1`; the counterfactual adds **only** the two omitted closing rows and is scored the same
+way. The counterfactual adds SI-4415 and SI-4419 with `period_basis` and `remaining` equal to
+6,360.00 and 10,600.00 respectively, and `applied_total`, `credited` and `written_off` all zero.
 
 | | delivered | counterfactual (+ SI-4415 6,360.00, + SI-4419 10,600.00) |
 |---|---|---|
@@ -177,9 +178,10 @@ remains outstanding.
 
 - `six_screen_kimi.json` — the calibration settings and outcomes, **preserved untouched**;
 - `six_screen_kimi.log` — the run log;
-- `workspaces/cash_application_{006,007,008,009,010}/` — eleven immutable public input files per
-  workspace, the canonical delivered `ledger.beancount` and `cash_application.json`, and
-  `delivery.json`;
+- `workspaces/cash_application_{006,007,008,009,010}/` — the archived workspaces. Each archived
+  workspace contains ten unchanged supporting input files, the canonical delivered ledger and
+  application register, and the delivery receipt. The untouched initial ledger and original
+  submitted texts are not archived.
 - `cash_application_007_{delivered,counterfactual}.decomposition.json` — the two executed scorer
   decompositions above;
 - `verify_receipts.py` / `verify_receipts.json` — the receipt check re-run at publication.

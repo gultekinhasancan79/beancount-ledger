@@ -5124,7 +5124,11 @@ def load_environment(task_id: str = "bank_recon_001", **kwargs) -> vf.Environmen
     # generated one by a PRIVATE selector `<namespace>:<index>[:<profile>]`
     # that never reaches the model: the dataset row, the prompt and every
     # tool reply carry only the public id derived from the public bytes
-    # (`graph.mint`), so nothing an agent sees regenerates the answer.
+    # (`graph.mint`). HMAC protects private generation identity against
+    # reconstruction from enumerable selectors; it does not prevent solving
+    # the accounting from public evidence, and the public cash-application
+    # fold intentionally reconstructs the application register from those
+    # files.
     try:
         if task_id in REGISTRY:
             world, task = REGISTRY[task_id]
