@@ -44,6 +44,15 @@ recorded `contract_digest: null` twelve times each.  Their twelve complete
 successes stand; their contract digests were never captured, and the
 attestation says so.  The fifth is wheel_check15b.json, named above.
 
+WHICH BYTES RAN.  The two records published beside this file were written
+on 2026-09-12 by a copy of it OUTSIDE the repository -- run_published_check.py,
+sha256 27004bc7..., 12,311 bytes -- because this runner refuses to start with
+the repository on sys.path, which its own directory is once it lives under
+`reviews/`.  This file is that copy with THIS DOCSTRING corrected afterwards
+and nothing else touched: strip the module docstring from both and the
+remaining bytes are identical.  README.md beside this file records both
+hashes and the minute each record was written.
+
 Usage:  python installed_wheel_check.py <out.json> --wheel <path to .whl>
 """
 import asyncio

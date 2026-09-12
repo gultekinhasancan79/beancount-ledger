@@ -683,15 +683,27 @@ finding is that this document identified the wrong build.
   `reviews/installed_wheel_check_2026-09-12/attested_build_0.2.0.json` records the same twelve
   episodes against `5a1171c5…`.
 
-**A wheel built from THIS commit will hash to neither, and it would differ in a runtime member, not
+**A wheel built from THIS commit will hash to neither, and it would differ in runtime members, not
 only in packaging.** The corrections recorded below edit `README.md`, which `pyproject.toml` embeds
 in `dist-info/METADATA`; they also edit `beancount_ledger/beancount_ledger.py` (+5/-1, the serving
 door's comment, disclosed under the corrections below), and that file is one of the wheel's 61
-runtime members. A build from this commit would therefore differ from the uploaded artifact in three
-members — `METADATA`, that runtime member, and the `RECORD` that hashes both — so the divergence is
-not confined to packaging, as it is between the uploaded wheel and the attested build. That is
-expected, and it is not a re-release: 0.2.0 on the Hub stays the artifact identified above. The runtime edit is a
-comment: no served byte moves, as recorded below.
+runtime members. Measured by opening each wheel and comparing every runtime member against the bytes
+this commit has at the same path — its blobs, which in this worktree are also what is on disk — a
+build from this commit would differ from the **uploaded** artifact in **four** of its sixty-five
+members: `METADATA`, `beancount_ledger/beancount_ledger.py`,
+`beancount_ledger/tasks/bank_recon_001.json`, and the `RECORD` that hashes them. The fourth is the
+CRLF divergence this record exists to explain and not a content change — the uploaded copy of that
+task file is 3,943 bytes with 88 CRLF pairs, this commit's is 3,855 bytes with none, and the two are
+equal once line endings are normalised. Against the **attested** build, whose copy of that file is
+already LF, the same comparison gives **three**: `METADATA`, `beancount_ledger.py` and `RECORD`.
+Either way the divergence is not confined to packaging, as it is between the uploaded wheel and the
+attested build. That is expected, and it is not a re-release: 0.2.0 on the Hub stays the artifact
+identified above. The runtime edit is a comment: no served byte moves, as recorded below.
+
+> Recorded here until this correction: "A build from this commit would therefore differ from the
+> uploaded artifact in three members — `METADATA`, that runtime member, and the `RECORD` that hashes
+> both". **Retracted**: three is the count against the attested build, not against the uploaded one,
+> and the member it omitted is the very file whose line endings this section exists to explain.
 
 ## The installed-wheel evidence, published with its attribution
 
@@ -703,6 +715,16 @@ comment: no served byte moves, as recorded below.
   endings normalised to LF) and that record (sha256 `ae0d524a…`) are in the private working area and
   are **not** published, so the docstring binds the claim to those bytes rather than to a filename,
   and names the two row fields that are not part of it.
+- **Which bytes produced the two records, exactly.** The runner refuses to start with the repository
+  on `sys.path`, which its own directory is once it lives under `reviews/`, so the 2026-09-12 runs
+  executed a copy outside the repository: `run_published_check.py`, sha256 `27004bc7…`, 12,311
+  bytes, written 21:35:33, which wrote `uploaded_0.2.0.json` at 21:35:57 and
+  `attested_build_0.2.0.json` at 21:36:37. The published file is that copy with its **module
+  docstring** corrected afterwards and nothing else: strip the module docstring from both and the
+  remaining bytes are identical, so no scripted turn, no `env.evaluate()` call and no recorded row
+  field moved. The directory's `README.md` carries both hashes. Its own identity is therefore
+  `893f2e6f…`, not the `27004bc7…` of the bytes that ran — a distinction this document got wrong
+  once and now keeps.
 - `uploaded_0.2.0.json`, `attested_build_0.2.0.json` — twelve of twelve each, one per wheel.
 
 **The tested artifact is bound, not asserted.** `--wheel` hashes the wheel, its RECORD and its
@@ -811,14 +833,23 @@ the same files after the corrections above.
 | README.md | `2874b8a4…` | `479bf43f11c6a459a0cd9cc9b9504a32534cb24f473d98ee0f40eeea98f74b68` |
 | docs/REFERENCE.md | `c136da7a…` | `34d419fa965e0f09d938b8cb89c3bad50a6c9a6d3a244310eed95a94054ef98f` |
 | reviews/cash_application_six_variant_screen_2026-09-11.md | `835ab184…` | `4a2b42fa95a6b90905d1888e9621d1e648da900dfa06dc79b3673dbe40efa890` |
-| reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py | new | `27004bc7f62bb3108b6090e50d3c6a4f35467ca50819506041f4ec6ec471fbb8` |
+| reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py | new | `893f2e6f56c5135d81a635af55cb7de91676921dac5c109e3e4ad6844668dc48` |
+| reviews/installed_wheel_check_2026-09-12/README.md | new | `8ff091a805d3210d41b133e58b11afdc09a51c1ca6afab40142889cf93b74ab0` |
 | reviews/installed_wheel_check_2026-09-12/uploaded_0.2.0.json | new | `d31b81af47cfe32d67f1b76a4261bca49f95bea4ef97f4cdd90a1fdaed9d6fdb` |
 | reviews/installed_wheel_check_2026-09-12/attested_build_0.2.0.json | new | `4246c6be1a12edc1dda8fb14da2498baa3d1a10b7394296273f33577165c8cac` |
 | tests/unicode_pins.py | new | `cf40b8674e8f69a5208093937c38fe5c5d2548f8567ddc7ce66a342220f29393` |
 | reviews/README.md (index; not recorded at release) | — | `33b5a00943d98b1efc106667a8e4f4d8e0ad6285f8b3ad5a326120c7f313e217` |
 
+> Recorded in this table until this correction: `installed_wheel_check.py` `27004bc7f62bb3108b609…`,
+> and no row at all for that directory's `README.md`. **Retracted as this file's identity**:
+> `27004bc7…` is the blob at `9cd0c95` and the hash of the copy that actually ran, kept above as
+> that copy's identity; the file in the tree had already moved on when the row was written, and the
+> row named a hash no file in the tree had.
+
 `reviews/` ships in neither artifact, so correcting this document moves no artifact hash. `README.md`
-and `docs/REFERENCE.md` are a different matter and are covered above.
+and `docs/REFERENCE.md` are a different matter and are covered above. A row in this table is the
+hash of the file **as this commit stores it**; where a published file's bytes differ from the bytes
+some earlier run executed, both hashes are recorded and which is which is said.
 
 ## What did not happen here
 

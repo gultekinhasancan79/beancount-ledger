@@ -9,7 +9,7 @@ register; `bank_recon_001` is the legacy control and must carry no application b
 
 | file | what it is |
 |---|---|
-| `installed_wheel_check.py` | the runner, as executed. Its scoring path is byte-identical to `V15_wheel_check2.py`, the private runner that produced `verify15/wheel_check15b.json` (2026-09-11 21:16:03) — the one 2026-09-11 run that captured contract digests. Neither that runner (sha256 `6cff7704…`, `bb5c3f1a…` LF-normalised) nor that record (sha256 `ae0d524a…`) is published, so the docstring binds the claim to their bytes, and names the row fields — `contract_digest_source`, and `turns` on the legacy branch — that were added and so are not part of it. |
+| `installed_wheel_check.py` | the runner. It is the copy that ran with its module docstring corrected afterwards, and nothing else changed — see "Which bytes ran" below. Its scoring path is byte-identical to `V15_wheel_check2.py`, the private runner that produced `verify15/wheel_check15b.json` (2026-09-11 21:16:03) — the one 2026-09-11 run that captured contract digests. Neither that runner (sha256 `6cff7704…`, `bb5c3f1a…` LF-normalised) nor that record (sha256 `ae0d524a…`) is published, so the docstring binds the claim to their bytes, and names the row fields — `contract_digest_source`, and `turns` on the legacy branch — that were added and so are not part of it. |
 | `uploaded_0.2.0.json` | the run against the wheel **that was uploaded to the Environments Hub** (`1c83e4c5…`). |
 | `attested_build_0.2.0.json` | the run against the wheel the release attestation names (`5a1171c5…`), preserved as the earlier build's evidence. |
 
@@ -56,8 +56,28 @@ whose scoring path this directory's runner matches.
 ## How it was run
 
 The runner refuses to start if the repository is on `sys.path`, which includes its own directory
-once it lives in `reviews/`. It was therefore executed from a byte-identical copy outside the
-repository, against `wheelvenv15`, a throwaway environment holding nothing but the wheel and its
-pinned dependencies — never the repository's own `.venv`.
+once it lives in `reviews/`. It was therefore executed from a copy outside the repository, against a
+throwaway environment holding nothing but the wheel and its pinned dependencies — never the
+repository's own `.venv`.
 
     python installed_wheel_check.py <out.json> --wheel <path to the .whl>
+
+## Which bytes ran
+
+The copy that ran is `run_published_check.py` in the private working area: sha256
+`27004bc7f62bb3108b6090e50d3c6a4f35467ca50819506041f4ec6ec471fbb8`, 12,311 bytes, written
+2026-09-12 21:35:33. It wrote `uploaded_0.2.0.json` at 21:35:57 and `attested_build_0.2.0.json` at
+21:36:37, and both records are published here byte-unchanged (`d31b81af…`, `4246c6be…`).
+
+The file published in this directory hashes to
+`893f2e6f56c5135d81a635af55cb7de91676921dac5c109e3e4ad6844668dc48`. It is that copy with its
+**module docstring** corrected after the runs — first to name `verify15/wheel_check15b.json` in
+place of a record that does not exist and to count the working area's five runs, then to add the
+paragraph you are reading the other half of. Nothing outside the docstring differs: strip the module
+docstring from both files and the remaining bytes are identical, so no imported name, no scripted
+turn, no `env.evaluate()` call and no recorded row field moved. The twelve-of-twelve results here
+are the results of these bytes, up to that docstring.
+
+It was first published in this directory at commit `9cd0c95` hashing to `27004bc7…` — the executed
+bytes exactly. That hash is superseded as this file's identity and retained above as the identity of
+the bytes that produced the two records.
