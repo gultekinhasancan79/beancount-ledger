@@ -654,9 +654,10 @@ never reach a rendered public byte.
 **Why the two builds diverged, measured.** `.gitattributes` declares `* text=auto eol=lf`. In the
 upload checkout `git ls-files --eol` reports `i/lf w/crlf` for that one file — git calls the tree
 clean because it normalises on read, while the file on disk carries CRLF. It is the only file under
-`beancount_ledger/` in that checkout in that state: 281 of its 1,171 tracked files carry CRLF on
-disk, and the other 280 are all under `tests/`, `reviews/` and `outputs/`, none of which ships. A
-wheel is built from the WORKING TREE, so
+`beancount_ledger/` in that checkout in that state. Counted there by parsing `git ls-files --eol`
+field by field: 1,171 tracked files, of which 271 are `i/lf w/crlf` (the rest 860 `i/lf w/lf`, 30
+`i/none w/none`, 10 `i/-text w/-text`). The other 270 CRLF files are all under `reviews/` (233),
+`tests/` (35) and `outputs/` (2), none of which ships. A wheel is built from the WORKING TREE, so
 the build that was uploaded embedded the CRLF copy; the development worktree, whose copy is LF,
 produced the attested one.
 
@@ -682,16 +683,26 @@ finding is that this document identified the wrong build.
   `reviews/installed_wheel_check_2026-09-12/attested_build_0.2.0.json` records the same twelve
   episodes against `5a1171c5…`.
 
-**A wheel built from THIS commit will hash to neither.** The corrections recorded below edit
-`README.md`, which `pyproject.toml` embeds in `dist-info/METADATA`. That is expected, and it is not a
-re-release: 0.2.0 on the Hub stays the artifact identified above.
+**A wheel built from THIS commit will hash to neither, and it would differ in a runtime member, not
+only in packaging.** The corrections recorded below edit `README.md`, which `pyproject.toml` embeds
+in `dist-info/METADATA`; they also edit `beancount_ledger/beancount_ledger.py` (+5/-1, the serving
+door's comment, disclosed under the corrections below), and that file is one of the wheel's 61
+runtime members. A build from this commit would therefore differ from the uploaded artifact in three
+members — `METADATA`, that runtime member, and the `RECORD` that hashes both — so the divergence is
+not confined to packaging, as it is between the uploaded wheel and the attested build. That is
+expected, and it is not a re-release: 0.2.0 on the Hub stays the artifact identified above. The runtime edit is a
+comment: no served byte moves, as recorded below.
 
 ## The installed-wheel evidence, published with its attribution
 
 `reviews/installed_wheel_check_2026-09-12/` now holds the runner and its records.
 
-- `installed_wheel_check.py` — the runner. Its scoring path is byte-identical to the one that
-  produced the 2026-09-11 result; its docstring declares what was added for publication.
+- `installed_wheel_check.py` — the runner. Its scoring path is byte-identical to the runner that
+  produced the one 2026-09-11 run that captured contract digests, `verify15/wheel_check15b.json`
+  (written 21:16:03). That runner (`V15_wheel_check2.py`, sha256 `6cff7704…`, `bb5c3f1a…` with line
+  endings normalised to LF) and that record (sha256 `ae0d524a…`) are in the private working area and
+  are **not** published, so the docstring binds the claim to those bytes rather than to a filename,
+  and names the two row fields that are not part of it.
 - `uploaded_0.2.0.json`, `attested_build_0.2.0.json` — twelve of twelve each, one per wheel.
 
 **The tested artifact is bound, not asserted.** `--wheel` hashes the wheel, its RECORD and its
@@ -701,14 +712,18 @@ is that comparison having passed over all 61 members.
 
 **Captured is distinguished from declared.** Every row's `contract_digest` is captured from that
 episode's own `piv_episode_contract_digest` state column, and each row says so in its own
-`contract_digest_source` field. Correcting an earlier impression this document could have left:
-three `wheel_check*.json` records made on 2026-09-11 in the private working area each hold twelve
-complete successes, and **those twelve successes stand** — but their runner read
+`contract_digest_source` field. Correcting an earlier impression this document could have left, and
+counted here rather than quoted: the private working area holds **five** `wheel_check*.json`
+records, all made on 2026-09-11, each with twelve complete successes, and **those twelve successes
+stand**. In **four** of them — `wheel_check.json` (20:27:28), `wheel_check2.json` (20:46:31),
+`wheel_check3.json` (20:51:40) and `verify15/wheel_check15.json` (21:14:27) — the runner read
 `episode_contract_digest` from the top level of the publication manifest, where the field does not
-live, and recorded `contract_digest: null` twelve times. For those three runs the contract digests
-were **declared, never captured**. They are not republished as though they had been recorded. The
-`b11bc1ac…` / `e8b8753d…` column of the 2026-09-11 table above is reproduced by the two bound
-records published here, which did capture it.
+live, and recorded `contract_digest: null` twelve times each. For those four runs the contract
+digests were **declared, never captured**, and they are not republished as though they had been
+recorded. The fifth, `verify15/wheel_check15b.json` (21:16:03), did capture `b11bc1ac…` /
+`e8b8753d…`; it is the run whose scoring path the published runner matches. The `b11bc1ac…` /
+`e8b8753d…` column of the 2026-09-11 table above is reproduced by the two bound records published
+here, which also captured it.
 
 ## Where the native CI matrix's run evidence is
 

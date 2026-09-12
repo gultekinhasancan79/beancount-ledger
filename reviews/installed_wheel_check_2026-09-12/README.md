@@ -9,7 +9,7 @@ register; `bank_recon_001` is the legacy control and must carry no application b
 
 | file | what it is |
 |---|---|
-| `installed_wheel_check.py` | the runner, as executed. Its docstring declares exactly what was added for publication over the runner that produced the 2026-09-11 record. |
+| `installed_wheel_check.py` | the runner, as executed. Its scoring path is byte-identical to `V15_wheel_check2.py`, the private runner that produced `verify15/wheel_check15b.json` (2026-09-11 21:16:03) — the one 2026-09-11 run that captured contract digests. Neither that runner (sha256 `6cff7704…`, `bb5c3f1a…` LF-normalised) nor that record (sha256 `ae0d524a…`) is published, so the docstring binds the claim to their bytes, and names the row fields — `contract_digest_source`, and `turns` on the legacy branch — that were added and so are not part of it. |
 | `uploaded_0.2.0.json` | the run against the wheel **that was uploaded to the Environments Hub** (`1c83e4c5…`). |
 | `attested_build_0.2.0.json` | the run against the wheel the release attestation names (`5a1171c5…`), preserved as the earlier build's evidence. |
 
@@ -42,12 +42,16 @@ Every row's `contract_digest` is **captured** from that episode's own
 `piv_episode_contract_digest` state column, and every row says so in its own
 `contract_digest_source` field. Nothing is copied from a module constant.
 
-That distinction is the reason this directory exists. Three earlier `wheel_check*.json` records in
-the private working area each hold twelve complete successes — the twelve successes stand — but
-their runner read `episode_contract_digest` from the top level of the publication manifest, where
-the field does not live, and so recorded `contract_digest: null` twelve times. The contract digests
-printed beside those runs were **declared** values, not values that run captured. They are not
-published here as though they had been recorded.
+That distinction is the reason this directory exists. The private working area holds **five**
+`wheel_check*.json` records, all made on 2026-09-11, each with twelve complete successes — the
+twelve successes stand. **Four** of them — `wheel_check.json` (20:27:28), `wheel_check2.json`
+(20:46:31), `wheel_check3.json` (20:51:40) and `verify15/wheel_check15.json` (21:14:27) — came from
+a runner that read `episode_contract_digest` from the top level of the publication manifest, where
+the field does not live, and so recorded `contract_digest: null` twelve times each. The contract
+digests printed beside those four runs were **declared** values, not values those runs captured.
+They are not published here as though they had been recorded. The fifth,
+`verify15/wheel_check15b.json` (21:16:03), did capture `b11bc1ac…` / `e8b8753d…`, and is the run
+whose scoring path this directory's runner matches.
 
 ## How it was run
 

@@ -6,10 +6,23 @@ repository asserted absent from sys.path.  Offline: the client is scripted,
 no model or API call is made.
 
 PUBLISHED FORM.  The scoring path below -- the scripted turns, the golden
-register construction, the `env.evaluate()` call, the `ok` predicate and
-every recorded field of a row -- is byte-identical to the runner that
-produced `attested_build_2026-09-11.json`.  What was ADDED for publication,
-and is declared here rather than left for a reader to discover:
+register construction, the `env.evaluate()` call and the `ok` predicate --
+is byte-identical to the runner that produced the single 2026-09-11 run that
+CAPTURED contract digests: `verify15/wheel_check15b.json`, written 21:16:03,
+twelve rows, digests b11bc1ac... / e8b8753d...
+
+That runner and that record are in the private working area and are NOT
+published, so the claim is bound to their bytes and not to their filenames:
+
+    runner  V15_wheel_check2.py   sha256 6cff7704...   8,052 bytes
+                                  sha256 bb5c3f1a...   with CRLF -> LF
+    record  wheel_check15b.json   sha256 ae0d524a...   4,642 bytes
+
+Row FIELDS are OUTSIDE that byte-identical path, and are named here so that
+no reader has to discover them: `contract_digest_source` was added to both
+row branches, and `turns` to the legacy-control branch.  What else was ADDED
+for publication, and is declared here rather than left for a reader to
+discover:
 
   * `--wheel`, which BINDS the tested artifact.  The wheel file is hashed,
     its RECORD is hashed, and every `beancount_ledger/` member of it is
@@ -23,11 +36,13 @@ and is declared here rather than left for a reader to discover:
     read from a module constant, so a row's digest is what that episode
     reported and not what the package declares it ought to be.
 
-The earlier `wheel_check*.json` records in the working area read
-`episode_contract_digest` from the top level of the publication manifest,
-where the field does not live, and so recorded `contract_digest: null`
-twelve times over.  Their twelve complete successes stand; their contract
-digests were never captured, and the attestation says so.
+Four of the five 2026-09-11 `wheel_check*.json` records in the working area
+-- wheel_check.json, wheel_check2.json, wheel_check3.json and
+verify15/wheel_check15.json -- read `episode_contract_digest` from the top
+level of the publication manifest, where the field does not live, and so
+recorded `contract_digest: null` twelve times each.  Their twelve complete
+successes stand; their contract digests were never captured, and the
+attestation says so.  The fifth is wheel_check15b.json, named above.
 
 Usage:  python installed_wheel_check.py <out.json> --wheel <path to .whl>
 """
