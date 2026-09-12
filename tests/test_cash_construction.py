@@ -10,6 +10,17 @@ Round 16, decision 4. What is witnessed here:
     the eleven public files, the private truth register, the golden ledger
     and the golden register for each variant, inside the bounded attempt
     loop, and the census of attempts is retained;
+  * the ADMISSION GATE is in the construction path, not in this file: the
+    merged-trap guard, both goldens through the actual engines and the
+    shipped world checker are called on every rendered variant of every
+    attempt, each classified as decision 3 classifies it, so what passes
+    below is a property of the path rather than of the one draw this file
+    takes — witnessed on the group whose two receipts drew one amount, which
+    used to be admitted with a golden scoring zero and is now refused into
+    the census and redrawn;
+  * the public task id is twelve keyed digits: it carries no variant letter,
+    ties no task to its sibling, and the variant holding the positive
+    condition is a keyed coin rather than always "a";
   * the pair differs in exactly ONE declared authored fact, every other
     difference is a consequence of it, and the files that move are only the
     ones that fact reaches — for the advice-residue stratum that is a single
@@ -21,8 +32,8 @@ Round 16, decision 4. What is witnessed here:
     measurements are structural: no field of a `Measurement` is a difficulty,
     and neither module claims one;
   * manufactured difficulty is VALIDATED absent, with a NEGATIVE CONTROL for
-    each of the eight conditions — a check that cannot speak is a check that
-    proves nothing;
+    each of the eight conditions and for BOTH halves of the first — a check
+    that cannot speak is a check that proves nothing;
   * the public fold equals the private truth, and both goldens score complete
     through the ACTUAL `candidate/1`, `application/1` and `composite/1`;
   * no binding gate-(o) baseline reaches the truth and the 256-reading bound
@@ -40,7 +51,9 @@ Round 16, decision 4. What is witnessed here:
 from __future__ import annotations
 
 import dataclasses
+import re
 import sys
+import types
 from decimal import Decimal as D
 from pathlib import Path
 
@@ -49,7 +62,9 @@ for _path in (str(ROOT), str(ROOT / "tests")):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from beancount_ledger import beancount_ledger as ENV  # noqa: E402
 from beancount_ledger.candidate import application as APP  # noqa: E402
+from beancount_ledger.candidate import canonical as CANONICAL  # noqa: E402
 from beancount_ledger.candidate import committed as K  # noqa: E402
 from beancount_ledger.candidate import composite as X  # noqa: E402
 from beancount_ledger.graph import cash_application as CA  # noqa: E402
@@ -71,6 +86,8 @@ from beancount_ledger.graph.cash_split import (  # noqa: E402
     StructuralAliasError,
     StructureLedger,
 )
+from beancount_ledger.candidate.normalise import parse_once  # noqa: E402
+from beancount_ledger.candidate.schema import ParsedTransaction  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.schema import AppliedReceipt, Sale  # noqa: E402
 from beancount_ledger.graph.worlds import CASH_APPLICATION_REGISTRY, REGISTRY  # noqa: E402
@@ -81,6 +98,14 @@ from world_checks import check_world_task  # noqa: E402
 #: never depends on — or touches — the evaluator's provisioned key.
 SECRET = b"cash-application-phase-b-test-secret-0123456789"
 OTHER_SECRET = b"a-quite-different-phase-b-test-secret-98765432"
+
+#: The secret under which the adversarial review found the group that broke
+#: this build: `scan-pop-2 / cr-brindlecote #1` drew two receipts at one
+#: amount, so its two planted repairs carried the same two postings, the
+#: scorer labelled both repairs merged entries, and the construction path
+#: ADMITTED the pair with a golden ledger scoring zero. Kept here as a named
+#: regression witness rather than as a story in a commit message.
+COUNTEREXAMPLE_SECRET = b"phase-b-repair-scan-secret-000000000000000001"
 
 POPULATION = "phase-b-suite"
 ONE, ZERO = D("1.000000"), D("0.000000")
@@ -205,10 +230,10 @@ def test_every_family_renders_a_pair_with_the_four_artifacts():
                 problems.append(f"{group.family}/{name}: no private truth register")
             if not variant.golden_ledger.strip() or not variant.golden_register.strip():
                 problems.append(f"{group.family}/{name}: a golden artifact is empty")
-            stem = CC.public_stem(parent_seed(group.identity, SECRET))
-            if variant.task.id != f"cash_application_g{stem}{name}":
+            stem = CC.public_task_stem(parent_seed(group.identity, SECRET), name)
+            if variant.task.id != f"cash_application_g{stem}":
                 problems.append(f"{group.family}/{name}: the public id is {variant.task.id}, not the keyed "
-                                f"stem's cash_application_g{stem}{name}")
+                                f"per-variant stem's cash_application_g{stem}")
             if group.identity.digest()[:8] in variant.task.id or group.identity.digest()[:8] in variant.world.id:
                 problems.append(f"{group.family}/{name}: a public name carries the identity digest, which is "
                                 f"an unkeyed function of an enumerable selector")
@@ -286,12 +311,48 @@ def test_decision_fours_bounds_hold_on_every_rendered_variant():
                             f"no invoice is settled across two evidenced events, so the month exercises no "
                             f"customer-specific balance at all")
     # A bound that cannot fail is not a bound: move one and watch it speak.
+    # EVERY field of the table is moved, the period and the currency
+    # included — those two were dataclass defaults `measure()` never passed,
+    # so their row could not fire on anything the generator produced and the
+    # probe that was meant to catch that skipped them.
     sample = pair("fc-sedgewick").variant("a").measurement
     for field, value in (("invoices", 20), ("receipts", 9), ("dependency_depth", 7),
-                         ("golden_register_bytes", 99_000), ("unpaid_in_period_invoices", 0),
-                         ("max_allocations_per_receipt", 9), ("currency", "EUR")):
+                         ("golden_register_bytes", 99_000), ("golden_ledger_bytes", 99_000),
+                         ("golden_register_lines", 9_000), ("unpaid_in_period_invoices", 0),
+                         ("customers", 9), ("invoices_raised_in_period", 9), ("credit_notes", 2),
+                         ("ledger_plants", 3), ("max_allocations_per_credit_note", 9),
+                         ("max_allocations_per_receipt", 9), ("currency", "EUR"), ("months", 2)):
         if not PROFILE.bound_problems(dataclasses.replace(sample, **{field: value})):
             problems.append(f"bounded-v1 admits a variant whose {field} is {value!r}")
+    # "One calendar month" is a claim about the ENDS of the span, not only
+    # about how many months it touches: a window that runs from the 2nd to
+    # the 1st of the next month spans the right length and is not a month.
+    first, last = sample.period_start, sample.period_end
+    drifted = dataclasses.replace(sample, period_start=first[:-2] + "02", period_end=last[:-2] + "28")
+    if not PROFILE.bound_problems(drifted):
+        problems.append(f"bounded-v1 admits a period of {drifted.period_start}..{drifted.period_end}, which "
+                        f"touches one calendar month without being one")
+    # and the measured fields really are measured: they come off the
+    # rendered pack, so tampering with the pack moves them.
+    sample_variant = pair("fc-sedgewick").variant("a")
+    if PROFILE.rendered_period(sample_variant.public_files) != (first, last):
+        problems.append("the measured period is not the one manifest.md states")
+    if PROFILE.rendered_currency(sample_variant.golden_ledger.replace("USD", "EUR", 1)) == "USD":
+        problems.append("the measured currency does not read the rendered golden ledger")
+    # The two SHIPPED limits this profile applies are the shipped ones, not
+    # numbers that match them today. A copy that agrees on the day it is
+    # typed is a copy that can stop agreeing without anything failing, so the
+    # source is checked for the re-declaration as well as the value.
+    if PROFILE.TEXT_MAX_CODEPOINTS != CANONICAL.TEXT_MAX_CODEPOINTS:
+        problems.append(f"the narration cap is {PROFILE.TEXT_MAX_CODEPOINTS}, not the shipped "
+                        f"{CANONICAL.TEXT_MAX_CODEPOINTS}")
+    if PROFILE.application_envelope_lines() != ENV.APPLICATION_ENVELOPE_LINES:
+        problems.append(f"the register line limit is {PROFILE.application_envelope_lines()}, not the delivery "
+                        f"envelope's {ENV.APPLICATION_ENVELOPE_LINES}")
+    source = Path(PROFILE.__file__).read_text(encoding="utf-8")
+    for name in ("TEXT_MAX_CODEPOINTS", "APPLICATION_MAX_LINES"):
+        if re.search(rf"^{name}\s*=\s*\d", source, re.MULTILINE):
+            problems.append(f"cash_profile re-declares {name} as a literal instead of reading the shipped one")
     return check("every rendered variant satisfies decision 4's whole table — period, currency, customers, "
                  "invoice universe, in-period invoices, receipts, credit notes, plants, allocations, "
                  "dependency depth and both golden envelopes — keeps the retained accounting exclusions, "
@@ -387,10 +448,30 @@ def test_each_manufactured_difficulty_check_can_actually_speak():
     def spoke(condition, *, world=world, task=task, inputs=inputs, public=public) -> bool:
         return bool(PROFILE._CHECKS[condition](world, task, inputs, public))
 
-    # missing_authority: the policy loses the section a rule cites.
+    # missing_authority, BOTH halves. The policy half: the policy loses the
+    # section a rule cites.
     stripped = dataclasses.replace(world, policy_text=world.policy_text.replace("## Cash application", "## Cash"))
     if not spoke("missing_authority", world=stripped):
         problems.append("missing_authority did not speak when the policy lost the section its rule cites")
+    # The rung half. It reads the fold's per-receipt authority chain, and no
+    # edit to a rendered pack produces a fold that applies cash by a rule the
+    # policy does not publish — so the application itself is tampered with,
+    # in the shipped type, and the check is watched refusing it. Without this
+    # the half has never been seen to fire on anything.
+    kw = dict(bank_account=world.bank_account, period_start=task.period.start, period_end=task.period.end)
+    honest = CA.fold(public, **kw)
+    if PROFILE.authority_problems(honest, world):
+        problems.append("the rung half refuses an honest fold of a rendered pack")
+    for rungs, why in ((("none",), "applied by no rung at all"), (("guesswork",), "applied by an unpublished rung"),
+                       (("advice", "customer_instruction"), "applied partly by an unpublished rung")):
+        receipts = list(honest.receipts)
+        paying = next(index for index, r in enumerate(receipts) if r.amount > 0)
+        receipts[paying] = dataclasses.replace(receipts[paying], rungs=rungs)
+        tampered = dataclasses.replace(honest, receipts=tuple(receipts))
+        if not PROFILE.authority_problems(tampered, world):
+            problems.append(f"missing_authority did not speak on a receipt {why}: rungs={rungs}")
+    if set(PROFILE.PUBLISHED_RUNGS) != {"advice", "reference", "oldest_first"}:
+        problems.append(f"the published rungs are {PROFILE.PUBLISHED_RUNGS}, not the three policy.md states")
 
     # ambiguous_identity: two customer-credit rows with one key.
     rows = public["bank_statement.csv"].splitlines()
@@ -461,9 +542,10 @@ def test_each_manufactured_difficulty_check_can_actually_speak():
         problems.append("budget_consuming_padding did not speak on a row no authored fact produced")
 
     return check("each of the eight manufactured-difficulty checks refuses a pack that really carries its "
-                 "condition — a missing authority, a duplicated payment identity, a deduction with no stated "
-                 "reason, a withheld register row, a second tax rate, an instructing narration, a truncated "
-                 "row and a row no fact produced", not problems, "\n".join(problems))
+                 "condition — a missing policy section AND an application decided by an unpublished rung, a "
+                 "duplicated payment identity, a deduction with no stated reason, a withheld register row, a "
+                 "second tax rate, an instructing narration, a truncated row and a row no fact produced",
+                 not problems, "\n".join(problems))
 
 
 # --------------------------------------------------------------------------
@@ -508,6 +590,193 @@ def test_the_public_fold_equals_the_truth_and_both_goldens_score_complete():
                  "bytes, the golden register IS that fold's document, and both goldens score complete through "
                  "the actual candidate/1, application/1 and composite/1",
                  not problems, "\n".join(problems))
+
+
+def test_the_admission_gate_runs_inside_the_construction_path():
+    """Decision 3's acceptance conditions have to be applied by the path that
+    ADMITS a pair, not by a suite that draws one secret at one index
+    afterwards. Three things are witnessed: the gate is really called on
+    every rendered variant, each of the three parts is classified as decision
+    3 classifies it, and the real counterexample that motivated this — two
+    receipts drawn at one amount, so their two planted repairs carried the
+    same two postings and the golden scored zero — is now refused by the draw
+    rather than admitted."""
+    problems = []
+    ident = CC.identity_of(POPULATION, "fc-sedgewick", 0)
+
+    # (1) each part is CALLED, and a problem from it lands in the class
+    # decision 3 puts it in: the merged trap is a condition of the draw and
+    # is retried, a golden failing its scorer once that guard is silent is a
+    # defect, and every other gate is a condition of the candidate.
+    cases = (("posting_collision_problems", lambda *a, **k: ["a planted collision"], CC.ConstructionRefused),
+             ("golden_score_problems", lambda *a, **k: ["L=0"], CC.ConstructionDefect),
+             ("world_checker_problems", lambda *a, **k: ["a gate spoke"], CC.ConstructionRefused))
+    for name, stub, expected in cases:
+        original = getattr(CC.ADMIT, name)
+        try:
+            setattr(CC.ADMIT, name, stub)
+            if raises(expected, CC.construct, ident, 0, BOUNDED_V1, SECRET) is None:
+                problems.append(f"a problem from {name} did not raise {expected.__name__}; the construction "
+                                f"path either does not call it or does not classify it")
+        finally:
+            setattr(CC.ADMIT, name, original)
+    # a battery that cannot be located admits nothing
+    original = CC.ADMIT.world_checker_problems
+
+    def unavailable(*a, **k):
+        raise CC.ADMIT.AdmissionUnavailable("not here")
+    try:
+        CC.ADMIT.world_checker_problems = unavailable
+        if raises(CC.ConstructionDefect, CC.construct, ident, 0, BOUNDED_V1, SECRET) is None:
+            problems.append("a pair was admitted while the admission battery could not be located")
+    finally:
+        CC.ADMIT.world_checker_problems = original
+
+    # (2) the collision guard speaks on inputs that really carry a collision,
+    # in each of its three readings, and is silent on an admitted variant.
+    variant = pair("fc-sedgewick").variant("a")
+    if CC.ADMIT.posting_collision_problems(variant.inputs):
+        problems.append("the collision guard speaks on an admitted variant")
+    planted = list(variant.inputs.planted)
+    if len(planted) != 2:
+        problems.append(f"the sample carries {len(planted)} planted items, not two")
+    else:
+        # `ContractInputs` refuses to be rebuilt by hand — only
+        # `derive_contract` mints one — so the guard is handed the three
+        # fields it reads, with the variant's own planted specs and its own
+        # rendered ledgers. The second plant is given the first's shape,
+        # which is exactly what two receipts drawn at one amount produce.
+        twinned = dataclasses.replace(planted[1], required=planted[0].required)
+        collided = types.SimpleNamespace(planted=(planted[0], twinned),
+                                         original_text=variant.inputs.original_text,
+                                         golden_text=variant.inputs.golden_text)
+        spoken = CC.ADMIT.posting_collision_problems(collided)
+        if not any("share the posting" in line for line in spoken):
+            problems.append(f"the collision guard did not see two planted items with one shape: {spoken}")
+        # and the pre-existing-entry reading: a plant whose shape is an
+        # entry the opening ledger already carries, alongside another plant
+        # that shares one of its legs.
+        opening = next((txn for txn in parse_once(variant.inputs.original_text).submission.directives
+                        if isinstance(txn, ParsedTransaction) and len(txn.postings) >= 2), None)
+        if opening is None:
+            problems.append("the opening ledger carries no transaction to test the pre-existing reading on")
+        else:
+            shape = tuple((p.account, f"{p.amount}") for p in opening.postings)
+            # The two plants take one leg each of that entry and share
+            # nothing with each other, so only the pre-existing reading can
+            # speak: one untouched entry, two planted shapes.
+            borrowed = (dataclasses.replace(planted[0], required=(shape[0], ("Expenses:BankFees", "1.11"))),
+                        dataclasses.replace(planted[1], required=(shape[1], ("Expenses:BankFees", "2.22"))))
+            pre_existing = types.SimpleNamespace(planted=borrowed,
+                                                original_text=variant.inputs.original_text,
+                                                golden_text=variant.inputs.golden_text)
+            if not any("merged entry and block" in line
+                       for line in CC.ADMIT.posting_collision_problems(pre_existing)):
+                problems.append("the collision guard did not see a pre-existing entry sharing a posting with "
+                                "two planted items")
+
+    # (3) the counterexample. This group's attempt 0 draws two receipts at
+    # the same amount; it used to be ADMITTED with a golden scoring zero.
+    witness = CC.identity_of("scan-pop-2", "cr-brindlecote", 1)
+    group = CC.candidate_pair(witness, secret=COUNTEREXAMPLE_SECRET)
+    refusals = [record for record in group.census if record.outcome == "refused"]
+    if not any("share the posting" in record.reason for record in refusals):
+        problems.append(f"the counterexample draw was not refused for its posting collision; the census reads "
+                        f"{[(r.ordinal, r.outcome, r.reason[:80]) for r in group.census]}")
+    if group.attempt == 0:
+        problems.append("the counterexample group was accepted on the attempt that carries the collision")
+    for name in VARIANTS:
+        accepted = group.variant(name)
+        env = K.load_contract(accepted.inputs)
+        from world_checks import score_text
+        L, failure = score_text(accepted.golden_ledger, env, f"counterexample/{name}")
+        if failure or L.total != ONE or not L.complete:
+            problems.append(f"counterexample/{name}: the redrawn golden still does not score: "
+                            f"{failure or (L.total, L.complete)}")
+    return check("the admission gate runs inside the construction path rather than in this file: each of its "
+                 "three parts is called on every rendered variant and classified as decision 3 classifies it, "
+                 "an unlocatable battery admits nothing, the collision guard speaks on a real collision and is "
+                 "silent otherwise, and the counterexample group now refuses that draw and redraws a pair whose "
+                 "golden scores", not problems, "\n".join(problems))
+
+
+def test_the_public_id_says_nothing_about_polarity_or_the_pair():
+    """Decision 4 makes both polarities appear so that "always report a
+    residue" is unlearnable. An id that announces the polarity replaces that
+    habit with an easier one, and the id is on the dataset row, in the prompt
+    and in every tool reply. So: the id is twelve keyed digits, the two
+    members of a pair share nothing in it, and over a population the variant
+    letter is uncorrelated with the polarity."""
+    problems = []
+    seen = {True: 0, False: 0}
+    for index in (0, 1):
+        for group in every_pair(index):
+            ids = {}
+            for name in VARIANTS:
+                variant = group.variant(name)
+                ids[name] = variant.task.id
+                body = variant.task.id.removeprefix("cash_application_g")
+                if not body.isdigit() or len(body) != 12:
+                    problems.append(f"{group.family}/{name}: the id {variant.task.id} is not the prefix and "
+                                    f"twelve digits")
+                if body[-1] in VARIANTS or variant.task.id.endswith(name):
+                    problems.append(f"{group.family}/{name}: the id {variant.task.id} carries the variant letter")
+            if len(set(ids.values())) != 2:
+                problems.append(f"{group.family}: both variants claim the id {ids}")
+            a, b = ids["a"], ids["b"]
+            if sum(1 for x, y in zip(a, b) if x != y) < 2:
+                problems.append(f"{group.family}: {a} and {b} differ in one character, so the id says which "
+                                f"other task is its pair")
+            seen[PROFILE.polarity_of(group.mechanism, group.variant("a").measurement)] += 1
+    if set(seen.values()) == {0} or 0 in seen.values():
+        problems.append(f"over {sum(seen.values())} pairs variant 'a' carried the positive condition {seen}: "
+                        f"the variant axis still announces the polarity, and 'report a residue iff my id is the "
+                        f"a of its pair' is a winning habit")
+    # and the assignment is keyed: another evaluator secret moves it
+    family = next(shape.family for shape in CC.SHAPES if shape.mechanism == "advice_residue")
+    here = PROFILE.polarity_of("advice_residue", pair(family).variant("a").measurement)
+    elsewhere = [PROFILE.polarity_of("advice_residue",
+                                     pair(shape.family, 0, OTHER_SECRET).variant("a").measurement)
+                 for shape in CC.SHAPES if shape.mechanism == "advice_residue"]
+    if len(set(elsewhere)) != 2 and set(elsewhere) == {here}:
+        problems.append("under another secret every advice-residue pair put the same polarity on 'a'")
+    return check("the public task id is twelve keyed digits and nothing else: it carries no variant letter, "
+                 "the two members of a pair share no structure in it, and over the population the variant that "
+                 "holds the positive condition is a keyed coin rather than always 'a'",
+                 not problems, "\n".join(problems))
+
+
+def test_the_construction_path_admits_under_another_secret_and_other_indices():
+    """The point of moving the gate into the path is that admission stops
+    being a property of one draw. Every pair below is rendered by the same
+    `candidate_pair` and is therefore already past the whole battery — the
+    world checker, both goldens through the actual engines, decision 4's
+    table and the manufactured-difficulty validation — under a secret and at
+    company-month indices the rest of this file never uses."""
+    problems = []
+    drawn = 0
+    for shape in CC.SHAPES[::3]:                      # one family per stratum plus two, across the roster
+        for index in (2, 3):
+            ident = CC.identity_of("phase-b-second-population", shape.family, index)
+            try:
+                group = CC.candidate_pair(ident, secret=OTHER_SECRET)
+            except CC.ConstructionRefused as exc:
+                problems.append(f"{shape.family}#{index}: exhausted: {exc}")
+                continue
+            drawn += 1
+            for name in VARIANTS:
+                variant = group.variant(name)
+                problems += [f"{shape.family}#{index}/{name}: {line}"
+                             for line in PROFILE.bound_problems(variant.measurement)]
+                if CC.ADMIT.posting_collision_problems(variant.inputs):
+                    problems.append(f"{shape.family}#{index}/{name}: admitted with a posting collision")
+                if CC.ADMIT.golden_score_problems(variant.inputs, variant.golden_register):
+                    problems.append(f"{shape.family}#{index}/{name}: admitted with a golden that does not score")
+    if drawn < 10:
+        problems.append(f"only {drawn} groups were drawn; the sweep is meant to leave the suite's one draw")
+    return check(f"{drawn} further parent groups render under a second evaluator secret, a second population "
+                 f"and company-month indices this file uses nowhere else, each already past the whole "
+                 f"admission battery the construction path runs", not problems, "\n".join(problems))
 
 
 def test_no_binding_baseline_reaches_the_truth_and_the_reading_bound_holds():
@@ -620,9 +889,45 @@ def test_the_attempt_loop_is_bounded_and_exhaustion_is_a_named_failed_group():
     group = pair("ar-tenterhook")
     if len(group.variants) != 2:
         problems.append("a pair was admitted with one variant")
+    # Decision 3: "Unexpected exceptions ... are defects to investigate, not
+    # opportunities to keep drawing until the defect disappears." The line
+    # between the two is the except tuple in `_render`, so it is measured:
+    # a DerivationError is an expected construction failure and is redrawn
+    # to exhaustion; a TypeError from inside the same call is not caught at
+    # all and reaches the caller after ONE attempt.
+    original = CC.derive_contract
+    for injected, expected, redrawn in ((CC.DerivationError("the plan refuses"), CC.ConstructionRefused, True),
+                                        (CC.ProjectionError("the projector refuses"), CC.ConstructionRefused, True),
+                                        (TypeError("an unexpected exception"), TypeError, False),
+                                        (ValueError("an unexpected value"), ValueError, False)):
+        calls = []
+
+        def boom(world, task, _injected=injected, _calls=calls):
+            _calls.append(task.id)
+            raise _injected
+        try:
+            CC.derive_contract = boom
+            message = raises(expected, CC.candidate_pair, CC.identity_of(POPULATION, "fc-sedgewick", 0),
+                             BOUNDED_V1, SECRET)
+        finally:
+            CC.derive_contract = original
+        name = type(injected).__name__
+        if message is None or message.startswith("!!"):
+            problems.append(f"a {name} from the derivation did not reach the caller as {expected.__name__}: "
+                            f"{message}")
+        elif redrawn and "EXHAUSTED" not in message:
+            problems.append(f"a {name} did not exhaust the group: {message[:120]}")
+        if redrawn and len(calls) < 2:
+            problems.append(f"a {name} — an EXPECTED construction failure — stopped after {len(calls)} "
+                            f"attempts instead of being redrawn inside the bounded loop")
+        if not redrawn and len(calls) != 1:
+            problems.append(f"a {name} produced {len(calls)} derivation calls, not 1: an unexpected exception "
+                            f"must reach the caller, not be reclassified as expected and drawn past")
     return check(f"the attempt loop is bounded at {MAX_LAYOUT_ATTEMPTS} deterministic attempts per parent "
-                 f"pair, an ordinal outside that range is refused, and exhaustion raises a NAMED failed group "
-                 f"rather than advancing to a replacement selector", not problems, "\n".join(problems))
+                 f"pair, an ordinal outside that range is refused, exhaustion raises a NAMED failed group "
+                 f"rather than advancing to a replacement selector, and an unexpected exception from the "
+                 f"derivation reaches the caller after one attempt instead of being redrawn past",
+                 not problems, "\n".join(problems))
 
 
 # --------------------------------------------------------------------------
@@ -751,6 +1056,9 @@ TESTS = [
     test_manufactured_difficulty_is_absent_on_every_variant,
     test_each_manufactured_difficulty_check_can_actually_speak,
     test_the_public_fold_equals_the_truth_and_both_goldens_score_complete,
+    test_the_admission_gate_runs_inside_the_construction_path,
+    test_the_public_id_says_nothing_about_polarity_or_the_pair,
+    test_the_construction_path_admits_under_another_secret_and_other_indices,
     test_no_binding_baseline_reaches_the_truth_and_the_reading_bound_holds,
     test_construction_is_deterministic_in_the_identity_and_the_secret,
     test_no_private_selector_or_seed_reaches_the_agent_surface,

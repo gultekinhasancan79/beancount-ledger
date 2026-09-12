@@ -57,15 +57,21 @@ SUITES = [
                                "the construction path that renders a candidate pair. Fifteen sealed families "
                                "and fifteen recipes agree in both directions; every family renders a pair from "
                                "its identity — eleven public files, a truth register, a golden ledger and a "
-                               "golden register per variant — inside the 64-attempt loop and past every gate "
-                               "the world checker runs; the pair differs in exactly one declared authored fact "
-                               "and only the files that fact reaches move; both polarities appear in every "
-                               "stratum; decision 4's table holds and each bound refuses a variant that breaks "
-                               "it; manufactured difficulty is validated absent with a negative control per "
-                               "condition; the public fold equals the truth and both goldens score complete "
-                               "through the actual engines; no binding baseline reaches any truth inside the "
-                               "256-reading bound; construction is keyed and leaks no private selector; "
-                               "exhaustion is a named failed group; the authored eleven stay outside"),
+                               "golden register per variant — inside the 64-attempt loop; the ADMISSION GATE "
+                               "runs in that path rather than here — the merged-trap guard, both goldens "
+                               "through the actual candidate/1, application/1 and composite/1, and the shipped "
+                               "world checker, on every rendered variant of every attempt, each classified as "
+                               "decision 3 classifies it — witnessed on the counterexample group that used to "
+                               "be admitted with a golden scoring zero, and re-drawn under a second secret, a "
+                               "second population and further company-month indices; the pair differs in "
+                               "exactly one declared authored fact and only the files that fact reaches move; "
+                               "both polarities appear in every stratum and the public id says which nowhere; "
+                               "decision 4's table holds, every bound including the measured period and "
+                               "currency refuses a variant that breaks it; manufactured difficulty is "
+                               "validated absent with a negative control per condition; no binding baseline "
+                               "reaches any truth inside the 256-reading bound; construction is keyed and "
+                               "leaks no private selector; exhaustion is a named failed group; the authored "
+                               "eleven stay outside"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),

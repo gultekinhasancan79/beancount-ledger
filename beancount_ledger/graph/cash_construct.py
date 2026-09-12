@@ -28,7 +28,11 @@ Every consequence of that one fact — the statement's closing balance, the
 ledger, the register, both goldens, the as-found amount of a transposed
 plant — is DERIVED by re-folding, never authored twice. `DeclaredFact` names
 the fact and its two values, so the contrast is a statement the construction
-makes and a test can check rather than a claim in a docstring.
+makes and a test can check rather than a claim in a docstring. WHICH variant
+gets the positive condition is a keyed coin of the parent seed, and the two
+public ids are two independent keyed draws (`public_task_stem`): neither the
+id nor the variant letter says whether this month carries a residue, and
+neither says which other task is its sibling.
 
 LEGITIMATE COMPLEXITY, AND WHAT IS FORBIDDEN. The work in these months is
 maintaining customer-specific balances across evidenced events and applying
@@ -38,6 +42,20 @@ checkable witness in the facts, because both events name the invoice in a
 public row. `cash_profile.difficulty_problems` validates the ABSENCE of the
 eight manufactured-difficulty conditions against the rendered bytes;
 `construct` calls it and refuses the attempt when it speaks.
+
+THE ADMISSION GATE IS IN THIS PATH, NOT IN A SUITE. `_render` finishes by
+calling all three entry points of `cash_admit`: the merged-trap guard over
+the planted shapes and both ledgers, both goldens through the actual
+`candidate/1`, `application/1` and `composite/1`, and every remaining gate a
+hand-authored world must pass through the shipped checker. A check that lives
+only in a test file is a property of the draws that file happens to take, and
+the pair that motivated this — two receipts drawn at one amount, so their two
+planted repairs carried the same two postings and the golden scored zero —
+was admitted by a construction path that never ran either check. The three
+are classified as decision 3 classifies them: the merged trap is a declared
+acceptance condition of the DRAW and is refused with its accounting reason
+into the census, and a golden that fails its scorer once that guard is silent
+is a ConstructionDefect rather than a reason to draw again.
 
 NO MODEL INFLUENCE. Candidate construction, attempt order, acceptance,
 rejection, profile assignment and split membership are determined solely by
@@ -73,6 +91,7 @@ from datetime import date as _date
 from datetime import timedelta
 from decimal import Decimal as D
 
+from . import cash_admit as ADMIT
 from . import cash_application as CA
 from . import cash_profile as PROFILE
 from .cash_identity import (
@@ -1158,12 +1177,12 @@ def identity_of(population: str, family: str, company_month_index: int,
 
 
 def public_stem(seed: int) -> str:
-    """The twelve digits a pair's public names are built from.
+    """The twelve digits a pair's world names are built from.
 
     KEYED, through a substream of the parent seed, and deliberately not the
     identity's own digest. That digest carries no secret, but it is an
     unkeyed function of an ENUMERABLE selector — population, family, version,
-    company-month index, profile — so printing it on a task id would hand an
+    company-month index, profile — so printing it on a name would hand an
     agent an equality oracle over the selector space, which is the attack the
     keyed seed exists to defeat. This stem is a one-way function of the seed
     under its own substream domain: it identifies the pair without naming
@@ -1172,14 +1191,39 @@ def public_stem(seed: int) -> str:
     return f"{stream(seed, 'public-name') % 10 ** 12:012d}"
 
 
-def _public_id(stem: str, variant: str) -> str:
+def public_task_stem(seed: int, variant: str) -> str:
+    """The twelve digits ONE variant's public task id is built from.
+
+    Drawn per variant, not per pair, and this is the point. The id is on the
+    dataset row, in the prompt and in every tool reply, so ANY structure in
+    it is a surface an agent can read and a habit it can learn. The earlier
+    spelling was the pair's stem with the variant letter appended, which made
+    the id say two things it must not: that these two tasks are one pair, and
+    — because the polarity was assigned to the letters in a fixed order —
+    which of them carries the residue. "Report a residue iff my id ends in a"
+    was then a winning habit, and it was worst in the advice-residue stratum,
+    where ten of the eleven public files are byte-identical across the pair.
+
+    Two independent keyed draws instead. The pairing lives where it belongs:
+    the family manifest's parent/variant relationship, which is private. This
+    follows the bank family's own convention — `mint.public_task_id` derives
+    the public id from the public bytes alone, precisely so that it carries
+    no structure — by the route available here, since the id is minted before
+    the bytes it would otherwise be a digest of exist.
+    """
+    if variant not in VARIANTS:
+        raise ConstructionDefect(f"variant is {variant!r}, not one of {list(VARIANTS)}")
+    return f"{stream(seed, f'public-name/variant/{variant}') % 10 ** 12:012d}"
+
+
+def _public_id(task_stem: str) -> str:
     """The task id an episode carries. Never the population, the template
-    family, the company-month index or the seed, none of which may reach an
-    agent surface."""
-    return f"cash_application_g{stem}{variant}"
+    family, the company-month index, the seed, the variant letter or anything
+    that ties it to the other member of its pair."""
+    return f"cash_application_g{task_stem}"
 
 
-def _render(stem: str, shape: FamilyShape, drawn: dict, invoices: list,
+def _render(stem: str, task_stem: str, shape: FamilyShape, drawn: dict, invoices: list,
             variant: str, positive: bool, profile: GenerationProfile) -> tuple:
     """One variant, from the shared draw and a single polarity flag."""
     fresh = [
@@ -1193,17 +1237,20 @@ def _render(stem: str, shape: FamilyShape, drawn: dict, invoices: list,
     layout = _Layout(shape=shape, drawn=drawn, invoices=fresh, receipts=receipts, note=note,
                      declared_name=fact_name, declared_value=value, book=book)
     world = _world_of(layout, f"cash-application-{stem}-{variant}")
-    task = TaskSpec(id=_public_id(stem, variant), type="bank_reconciliation",
+    task = TaskSpec(id=_public_id(task_stem), type="bank_reconciliation",
                     prompt=V.prompt(drawn["period"].label.split()[0]), period=drawn["period"],
                     plan=_plan_of(layout, world))
     try:
-        _bundle, inputs = derive_contract(world, task)
-    except (DerivationError, ProjectionError, TypeError, ValueError) as exc:
-        # Decision 3 draws the line here: an authoring slip the projector or
-        # the derivation refuses is an EXPECTED construction failure and the
-        # next attempt may be drawn. A disagreement between two supposedly
-        # independent derivations is a defect to investigate, and drawing
-        # again until it disappears is exactly what must not happen.
+        bundle, inputs = derive_contract(world, task)
+    except (DerivationError, ProjectionError) as exc:
+        # Decision 3 draws the line here, and the tuple above IS the line: an
+        # authoring slip the projector or the derivation refuses is an
+        # EXPECTED construction failure and the next attempt may be drawn.
+        # Nothing else is. A TypeError or a bare ValueError from inside the
+        # derivation is an unexpected exception — "a defect to investigate,
+        # not an opportunity to keep drawing until the defect disappears" —
+        # so it propagates out of the attempt loop unclassified rather than
+        # being reclassified as expected and redrawn 64 times.
         if "oracle disagreement" in str(exc):
             raise ConstructionDefect(f"{shape.family}/{variant}: the projector, the boundary and the "
                                      f"independent fold disagree: {exc}") from exc
@@ -1226,6 +1273,27 @@ def _render(stem: str, shape: FamilyShape, drawn: dict, invoices: list,
     problems += PROFILE.difficulty_problems(world, task, inputs, profile)
     if problems:
         raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(problems))
+    # The admission gate, in the construction path rather than in a suite.
+    # The order is decision 3's classification, not a convenience: the merged
+    # trap is a declared acceptance condition of the DRAW and is refused with
+    # its accounting reason, and only once it is silent does a golden that
+    # fails its scorer mean what decision 3 says it means.
+    collisions = ADMIT.posting_collision_problems(inputs)
+    if collisions:
+        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(collisions))
+    try:
+        scoring = ADMIT.golden_score_problems(inputs, golden_register)
+    except ADMIT.AdmissionUnavailable as exc:
+        raise ConstructionDefect(f"{task.id}: {exc}") from exc
+    if scoring:
+        raise ConstructionDefect(f"{task.id}: a valid golden fails its scorer, which decision 3 calls a defect "
+                                 f"to investigate rather than a reason to draw again: " + "; ".join(scoring))
+    try:
+        gates = ADMIT.world_checker_problems(world, task, bundle, inputs)
+    except ADMIT.AdmissionUnavailable as exc:
+        raise ConstructionDefect(f"{task.id}: {exc}") from exc
+    if gates:
+        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(gates))
     return Variant(variant=variant, world=world, task=task, inputs=inputs, public_files=public,
                    golden_ledger=inputs.golden_text, golden_register=golden_register,
                    measurement=measurement), layout
@@ -1318,10 +1386,20 @@ def construct(ident: ConstructionIdentity, attempt: int,
     invoices = _invoice_universe(rng, shape, drawn)
     _shape_the_target_customer(rng, shape, drawn, invoices)
 
+    # WHICH VARIANT CARRIES THE POSITIVE CONDITION IS DRAWN, NOT FIXED.
+    # Decision 4 requires both polarities in every stratum so that "always
+    # report a residue" is never a winning habit; a fixed assignment replaces
+    # that habit with an easier one — read the polarity off the variant name
+    # and report accordingly. The two members of a pair no longer share a
+    # public id (`public_task_stem`), and this keyed coin means the variant
+    # axis itself carries no polarity either: over a population, "a" is the
+    # positive condition about half the time, and which half is a function of
+    # the evaluator secret.
+    positive_first = bool(stream(seed, "variant-polarity") & 1)
     rendered, layouts = {}, {}
-    for variant, positive in zip(VARIANTS, (True, False)):
-        rendered[variant], layouts[variant] = _render(stem, shape, drawn, invoices, variant, positive,
-                                                      profile)
+    for variant, positive in zip(VARIANTS, (positive_first, not positive_first)):
+        rendered[variant], layouts[variant] = _render(stem, public_task_stem(seed, variant), shape, drawn,
+                                                      invoices, variant, positive, profile)
 
     names = {layouts[variant].declared_name for variant in VARIANTS}
     if len(names) != 1:
@@ -1391,5 +1469,5 @@ __all__ = [
     "FamilyShape", "SHAPES", "SHAPE_BY_FAMILY", "shape_of",
     "COMPANIES", "CUSTOMER_NAMES", "VENDOR_NAMES", "TAX_RATES", "gross_of",
     "MECHANISM_CONSEQUENCES", "DeclaredFact", "Variant", "CandidatePair", "AttemptRecord",
-    "construct", "candidate_pair", "template_of", "identity_of", "public_stem",
+    "construct", "candidate_pair", "template_of", "identity_of", "public_stem", "public_task_stem",
 ]

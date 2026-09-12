@@ -19,6 +19,18 @@ prose above a field, may be read as a difficulty claim. There is no
 difficulty field, no score, and no ordering of instances by any of these
 numbers.
 
+AND EVERY FIELD OF ONE IS MEASURED. `months` and `currency` used to be
+dataclass defaults that `measure()` never passed: the period row of decision
+4's table could not fail on anything this module produced, and `view()`
+published both to a census as measured facts. A declared value republished as
+a measurement is worse than no measurement, because it reads as evidence. All
+four period-and-currency fields are now read back from the rendered pack —
+`manifest.md`'s statement span and the golden ledger's own commodity — and
+the period is checked at its ENDS as well as by its count, because a span
+from the 2nd to the 29th touches one calendar month and is not one. The two
+shipped limits this module applies are IMPORTED for the same reason: a
+duplicate that agrees today is a duplicate that can stop agreeing silently.
+
 MANUFACTURED DIFFICULTY IS VALIDATED, NOT ASSUMED. Decision 4 names eight
 conditions and requires their absence to be validated. Each has a check
 below, and each check reads the rendered bytes or the authored facts rather
@@ -27,7 +39,11 @@ than trusting the recipe:
   * `missing_authority` — every application is decided by a document the
     pack carries or by a rung of the published policy, and the policy text
     carries the section each rule cites. A receipt whose application no rung
-    reached, or a residue the policy does not explain, fails.
+    reached, or a residue the policy does not explain, fails. Both halves
+    live in `authority_problems`, which takes a folded application rather
+    than a pack, so the rung half can be shown firing on an application that
+    really carries an unpublished rung; a half nothing has watched speak is a
+    half that has proved nothing.
   * `ambiguous_identity` — the advice binding is injective both ways, every
     receipt key is unique, every customer-credit row names a customer, and
     the shipped identifiability checker returns exactly one reading.
@@ -58,25 +74,41 @@ naming a condition it has no check for.
 
 from __future__ import annotations
 
+import calendar
 import csv
 import io
+import re
 from dataclasses import dataclass
+from datetime import date as _date
 from decimal import Decimal
 
+from ..candidate.canonical import TEXT_MAX_CODEPOINTS
 from . import cash_application as CA
 from .cash_identity import BOUNDED_V1, GenerationProfile
 from .policy import SHORT_PAY_TOLERANCE, is_cash_application_world
+from .project import MANIFEST_VIEW
 from .schema import AppliedReceipt, CreditNote, DocumentKind, Sale
 
-#: The shipped candidate's cap on a single rendered string, in code points
-#: (`candidate/canonical.py`). A memo over it renders a ledger the parse
-#: boundary refuses, so it bounds the authored free text too.
-TEXT_MAX_CODEPOINTS = 200
+#: `TEXT_MAX_CODEPOINTS` is IMPORTED, not restated. It is the shipped
+#: candidate's cap on a single rendered string, and a memo over it renders a
+#: ledger the parse boundary refuses — so it bounds the authored free text
+#: too, and it has to keep meaning whatever `candidate/canonical.py` means by
+#: it. A copy that agreed on the day it was typed is a copy that can stop
+#: agreeing without anything failing.
 
-#: The delivery envelope `write_cash_application` enforces. The golden
-#: register must also sit inside decision 4's tighter 8,000-byte bound; this
-#: is the line half of "within the existing line limit".
-APPLICATION_MAX_LINES = 400
+
+def application_envelope_lines() -> int:
+    """The delivery envelope `write_cash_application` enforces, READ FROM the
+    module that enforces it.
+
+    Decision 4 bounds the golden register at "8,000 bytes and within the
+    EXISTING line limit", so this must be the existing limit rather than a
+    number that matches it today. The environment module sits above `graph/`
+    in the import stack, so it is read at call time and the layering stays
+    one-way.
+    """
+    from ..beancount_ledger import APPLICATION_ENVELOPE_LINES
+    return APPLICATION_ENVELOPE_LINES
 
 
 class ProfileViolation(ValueError):
@@ -111,9 +143,23 @@ class Measurement:
     has_fallback_continuation: bool
     has_credit_residue: bool
     has_advice_residue: bool
-    #: Free-standing facts a reader of a census wants without re-deriving.
-    months: int = 1
-    currency: str = "USD"
+    #: The period and the currency, READ BACK from the rendered pack: the
+    #: first and last day `manifest.md` says the statement covers, the count
+    #: of calendar months that span touches, and the currency the golden
+    #: ledger actually denominates its postings in.
+    #:
+    #: These carried dataclass defaults of 1 and "USD" and were never passed,
+    #: so `bound_problems`' period row could not fire on anything `measure()`
+    #: produced while `view()` published both as measured facts for a census.
+    #: A bound that cannot fail is not a bound, and a declared value
+    #: published as a measurement is worse than no measurement. They are
+    #: required fields now, and `period_start`/`period_end` are here because
+    #: "one calendar month" is a claim about the span's ENDS: a month-long
+    #: window that starts on the 2nd spans one month and is not one.
+    period_start: str
+    period_end: str
+    months: int
+    currency: str
 
     def view(self) -> dict:
         return {f: getattr(self, f) for f in self.__dataclass_fields__}
@@ -159,6 +205,56 @@ def dependency_depth(truth) -> int:
     return max(depth, default=0)
 
 
+#: `manifest.md`'s statement row, which prints the span the pack covers.
+#: Read from the file the AGENT reads, not from `task.period`, which is the
+#: generator's intention and would make the period bound a promise the
+#: drawing made to itself.
+_STATEMENT_PERIOD = re.compile(
+    r"\|\s*`" + re.escape(CA.STATEMENT_FILE) + r"`\s*\|[^|]*?\bPeriod (\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})\b")
+
+#: A posting's currency, as the renderer writes it: `<amount> <CURRENCY>` at
+#: the end of a posting line. `CURRENCY_GRAMMAR`'s shape, anchored.
+_POSTING_CURRENCY = re.compile(r"^\s+\S+\s+-?[\d,]+\.\d\d\s+([A-Z][A-Z0-9'._\-]{0,22})\s*$", re.MULTILINE)
+_OPERATING_CURRENCY = re.compile(r'^option\s+"operating_currency"\s+"([^"]*)"\s*$', re.MULTILINE)
+
+
+def rendered_period(public: dict) -> tuple:
+    """The first and last day the rendered pack says it covers."""
+    match = _STATEMENT_PERIOD.search(public.get(MANIFEST_VIEW, ""))
+    if match is None:
+        raise ProfileViolation(f"{MANIFEST_VIEW} does not state the period {CA.STATEMENT_FILE} covers, so the "
+                               f"rendered period cannot be measured and no period bound can be applied")
+    return match.group(1), match.group(2)
+
+
+def calendar_months(start: str, end: str) -> int:
+    """How many calendar months the span touches. Zero is impossible; an end
+    before its start is refused rather than reported as a count."""
+    first, last = _date.fromisoformat(start), _date.fromisoformat(end)
+    if last < first:
+        raise ProfileViolation(f"the rendered period ends {end}, before it starts {start}")
+    return (last.year - first.year) * 12 + (last.month - first.month) + 1
+
+
+def is_whole_calendar_month(start: str, end: str) -> bool:
+    """Whether the span is exactly one calendar month, ends included."""
+    first, last = _date.fromisoformat(start), _date.fromisoformat(end)
+    return (first.day == 1 and (first.year, first.month) == (last.year, last.month)
+            and last.day == calendar.monthrange(last.year, last.month)[1])
+
+
+def rendered_currency(golden_ledger: str) -> str:
+    """The currency the golden ledger denominates itself in, read off the
+    rendered text: the declared operating currency and every posting's own
+    commodity. More than one is reported as the joined set rather than as a
+    first answer, so the bound sees the disagreement instead of a currency
+    that happens to be right."""
+    found = set(_OPERATING_CURRENCY.findall(golden_ledger)) | set(_POSTING_CURRENCY.findall(golden_ledger))
+    if not found:
+        raise ProfileViolation("the golden ledger denominates nothing; its currency cannot be measured")
+    return found.pop() if len(found) == 1 else "+".join(sorted(found))
+
+
 def measure(world, task, inputs) -> Measurement:
     """Measure one rendered variant from its world, its task and the
     contract `derive_contract` minted for it."""
@@ -166,6 +262,7 @@ def measure(world, task, inputs) -> Measurement:
     if truth is None:
         raise ProfileViolation(f"{task.id}: not a cash-application world; there is no register to measure")
     public = {name: data.decode("utf-8") for name, data in inputs.public_files}
+    period_start, period_end = rendered_period(public)
     customers = len([p for p in world.parties if p.role.value == "customer"])
     in_period = [i for i in truth.invoices if i[4] == "sale"]
     register = {row[0]: row for row in truth.register}
@@ -189,6 +286,10 @@ def measure(world, task, inputs) -> Measurement:
         has_fallback_continuation=_has_continuation(public, world, task),
         has_credit_residue=any(c[5] > 0 for c in truth.credit_notes),
         has_advice_residue=any(r[6] > 0 for r in truth.receipts if r[7]),
+        period_start=period_start,
+        period_end=period_end,
+        months=calendar_months(period_start, period_end),
+        currency=rendered_currency(inputs.golden_text),
     )
 
 
@@ -217,9 +318,16 @@ def bound_problems(measurement: Measurement, profile: GenerationProfile = BOUNDE
     acceptable answer."""
     problems: list = []
     if measurement.months != profile.months:
-        problems.append(f"the period spans {measurement.months} months, not {profile.months}")
+        problems.append(f"the rendered period {measurement.period_start}..{measurement.period_end} spans "
+                        f"{measurement.months} calendar months, not {profile.months}")
+    elif profile.months == 1 and not is_whole_calendar_month(measurement.period_start, measurement.period_end):
+        # The count alone cannot carry decision 4's row. A span from the 2nd
+        # to the 29th touches one calendar month and is not one, so the ENDS
+        # are checked as well as the count.
+        problems.append(f"the rendered period {measurement.period_start}..{measurement.period_end} is not one "
+                        f"WHOLE calendar month: bounded-v1's period is a month, from its first day to its last")
     if measurement.currency != profile.currency:
-        problems.append(f"the currency is {measurement.currency}, not {profile.currency}")
+        problems.append(f"the golden ledger is denominated in {measurement.currency}, not {profile.currency}")
     _in_range("the customer count", measurement.customers, profile.customers, problems)
     _in_range("the invoice universe", measurement.invoices, profile.invoices, problems)
     _in_range("the count of invoices raised in the period", measurement.invoices_raised_in_period,
@@ -242,9 +350,10 @@ def bound_problems(measurement: Measurement, profile: GenerationProfile = BOUNDE
     if measurement.golden_register_bytes > profile.max_golden_register_bytes:
         problems.append(f"the golden register is {measurement.golden_register_bytes} bytes, above bounded-v1's "
                         f"{profile.max_golden_register_bytes}")
-    if measurement.golden_register_lines > APPLICATION_MAX_LINES:
+    envelope_lines = application_envelope_lines()
+    if measurement.golden_register_lines > envelope_lines:
         problems.append(f"the golden register is {measurement.golden_register_lines} lines, above the delivery "
-                        f"envelope's {APPLICATION_MAX_LINES}")
+                        f"envelope's {envelope_lines}")
     if profile.requires_unpaid_in_period_invoice and measurement.unpaid_in_period_invoices < 1:
         problems.append("no invoice raised in the period is left unpaid, which bounded-v1 requires of every case")
     return problems
@@ -300,23 +409,46 @@ def _fold_or_problem(world, task, public) -> tuple:
         return None, f"the public surface is not readable: {exc}"
 
 
-def _missing_authority(world, task, inputs, public) -> list:
+#: The application rungs `policy.md` publishes, in the order the fold climbs
+#: them: the payer's own advice, the payment's statement reference, then
+#: oldest-first. `"none"` is the fold's word for "no rung reached it", which
+#: is a missing authority rather than a rung.
+PUBLISHED_RUNGS = ("advice", "reference", "oldest_first")
+
+
+def authority_problems(app, world) -> list:
+    """The two halves of `missing_authority`, over a folded application and
+    the policy the pack publishes.
+
+    Split out of `_missing_authority` so BOTH halves can be shown able to
+    speak. The policy half has an easy negative control — take a heading out
+    of `policy.md` — while the rung half needs an application whose receipt
+    was applied by something the policy does not publish, which no rendered
+    pack can be edited into producing. A check nothing has ever seen fire is
+    a check that proves nothing about the worlds it passed, so the seam is
+    here and `tests/test_cash_construction.py` hands it a tampered
+    `ReceiptApplication` of the shipped type.
+    """
     problems = []
-    app, refusal = _fold_or_problem(world, task, public)
-    if app is None:
-        return [refusal]
     for receipt in app.receipts:
         if receipt.rungs == ("none",) and receipt.amount > 0:
             problems.append(f"receipt {receipt.receipt_id} of {receipt.amount} is applied by no rung of the "
                             f"published policy")
         for rung in receipt.rungs:
-            if rung not in ("advice", "reference", "oldest_first"):
+            if rung != "none" and rung not in PUBLISHED_RUNGS:
                 problems.append(f"receipt {receipt.receipt_id} was applied by {rung!r}, which the policy does "
                                 f"not publish")
     for role, section in _required_sections(world).items():
         if section not in world.policy_text:
             problems.append(f"the policy rule {role!r} cites {section!r}, which policy.md does not carry")
     return problems
+
+
+def _missing_authority(world, task, inputs, public) -> list:
+    app, refusal = _fold_or_problem(world, task, public)
+    if app is None:
+        return [refusal]
+    return authority_problems(app, world)
 
 
 def _required_sections(world) -> dict:
@@ -558,8 +690,9 @@ def excluded_accounting_problems(world, profile: GenerationProfile = BOUNDED_V1)
 
 
 __all__ = [
-    "TEXT_MAX_CODEPOINTS", "APPLICATION_MAX_LINES", "ProfileViolation",
+    "TEXT_MAX_CODEPOINTS", "application_envelope_lines", "PUBLISHED_RUNGS", "ProfileViolation",
     "Measurement", "measure", "dependency_depth",
-    "bound_problems", "polarity_of", "polarity_problems",
+    "rendered_period", "rendered_currency", "calendar_months", "is_whole_calendar_month",
+    "bound_problems", "polarity_of", "polarity_problems", "authority_problems",
     "CHECKED_EXCLUSIONS", "difficulty_problems", "excluded_accounting_problems",
 ]
