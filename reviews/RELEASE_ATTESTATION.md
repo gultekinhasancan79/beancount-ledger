@@ -673,8 +673,18 @@ finding is that this document identified the wrong build.
 - **commit**: `b74219c8ba1db4bc0bbbab1cf13bdf42fe90ed21` ("Merge pull request #4 from
   gultekinhasancan79/feat/dense-rewards"), tracked tree clean at upload. The only divergence between
   that checkout's working tree and the blobs git stores is the line endings described above.
-- **build conditions**: hatchling 1.32.0, `Metadata-Version` 2.5, CPython 3.12.12 on Windows; every
-  zip entry deflate-compressed and stamped (2020-02-02) — all read out of the uploaded wheel itself.
+- **build conditions, read out of the uploaded wheel itself**: `Generator: hatchling 1.32.0` and
+  `Tag: py3-none-any` from its `WHEEL`, `Metadata-Version` 2.5 from its `METADATA`, and all 65 zip
+  entries deflate-compressed (`compress_type` 8), stamped (2020-02-02) and carrying `create_system`
+  0, the MS-DOS/Windows value.
+- **build conditions NOT read out of the wheel, and declared rather than measured**: the interpreter.
+  A `py3-none-any` wheel records no interpreter and no operating system, and the strings `CPython`,
+  `3.12.12`, `Windows`, `win32` and `win_amd64` occur zero times in its bytes. "CPython 3.12.12"
+  comes from this file's own account of the **superseded** build (the "Artifacts" heading above and
+  the release-record line that names `uv build` and python 3.12.12), and carrying it into the
+  uploaded artifact's binding as if it had been measured is exactly the conflation this section
+  exists to undo. An earlier revision of this bullet listed the interpreter among the conditions
+  "read out of the uploaded wheel itself"; that clause is withdrawn here rather than deleted.
 - **validation evidence**: `reviews/installed_wheel_check_2026-09-12/uploaded_0.2.0.json` — the
   eleven cash-application tasks and the legacy control, each scored through the real `env.evaluate()`
   door of the installed package, twelve of twelve, `failures: []`.
@@ -834,7 +844,7 @@ the same files after the corrections above.
 | docs/REFERENCE.md | `c136da7a…` | `34d419fa965e0f09d938b8cb89c3bad50a6c9a6d3a244310eed95a94054ef98f` |
 | reviews/cash_application_six_variant_screen_2026-09-11.md | `835ab184…` | `4a2b42fa95a6b90905d1888e9621d1e648da900dfa06dc79b3673dbe40efa890` |
 | reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py | new | `893f2e6f56c5135d81a635af55cb7de91676921dac5c109e3e4ad6844668dc48` |
-| reviews/installed_wheel_check_2026-09-12/README.md | new | `8ff091a805d3210d41b133e58b11afdc09a51c1ca6afab40142889cf93b74ab0` |
+| reviews/installed_wheel_check_2026-09-12/README.md | new | `436553e9e0fbb0011460b71cf5372f8e237a7071b745127953b667d09ee666cf` (was `8ff091a8…` before its opening sentence was qualified) |
 | reviews/installed_wheel_check_2026-09-12/uploaded_0.2.0.json | new | `d31b81af47cfe32d67f1b76a4261bca49f95bea4ef97f4cdd90a1fdaed9d6fdb` |
 | reviews/installed_wheel_check_2026-09-12/attested_build_0.2.0.json | new | `4246c6be1a12edc1dda8fb14da2498baa3d1a10b7394296273f33577165c8cac` |
 | tests/unicode_pins.py | new | `cf40b8674e8f69a5208093937c38fe5c5d2548f8567ddc7ce66a342220f29393` |

@@ -13,7 +13,8 @@ register; `bank_recon_001` is the legacy control and must carry no application b
 | `uploaded_0.2.0.json` | the run against the wheel **that was uploaded to the Environments Hub** (`1c83e4c5…`). |
 | `attested_build_0.2.0.json` | the run against the wheel the release attestation names (`5a1171c5…`), preserved as the earlier build's evidence. |
 
-Both records were produced on 2026-09-12 by the runner in this directory, one wheel installed at a
+Both records were produced on 2026-09-12 by the bytes named under "Which bytes ran" below — not by
+the copy in this directory, which differs from them in its docstring alone — one wheel installed at a
 time into the same throwaway environment.
 
 ## The tested artifact is bound, not asserted
