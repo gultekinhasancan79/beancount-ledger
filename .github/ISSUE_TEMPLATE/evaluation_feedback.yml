@@ -1,0 +1,46 @@
+name: Task or scorer feedback
+description: Report an ambiguous task, scorer disagreement, or missing accounting check.
+title: "[Evaluation] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the accounting facts and the result you expected. Public authored tasks make reports easier to reproduce. Do not attach evaluator secrets, private ledgers, or client data.
+  - type: input
+    id: task-version
+    attributes:
+      label: Task ID and source commit or version
+      placeholder: cash_application_006, commit ...
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Type of feedback
+      options:
+        - Scoring decision
+        - Task or input ambiguity
+        - Missing accounting check
+        - Reproducibility or version difference
+        - Other evaluation feedback
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior and supporting facts
+      description: Which public input or accounting rule supports the expected result?
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed result and reproduction
+      description: Include the scoring components, findings, and a minimal shareable input or patch when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: run-context
+    attributes:
+      label: Run context, if relevant
+      description: Say whether this was a reference check or a model run. For model runs, include the requested model ID, relevant settings, and links to shareable artifacts.
