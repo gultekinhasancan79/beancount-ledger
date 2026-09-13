@@ -72,6 +72,19 @@ SUITES = [
                                "reaches any truth inside the 256-reading bound; construction is keyed and "
                                "leaks no private selector; exhaustion is a named failed group; the authored "
                                "eleven stay outside"),
+    ("test_cash_gate", "phase C of the generated cash-application population: the MINTING GATE and its "
+                       "CENSUS. Decision 3's six integrity families plus gate (o) are thirty-one named gates, "
+                       "each implemented, each with its own rejection code and each with a negative control "
+                       "that makes IT speak; a declared gate with no implementation and an implementation the "
+                       "gate set does not declare both refuse to evaluate; gate (o) runs IN THE MINTING PATH "
+                       "on both variants of every family — nine binding baselines, one diagnostic recorded "
+                       "and never promoted, the 256-reading bound a VERIFICATION-LIMIT rejection rather than "
+                       "evidence of resistance; a finding on either variant rejects the pair; every attempt "
+                       "retains its ordinal, stage, codes, baseline, witness, reading count, component "
+                       "versions and content digests; acceptance rates, exhaustion counts and rejection "
+                       "distributions are published; exhaustion is a named failed group that draws no "
+                       "replacement selector, and a defect is not drawn past; the ruling's minting paragraph "
+                       "is verbatim; the catalogue digest binds admission predicates, not their names"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),

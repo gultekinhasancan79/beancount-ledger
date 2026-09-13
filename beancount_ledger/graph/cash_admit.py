@@ -173,29 +173,28 @@ def score_ledger(text: str, env):
         return None, f"scoring raised {type(exc).__name__}: {exc}"
 
 
-def golden_score_problems(inputs, golden_register: str) -> list:
-    """Decision 3's "both golden artifacts score complete through the actual
-    engines", as an admission condition of the construction path.
+def golden_ledger_problems(inputs, env=None) -> tuple:
+    """The FIRST half of decision 3's "both golden artifacts score complete
+    through the actual engines": the golden ledger through `candidate/1`.
 
-    The golden ledger goes through `candidate/1` and must pay exactly 1,
-    close completely, resolve every planted item and trip no offence
-    channel; the golden register goes through `application/1` and must parse,
-    pay exactly 1 and carry no penalty; `composite/1` multiplies them and
-    must be 1 and complete.
+    Returns `(problems, ledger_outcome)`; the outcome is None when the ledger
+    never reached the scorer, and the caller needs it to compose the
+    composite. Split out of `golden_score_problems` because decision 3's gate
+    set names the two goldens as two gates — `golden_ledger_scores_complete`
+    and `golden_register_scores_complete` — and a gate that cannot be
+    evaluated on its own cannot be reported on its own either.
     """
-    from ..candidate import application as APP
     from ..candidate import committed as K
-    from ..candidate import composite as X
 
+    if env is None:
+        try:
+            env = K.load_contract(inputs)
+        except Exception as exc:
+            return [f"load_contract refused the derived inputs: {type(exc).__name__}: {exc}"], None
     problems: list = []
-    try:
-        env = K.load_contract(inputs)
-    except Exception as exc:
-        return [f"load_contract refused the derived inputs: {type(exc).__name__}: {exc}"]
-
     ledger, failure = score_ledger(inputs.golden_text, env)
     if failure:
-        return [f"the golden ledger: {failure}"]
+        return [f"the golden ledger: {failure}"], None
     if ledger.total != ONE:
         problems.append(f"the golden ledger scores {ledger.total}, not 1; "
                         f"components={dict(ledger.components)} "
@@ -211,17 +210,60 @@ def golden_score_problems(inputs, golden_register: str) -> list:
     if set(states) != {p.id for p in inputs.planted} or any(str(s) != "RESOLVED" for s in states.values()):
         problems.append(f"the golden ledger does not resolve every planted item: "
                         f"{ {i: str(s) for i, s in states.items()} }")
+    return problems, ledger
 
+
+def golden_register_problems(inputs, golden_register: str, ledger=None, env=None) -> list:
+    """The SECOND half: the golden register through `application/1`, and —
+    when the ledger outcome is supplied — `composite/1` over the two."""
+    from ..candidate import application as APP
+    from ..candidate import committed as K
+    from ..candidate import composite as X
+
+    if env is None:
+        try:
+            env = K.load_contract(inputs)
+        except Exception as exc:
+            return [f"load_contract refused the derived inputs: {type(exc).__name__}: {exc}"]
+    problems: list = []
     parsed = APP.parse_application(golden_register, inputs.application)
     if not isinstance(parsed, APP.ParsedApplication):
-        return problems + [f"the golden register is refused at the parse boundary: {parsed}"]
+        return [f"the golden register is refused at the parse boundary: {parsed}"]
     outcome = APP.score_application(parsed, inputs.application, expected_balances=env.expected_balances)
     if outcome.total != ONE or outcome.penalties:
         problems.append(f"the golden register scores {outcome.total} with penalties {list(outcome.penalties)}")
-    composite = X.compose(ledger, outcome)
-    if composite.total != ONE or not composite.complete:
-        problems.append(f"the composite of the two goldens is {composite.total}, complete={composite.complete}")
+    if ledger is not None:
+        composite = X.compose(ledger, outcome)
+        if composite.total != ONE or not composite.complete:
+            problems.append(f"the composite of the two goldens is {composite.total}, "
+                            f"complete={composite.complete}")
     return problems
+
+
+def golden_score_problems(inputs, golden_register: str) -> list:
+    """Decision 3's "both golden artifacts score complete through the actual
+    engines", as an admission condition of the construction path.
+
+    The golden ledger goes through `candidate/1` and must pay exactly 1,
+    close completely, resolve every planted item and trip no offence
+    channel; the golden register goes through `application/1` and must parse,
+    pay exactly 1 and carry no penalty; `composite/1` multiplies them and
+    must be 1 and complete.
+
+    The composition of the two halves above, kept as the single entry point
+    the construction path calls so that one stub can stand in for the whole
+    of it.
+    """
+    from ..candidate import committed as K
+
+    try:
+        env = K.load_contract(inputs)
+    except Exception as exc:
+        return [f"load_contract refused the derived inputs: {type(exc).__name__}: {exc}"]
+    problems, ledger = golden_ledger_problems(inputs, env)
+    if ledger is None:
+        return problems
+    return problems + golden_register_problems(inputs, golden_register, ledger, env)
 
 
 # --------------------------------------------------------------------------

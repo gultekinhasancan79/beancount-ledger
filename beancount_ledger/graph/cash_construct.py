@@ -164,10 +164,41 @@ CURRENCY = "USD"
 ZERO = D("0.00")
 
 
+#: The stage and code a refusal carries when nothing more specific is
+#: stamped on it: the recipe could not lay this month out at all. Decision 3
+#: requires the census to retain "evaluated rejection codes", so a refusal
+#: that reaches the census without one would be an unclassified row.
+DRAW_STAGE = "draw"
+DRAW_REFUSAL_CODE = "DRAW-LAYOUT-REFUSED"
+
+
 class ConstructionRefused(ValueError):
     """This layout attempt cannot be rendered, or the rendered pair fails a
     declared check. Expected; the next attempt is drawn. Decision 3: an
-    expected construction failure may be retried."""
+    expected construction failure may be retried.
+
+    Carries a `stage` and a `code` for the census. Both default to the draw's
+    own — the great majority of the raise sites below are a recipe saying it
+    could not lay this month out, and stamping each of those individually
+    would name forty codes for one fact. The sites where the classification
+    MATTERS (the derivation door, the public fold, the profile, the admission
+    battery, the pair contract) pass their own, and `restage` lets a caller
+    that knows which phase it was in stamp a refusal that arrived without
+    one.
+    """
+
+    def __init__(self, message, *, stage: str = DRAW_STAGE, code: str = DRAW_REFUSAL_CODE):
+        super().__init__(message)
+        self.stage = stage
+        self.code = code
+
+    def restage(self, stage: str, code: str) -> "ConstructionRefused":
+        """Stamp a refusal that arrived with the default classification, and
+        leave an already-classified one alone. Returns self, so a caller can
+        `raise exc.restage(...)`."""
+        if self.code == DRAW_REFUSAL_CODE and self.stage == DRAW_STAGE:
+            self.stage, self.code = stage, code
+        return self
 
 
 class ConstructionDefect(RuntimeError):
@@ -1150,7 +1181,12 @@ class CandidatePair:
     declared_fact: DeclaredFact
     variants: dict                    # variant -> Variant
     template: StructuralTemplate
-    census: tuple                     # every attempt's ordinal and outcome
+    #: `cash_gate.Attempt` per bounded attempt — ordinal, stage, evaluated
+    #: rejection codes, relevant baseline and witness, reading count,
+    #: component versions and content digest. Decision 3 requires all of it
+    #: retained; the gate that evaluates the codes is the thing that can
+    #: record them, so the census is built there.
+    census: tuple
 
     def variant(self, name: str) -> Variant:
         return self.variants[name]
@@ -1254,7 +1290,8 @@ def _render(stem: str, task_stem: str, shape: FamilyShape, drawn: dict, invoices
         if "oracle disagreement" in str(exc):
             raise ConstructionDefect(f"{shape.family}/{variant}: the projector, the boundary and the "
                                      f"independent fold disagree: {exc}") from exc
-        raise ConstructionRefused(f"{shape.family}/{variant}: {type(exc).__name__}: {exc}") from exc
+        raise ConstructionRefused(f"{shape.family}/{variant}: {type(exc).__name__}: {exc}",
+                                  stage="render", code="RENDER-DERIVATION-REFUSED") from exc
     public = {name: data.decode("utf-8") for name, data in inputs.public_files}
     if len(public) != 11:
         raise ConstructionDefect(f"{task.id}: the projection emitted {len(public)} public files, not eleven")
@@ -1262,7 +1299,8 @@ def _render(stem: str, task_stem: str, shape: FamilyShape, drawn: dict, invoices
         application = CA.fold(public, bank_account=world.bank_account,
                               period_start=task.period.start, period_end=task.period.end)
     except CA.Refusal as exc:
-        raise ConstructionRefused(f"{shape.family}/{variant}: the public fold refuses: {exc}") from exc
+        raise ConstructionRefused(f"{shape.family}/{variant}: the public fold refuses: {exc}",
+                                  stage="render", code="RENDER-PUBLIC-FOLD-REFUSES") from exc
     if CA.application_key(application) != inputs.application.application_key():
         raise ConstructionDefect(f"{task.id}: the public fold and the private truth disagree; two supposedly "
                                  f"independent derivations must not")
@@ -1272,7 +1310,8 @@ def _render(stem: str, task_stem: str, shape: FamilyShape, drawn: dict, invoices
     problems += PROFILE.excluded_accounting_problems(world, profile)
     problems += PROFILE.difficulty_problems(world, task, inputs, profile)
     if problems:
-        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(problems))
+        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(problems),
+                                  stage="render", code="RENDER-PROFILE-REFUSED")
     # The admission gate, in the construction path rather than in a suite.
     # The order is decision 3's classification, not a convenience: the merged
     # trap is a declared acceptance condition of the DRAW and is refused with
@@ -1280,7 +1319,8 @@ def _render(stem: str, task_stem: str, shape: FamilyShape, drawn: dict, invoices
     # fails its scorer mean what decision 3 says it means.
     collisions = ADMIT.posting_collision_problems(inputs)
     if collisions:
-        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(collisions))
+        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(collisions),
+                                  stage="render", code="RENDER-POSTING-COLLISION")
     try:
         scoring = ADMIT.golden_score_problems(inputs, golden_register)
     except ADMIT.AdmissionUnavailable as exc:
@@ -1293,7 +1333,8 @@ def _render(stem: str, task_stem: str, shape: FamilyShape, drawn: dict, invoices
     except ADMIT.AdmissionUnavailable as exc:
         raise ConstructionDefect(f"{task.id}: {exc}") from exc
     if gates:
-        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(gates))
+        raise ConstructionRefused(f"{shape.family}/{variant}: " + "; ".join(gates),
+                                  stage="render", code="RENDER-WORLD-CHECKER-REFUSED")
     return Variant(variant=variant, world=world, task=task, inputs=inputs, public_files=public,
                    golden_ledger=inputs.golden_text, golden_register=golden_register,
                    measurement=measurement), layout
@@ -1353,29 +1394,18 @@ def template_of(family: str, layout: _Layout, variant: Variant) -> StructuralTem
 # the bounded attempt loop
 # --------------------------------------------------------------------------
 
-@dataclass(frozen=True)
-class AttemptRecord:
-    """Decision 3: every attempt's ordinal, stage and rejection reason is
-    retained. The preflight adds the gate results; the construction retains
-    what IT saw, and an exhausted group is a NAMED failure rather than a
-    silent advance to a replacement selector."""
-
-    ordinal: int
-    stage: str                        # draw | render | pair
-    outcome: str                      # accepted | refused
-    reason: str = ""
-
-
 def construct(ident: ConstructionIdentity, attempt: int,
               profile: GenerationProfile = BOUNDED_V1, secret: bytes | None = None) -> tuple:
     """One bounded layout attempt: the drawn universe rendered into both
     variants, each satisfying the profile on its own and the two together
     satisfying the pair's contract."""
     if type(attempt) is not int or not 0 <= attempt < MAX_LAYOUT_ATTEMPTS:
-        raise ConstructionRefused(f"attempt is an int in [0, {MAX_LAYOUT_ATTEMPTS})")
+        raise ConstructionRefused(f"attempt is an int in [0, {MAX_LAYOUT_ATTEMPTS})",
+                                  stage="attempt", code="ATTEMPT-OUT-OF-RANGE")
     if ident.profile_digest != profile.digest():
         raise ConstructionRefused("the identity was minted under another profile; the profile digest is part "
-                                  "of the construction identity and may not be swapped at render time")
+                                  "of the construction identity and may not be swapped at render time",
+                                  stage="attempt", code="ATTEMPT-PROFILE-DIGEST-MISMATCH")
     shape = shape_of(ident.template_family)
     if not profile.invoices[0] <= shape.invoices <= profile.invoices[1]:
         raise ConstructionDefect(f"{shape.family} declares {shape.invoices} invoices, outside bounded-v1")
@@ -1410,7 +1440,8 @@ def construct(ident: ConstructionIdentity, attempt: int,
                         values={variant: layouts[variant].declared_value for variant in VARIANTS})
     problems = _pair_problems(shape, rendered, fact, profile)
     if problems:
-        raise ConstructionRefused(f"{shape.family}: " + "; ".join(problems))
+        raise ConstructionRefused(f"{shape.family}: " + "; ".join(problems),
+                                  stage="pair", code="PAIR-CONTRACT-REFUSED")
     template = template_of(shape.family, layouts["a"], rendered["a"])
     return rendered, fact, template
 
@@ -1445,29 +1476,26 @@ def candidate_pair(ident: ConstructionIdentity, profile: GenerationProfile = BOU
     """Draw a parent group: up to `MAX_LAYOUT_ATTEMPTS` deterministic layout
     attempts, both variants rejected whenever either fails an acceptance
     condition, and exhaustion raising a NAMED failed group rather than
-    advancing to a replacement selector."""
-    census = []
-    for attempt in range(MAX_LAYOUT_ATTEMPTS):
-        try:
-            rendered, fact, template = construct(ident, attempt, profile, secret)
-        except ConstructionRefused as exc:
-            census.append(AttemptRecord(attempt, "render", "refused", str(exc)))
-            continue
-        census.append(AttemptRecord(attempt, "pair", "accepted"))
-        return CandidatePair(identity=ident, family=ident.template_family,
-                             mechanism=shape_of(ident.template_family).mechanism, attempt=attempt,
-                             declared_fact=fact, variants=rendered, template=template,
-                             census=tuple(census))
-    raise ConstructionRefused(
-        f"group {ident.label()} is EXHAUSTED after {MAX_LAYOUT_ATTEMPTS} attempts; it is a named failed group "
-        f"and no replacement selector is drawn. Reasons: "
-        + "; ".join(sorted({record.reason for record in census})[:4]))
+    advancing to a replacement selector.
+
+    THE LOOP IS NOT HERE ANY MORE. `cash_gate.mint_group` runs it, because
+    the loop and the acceptance conditions are one decision: an attempt is
+    redrawn exactly when the gate rejects it, and two loops — one knowing
+    about the construction's own refusals, one knowing about decision 3's
+    thirty gates — would be two different answers to "was this pair
+    admitted", with the weaker one shipping. This stays as the door earlier
+    callers walk through and it returns what they expect; anything minting a
+    POPULATION calls `mint_group` instead, because that also returns the gate
+    report and the complete attempt census.
+    """
+    from . import cash_gate
+    return cash_gate.mint_group(ident, profile, secret).pair
 
 
 __all__ = [
     "CONSTRUCTION_VERSION", "TEMPLATE_VERSION", "ConstructionRefused", "ConstructionDefect",
     "FamilyShape", "SHAPES", "SHAPE_BY_FAMILY", "shape_of",
     "COMPANIES", "CUSTOMER_NAMES", "VENDOR_NAMES", "TAX_RATES", "gross_of",
-    "MECHANISM_CONSEQUENCES", "DeclaredFact", "Variant", "CandidatePair", "AttemptRecord",
+    "MECHANISM_CONSEQUENCES", "DeclaredFact", "Variant", "CandidatePair",
     "construct", "candidate_pair", "template_of", "identity_of", "public_stem", "public_task_stem",
 ]

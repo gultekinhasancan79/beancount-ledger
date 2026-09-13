@@ -1014,11 +1014,19 @@ def baseline_readings(public: dict, name: str, **kw) -> tuple:
     return tuple(_run(ev, baseline.strategy, validate=False))
 
 
-def baseline_report(public: dict, truth: Application | None = None, **kw) -> dict:
+def baseline_report(public: dict, truth: Application | None = None, evidence: "Evidence | None" = None,
+                    **kw) -> dict:
     """Gate (o): for each baseline the evidence admits, whether ANY of its
     readings equals `truth` (the policy fold by default) on every receipt
-    line, credit application and register row."""
-    ev = read_evidence(public, **kw)
+    line, credit application and register row.
+
+    `evidence` is the same pack ALREADY read, for a caller that has it. The
+    minting gate reads the evidence once and then runs the baselines, the
+    refusal probes and the accounting checks over it; re-reading the bytes
+    here would be a second parse of the same files and — worse — a second
+    opportunity for the two readings to differ.
+    """
+    ev = read_evidence(public, **kw) if evidence is None else evidence
     if truth is None:
         truth = fold(public, **kw)
     target = application_key(truth)

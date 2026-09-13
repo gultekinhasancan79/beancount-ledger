@@ -245,6 +245,37 @@ def gate_set_digest() -> str:
 # the baseline catalogue
 # --------------------------------------------------------------------------
 
+def predicate_digest(predicate) -> str:
+    """A digest of an admission predicate's IMPLEMENTATION, not of its name.
+
+    Decision 3 requires the catalogue digest to bind "strategies, admission
+    predicates, diagnostic roles, enumeration semantics and bounds — not
+    merely names". A predicate's name is a label an author chooses; editing
+    `_any_credit` to read `len(ev.credit_notes) > 1` changes which candidates
+    that baseline is admitted against while leaving the name alone, and a
+    digest over names would not move. This reads the compiled code object —
+    its bytecode, its constants, the globals and locals it names, and its
+    argument count — which is available whether or not the source file
+    shipped, and which moves on exactly that edit.
+
+    A predicate that is not a Python function (a callable object, a partial)
+    has no code object; it is digested by its repr, which at least moves when
+    the object does, and `baseline_catalogue_view` records the name beside
+    this so a reader can see which case they are in.
+    """
+    code = getattr(predicate, "__code__", None)
+    if code is None:
+        return domain_digest(_BASELINE_CATALOGUE_DOMAIN, canonical_bytes(repr(predicate)))[:16]
+    payload = canonical_bytes({
+        "co_code": code.co_code.hex(),
+        "co_consts": [repr(c) for c in code.co_consts],
+        "co_names": list(code.co_names),
+        "co_varnames": list(code.co_varnames),
+        "co_argcount": code.co_argcount,
+    })
+    return domain_digest(_BASELINE_CATALOGUE_DOMAIN, payload)[:16]
+
+
 def baseline_catalogue_view() -> dict:
     """The catalogue as declared data: strategies, admission predicates,
     diagnostic roles, enumeration semantics and bounds — not merely names.
@@ -272,6 +303,7 @@ def baseline_catalogue_view() -> dict:
         "baselines": [
             {"name": b.name, "strategy": asdict(b.strategy),
              "admitted_when": getattr(b.admitted_when, "__name__", repr(b.admitted_when)),
+             "admitted_when_code": predicate_digest(b.admitted_when),
              "role": "diagnostic" if b.diagnostic else "binding",
              "description": b.description}
             for b in BASELINES
@@ -671,7 +703,7 @@ __all__ = [
     "FAMILY_MANIFEST_SCHEMA", "FAMILY_PREFLIGHT_CONTRACT", "FAMILY_MANIFEST_ENV",
     "BASELINE_CATALOGUE_ID", "FamilyManifestError",
     "GATE_GROUPS", "FAMILY_GATES", "family_gates", "gate_set_digest",
-    "baseline_catalogue_view", "baseline_catalogue_digest",
+    "predicate_digest", "baseline_catalogue_view", "baseline_catalogue_digest",
     "semantic_components", "runtime_scope", "runtime_scope_key",
     "REQUIRED_RECORD_FIELDS", "STRUCTURE_DIGEST_WIDTH", "CONTENT_DIGEST_WIDTH",
     "public_content_digest", "parent_digest", "family_selector_key",

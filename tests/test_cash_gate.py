@@ -1,0 +1,780 @@
+"""Phase C of the generated cash-application population: the MINTING GATE and
+its CENSUS.
+
+Round 16, decision 3. What is witnessed here:
+
+  * the declared gate set and the implementations agree in BOTH directions —
+    a declared gate with no implementation and an implementation the gate set
+    does not declare each stop admission rather than passing silently — and
+    every gate carries its own rejection code, with the reading bound
+    carrying the ruling's own word, `VERIFICATION-LIMIT`;
+  * every family mints through the gate with all thirty-one gates True, and
+    gate (o) is RUN AT MINT TIME on both variants: nine binding baselines,
+    one diagnostic, every reading inside the 256-reading bound;
+  * EVERY GATE SPEAKS. Each of the thirty-one has a negative control that
+    makes it, and it, fail — a check that cannot fail proves nothing, and
+    thirty-one checks that have never failed prove nothing thirty-one times;
+  * the census retains every attempt's ordinal, stage, evaluated rejection
+    codes, relevant baseline and witness, reading count, component versions
+    and content digest, and `aggregate` publishes acceptance rates,
+    exhaustion counts and rejection distributions;
+  * exhaustion is a NAMED failed group carrying `GROUP-EXHAUSTED`, and no
+    replacement selector is drawn; a defect is not drawn past;
+  * the minting docstring is the ruling's paragraph VERBATIM;
+  * the baseline catalogue is `cash_application_baselines/1` and its digest
+    moves when an admission predicate's BODY changes under an unchanged name;
+  * the population ledger sees a second pair publishing the first's bytes and
+    a renamed cross-split structural sibling;
+  * no shipped task's public bytes moved, and GENERATOR_VERSION 9 and its
+    manifest are untouched.
+
+    python tests/test_cash_gate.py
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import datetime as _dt
+import sys
+from decimal import Decimal as D
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+for _path in (str(ROOT), str(ROOT / "tests")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+from beancount_ledger.graph import cash_admit as ADMIT  # noqa: E402
+from beancount_ledger.graph import cash_application as CA  # noqa: E402
+from beancount_ledger.graph import cash_construct as CC  # noqa: E402
+from beancount_ledger.graph import cash_gate as G  # noqa: E402
+from beancount_ledger.graph import cash_manifest as FM  # noqa: E402
+from beancount_ledger.graph import mint as BANK_MINT  # noqa: E402
+from beancount_ledger.graph.cash_identity import (  # noqa: E402
+    BOUNDED_V1,
+    MAX_LAYOUT_ATTEMPTS,
+    VARIANTS,
+    parent_seed,
+    private_tokens,
+)
+from beancount_ledger.graph.cash_split import SPLIT_MAP  # noqa: E402
+
+#: A fixed secret, so the suite draws the same population on every machine and
+#: never depends on — or touches — the evaluator's provisioned key.
+SECRET = b"cash-application-phase-c-test-secret-0123456789"
+POPULATION = "phase-c-suite"
+
+#: The three families the negative controls are built on — one per mechanism
+#: stratum, so a control that only works where there is an advice, or only
+#: where there is a continuation, is not silently skipped. Minting a group
+#: runs the whole gate, so the controls take the pairs from here rather than
+#: minting fifteen of them again.
+CONTROL_FAMILIES = ("fc-sedgewick", "cr-brindlecote", "ar-tenterhook")
+
+_GROUPS: dict = {}
+_LEDGER = G.PopulationLedger()
+
+
+def check(name, ok, detail=""):
+    print(f"{'PASS' if ok else 'FAIL'}  {name}")
+    if not ok and detail:
+        for line in str(detail).splitlines()[:30]:
+            print(f"      {line}")
+    return ok
+
+
+def raises(exc, call, *args, **kwargs):
+    try:
+        call(*args, **kwargs)
+    except exc as error:
+        return str(error)
+    except Exception as error:                                  # noqa: BLE001
+        return f"!! {type(error).__name__}: {error}"
+    return None
+
+
+def group(family: str, index: int = 0):
+    """One minted parent group, cached: minting runs the whole gate, and the
+    suite reads each group many times."""
+    key = (family, index)
+    if key not in _GROUPS:
+        ident = CC.identity_of(POPULATION, family, index)
+        _GROUPS[key] = G.mint_group(ident, secret=SECRET, ledger=_LEDGER)
+    return _GROUPS[key]
+
+
+def candidate(family: str = CONTROL_FAMILIES[0], index: int = 0) -> G.Candidate:
+    """The admitted attempt again, as a `Candidate` the controls can doctor.
+
+    Rebuilt rather than kept from the mint, because `mint_group` returns the
+    pair and not the candidate; rebuilding it from the same rendered variants
+    is the same object by construction.
+    """
+    minted = group(family, index)
+    pair = minted.pair
+    seed = parent_seed(pair.identity, SECRET)
+    return G.candidate_of(pair.identity, BOUNDED_V1, pair.attempt, dict(pair.variants),
+                          pair.declared_fact, pair.template, seed)
+
+
+def evaluate(c: G.Candidate, ledger=None) -> G.GateReport:
+    return G.evaluate(c, ledger if ledger is not None else G.PopulationLedger())
+
+
+def failed(report: G.GateReport) -> set:
+    return {gate for gate, ok in report.gates.items() if not ok}
+
+
+# --------------------------------------------------------------------------
+# 1. the gate set, its codes and its fail-closed behaviour
+# --------------------------------------------------------------------------
+
+def test_every_declared_gate_is_implemented_and_carries_its_own_code():
+    problems = []
+    declared = FM.family_gates()
+    if G.unimplemented_gates():
+        problems.append(f"declared gates with no implementation: {list(G.unimplemented_gates())}")
+    if G.undeclared_checks():
+        problems.append(f"implementations the gate set does not declare: {list(G.undeclared_checks())}")
+    codes = G.rejection_codes()
+    if set(codes) != set(declared):
+        problems.append(f"the code map covers {sorted(set(codes) ^ set(declared))} differently from the "
+                        f"gate set")
+    if len(set(codes.values())) != len(codes):
+        duplicated = sorted({c for c in codes.values() if list(codes.values()).count(c) > 1})
+        problems.append(f"two gates share a rejection code: {duplicated}")
+    if codes.get("reading_bound_respected") != "VERIFICATION-LIMIT":
+        problems.append(f"the reading bound's code is {codes.get('reading_bound_respected')!r}, not the "
+                        f"ruling's VERIFICATION-LIMIT")
+    for group_name, gates in FM.GATE_GROUPS:
+        for gate in gates:
+            if G.group_of(gate) != group_name:
+                problems.append(f"{gate} is in {group_name} and reports {G.group_of(gate)}")
+            if gate != "reading_bound_respected" and not codes[gate].startswith(G.GROUP_PREFIX[group_name]):
+                problems.append(f"{gate}'s code {codes[gate]} does not name its group")
+
+    # Fail closed in both directions, and by REFUSING rather than by passing.
+    c = candidate()
+    original_groups = FM.GATE_GROUPS
+    try:
+        FM.GATE_GROUPS = original_groups + (("accounting_integrity", ("a_gate_nobody_wrote",)),)
+        if raises(G.GateUnavailable, evaluate, c) is None:
+            problems.append("a declared gate with no implementation was admitted rather than refused")
+    finally:
+        FM.GATE_GROUPS = original_groups
+    original_checks = dict(G.VARIANT_CHECKS)
+    try:
+        G.VARIANT_CHECKS["a_check_nobody_declared"] = lambda _c, _n: []
+        if raises(G.GateUnavailable, evaluate, c) is None:
+            problems.append("an undeclared implementation ran without the gate set knowing about it")
+    finally:
+        G.VARIANT_CHECKS.clear()
+        G.VARIANT_CHECKS.update(original_checks)
+    return check(f"all {len(declared)} declared gates have an implementation, every implementation is "
+                 f"declared, each gate carries its own rejection code with the reading bound carrying the "
+                 f"ruling's VERIFICATION-LIMIT, and a disagreement between the two REFUSES to evaluate",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 2. every family mints, and gate (o) runs at mint time
+# --------------------------------------------------------------------------
+
+def test_every_family_mints_with_every_gate_true():
+    problems = []
+    declared = set(FM.family_gates())
+    for shape in CC.SHAPES:
+        minted = group(shape.family)
+        report, census = minted.report, minted.census
+        if set(report.gates) != declared:
+            problems.append(f"{shape.family}: the report covers {sorted(set(report.gates) ^ declared)} "
+                            f"differently from the gate set")
+        if not report.passed:
+            problems.append(f"{shape.family}: {sorted(failed(report))} — {report.witness()[:200]}")
+        if census.outcome != "admitted" or census.accepted_attempt is None:
+            problems.append(f"{shape.family}: the census says {census.outcome}")
+        if set(minted.pair.variants) != set(VARIANTS):
+            problems.append(f"{shape.family}: the pair carries {sorted(minted.pair.variants)}")
+        if report.catalogue != "cash_application_baselines/1":
+            problems.append(f"{shape.family}: minted against catalogue {report.catalogue!r}")
+        if report.gate_set != FM.gate_set_digest():
+            problems.append(f"{shape.family}: minted against another gate set")
+    return check("every one of the fifteen structural-template families mints a pair through the gate, with "
+                 "all thirty-one declared gates True, both variants present, and the catalogue and gate set "
+                 "the record binds", not problems, "\n".join(problems))
+
+
+def test_gate_o_runs_at_mint_time_on_both_variants():
+    problems = []
+    binding = {b.name for b in CA.BASELINES if not b.diagnostic}
+    diagnostic = {b.name for b in CA.BASELINES if b.diagnostic}
+    if (len(binding), diagnostic) != (9, {"number_order"}):
+        problems.append(f"the catalogue holds {len(binding)} binding baselines and diagnostics {diagnostic}")
+    recorded_diagnostic = 0
+    for shape in CC.SHAPES:
+        report = group(shape.family).report
+        for name in VARIANTS:
+            seen = [o for o in report.baselines if o.variant == name]
+            if {o.name for o in seen} != binding | diagnostic:
+                problems.append(f"{shape.family}/{name}: gate (o) recorded {sorted(o.name for o in seen)}")
+            for o in seen:
+                if o.role == "binding" and o.admitted and o.reaches_truth:
+                    problems.append(f"{shape.family}/{name}: the binding baseline {o.name} reaches the whole "
+                                    f"truth through one of {o.readings} readings")
+                if o.readings > CA.MAX_BASELINE_READINGS:
+                    problems.append(f"{shape.family}/{name}: {o.name} enumerated {o.readings} readings")
+                if o.role == "diagnostic" and o.admitted:
+                    recorded_diagnostic += 1
+                    if o.reaches_truth is None:
+                        problems.append(f"{shape.family}/{name}: the diagnostic result was not recorded")
+        if report.verification_limited:
+            problems.append(f"{shape.family}: a verification limit was recorded on an admitted pair")
+    print(f"      (the diagnostic number-order reading was admitted and recorded on {recorded_diagnostic} "
+          f"variant(s); it is never an admission rule)")
+    return check("gate (o) runs in the MINTING PATH on both variants of every family: nine binding baselines "
+                 "and one diagnostic, no admitted binding baseline reaching the entire truth through any "
+                 "enumerated reading, every enumeration inside the 256-reading bound, and the diagnostic "
+                 "recorded rather than promoted", not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 3. every gate speaks
+# --------------------------------------------------------------------------
+
+def _doctor_application(c: G.Candidate, name: str, **changes) -> G.Candidate:
+    application = dict(c.application)
+    application[name] = dataclasses.replace(application[name], **changes)
+    return dataclasses.replace(c, application=application)
+
+
+def _doctor_evidence(c: G.Candidate, name: str, **changes) -> G.Candidate:
+    evidence = dict(c.evidence)
+    evidence[name] = dataclasses.replace(evidence[name], **changes)
+    return dataclasses.replace(c, evidence=evidence)
+
+
+def _doctor_files(c: G.Candidate, name: str, file_name: str, text: str) -> G.Candidate:
+    variants = dict(c.variants)
+    public = dict(variants[name].public_files)
+    public[file_name] = text
+    variants[name] = dataclasses.replace(variants[name], public_files=public)
+    return dataclasses.replace(c, variants=variants)
+
+
+def _doctor_variant(c: G.Candidate, name: str, **changes) -> G.Candidate:
+    variants = dict(c.variants)
+    variants[name] = dataclasses.replace(variants[name], **changes)
+    return dataclasses.replace(c, variants=variants)
+
+
+def _controls(c: G.Candidate) -> list:
+    """(gate, description, a candidate the gate must reject). One per
+    declared gate; the ones that cannot be expressed as a doctored candidate
+    are run as monkeypatches in `test_every_gate_speaks` instead."""
+    a = "a"
+    app = c.application[a]
+    ev = c.evidence[a]
+    out = []
+
+    # accounting integrity
+    out.append(("invoice_universe_complete", "a register row dropped",
+                _doctor_application(c, a, register=app.register[1:])))
+    out.append(("customer_ownership", "a receipt credited to a stranger",
+                _doctor_application(c, a, receipts=(dataclasses.replace(app.receipts[0], customer="Nobody Ltd"),)
+                                    + app.receipts[1:])))
+    out.append(("receipt_and_credit_conservation", "a receipt's residue moved off its total",
+                _doctor_application(c, a, receipts=(dataclasses.replace(
+                    app.receipts[0], unapplied=app.receipts[0].unapplied + D("1.00")),) + app.receipts[1:])))
+    out.append(("row_identities", "a register row that does not add up",
+                _doctor_application(c, a, register=(dataclasses.replace(
+                    app.register[0], remaining=app.register[0].remaining + D("1.00")),) + app.register[1:])))
+    out.append(("ar_reconciles", "a closing AR that is not the fold's",
+                _doctor_application(c, a, closing_ar=app.closing_ar + D("1.00"))))
+    out.append(("consistent_sale_and_credit_tax_bases", "a credit note whose net and tax are not its gross",
+                _doctor_evidence(c, a, credit_notes=(dataclasses.replace(
+                    ev.credit_notes[0], net=ev.credit_notes[0].net + D("1.00")),) + ev.credit_notes[1:])))
+    out.append(("cumulative_reversal_bounded", "a note reversing more than the sale it names",
+                _doctor_evidence(c, a, credit_notes=(dataclasses.replace(
+                    ev.credit_notes[0], gross=ev.credit_notes[0].gross + D("100000.00")),)
+                    + ev.credit_notes[1:])))
+
+    # evidence integrity
+    out.append(("genuine_payment_identity", "a receipt of nothing",
+                _doctor_evidence(c, a, receipts=(dataclasses.replace(ev.receipts[0], amount=D("0.00")),)
+                                 + ev.receipts[1:])))
+    out.append(("unambiguous_advice_binding", "an advice that binds no payment",
+                _doctor_evidence(c, a, bindings={})))
+    out.append(("chronology_consistent_with_policy", "a receipt dated before the world began",
+                _doctor_evidence(c, a, receipts=(dataclasses.replace(ev.receipts[0], date="1999-01-01"),)
+                                 + ev.receipts[1:])))
+    out.append(("no_refusal_relaxed_by_layout", "a candidate carrying a threshold warning",
+                _doctor_application(c, a, warnings=app.warnings + (f"{CA.WARN_UNBOUND_ADVICE}: probe",))))
+
+    # representation integrity
+    out.append(("renders_and_parses_through_shipped_boundaries", "a golden register that is not the fold's",
+                _doctor_variant(c, a, golden_register="{}\n")))
+    out.append(("csv_columns_declared", "an open-items file with a renamed column",
+                _doctor_files(c, a, CA.OPEN_ITEMS_FILE,
+                              c.public(a)[CA.OPEN_ITEMS_FILE].replace("open_balance", "balance_open", 1))))
+    out.append(("string_limits_respected", "a cell over the shipped codepoint limit",
+                _doctor_files(c, a, CA.CUSTOMERS_FILE,
+                              c.public(a)[CA.CUSTOMERS_FILE] + "x" * 400 + "\n")))
+    out.append(("delivery_envelope_respected", "a register over the delivery envelope",
+                _doctor_variant(c, a, golden_register="x" * 20000)))
+
+    # independent correctness
+    other = c.application["b"]
+    out.append(("private_derivation_equals_public_fold", "the other variant's fold under this variant's truth",
+                _doctor_application(c, a, receipts=other.receipts, register=other.register,
+                                    credit_notes=other.credit_notes)))
+    out.append(("planted_repairs_match_public_reading", "a statement with no receipts on it",
+                _doctor_evidence(c, a, receipts=())))
+
+    # contrast integrity
+    same = CC.DeclaredFact(name=c.declared_fact.name,
+                           values={n: next(iter(c.declared_fact.values.values())) for n in VARIANTS})
+    out.append(("variants_differ_in_declared_fact", "a pair declaring one value twice",
+                dataclasses.replace(c, declared_fact=same)))
+    out.append(("consequences_derived_not_authored", "a file the declared fact does not reach, moved",
+                _doctor_files(c, "b", CA.ACCOUNTS_FILE, c.public("b")[CA.ACCOUNTS_FILE] + "# moved\n")))
+    twins = dict(c.variants)
+    twins["b"] = dataclasses.replace(twins[a], variant="b")
+    out.append(("intended_distinction_changes", "a pair whose two variants are one world",
+                dataclasses.replace(c, variants=twins,
+                                    application={n: app for n in VARIANTS},
+                                    evidence={n: ev for n in VARIANTS},
+                                    content_digests={n: c.content_digests[a] for n in VARIANTS})))
+
+    # population integrity
+    out.append(("no_evaluator_provenance_leak", "a public file carrying the identity's label",
+                _doctor_files(c, a, CA.CUSTOMERS_FILE,
+                              c.public(a)[CA.CUSTOMERS_FILE] + f"# {c.identity.label()}\n")))
+    return out
+
+
+def test_every_gate_speaks():
+    """A check that cannot fail proves nothing, and thirty-one of them prove
+    nothing thirty-one times. Every declared gate gets a control that ought
+    to make IT fail, and the control is required to name that gate among the
+    failures — not merely to make something fail."""
+    problems = []
+    spoke = set()
+    c = candidate()
+    for gate, description, doctored in _controls(c):
+        report = evaluate(doctored)
+        if gate not in failed(report):
+            problems.append(f"{gate}: {description} was admitted (failed: {sorted(failed(report))})")
+        else:
+            spoke.add(gate)
+            code = G.rejection_codes()[gate]
+            if code not in report.codes:
+                problems.append(f"{gate}: the report does not carry its code {code}")
+
+    # The controls that are a change to the ENGINES rather than to a
+    # candidate: each one is the mistake the gate exists to catch.
+    def with_patch(owner, attribute, value, gate):
+        # The candidate is built BEFORE the patch, because some of these
+        # patches (the reading bound) would stop it being buildable at all,
+        # and what is under test is the gate's answer, not the constructor's.
+        original = getattr(owner, attribute)
+        try:
+            setattr(owner, attribute, value)
+            report = evaluate(c)
+        finally:
+            setattr(owner, attribute, original)
+        if gate not in failed(report):
+            problems.append(f"{gate}: patching {attribute} was admitted (failed: {sorted(failed(report))})")
+        else:
+            spoke.add(gate)
+        return report
+
+    with_patch(ADMIT, "golden_ledger_problems", lambda *a, **k: (["probe"], None),
+               "golden_ledger_scores_complete")
+    with_patch(ADMIT, "golden_register_problems", lambda *a, **k: ["probe"],
+               "golden_register_scores_complete")
+    with_patch(CA, "REFUSALS", tuple(r for r in CA.REFUSALS if r != CA.REFUSE_ORDER_SENSITIVE),
+               "order_insensitive")
+    # A baseline that IS the policy reaches the whole truth by definition.
+    with_patch(CA, "BASELINES", CA.BASELINES + (
+        CA.Baseline("probe_policy", CA.POLICY, lambda ev: True, False, "the policy itself, as a baseline"),),
+        "no_binding_baseline_reaches_truth")
+    # A promotion of the one diagnostic into an admission rule.
+    with_patch(CA, "BASELINES", tuple(
+        CA.Baseline(b.name, b.strategy, b.admitted_when, False, b.description) if b.diagnostic else b
+        for b in CA.BASELINES), "diagnostic_baseline_recorded")
+    # The reading bound: a VERIFICATION-LIMIT rejection, never evidence that
+    # the candidate resisted anything.
+    #
+    # The bound is dropped to ZERO rather than to one because in this
+    # population every baseline enumerates exactly one reading — the
+    # amount-only branch has a single exact subset on every drawn month — so
+    # a bound of one is a bound nothing crosses. Dropping it to zero forces
+    # the condition without fabricating a monstrous world to cross 256 with.
+    report = with_patch(CA, "MAX_BASELINE_READINGS", 0, "reading_bound_respected")
+    if "VERIFICATION-LIMIT" not in report.codes:
+        problems.append(f"an over-bound enumeration was recorded as {report.codes}, not VERIFICATION-LIMIT")
+    if not report.verification_limited:
+        problems.append("an over-bound enumeration did not mark the report verification-limited")
+    if "no_binding_baseline_reaches_truth" in failed(report):
+        problems.append("an over-bound enumeration was ALSO reported as a baseline reaching the truth; "
+                        "decision 3 says exceeding the bound is not evidence the candidate resisted")
+
+    # The two population gates need a POPULATION, not a candidate.
+    ledger = G.PopulationLedger()
+    ledger.record(c)
+    if "no_public_content_collision" not in failed(evaluate(c, ledger)):
+        problems.append("a pair republishing bytes already in the population was admitted")
+    else:
+        spoke.add("no_public_content_collision")
+    elsewhere = next(name for name in SPLIT_MAP.families() if SPLIT_MAP.split_of(name) != c.identity.split)
+    sibling = G.PopulationLedger()
+    sibling.record(dataclasses.replace(c, template=dataclasses.replace(c.template, family=elsewhere)))
+    if "no_cross_split_structural_sibling" not in failed(evaluate(c, sibling)):
+        problems.append(f"a candidate whose canonical structure already appears in "
+                        f"{SPLIT_MAP.split_of(elsewhere)!r} was admitted")
+    else:
+        spoke.add("no_cross_split_structural_sibling")
+
+    # The one gate a doctored candidate cannot reach without also breaking
+    # everything above it: the opening ledger's write-off balance.
+    truth = c.truth("a")
+    ledger_text = c.public("a")[CA.LEDGER_FILE]
+    before = (_dt.date.fromisoformat(c.evidence["a"].period_start) - _dt.timedelta(days=1)).isoformat()
+    entry = (f'\n{before} * "Probe" "A write-off carried into the period"\n'
+             f'  {truth.write_off_account}  10.00 USD\n'
+             f'  {truth.receivables_account}  -10.00 USD\n')
+    if "zero_opening_write_off_balance" not in failed(
+            evaluate(_doctor_files(c, "a", CA.LEDGER_FILE, ledger_text + entry))):
+        problems.append("an opening ledger already carrying a write-off was admitted")
+    else:
+        spoke.add("zero_opening_write_off_balance")
+
+    # memo/narration agreement: a statement reference naming an invoice the
+    # universe does not carry.
+    statement = c.public("a")[CA.STATEMENT_FILE]
+    token = next((t for t in ("SI-4101", "SI-4102") if t not in statement), "SI-9999")
+    doctored = _doctor_evidence(c, "a", receipts=(dataclasses.replace(
+        c.evidence["a"].receipts[0], reference=f"{token} PAYMENT"),) + c.evidence["a"].receipts[1:])
+    if "memo_narration_agreement" not in failed(evaluate(doctored)):
+        problems.append("a statement reference naming an invoice outside the universe was admitted")
+    else:
+        spoke.add("memo_narration_agreement")
+
+    silent = sorted(set(FM.family_gates()) - spoke)
+    if silent:
+        problems.append(f"these gates have no control that makes them speak: {silent}")
+    return check(f"every one of the {len(FM.family_gates())} declared gates has a negative control that makes "
+                 f"THAT gate fail and puts its own rejection code on the report, and an over-bound "
+                 f"enumeration is a VERIFICATION-LIMIT rejection rather than evidence of resistance",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 4. the census
+# --------------------------------------------------------------------------
+
+def test_the_census_retains_everything_decision_three_names():
+    problems = []
+    for shape in CC.SHAPES:
+        minted = group(shape.family)
+        census = minted.census
+        if [a.ordinal for a in census.attempts] != list(range(len(census.attempts))):
+            problems.append(f"{shape.family}: the census skips an attempt ordinal")
+        if census.attempts[-1].outcome != "accepted":
+            problems.append(f"{shape.family}: the census does not end in the accepted attempt")
+        if census.group != minted.pair.identity.label():
+            problems.append(f"{shape.family}: the census does not name its group")
+        for attempt in census.attempts:
+            if attempt.stage not in ("attempt", "draw", "render", "pair", "gate"):
+                problems.append(f"{shape.family}: attempt {attempt.ordinal} has stage {attempt.stage!r}")
+            if attempt.outcome == "refused" and not attempt.codes:
+                problems.append(f"{shape.family}: refused attempt {attempt.ordinal} carries no rejection code")
+            if attempt.outcome == "refused" and not attempt.witness:
+                problems.append(f"{shape.family}: refused attempt {attempt.ordinal} carries no witness")
+            if not attempt.components:
+                problems.append(f"{shape.family}: attempt {attempt.ordinal} records no component versions")
+            if attempt.stage == "gate":
+                if not attempt.reading_counts:
+                    problems.append(f"{shape.family}: gate attempt {attempt.ordinal} records no reading count")
+                if len(attempt.content_digests) != 2:
+                    problems.append(f"{shape.family}: gate attempt {attempt.ordinal} records "
+                                    f"{len(attempt.content_digests)} content digests")
+        accepted = census.attempts[-1]
+        if accepted.readings < 1:
+            problems.append(f"{shape.family}: the accepted attempt records no readings")
+        if census.components.get("gate") != G.GATE_VERSION:
+            problems.append(f"{shape.family}: the census does not record this gate's version")
+        if census.components.get("baseline_catalogue") != "cash_application_baselines/1":
+            problems.append(f"{shape.family}: the census does not record the catalogue")
+        if census.split != SPLIT_MAP.split_of(shape.family):
+            problems.append(f"{shape.family}: the census records split {census.split!r}")
+        view = census.view()
+        if set(view) < {"group", "attempts", "rejection_distribution", "components", "outcome"}:
+            problems.append(f"{shape.family}: the census view is missing fields: {sorted(view)}")
+    return check("every attempt's ordinal, stage, evaluated rejection codes, witness, reading count, "
+                 "component versions and content digests are retained, the census names its group, and the "
+                 "accepted attempt is the last row", not problems, "\n".join(problems))
+
+
+def test_aggregates_are_published():
+    problems = []
+    censuses = [group(shape.family).census for shape in CC.SHAPES]
+    figures = G.aggregate(censuses)
+    for key in ("groups", "admitted_groups", "exhausted_groups", "group_acceptance_rate",
+                "attempts", "accepted_attempts", "attempt_acceptance_rate", "rejection_distribution",
+                "attempts_by_stage", "by_mechanism", "components"):
+        if key not in figures:
+            problems.append(f"the aggregate does not publish {key}")
+    if figures["groups"] != len(CC.SHAPES) or figures["admitted_groups"] != len(CC.SHAPES):
+        problems.append(f"the aggregate counts {figures['admitted_groups']} of {figures['groups']} admitted")
+    if figures["exhausted_groups"] != 0:
+        problems.append(f"{figures['exhausted_groups']} group(s) exhausted in this population")
+    if figures["accepted_attempts"] != len(CC.SHAPES):
+        problems.append(f"{figures['accepted_attempts']} accepted attempts over {len(CC.SHAPES)} groups")
+    if set(figures["by_mechanism"]) != {shape.mechanism for shape in CC.SHAPES}:
+        problems.append(f"the aggregate is not stratified by mechanism: {sorted(figures['by_mechanism'])}")
+
+    # An exhausted group is counted, and its code is in the distribution.
+    impossible = dataclasses.replace(BOUNDED_V1, max_golden_ledger_bytes=10)
+    blocked = CC.identity_of(POPULATION, "fc-sedgewick", 0, impossible)
+    _minted, exhausted = G.mint_population([blocked], impossible, SECRET)
+    mixed = G.aggregate(censuses + list(exhausted))
+    if mixed["exhausted_groups"] != 1:
+        problems.append(f"an exhausted group was counted {mixed['exhausted_groups']} times")
+    if G.EXHAUSTION_CODE not in mixed["rejection_distribution"]:
+        problems.append(f"the rejection distribution does not carry {G.EXHAUSTION_CODE}: "
+                        f"{sorted(mixed['rejection_distribution'])}")
+    if not 0 < mixed["group_acceptance_rate"] < 1:
+        problems.append(f"the group acceptance rate is {mixed['group_acceptance_rate']}")
+    print(f"      (attempt acceptance {figures['attempt_acceptance_rate']:.3f} over {figures['attempts']} "
+          f"attempts; rejections {figures['rejection_distribution']})")
+    return check("aggregate acceptance rates, exhaustion counts and rejection distributions are published, "
+                 "stratified by mechanism, and an exhausted group is counted rather than dropped",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 5. bounded attempts, named exhaustion, defects not drawn past
+# --------------------------------------------------------------------------
+
+def test_exhaustion_is_a_named_failed_group_and_defects_are_not_drawn_past():
+    problems = []
+    impossible = dataclasses.replace(BOUNDED_V1, max_golden_ledger_bytes=10)
+    blocked = CC.identity_of(POPULATION, "fc-sedgewick", 0, impossible)
+    message = raises(G.GroupExhausted, G.mint_group, blocked, impossible, SECRET)
+    if message is None:
+        problems.append("a profile no layout can satisfy still minted a group")
+    else:
+        if blocked.label() not in message or "EXHAUSTED" not in message:
+            problems.append(f"exhaustion did not name the failed group: {message}")
+        if "replacement selector" not in message:
+            problems.append("exhaustion did not say that no replacement selector is drawn")
+    if not issubclass(G.GroupExhausted, CC.ConstructionRefused):
+        problems.append("GroupExhausted is not a ConstructionRefused, so existing callers stop seeing it")
+
+    # The whole bounded population is retained, not just the last exception.
+    _minted, censuses = G.mint_population([blocked], impossible, SECRET)
+    exhausted = censuses[0]
+    if exhausted.outcome != "exhausted" or exhausted.accepted_attempt is not None:
+        problems.append(f"the exhausted group's census reads {exhausted.outcome}")
+    if G.EXHAUSTION_CODE not in exhausted.distribution():
+        problems.append(f"the exhausted census carries codes {sorted(exhausted.distribution())}")
+
+    # Decision 3's other line: a defect is investigated, not drawn past.
+    original = CC.derive_contract
+    calls = []
+
+    def boom(world, task):
+        calls.append(task.id)
+        raise TypeError("an unexpected exception")
+    try:
+        CC.derive_contract = boom
+        message = raises(TypeError, G.mint_group, CC.identity_of(POPULATION, "fc-sedgewick", 0),
+                         BOUNDED_V1, SECRET)
+    finally:
+        CC.derive_contract = original
+    if message is None or message.startswith("!!"):
+        problems.append(f"an unexpected exception did not reach the caller: {message}")
+    if len(calls) != 1:
+        problems.append(f"an unexpected exception produced {len(calls)} derivation calls, not 1: it was "
+                        f"reclassified as expected and drawn past")
+
+    # A gate that cannot be evaluated stops the mint rather than admitting.
+    original_checks = dict(G.VARIANT_CHECKS)
+    try:
+        G.VARIANT_CHECKS.pop("ar_reconciles")
+        if raises(G.GateUnavailable, G.mint_group, CC.identity_of(POPULATION, "fc-sedgewick", 0),
+                  BOUNDED_V1, SECRET) is None:
+            problems.append("a group was minted while a declared gate had no implementation")
+    finally:
+        G.VARIANT_CHECKS.clear()
+        G.VARIANT_CHECKS.update(original_checks)
+    return check(f"the attempt loop is bounded at {MAX_LAYOUT_ATTEMPTS}, exhaustion is a NAMED failed group "
+                 f"that draws no replacement selector and is retained in the census, an unexpected exception "
+                 f"reaches the caller after one attempt, and an unevaluable gate stops the mint",
+                 not problems, "\n".join(problems))
+
+
+def test_the_pair_is_the_unit_of_rejection():
+    """Decision 3: "Reject BOTH variants when either fails any acceptance
+    condition." A finding on one variant must reject the pair, not the
+    variant."""
+    problems = []
+    c = candidate()
+    for name in VARIANTS:
+        doctored = _doctor_application(c, name, closing_ar=c.application[name].closing_ar + D("1.00"))
+        report = evaluate(doctored)
+        if report.passed:
+            problems.append(f"a finding on variant {name} left the pair admitted")
+        variants = {f.variant for f in report.findings if f.gate == "ar_reconciles"}
+        if variants != {name}:
+            problems.append(f"a finding on variant {name} was attributed to {variants}")
+    return check("a finding on either variant rejects the PAIR, and the census records which variant it was "
+                 "found on", not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 6. the ruling's own words
+# --------------------------------------------------------------------------
+
+MINTING_DOCSTRING = (
+    "Candidate construction, attempt order, acceptance, rejection, profile assignment and split membership "
+    "are determined solely by the frozen generation specification and declared model-independent checks. No "
+    "learned-model output, score, success or failure label, token usage or trajectory may influence those "
+    "decisions. All bounded attempts and evaluated rejection reasons are retained. Model observations may "
+    "motivate a separately versioned future specification; they may not select or alter members of this "
+    "version."
+)
+
+
+def test_the_minting_docstring_is_verbatim():
+    problems = []
+    doc = G.mint_group.__doc__ or ""
+    head = doc.split("\n\n    ---", 1)[0]
+    flattened = " ".join(head.split())
+    if flattened != MINTING_DOCSTRING:
+        problems.append(f"the minting docstring reads:\n{flattened}\n\nand the ruling's paragraph is:\n"
+                        f"{MINTING_DOCSTRING}")
+    return check("the ruling's minting paragraph is in the minting function's docstring, verbatim",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 7. the baseline catalogue, versioned independently
+# --------------------------------------------------------------------------
+
+def test_the_catalogue_digest_binds_predicate_bodies_not_names():
+    problems = []
+    if FM.BASELINE_CATALOGUE_ID != "cash_application_baselines/1":
+        problems.append(f"the catalogue is {FM.BASELINE_CATALOGUE_ID!r}")
+    view = FM.baseline_catalogue_view()
+    if any(not b.get("admitted_when_code") for b in view["baselines"]):
+        problems.append("a baseline records no digest of its admission predicate")
+    before = FM.baseline_catalogue_digest()
+
+    # The mistake the name-only digest could not see: an admission predicate
+    # edited under an UNCHANGED name, so the baseline is admitted against a
+    # different set of candidates and every record still verifies.
+    target = next(b for b in CA.BASELINES if b.name == "credit_ignored")
+
+    def probe(ev):                                           # the same NAME, a different predicate
+        return len(ev.credit_notes) > 1
+    probe.__name__ = target.admitted_when.__name__
+    original = CA.BASELINES
+    try:
+        CA.BASELINES = tuple(CA.Baseline(b.name, b.strategy, probe, b.diagnostic, b.description)
+                             if b.name == "credit_ignored" else b for b in original)
+        if FM.baseline_catalogue_digest() == before:
+            problems.append("editing an admission predicate's BODY under an unchanged name did not move the "
+                            "catalogue digest")
+        names = {b["admitted_when"] for b in FM.baseline_catalogue_view()["baselines"]}
+        if target.admitted_when.__name__ not in names:
+            problems.append("the probe changed the predicate's name, so it does not witness what it claims")
+    finally:
+        CA.BASELINES = original
+    if FM.baseline_catalogue_digest() != before:
+        problems.append("the catalogue digest did not return to its value after the probe")
+    return check("the baseline catalogue is versioned as cash_application_baselines/1 and its digest binds "
+                 "the admission predicates THEMSELVES: editing one's body under an unchanged name moves it",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 8. determinism, and the frozen neighbours
+# --------------------------------------------------------------------------
+
+def test_minting_is_deterministic_in_the_identity_and_the_secret():
+    problems = []
+    ident = CC.identity_of(POPULATION, "cr-brindlecote", 0)
+    first = G.mint_group(ident, BOUNDED_V1, SECRET)
+    again = G.mint_group(ident, BOUNDED_V1, SECRET)
+    if first.pair.variants["a"].public_files != again.pair.variants["a"].public_files:
+        problems.append("two mints of one identity under one secret produced different public bytes")
+    if [a.view() for a in first.census.attempts] != [a.view() for a in again.census.attempts]:
+        problems.append("two mints of one identity under one secret produced different censuses")
+    other = G.mint_group(ident, BOUNDED_V1, b"a-quite-different-phase-c-secret-000000000000")
+    if other.pair.variants["a"].public_files == first.pair.variants["a"].public_files:
+        problems.append("the secret does not reach the drawn world")
+    seed = parent_seed(ident, SECRET)
+    surfaces = {}
+    for name in VARIANTS:
+        variant = first.pair.variants[name]
+        surfaces.update({f"{name}/{k}": v for k, v in variant.public_files.items()})
+        surfaces[f"{name}/task_id"] = variant.task.id
+    leaks = [token for token in private_tokens(ident, seed)
+             if any(token in text for text in surfaces.values())]
+    if leaks:
+        problems.append(f"a private construction token reached a surface: {leaks}")
+    return check("minting is a pure function of the construction identity, the profile and the secret — the "
+                 "same world and the same census every time, a different world under another secret, and no "
+                 "private selector on any surface", not problems, "\n".join(problems))
+
+
+def test_the_frozen_neighbours_did_not_move():
+    problems = []
+    if BANK_MINT.GENERATOR_VERSION != 9:
+        problems.append(f"the bank generator is at version {BANK_MINT.GENERATOR_VERSION}, not 9")
+    components = FM.semantic_components()
+    if "generator_version" in components or any("GENERATOR" in str(k) for k in components):
+        problems.append("the cash family's semantic components name the bank generator's version")
+    from beancount_ledger.graph.worlds import CASH_APPLICATION_REGISTRY
+    if len(CASH_APPLICATION_REGISTRY) != 11:
+        problems.append(f"the authored population holds {len(CASH_APPLICATION_REGISTRY)} tasks, not eleven")
+    authored = set(CASH_APPLICATION_REGISTRY)
+    generated = {group(shape.family).pair.variants[name].task.id
+                 for shape in CC.SHAPES for name in VARIANTS}
+    if authored & generated:
+        problems.append(f"a generated task took an authored id: {sorted(authored & generated)}")
+    for family in SPLIT_MAP.families():
+        if family in authored:
+            problems.append(f"the authored task {family} is inside the generated population's split map")
+    return check("GENERATOR_VERSION 9 is untouched and uncoupled, the eleven authored cash tasks stay outside "
+                 "the generated population, and no generated task takes an authored id",
+                 not problems, "\n".join(problems))
+
+
+TESTS = [
+    test_every_declared_gate_is_implemented_and_carries_its_own_code,
+    test_every_family_mints_with_every_gate_true,
+    test_gate_o_runs_at_mint_time_on_both_variants,
+    test_every_gate_speaks,
+    test_the_census_retains_everything_decision_three_names,
+    test_aggregates_are_published,
+    test_exhaustion_is_a_named_failed_group_and_defects_are_not_drawn_past,
+    test_the_pair_is_the_unit_of_rejection,
+    test_the_minting_docstring_is_verbatim,
+    test_the_catalogue_digest_binds_predicate_bodies_not_names,
+    test_minting_is_deterministic_in_the_identity_and_the_secret,
+    test_the_frozen_neighbours_did_not_move,
+]
+
+
+def main() -> int:
+    results = [test() for test in TESTS]
+    passed = sum(1 for r in results if r)
+    print(f"\n{passed}/{len(results)} checks passed")
+    return 0 if passed == len(results) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
