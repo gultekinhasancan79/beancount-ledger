@@ -92,4 +92,6 @@ The fixed-panel study is separate from the 106 authored tasks and the local walk
 
 If you evaluate accounting agents or build task graders, start with the local walkthrough. Useful feedback includes an unclear input, a scorer disagreement, or a reproducible model failure. [Open an issue](https://github.com/gultekinhasancan79/beancount-ledger/issues) with the task ID, source commit, reproduction steps, and expected versus actual result.
 
+[Contribution guide](CONTRIBUTING.md) · [Report a bug or give evaluation feedback](https://github.com/gultekinhasancan79/beancount-ledger/issues/new/choose)
+
 Built by [Hasancan Gültekin](https://github.com/gultekinhasancan79) on [Prime Intellect's verifiers](https://github.com/PrimeIntellect-ai/verifiers). [Email](mailto:gultekinhasancan79@gmail.com) · [LinkedIn](https://linkedin.com/in/can79) · [Manifund project](https://manifund.org/projects/beancount-ledger-a-deterministic-reward-rl-environment-for-agentic-bookkeeping).
