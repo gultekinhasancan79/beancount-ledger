@@ -1,5 +1,31 @@
 # Cash-application development population — MINTING CENSUS AND SERVING EVIDENCE (2026-09-13)
 
+> ## SUPERSEDED — 2026-09-13
+>
+> **This record is superseded by
+> [`cash_application_development_population_2026-09-13_replacement.md`](cash_application_development_population_2026-09-13_replacement.md).**
+> It is kept as the historical artifact of the admission rule it was minted under, and nothing below
+> this banner has been edited; the five JSON files beside it are byte-identical to the day they were
+> minted, and `tests/test_cash_gate.py` fails if they are altered.
+>
+> **Why.** Round 17, decision 4 found that one of the thirty-one admission conditions was wrong:
+> `cumulative_reversal_bounded` additionally rejected a credit note whose gross exceeded the
+> invoice's **opening balance**, on top of the correct bound at the **original sale**. The
+> opening-balance cap was an incorrect additional accounting restriction, so **passing it could not
+> establish conformity to the intended specification.** The population below was selected under that
+> restriction. The cap is removed, the corrected semantics are versioned (gate version 2, preflight
+> contract 2, gate set `2491e97f97b48cee`), and the replacement population
+> **`cash-application-development-2`** was minted, censused, validated and served under them.
+>
+> The two parent attempts this census records as refused for `ACC-CUMULATIVE-REVERSAL-BOUNDED`
+> (2,332.00 against 2,173.00 and 2,415.00 against 2,362.50, both in `cr-pikestaff/1`) were false
+> rejections. Reminted under the corrected contract, **both are admitted** — see
+> `cash_application_development_population_2026-09-13_replacement/superseded_rejections.json`.
+>
+> `cash-application-development-1` is retired from `RELEASED_POPULATIONS`. No selector spells it, and
+> the family manifest no longer carries its records. **Do not cite the figures below as evidence about
+> the current generator.**
+
 Offline engineering record. **No model was called.** Nothing in this note describes a model, a
 score, a difficulty or a training effect, and nothing in it may be cited as evidence of one.
 

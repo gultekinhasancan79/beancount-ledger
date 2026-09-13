@@ -31,7 +31,15 @@ Round 16, decision 5. What is witnessed here:
   * NO MODEL IS CALLED: the phase-D modules import no provider, no HTTP
     client and no measurement instrument;
   * no shipped task's public bytes moved, and GENERATOR_VERSION 9 and its
-    manifest are untouched.
+    manifest are untouched;
+  * ROUND 17, DECISION 4 — the REPLACEMENT population. The population
+    selected under the incorrect opening-balance cap is retired and
+    unspellable, the freeze pins the population identifier as a literal so
+    that it cannot move again unnoticed, and both records are published: the
+    superseded one unaltered under the rule it was minted under, the
+    replacement one a census of THIS generator, each note linking to the
+    other, with the paired replay showing every refusal the removed clause
+    caused is now admitted.
 
     python tests/test_cash_population.py
 """
@@ -489,6 +497,176 @@ def test_the_authored_eleven_stay_outside_and_the_frozen_neighbours_did_not_move
 SHIPPED_PUBLIC_ROLL = "dbac991578fcc6292af8d547c335e648c068d1d8320c538001dd9cc9cb500f0b"
 
 
+# --------------------------------------------------------------------------
+# the replacement population (round 17, decision 4)
+# --------------------------------------------------------------------------
+
+#: The superseded population, its record, and the gate set it was minted
+#: under. Literals, because the whole point of the finding is that these two
+#: rules must never be readable as each other.
+SUPERSEDED = "cash-application-development-1"
+SUPERSEDED_GATE_SET = "6b246422badd05a6"
+SUPERSEDED_RECORD = "cash_application_development_population_2026-09-13"
+REPLACEMENT_RECORD = SUPERSEDED_RECORD + "_replacement"
+
+
+def test_the_superseded_population_is_retired_and_unspellable():
+    """Decision 4 replaced a population, and a replaced population must not
+    still be servable. Retirement here is the ABSENCE of a roster entry — the
+    same mechanism that keeps the evaluation split closed — plus a declared
+    reason a reader of the old census can find in source."""
+    problems = []
+    if CP.DEVELOPMENT_POPULATION == SUPERSEDED:
+        problems.append(f"the development population is still {SUPERSEDED!r}")
+    if SUPERSEDED in CP.RELEASED_POPULATIONS:
+        problems.append(f"{SUPERSEDED!r} is still released and its selectors still parse")
+    entry = CP.SUPERSEDED_POPULATIONS.get(SUPERSEDED)
+    if not entry:
+        problems.append(f"{SUPERSEDED!r} is not declared superseded, so nothing in source says why it went")
+    else:
+        if entry.get("superseded_by") != CP.DEVELOPMENT_POPULATION:
+            problems.append(f"the supersession names {entry.get('superseded_by')!r}, not the live population")
+        if "opening balance" not in entry.get("reason", ""):
+            problems.append("the supersession does not name the incorrect restriction")
+    if set(CP.SUPERSEDED_POPULATIONS) & set(CP.RELEASED_POPULATIONS):
+        problems.append("a population is both released and superseded")
+    for variant in sorted(VARIANTS):
+        selector = f"{CP.SELECTOR_PREFIX}:{SUPERSEDED}:cr-pikestaff:0:{variant}"
+        message = raises(CP.SelectorError, CP.parse_selector, selector)
+        if message is None or "not a released" not in message:
+            problems.append(f"a superseded selector was not refused as unreleased: {message}")
+    if raises(CP.PopulationError, CP.identities_of, SUPERSEDED) is None:
+        problems.append("the superseded population still yields identities through the roster")
+    return check("the superseded population is retired: it is not released, no selector spells it, its roster "
+                 "is gone, and source declares what replaced it and why",
+                 not problems, "\n".join(problems))
+
+
+def test_the_freeze_pins_the_population_identifier_as_a_literal():
+    """A freeze that read `DEVELOPMENT_POPULATION` to check
+    `DEVELOPMENT_POPULATION` would agree with every future value of it. The
+    identifier moved once, deliberately; the freeze must notice it moving
+    again."""
+    problems = []
+    if CP.DECLARED_FREEZE.get("development_population") != CP.DEVELOPMENT_POPULATION:
+        problems.append("the declared population does not match the live one")
+    source = (ROOT / "beancount_ledger" / "graph" / "cash_population.py").read_text(encoding="utf-8")
+    declaration = source.split("DECLARED_FREEZE: dict = {", 1)[-1].split("\n}", 1)[0]
+    # The VALUES only: a comment inside the declaration may name the constant
+    # to say why it is not read, and that is the opposite of the defect.
+    values = "\n".join(line.split("#", 1)[0] for line in declaration.splitlines())
+    if "DEVELOPMENT_POPULATION" in values:
+        problems.append("DECLARED_FREEZE reads the constant it is meant to pin")
+    original = CP.DEVELOPMENT_POPULATION
+    try:
+        CP.DEVELOPMENT_POPULATION = "cash-application-development-99"
+        found = CP.freeze_problems()
+    finally:
+        CP.DEVELOPMENT_POPULATION = original
+    if not any(line.startswith("development_population was frozen at") for line in found):
+        problems.append(f"moving the population identifier was not reported: {found}")
+    if CP.freeze_problems():
+        problems.append("the declaration was not restored after the control")
+    if tuple(CP.DECLARED_FREEZE.get("superseded_populations", ())) != tuple(sorted(CP.SUPERSEDED_POPULATIONS)):
+        problems.append("the frozen superseded list does not match the live one")
+    return check("the freeze pins the population identifier as a literal and reports it moving",
+                 not problems, "\n".join(problems))
+
+
+def test_both_population_records_are_published_and_cross_linked():
+    """The superseded record stays as minted; the replacement stands beside
+    it; each note names the other. A reader who lands on either one must be
+    able to get to the other without knowing this history."""
+    import json as _json
+
+    problems = []
+    reviews = ROOT / "reviews"
+    old_dir, new_dir = reviews / SUPERSEDED_RECORD, reviews / REPLACEMENT_RECORD
+    old_note, new_note = reviews / f"{SUPERSEDED_RECORD}.md", reviews / f"{REPLACEMENT_RECORD}.md"
+
+    for path in (old_dir, new_dir, old_note, new_note):
+        if not path.exists():
+            problems.append(f"{path.relative_to(ROOT)} is missing")
+    if problems:
+        return check("both population records are published and cross-linked", False, "\n".join(problems))
+
+    # The superseded record's five artifacts stay as minted, under the old
+    # rule, and must never be readable as a census of this generator.
+    for name in ("freeze.json", "census.json", "aggregates.json", "validation.json", "serving.json"):
+        if not (old_dir / name).is_file():
+            problems.append(f"the superseded record lost {name}")
+    old_freeze = _json.loads((old_dir / "freeze.json").read_text(encoding="utf-8"))["freeze"]["declared"]
+    if old_freeze.get("gate_set_digest") != SUPERSEDED_GATE_SET or old_freeze.get("gate_version") != 1:
+        problems.append("the superseded record was altered; it must stay as minted")
+    old_census = _json.loads((old_dir / "census.json").read_text(encoding="utf-8"))
+    if old_census.get("population") != SUPERSEDED:
+        problems.append(f"the superseded census names {old_census.get('population')!r}")
+
+    # The replacement record is a census of THIS generator.
+    new_freeze = _json.loads((new_dir / "freeze.json").read_text(encoding="utf-8"))["freeze"]["declared"]
+    for key, want in (("gate_set_digest", FM.gate_set_digest()),
+                      ("gate_version", 2),
+                      ("family_preflight_contract", FM.FAMILY_PREFLIGHT_CONTRACT),
+                      ("development_population", CP.DEVELOPMENT_POPULATION)):
+        if new_freeze.get(key) != want:
+            problems.append(f"the replacement record declares {key} {new_freeze.get(key)!r}, not {want!r}")
+    new_census = _json.loads((new_dir / "census.json").read_text(encoding="utf-8"))
+    if new_census.get("population") != CP.DEVELOPMENT_POPULATION:
+        problems.append(f"the replacement census names {new_census.get('population')!r}")
+    if len(new_census.get("groups", [])) != CP.GROUPS_PER_STRATUM * len(MECHANISMS):
+        problems.append(f"the replacement census holds {len(new_census.get('groups', []))} groups")
+
+    # The paired replay: every attempt the old rule refused for the removed
+    # clause, and what the corrected one does with it.
+    replay_path = new_dir / "superseded_rejections.json"
+    if not replay_path.is_file():
+        problems.append("the replacement record carries no paired replay of the superseded refusals")
+    else:
+        replay = _json.loads(replay_path.read_text(encoding="utf-8"))
+        refused = sum(1 for group in old_census.get("groups", []) for attempt in group["attempts"]
+                      if "ACC-CUMULATIVE-REVERSAL-BOUNDED" in attempt["codes"])
+        if replay.get("rejected_attempts_replayed") != refused:
+            problems.append(f"the replay covers {replay.get('rejected_attempts_replayed')} of {refused} "
+                            f"refusals the superseded census records")
+        if replay.get("now_admitted") != refused or not refused:
+            problems.append(f"{replay.get('now_admitted')} of {refused} superseded refusals are admitted "
+                            f"under the corrected rule; decision 4 called them false rejections")
+
+    # Cross-links, both directions, and the claim the finding turns on. Prose
+    # is compared with its line breaks flattened: a sentence that a paragraph
+    # wrapped is still that sentence, and the note must stay reflowable.
+    def flat(text: str) -> str:
+        return " ".join(text.replace("\n> ", "\n").split())
+
+    old_text = old_note.read_text(encoding="utf-8")
+    new_text = new_note.read_text(encoding="utf-8")
+    if REPLACEMENT_RECORD + ".md" not in old_text:
+        problems.append("the superseded note does not link forward to the replacement")
+    if "SUPERSEDED" not in old_text[:2000].upper():
+        problems.append("the superseded note does not say it is superseded")
+    if SUPERSEDED_RECORD + ".md" not in new_text:
+        problems.append("the replacement note does not link back to the superseded record")
+    if "cannot establish conformity to the intended specification" not in flat(new_text):
+        problems.append("the replacement note does not state why passing the old rule proved nothing")
+    if flat(CLAIM_SENTENCE) not in flat(new_text):
+        problems.append("the replacement note does not carry the ruling's claim sentence verbatim")
+    return check("both population records are published, the superseded one unaltered, and each note links to "
+                 "the other with the reason for the supersession stated",
+                 not problems, "\n".join(problems))
+
+
+#: Round 17, decision 4's claim for the shipped offline deliverable, verbatim.
+#: The replacement note's limitations section must carry it exactly; it is the
+#: sentence that bounds what any of this evidence may be cited for. Compared
+#: with line breaks flattened, so the note may wrap it but may not reword it.
+CLAIM_SENTENCE = (
+    "A versioned, keyed cash-application generator with a frozen development population, "
+    "deterministic accounting checks, golden-artifact validation and signed-manifest serving under "
+    "the recorded repository runtime. No model performance, difficulty, training benefit or "
+    "generalization beyond the development templates has been established."
+)
+
+
 TESTS = [
     test_the_freeze_is_declared_and_matches_the_live_modules,
     test_the_freeze_notices_a_moved_declaration,
@@ -501,6 +679,9 @@ TESTS = [
     test_the_census_and_the_aggregates_are_per_stratum,
     test_no_model_is_called,
     test_the_authored_eleven_stay_outside_and_the_frozen_neighbours_did_not_move,
+    test_the_superseded_population_is_retired_and_unspellable,
+    test_the_freeze_pins_the_population_identifier_as_a_literal,
+    test_both_population_records_are_published_and_cross_linked,
 ]
 
 

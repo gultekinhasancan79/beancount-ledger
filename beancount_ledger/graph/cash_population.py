@@ -127,11 +127,20 @@ class ServingRefused(RuntimeError):
 #: the superseded rule, and it records which groups that rule refused.
 #: Admission under contract 2 is strictly wider, so the old population's
 #: groups remain admissible — but its REFUSALS do not stand, and its
-#: acceptance ordinals were drawn against a rule that no longer applies. A
-#: replacement population must be minted, censused, validated and frozen
-#: under these values before anything is sampled. That minting is NOT done
-#: here; this phase corrects the rule and versions it, nothing more.
+#: acceptance ordinals were drawn against a rule that no longer applies.
+#:
+#: The replacement population REQUIRED by that finding is
+#: `cash-application-development-2`, declared below and minted, censused,
+#: validated and served under these values. Its record is
+#: `reviews/cash_application_development_population_2026-09-13_replacement/`.
 DECLARED_FREEZE: dict = {
+    # The population's own NAME is frozen, as a literal rather than as
+    # `DEVELOPMENT_POPULATION` — a declaration that read the constant it is
+    # meant to pin would agree with every future value of it. Round 17,
+    # decision 4 is the reason the key exists: the identifier moved, and the
+    # freeze must be the thing that notices it moving again.
+    "development_population": "cash-application-development-2",
+    "superseded_populations": ("cash-application-development-1",),
     "family": "cash_application",
     "family_generator_version": 1,
     "construction_version": 1,
@@ -159,6 +168,8 @@ def live_freeze(split_map: SplitMap = SPLIT_MAP) -> dict:
     """The same keys, read from the live modules rather than declared."""
     roles = FM.declared_role_counts()
     return {
+        "development_population": DEVELOPMENT_POPULATION,
+        "superseded_populations": tuple(sorted(SUPERSEDED_POPULATIONS)),
         "family": FAMILY,
         "family_generator_version": FAMILY_GENERATOR_VERSION,
         "construction_version": CC.CONSTRUCTION_VERSION,
@@ -251,7 +262,43 @@ def freeze_digest(split_map: SplitMap = SPLIT_MAP) -> str:
 #: the construction identity, so a later evaluation batch over the same
 #: templates and the same company-month indices is a DIFFERENT world — which
 #: is what stops a predeclared census from being quietly reused.
-DEVELOPMENT_POPULATION = "cash-application-development-1"
+#:
+#: ROUND 17, DECISION 4 MOVED THIS NAME, AND THAT IS THE POINT. The
+#: population minted on 2026-09-13 was selected under an admission rule that
+#: additionally capped a credit note at the invoice's opening balance. The
+#: cap was wrong accounting, so passing it could not establish conformity to
+#: the intended specification — and the finding's instruction is not "re-run
+#: the same population", it is "declare a replacement population". Because
+#: the name enters `parent_seed` through the construction identity, a new
+#: name is a new DRAW: `cash-application-development-2` is 96 different
+#: company-months over the same 96 declared (family, index) slots, selected
+#: under contract 2 from the first attempt onward. A re-mint under the old
+#: name would have inherited attempt ordinals that the corrected rule no
+#: longer produces.
+DEVELOPMENT_POPULATION = "cash-application-development-2"
+
+#: The populations that WERE released and no longer are, with the reason. A
+#: name in here is not in `RELEASED_POPULATIONS`, so `parse_selector` refuses
+#: it and nothing can be served under it — which is the honest state for a
+#: population whose selection rule has been found wrong. Its published record
+#: is preserved; the record is history, not a roster.
+#:
+#: This is a declaration, not a deletion: a reader who finds
+#: `cash-application-development-1` in the 2026-09-13 census can see here,
+#: in source, why no selector spells it any more.
+SUPERSEDED_POPULATIONS: dict = {
+    "cash-application-development-1": {
+        "split": "development",
+        "superseded_by": DEVELOPMENT_POPULATION,
+        "on": "2026-09-13",
+        "record": "reviews/cash_application_development_population_2026-09-13/",
+        "reason": ("minted under family preflight contract 1, whose "
+                   "`cumulative_reversal_bounded` additionally capped a credit note at the "
+                   "invoice's opening balance. Round 17, decision 4 found that cap to be an "
+                   "incorrect additional accounting restriction; passing it cannot establish "
+                   "conformity to the intended specification."),
+    },
+}
 
 #: 32 parent groups per mechanism stratum; 96 in all. Decision 5's number,
 #: not a tunable.
@@ -260,6 +307,10 @@ GROUPS_PER_STRATUM = 32
 #: population -> the split it draws from. One entry today. The evaluation
 #: split has no entry and this phase does not add one: "Keep the evaluation
 #: split unopened."
+#:
+#: The superseded population is NOT here. Leaving it released would have kept
+#: its selectors spellable, and a selector that parses is a claim that the
+#: thing it names may be served.
 RELEASED_POPULATIONS: dict = {DEVELOPMENT_POPULATION: "development"}
 
 
@@ -522,7 +573,7 @@ def records_for(minted, split_map: SplitMap = SPLIT_MAP) -> list:
 __all__ = [
     "POPULATION_SCHEMA", "PopulationError", "SelectorError", "ServingRefused",
     "DECLARED_FREEZE", "live_freeze", "freeze_problems", "runtime_freeze", "freeze_record", "freeze_digest",
-    "DEVELOPMENT_POPULATION", "GROUPS_PER_STRATUM", "RELEASED_POPULATIONS",
+    "DEVELOPMENT_POPULATION", "GROUPS_PER_STRATUM", "RELEASED_POPULATIONS", "SUPERSEDED_POPULATIONS",
     "stratum_families", "roster", "identities_of", "development_identities", "population_problems",
     "SELECTOR_PREFIX", "SELECTOR_FIELDS", "selector_of", "parse_selector",
     "content_digest_of", "serving_surfaces", "minted_member", "admitted_inputs", "records_for",

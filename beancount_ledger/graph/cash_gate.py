@@ -596,6 +596,12 @@ def _cumulative_reversal_bounded(c: Candidate, name: str) -> list:
     `GATE_VERSION` and `FAMILY_PREFLIGHT_CONTRACT`, which move
     `gate_set_digest()` off `6b246422badd05a6`.
 
+    Both attempts were reminted under this rule and both are now ADMITTED at
+    the same attempt ordinal, with no code and no witness. The paired replay
+    is `reviews/cash_application_development_population_2026-09-13_replacement/
+    superseded_rejections.json`, beside the record of the replacement
+    population `cash-application-development-2`.
+
     WHAT IS RETAINED. The cumulative gross of every note naming one invoice
     may not exceed that invoice's original sale, and the cumulative net must
     be positive. The bound is CUMULATIVE on purpose: several notes against

@@ -106,7 +106,12 @@ SUITES = [
                              "surface and episode-contract digest, with no selector on an agent surface; the "
                              "signed manifest is the only door, with no development bypass; the census "
                              "retains decision 3's nine fields and the aggregates are per stratum; no "
-                             "phase-D source reaches a provider"),
+                             "phase-D source reaches a provider; and round 17 decision 4's REPLACEMENT "
+                             "population — the population selected under the incorrect opening-balance cap "
+                             "is retired and unspellable, the freeze pins the population identifier as a "
+                             "literal and reports it moving, and both records are published and cross-linked "
+                             "with the superseded artifacts unaltered and the paired replay showing every "
+                             "refusal the removed clause caused is now admitted"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),

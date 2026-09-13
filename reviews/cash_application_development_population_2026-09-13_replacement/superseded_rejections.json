@@ -1,0 +1,62 @@
+{
+ "caveat": "reminted against a FRESH population ledger, so the two cross-group population gates see one group rather than ninety-six; every other gate is the live one. The superseded population is retired and is not served from this replay.",
+ "now_admitted": 2,
+ "rejected_attempts_replayed": 2,
+ "replacement_population": "cash-application-development-2",
+ "rows": [
+  {
+   "attempt_ordinal": 0,
+   "group": "cash_application/1/cash-application-development-1/development/cr-pikestaff/1/0",
+   "identity_digest": "9872566d0c31ed3e5ca3bd03d27316dc",
+   "now_admitted": true,
+   "under_contract_1": {
+    "accepted_attempt": 1,
+    "codes": [
+     "ACC-CUMULATIVE-REVERSAL-BOUNDED"
+    ],
+    "family_preflight_contract": 1,
+    "gate_set": "6b246422badd05a6",
+    "outcome": "refused",
+    "stage": "gate",
+    "witness": "ACC-CUMULATIVE-REVERSAL-BOUNDED/a: the notes against SI-6516 reverse 2332.00 of an opening balance of 2173.00; ACC-CUMULATIVE-REVERSAL-BOUNDED/b: the notes against SI-6516 reverse 2226.00 of an opening balance of 2173.00"
+   },
+   "under_contract_2": {
+    "accepted_attempt": 0,
+    "codes": [],
+    "family_preflight_contract": 2,
+    "gate_set": "2491e97f97b48cee",
+    "outcome": "accepted",
+    "stage": "gate",
+    "witness": ""
+   }
+  },
+  {
+   "attempt_ordinal": 0,
+   "group": "cash_application/1/cash-application-development-1/development/cr-pikestaff/1/3",
+   "identity_digest": "93c07c3769de7e8de47ab68a2f3f3ee8",
+   "now_admitted": true,
+   "under_contract_1": {
+    "accepted_attempt": 1,
+    "codes": [
+     "ACC-CUMULATIVE-REVERSAL-BOUNDED"
+    ],
+    "family_preflight_contract": 1,
+    "gate_set": "6b246422badd05a6",
+    "outcome": "refused",
+    "stage": "gate",
+    "witness": "ACC-CUMULATIVE-REVERSAL-BOUNDED/b: the notes against SI-3007 reverse 2415.00 of an opening balance of 2362.50"
+   },
+   "under_contract_2": {
+    "accepted_attempt": 0,
+    "codes": [],
+    "family_preflight_contract": 2,
+    "gate_set": "2491e97f97b48cee",
+    "outcome": "accepted",
+    "stage": "gate",
+    "witness": ""
+   }
+  }
+ ],
+ "superseded_population": "cash-application-development-1",
+ "what": "every parent attempt the 2026-09-13 census recorded as rejected for ACC-CUMULATIVE-REVERSAL-BOUNDED, reminted under the corrected admission contract"
+}

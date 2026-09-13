@@ -1,0 +1,107 @@
+{
+ "freeze": {
+  "declared": {
+   "baseline_catalogue": "cash_application_baselines/1",
+   "binding_baselines": 9,
+   "construction_version": 1,
+   "development_population": "cash-application-development-2",
+   "diagnostic_baselines": 1,
+   "family": "cash_application",
+   "family_generator_version": 1,
+   "family_manifest_schema": 1,
+   "family_preflight_contract": 2,
+   "gate_count": 31,
+   "gate_set_digest": "2491e97f97b48cee",
+   "gate_version": 2,
+   "max_baseline_readings": 256,
+   "max_layout_attempts": 64,
+   "population_schema": 1,
+   "profile": "bounded-v1",
+   "profile_digest": "310e96729061410467f0e4285976743f",
+   "split_map_digest": "c41f5d150aec53ccce514f7123206ac5",
+   "split_map_schema": 1,
+   "structure_schema": 1,
+   "superseded_populations": [
+    "cash-application-development-1"
+   ],
+   "template_version": 1
+  },
+  "declared_matches_live": true,
+  "digest": "b371a45a0186648e40c7aa18f03efb28",
+  "runtime_scoped": {
+   "baseline_catalogue_digest": "b7fa69753bcf1f5e732968f2819696a4",
+   "census_components": {
+    "baseline_catalogue": "cash_application_baselines/1",
+    "baseline_catalogue_digest": "b7fa69753bcf1f5e732968f2819696a4",
+    "construction": 1,
+    "gate": 2,
+    "gate_set": "2491e97f97b48cee",
+    "max_baseline_readings": 256,
+    "max_layout_attempts": 64,
+    "runtime_scope": {
+     "native_runtime": {
+      "implementation": "CPython",
+      "machine": "AMD64",
+      "system": "Windows",
+      "version": "3.12.12"
+     },
+     "unicode_database": "15.0.0"
+    },
+    "semantic_components": {
+     "application_engine": "application/1",
+     "checker": 7,
+     "composite_engine": "composite/1",
+     "family_manifest_schema": 1,
+     "family_preflight_contract": 2,
+     "gate_set": "2491e97f97b48cee",
+     "ledger_engine": {
+      "id": "candidate/1",
+      "score_reduction": 1,
+      "scorer_contract": 1,
+      "task_contract": 1
+     },
+     "parser": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+     "public_fold": {
+      "schema": "piv.cash-application/1",
+      "version": 1
+     },
+     "reference_identity": 2,
+     "renderer": 1
+    },
+    "template": 1
+   },
+   "runtime_scope": {
+    "native_runtime": {
+     "implementation": "CPython",
+     "machine": "AMD64",
+     "system": "Windows",
+     "version": "3.12.12"
+    },
+    "unicode_database": "15.0.0"
+   },
+   "semantic_components": {
+    "application_engine": "application/1",
+    "checker": 7,
+    "composite_engine": "composite/1",
+    "family_manifest_schema": 1,
+    "family_preflight_contract": 2,
+    "gate_set": "2491e97f97b48cee",
+    "ledger_engine": {
+     "id": "candidate/1",
+     "score_reduction": 1,
+     "scorer_contract": 1,
+     "task_contract": 1
+    },
+    "parser": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+    "public_fold": {
+     "schema": "piv.cash-application/1",
+     "version": 1
+    },
+    "reference_identity": 2,
+    "renderer": 1
+   }
+  },
+  "schema": 1
+ },
+ "problems": []
+}
