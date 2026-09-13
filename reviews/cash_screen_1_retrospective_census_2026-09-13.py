@@ -4,7 +4,7 @@
 Nothing observed is touched: the nine rows are READ and preserved, the record
 is a NEW file beside them.
 """
-import hashlib, json, sys
+import ast, hashlib, json, re, sys
 from datetime import datetime
 from pathlib import Path
 
@@ -24,6 +24,14 @@ FROZEN_SELECTION_SHA256 = "e582c6cf5b9053a7029eb9081555bb6f338741ae2ae7257ae3cd3
 # lives only in scratchpad.
 OUT = ROOT / "reviews/cash_screen_1_retrospective_census_2026-09-13.json"
 BUILDER = "reviews/cash_screen_1_retrospective_census_2026-09-13.py"
+# The runner's own console log, now PUBLISHED beside the evidence. When this
+# record was first built the log lived only in scratch, so the lost cell's
+# provider error code, type, message and request id had to stay UNKNOWN. They
+# are in the log, and a reconstruction that says UNKNOWN about something its
+# own linked evidence contains is under-reporting, not caution. Everything the
+# log does NOT carry -- task id, times, workspace, usage -- stays UNKNOWN.
+LOG = ROOT / "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log"
+LOG_PATH = "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log"
 U = mb.UNKNOWN
 
 
@@ -42,7 +50,33 @@ def lf_sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
+def log_facts() -> dict:
+    """What the runner's console log says about the refusal that ended the run.
+
+    The provider's error body is echoed verbatim in the traceback's final
+    line. It is parsed, never retyped, so the record cannot drift from the
+    log; the `elapsed` figure is the progress bar's own reading for the cell
+    that never finished. Nothing else in the log is about cell 10.
+    """
+    text = LOG.read_text(encoding="utf-8", errors="replace")
+    marker = "openai.PermissionDeniedError: Error code: 403 - "
+    line = next((ln for ln in text.splitlines() if ln.startswith(marker)), None)
+    if line is None:
+        raise SystemExit(f"{LOG_PATH}: no 403 refusal in the log; the cell-10 link cannot be made")
+    body = ast.literal_eval(line[len(marker):])["error"]
+    elapsed = re.findall(r"0/1 \[(\d\d):(\d\d)<\?, \?it/s, reward=\?\]", text)
+    return {
+        "http_status": 403,
+        "provider_error_code": body.get("code", U),
+        "provider_error_type": body.get("type", U),
+        "provider_error_message": body.get("message", U),
+        "provider_request_id": body.get("id", U),
+        "elapsed_before_refusal_seconds": (int(elapsed[-1][0]) * 60 + int(elapsed[-1][1])) if elapsed else U,
+    }
+
+
 rows = json.loads(ROWS.read_text(encoding="utf-8"))
+FROM_LOG = log_facts()
 assert digest(SELECTION)["sha256"] == FROZEN_SELECTION_SHA256, "the published selection is not the frozen one"
 selection = json.loads(SELECTION.read_text(encoding="utf-8"))
 order = selection["execution_order"]
@@ -96,8 +130,12 @@ for index, selector in enumerate(order):
             "task_id": U, "started_at": U, "finished_at": U,
             "reason": "provider refused the request: free quota exhausted (HTTP 403)",
             "failure_stage": mb.FAILURE_STAGE_INFERENCE,
-            "http_status": 403, "provider_error_code": U, "provider_error_type": U,
-            "provider_error_message": U, "provider_request_id": U,
+            "http_status": FROM_LOG["http_status"],
+            "provider_error_code": FROM_LOG["provider_error_code"],
+            "provider_error_type": FROM_LOG["provider_error_type"],
+            "provider_error_message": FROM_LOG["provider_error_message"],
+            "provider_request_id": FROM_LOG["provider_request_id"],
+            "elapsed_before_refusal_seconds": FROM_LOG["elapsed_before_refusal_seconds"],
             "quota_exhausted": True, "archive_dir": None,
             "stopped_after_planned_ordinal": None,
             "usage_before_failure": {"billed_input_tokens_all_attempts": U,
@@ -110,16 +148,24 @@ for index, selector in enumerate(order):
             "application_committed": U, "application_scored": U,
             "record": "RECONSTRUCTION -- this cell was never recorded. The 403 escaped one_rollout (the "
                       "defect fixed at 2d6bc76) and the process exited on the traceback, so no row, no "
-                      "start record, no archive and no workspace exist for it. Only the two facts below "
-                      "were preserved, and only in prose.",
+                      "start record, no archive and no workspace exist for it. What survives is the "
+                      "runner's console log, now published beside this record; the fields below are "
+                      "parsed out of it, and every field it does not carry stays UNKNOWN.",
             "evidence": {
                 "selector, planned ordinal": f"the frozen selection reviews/{SELECTION.name} "
                                              f"({selection['self_digest'][:8]}), execution order index 10",
-                "HTTP 403 / free quota exhausted": "round18.md:30,36 and round18.answer.md:15 -- the "
-                                                   "operator's console and the traceback, neither of "
-                                                   "which is in this repository",
-                "everything else": "UNKNOWN: never captured. A run of the FIXED runner would record all "
-                                   "of it (tests/measure_budget.py terminal_row)."}})
+                "HTTP 403, error code, type, message, request id": f"{LOG_PATH} -- the provider's own error "
+                                                                   f"body, echoed verbatim in the traceback "
+                                                                   f"that ended the run, parsed rather than "
+                                                                   f"retyped",
+                "elapsed before the refusal": f"{LOG_PATH} -- the progress bar's reading for the cell that "
+                                              f"never finished. The cell therefore SPENT, and its spend is "
+                                              f"unrecorded; UNKNOWN below is not zero",
+                "everything else": "UNKNOWN: never captured, and not in the log either -- task id, start and "
+                                   "end times, workspace, usage, and whether either deliverable was written. "
+                                   "A run of the FIXED runner would record all of it "
+                                   "(tests/measure_budget.py terminal_row)."},
+            "log": {"path": LOG_PATH, **digest(LOG)}})
     else:
         entry = mb.unattempted_cell(common, selector, ordinal,
                                     reason="provider quota exhausted at planned ordinal 10 (HTTP 403); "
@@ -162,9 +208,10 @@ record = {
         "digests are echoed under `original_row_preserved` so this file can be checked against it.",
         "3. `planned_ordinal` is the cell's 1-based index in that order. The rows carry null (the field "
         "postdates the run); every cell says so under `reconstructed_fields`.",
-        "4. The cell at ordinal 10 was never recorded at all. It is ATTEMPTED_UNSCORED with reward null, "
-        "and every field the log does not support is the string UNKNOWN -- never null, never 0. Its two "
-        "supported facts carry their source under `evidence`.",
+        "4. The cell at ordinal 10 was never recorded at all. It is ATTEMPTED_UNSCORED with reward null. "
+        "Its HTTP status, provider error code, type, message and request id are PARSED out of the "
+        "published runner log; every field that log does not support is the string UNKNOWN -- never "
+        "null, never 0. Each supported fact carries its source under `evidence`.",
         "5. Cells 11 and 12 are `measure_budget.unattempted_cell` entries: attempted false, no task id, "
         "no times, `stopped_after_planned_ordinal` 10.",
     ],
@@ -181,8 +228,13 @@ record = {
         "rows": len(rows),
         "unmodified": "this record READS the nine rows; it does not rewrite, supersede or correct them",
         "per_selector_directory": f"reviews/{ROWS.stem}/",
-        "rescued_workspaces": "C:/Users/gulte/Desktop/PIV/v10-codex/cash_screen_1_workspaces/ "
-                              "(nine cells, copied by hand before %TEMP% was cleaned)",
+        "rescued_workspaces": "reviews/cash_application_generated_screen_2026-09-13/workspaces/ (nine cells, "
+                              "thirteen files each, copied by hand out of %TEMP% before it was cleaned and "
+                              "published there; each file's digests are checked against the result rows by "
+                              "reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.py)",
+        "runner_log": {"path": LOG_PATH, **digest(LOG),
+                       "note": "the console log of the run, published so the lost cell's reconstruction has "
+                               "evidence a reader can check rather than prose to take on trust"},
         "selection_record": {"path": f"reviews/{SELECTION.name}", **digest(SELECTION),
                              "note": "the frozen selection, written before any model call, published "
                                      "here byte-identical to the scratch original"},

@@ -1,0 +1,10 @@
+invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-8401,Brackenhurst Leisure Partners,2026-07-29,2026-08-28,3604.00,3604.00
+SI-8404,Eastmoor Hospitality Group,2026-08-06,2026-09-20,2703.00,2703.00
+SI-8409,Glenhaven Resorts Company,2026-08-17,2026-09-16,2279.00,2279.00
+SI-8416,Brackenhurst Leisure Partners,2026-08-31,2026-09-30,4081.00,2756.00
+SI-8417,Eastmoor Hospitality Group,2026-09-02,2026-10-17,2332.00,2332.00
+SI-8426,Glenhaven Resorts Company,2026-09-21,2026-10-21,3074.00,3074.00
+SI-8428,Brackenhurst Leisure Partners,2026-09-24,2026-10-24,2597.00,2597.00
+SI-8429,Eastmoor Hospitality Group,2026-10-05,2026-11-19,4452.00,4452.00
+SI-8433,Brackenhurst Leisure Partners,2026-10-19,2026-11-18,4081.00,4081.00

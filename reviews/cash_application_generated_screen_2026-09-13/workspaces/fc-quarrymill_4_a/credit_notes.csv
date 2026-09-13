@@ -1,0 +1,2 @@
+credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-648,2026-01-19,Larkmead Venue Management,SI-6403,1600.00,96.00,1696.00,Agreed price allowance on goods retained by the customer; no return and no replacement supplied.

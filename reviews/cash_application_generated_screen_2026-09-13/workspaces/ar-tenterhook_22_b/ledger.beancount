@@ -1,0 +1,81 @@
+option "title" "Juniper Reach Joinery Co. - FY2025"
+option "operating_currency" "USD"
+
+2024-01-01 open Assets:AR                              USD
+2024-01-01 open Assets:Bank:Checking                   USD
+2024-01-01 open Assets:Inventory                       USD
+2024-01-01 open Assets:Prepayments                     USD
+2024-01-01 open Equity:Opening                         USD
+2024-01-01 open Expenses:BankFees                      USD
+2024-01-01 open Expenses:COGS                          USD
+2024-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2024-01-01 open Income:Sales                           USD
+2024-01-01 open Liabilities:AP                         USD
+2024-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-01-01 * "Opening balance" "Carried forward from December close"
+  Assets:Bank:Checking                         91202.00 USD
+  Assets:AR                                    27348.00 USD
+  Assets:Inventory                             53940.00 USD
+  Liabilities:AP                               -6500.00 USD
+  Equity:Opening                             -165990.00 USD
+
+2025-01-06 * "Orchard Row Fastenings Ltd" "Payment of purchase invoice PI-8002"
+  Liabilities:AP                                6500.00 USD
+  Assets:Bank:Checking                         -6500.00 USD
+
+2025-01-08 * "Glenhaven Resorts Company" "Customer payment, GLENHAVEN PAYRUN 0106"
+  Assets:Bank:Checking                          4844.00 USD
+  Assets:AR                                    -4844.00 USD
+
+2025-01-13 * "Glenhaven Resorts Company" "Sale SI-7346"
+  Assets:AR                                     3180.00 USD
+  Income:Sales                                 -3000.00 USD
+  Liabilities:SalesTax-Payable                  -180.00 USD
+
+2025-01-13 * "Glenhaven Resorts Company" "Cost of goods sold on SI-7346"
+  Expenses:COGS                                 1800.00 USD
+  Assets:Inventory                             -1800.00 USD
+
+2025-01-15 * "Ivyrise Contract Interiors" "Cost of goods sold on SI-7351"
+  Expenses:COGS                                  660.00 USD
+  Assets:Inventory                              -660.00 USD
+
+2025-01-15 * "Ivyrise Contract Interiors" "Sale SI-7351"
+  Assets:AR                                     1166.00 USD
+  Income:Sales                                 -1100.00 USD
+  Liabilities:SalesTax-Payable                   -66.00 USD
+
+2025-01-16 * "Ivyrise Contract Interiors" "Customer payment, IVYRISE PAYRUN 0113"
+  Assets:Bank:Checking                          4604.00 USD
+  Assets:AR                                    -4604.00 USD
+
+2025-01-16 * "Ivyrise Contract Interiors" "Credit note CN-723 against SI-7321: Agreed price correction on the rate quoted for work already accepted; no goods came back."
+  Income:Sales                                   700.00 USD
+  Liabilities:SalesTax-Payable                    42.00 USD
+  Assets:AR                                     -742.00 USD
+
+2025-01-17 * "Aldergate Facilities Group" "Cost of goods sold on SI-7353"
+  Expenses:COGS                                 1020.00 USD
+  Assets:Inventory                             -1020.00 USD
+
+2025-01-17 * "Aldergate Facilities Group" "Sale SI-7353"
+  Assets:AR                                     1802.00 USD
+  Income:Sales                                 -1700.00 USD
+  Liabilities:SalesTax-Payable                  -102.00 USD
+
+2025-01-22 * "Ivyrise Contract Interiors" "Customer payment, IVYRISE PAYRUN 0120"
+  Assets:Bank:Checking                            60.00 USD
+  Assets:AR                                      -60.00 USD
+
+2025-01-28 * "Glenhaven Resorts Company" "Customer payment, GLENHAVEN PAYRUN 0127"
+  Assets:Bank:Checking                          3551.00 USD
+  Assets:AR                                    -3551.00 USD
+
+2025-01-28 * "Glenhaven Resorts Company" "Short payment on SI-7328 written off under the cash application policy"
+  Expenses:SmallBalanceWriteOffs                  10.00 USD
+  Assets:AR                                      -10.00 USD
+
+2025-01-31 * "Stanwick Mutual Bank" "Monthly account service charge"
+  Expenses:BankFees                               70.00 USD
+  Assets:Bank:Checking                           -70.00 USD

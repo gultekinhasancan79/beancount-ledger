@@ -1,0 +1,81 @@
+option "title" "Juniper Reach Joinery Co. - FY2026"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-11-01 * "Opening balance" "Carried forward from October close"
+  Assets:Bank:Checking                        114245.00 USD
+  Assets:AR                                    27878.00 USD
+  Assets:Inventory                             61650.00 USD
+  Liabilities:AP                               -5000.00 USD
+  Equity:Opening                             -198773.00 USD
+
+2026-11-04 * "Ravenscar Fittings Company" "Payment of purchase invoice PI-8002"
+  Liabilities:AP                                5000.00 USD
+  Assets:Bank:Checking                         -5000.00 USD
+
+2026-11-09 * "Brackenhurst Leisure Partners" "Customer payment, BRACKENHURST PAYRUN 1105"
+  Assets:Bank:Checking                          4006.00 USD
+  Assets:AR                                    -4006.00 USD
+
+2026-11-11 * "Brackenhurst Leisure Partners" "Cost of goods sold on SI-8446"
+  Expenses:COGS                                 1770.00 USD
+  Assets:Inventory                             -1770.00 USD
+
+2026-11-11 * "Brackenhurst Leisure Partners" "Sale SI-8446"
+  Assets:AR                                     3127.00 USD
+  Income:Sales                                 -2950.00 USD
+  Liabilities:SalesTax-Payable                  -177.00 USD
+
+2026-11-16 * "Eastmoor Hospitality Group" "Cost of goods sold on SI-8451"
+  Expenses:COGS                                 2040.00 USD
+  Assets:Inventory                             -2040.00 USD
+
+2026-11-16 * "Eastmoor Hospitality Group" "Customer payment, EASTMOOR PAYRUN 1112"
+  Assets:Bank:Checking                          2613.00 USD
+  Assets:AR                                    -2613.00 USD
+
+2026-11-16 * "Eastmoor Hospitality Group" "Sale SI-8451"
+  Assets:AR                                     3604.00 USD
+  Income:Sales                                 -3400.00 USD
+  Liabilities:SalesTax-Payable                  -204.00 USD
+
+2026-11-16 * "Eastmoor Hospitality Group" "Credit note CN-674 against SI-8417: Agreed price correction on the rate quoted for work already accepted; no goods came back."
+  Income:Sales                                  1100.00 USD
+  Liabilities:SalesTax-Payable                    66.00 USD
+  Assets:AR                                    -1166.00 USD
+
+2026-11-17 * "Glenhaven Resorts Company" "Cost of goods sold on SI-8453"
+  Expenses:COGS                                 1740.00 USD
+  Assets:Inventory                             -1740.00 USD
+
+2026-11-17 * "Glenhaven Resorts Company" "Sale SI-8453"
+  Assets:AR                                     3074.00 USD
+  Income:Sales                                 -2900.00 USD
+  Liabilities:SalesTax-Payable                  -174.00 USD
+
+2026-11-20 * "Eastmoor Hospitality Group" "Customer payment, EASTMOOR PAYRUN 1118"
+  Assets:Bank:Checking                            90.00 USD
+  Assets:AR                                      -90.00 USD
+
+2026-11-30 * "Brackenhurst Leisure Partners" "Short payment on SI-8428 written off under the cash application policy"
+  Expenses:SmallBalanceWriteOffs                  20.00 USD
+  Assets:AR                                      -20.00 USD
+
+2026-11-30 * "Stanwick Mutual Bank" "Monthly account service charge"
+  Expenses:BankFees                               80.00 USD
+  Assets:Bank:Checking                           -80.00 USD
+
+2026-11-30 * "Brackenhurst Leisure Partners" "Customer payment, BRACKENHURST PAYRUN 1127"
+  Assets:Bank:Checking                          2357.00 USD
+  Assets:AR                                    -2357.00 USD

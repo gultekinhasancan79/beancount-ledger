@@ -1,0 +1,184 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2025-01-08:GLENHAVEN PAYRUN 0106",
+   "applied": [
+    {
+     "invoice_id": "SI-7313",
+     "amount": "2544.00"
+    },
+    {
+     "invoice_id": "SI-7328",
+     "amount": "2300.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2025-01-16:IVYRISE PAYRUN 0113",
+   "applied": [
+    {
+     "invoice_id": "SI-7303",
+     "amount": "4604.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2025-01-22:IVYRISE PAYRUN 0120",
+   "applied": [
+    {
+     "invoice_id": "SI-7303",
+     "amount": "60.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2025-01-28:GLENHAVEN PAYRUN 0127",
+   "applied": [
+    {
+     "invoice_id": "SI-7328",
+     "amount": "2301.00"
+    },
+    {
+     "invoice_id": "SI-7332",
+     "amount": "1250.00"
+    }
+   ],
+   "written_off": [
+    {
+     "invoice_id": "SI-7328",
+     "amount": "10.00"
+    }
+   ],
+   "unapplied_amount": "0.00"
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-723",
+   "applied": [
+    {
+     "invoice_id": "SI-7321",
+     "amount": "742.00"
+    }
+   ],
+   "unapplied_amount": "0.00"
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-7301",
+   "customer": "Glenhaven Resorts Company",
+   "period_basis": "2385.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2385.00"
+  },
+  {
+   "invoice_id": "SI-7303",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "4664.00",
+   "applied_total": "4664.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7311",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "3392.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3392.00"
+  },
+  {
+   "invoice_id": "SI-7313",
+   "customer": "Glenhaven Resorts Company",
+   "period_basis": "2544.00",
+   "applied_total": "2544.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7321",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "1484.00",
+   "applied_total": "0.00",
+   "credited": "742.00",
+   "written_off": "0.00",
+   "remaining": "742.00"
+  },
+  {
+   "invoice_id": "SI-7326",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "2385.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2385.00"
+  },
+  {
+   "invoice_id": "SI-7328",
+   "customer": "Glenhaven Resorts Company",
+   "period_basis": "4611.00",
+   "applied_total": "4601.00",
+   "credited": "0.00",
+   "written_off": "10.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7330",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "1060.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1060.00"
+  },
+  {
+   "invoice_id": "SI-7332",
+   "customer": "Glenhaven Resorts Company",
+   "period_basis": "4823.00",
+   "applied_total": "1250.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3573.00"
+  },
+  {
+   "invoice_id": "SI-7346",
+   "customer": "Glenhaven Resorts Company",
+   "period_basis": "3180.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3180.00"
+  },
+  {
+   "invoice_id": "SI-7351",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "1166.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1166.00"
+  },
+  {
+   "invoice_id": "SI-7353",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "1802.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1802.00"
+  }
+ ]
+}

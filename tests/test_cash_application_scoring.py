@@ -1629,6 +1629,168 @@ def test_the_007_pins_follow_the_runtime_scoped_convention():
                  f"unpinned Unicode database refused by name", not problems, "\n".join(problems))
 
 
+#: The two application-only partials of the 13 September generated screen,
+#: with the closing-register rows each omitted and the mechanism stratum they
+#: were drawn from. Both are `ar-tenterhook` variant `a`: ONE structural
+#: template, two parent groups — not two templates and not two observations
+#: of one case.
+_SCREEN_1_PARTIALS = {
+    "cash_screen_1_ar-tenterhook_24_a": {
+        "selector": "cash_application:cash-application-development-2:ar-tenterhook:24:a",
+        "template": "ar-tenterhook", "missing": ("SI-8446", "SI-8451", "SI-8453"),
+        "register_rows": 12, "application_score": "0.625", "reward": "0.625000",
+    },
+    "cash_screen_1_ar-tenterhook_22_a": {
+        "selector": "cash_application:cash-application-development-2:ar-tenterhook:22:a",
+        "template": "ar-tenterhook", "missing": ("SI-7346", "SI-7351", "SI-7353"),
+        "register_rows": 12, "application_score": "0.625", "reward": "0.625000",
+    },
+}
+
+
+def test_the_two_observed_screen_1_partials_and_their_three_row_counterfactuals():
+    """The 13 September generated screen's two application-only partials,
+    scored here rather than reasoned about (round 18, decision 4).
+
+    `tests/observed/cash_screen_1_<cell>/` holds the artifacts exactly as they
+    were delivered — the application, the ledger, the delivery receipt and the
+    public inputs — plus the minimal corrected register and the diff between
+    them. The published evidence bundle holds the same bytes; this test pins
+    the two copies to each other so neither can drift alone.
+
+    These are GENERATED tasks, so `variant()` cannot supply the truth: the
+    population is keyed and the battery does not read the evaluator secret.
+    `tests/observed_truth.py` rebuilds the truth register from public evidence
+    instead — the opening register, the delivered ledger's own in-period sales,
+    and the fold of the receipts and credit notes — and the reconstruction is
+    not taken on trust: the outcome it produces must reproduce the
+    `application_result_digest` the LIVE run wrote into the delivery receipt.
+    That digest covers the total, all three channel fractions, every penalty
+    and one state per receipt, invoice, credit note and tie.
+
+    Then two runs of the SHIPPED scorer, per cell:
+
+      * the delivery as it stands. `A = 0.625000`, short only through the
+        closing register: three invoices raised inside the period and unpaid
+        at closing are absent, taking `register_exact` to 0.750000, and the
+        receivables they carry trip `ar_tie_break`. Every receipt, the credit
+        note and both write-off ties are exact — the residue the stratum
+        exists to test was handled correctly;
+      * the counterfactual that adds ONLY those three closing rows, at their
+        period basis with nothing applied, credited or written off. The
+        published diff is one purely additive hunk and this test re-derives it.
+        `A = 1.000000`, no penalty, every other state as delivered.
+
+    What the counterfactual shows is that the omission accounts for the WHOLE
+    of the loss. It does not establish why the solver omitted the rows, any
+    general variant-a effect, or a prevalence estimate. `L` is not rescored
+    here — `candidate/1` needs the keyed golden — so the composite is not
+    replayed; the live `L` is quoted where it is used.
+    """
+    import observed_truth as OT
+
+    problems = []
+    evidence = ROOT / "reviews" / "cash_application_generated_screen_2026-09-13"
+    rows = {row["selector"]: row for row in
+            json.loads((ROOT / "reviews" / "budget_qwen3.7-max-2026-05-20_2026-09-13_cash_screen_1.json")
+                       .read_text(encoding="utf-8"))}
+    for name, expected in sorted(_SCREEN_1_PARTIALS.items()):
+        directory = ROOT / "tests" / "observed" / name
+        cell = name[len("cash_screen_1_"):]
+        row = rows[expected["selector"]]
+        delivered_raw = (directory / "cash_application.json").read_bytes()
+        ledger_raw = (directory / "ledger.beancount").read_bytes()
+        receipt = json.loads((directory / "delivery.json").read_text(encoding="utf-8"))
+
+        # 1. the fixture IS the delivered artifact, and IS the published evidence
+        app_digests, ledger_digests = env_mod.digests_of(delivered_raw), env_mod.digests_of(ledger_raw)
+        for what, got, want in (
+                ("application stored bytes", app_digests["stored_bytes_digest"],
+                 row["application_stored_bytes_digest"]),
+                ("application logical text", app_digests["logical_text_digest"],
+                 row["application_logical_text_digest"]),
+                ("ledger stored bytes", ledger_digests["stored_bytes_digest"], row["artifact_stored_bytes_digest"]),
+                ("ledger logical text", ledger_digests["logical_text_digest"], row["artifact_logical_text_digest"]),
+                ("delivery receipt", receipt["application"]["artifact_stored_bytes_digest"],
+                 row["application_stored_bytes_digest"])):
+            if got != want:
+                problems.append(f"{cell}: {what} is {got[:12]}, the result row's {want[:12]}")
+        for filename in ("cash_application.json", "ledger.beancount", "delivery.json", "open_items.csv",
+                         "bank_statement.csv", "credit_notes.csv", "remittance_advice.csv"):
+            published = evidence / "workspaces" / cell / filename
+            if (directory / filename).read_bytes() != published.read_bytes():
+                problems.append(f"{cell}: the fixture's {filename} is not the published evidence's")
+        for filename, published in (("cash_application.corrected.json", "cash_application.corrected.json"),
+                                    ("cash_application.diff", "cash_application.diff")):
+            if (directory / filename).read_bytes() != (evidence / "counterfactual" / cell / published).read_bytes():
+                problems.append(f"{cell}: the fixture's {filename} is not the published evidence's")
+
+        # 2. the delivery as it stands, against the reconstructed truth
+        _parsed, out, truth, _balances, _prov = OT.score(directory)
+        if out.result_digest != receipt["application"]["application_result_digest"] \
+                or out.application_digest != receipt["application"]["canonical_digest"]:
+            problems.append(f"{cell}: the rescore does not reproduce the live delivery receipt's digests "
+                            f"({out.result_digest[:12]} / {out.application_digest[:12]} against "
+                            f"{receipt['application']['application_result_digest'][:12]} / "
+                            f"{receipt['application']['canonical_digest'][:12]}); the reconstructed truth is "
+                            f"not the truth the live run scored against")
+        if (str(out.total), dict(out.components)) != ("0.625000", {"receipts_exact": ONE,
+                                                                   "register_exact": D("0.750000"),
+                                                                   "credit_exact": ONE}):
+            problems.append(f"{cell}: the delivery scores A={out.total} {out.components}")
+        if out.penalty_labels != ("ar_tie_break",) or dict(out.tie_states)[A.TIE_AR] is not A.AR_TIE_CONTRADICTS:
+            problems.append(f"{cell}: the delivery's penalties are {out.penalties} / {out.tie_states}")
+        if dict(out.tie_states)[A.TIE_WRITEOFF] is not A.WRITEOFF_TIE_OK:
+            problems.append(f"{cell}: the write-off tie is {dict(out.tie_states)[A.TIE_WRITEOFF]}, not OK — "
+                            f"this failure omits INVOICE rows, it does not misstate the write-off")
+        missing = tuple(sorted(i for i, state in out.invoice_states if state is A.INVOICE_MISSING))
+        if missing != expected["missing"] or len(out.invoice_states) != expected["register_rows"]:
+            problems.append(f"{cell}: the missing rows are {missing} of {len(out.invoice_states)}, "
+                            f"not {expected['missing']} of {expected['register_rows']}")
+        if {state for _s, state in out.receipt_states} != {A.RECEIPT_EXACT} \
+                or {state for _s, state in out.credit_states} != {A.CREDIT_EXACT}:
+            problems.append(f"{cell}: the receipts/credits are not all exact: "
+                            f"{out.receipt_states} {out.credit_states}")
+        if receipt["application"]["application_score"] != expected["application_score"] \
+                or str(row["reward"]) != expected["application_score"]:
+            problems.append(f"{cell}: the live A is {receipt['application']['application_score']} / reward "
+                            f"{row['reward']}, not {expected['application_score']}")
+
+        # 3. the counterfactual: ONLY the missing rows, at the truth's basis
+        corrected_raw = (directory / "cash_application.corrected.json").read_bytes()
+        rebuilt = OT.corrected_text(delivered_raw.decode("utf-8"),
+                                    [{"invoice_id": truth.row(i)[0], "customer": truth.row(i)[1],
+                                      "period_basis": str(truth.row(i)[2]), "applied_total": str(truth.row(i)[3]),
+                                      "credited": str(truth.row(i)[4]), "written_off": str(truth.row(i)[5]),
+                                      "remaining": str(truth.row(i)[6])} for i in missing])
+        if rebuilt.encode("utf-8") != corrected_raw:
+            problems.append(f"{cell}: the published corrected register is not the delivered document with only "
+                            f"the truth's rows for {missing} added")
+        diff = (directory / "cash_application.diff").read_text(encoding="utf-8")
+        if any(line.startswith("-") and not line.startswith("---") for line in diff.splitlines()):
+            problems.append(f"{cell}: the published diff removes lines; the counterfactual is not additive")
+
+        _p2, fixed, _t2, _b2, _prov2 = OT.score(directory, application_text=rebuilt)
+        if str(fixed.total) != "1.000000" or fixed.penalties:
+            problems.append(f"{cell}: the counterfactual scores A={fixed.total} {fixed.penalties}")
+        if set(fixed.states()) != {A.RECEIPT_EXACT, A.INVOICE_EXACT, A.CREDIT_EXACT,
+                                   A.AR_TIE_OK, A.WRITEOFF_TIE_OK}:
+            problems.append(f"{cell}: the counterfactual leaves {sorted(set(map(str, fixed.states())))}")
+        if dict(out.receipt_states) != dict(fixed.receipt_states) \
+                or dict(out.credit_states) != dict(fixed.credit_states) \
+                or {i: s for i, s in out.invoice_states if s is not A.INVOICE_MISSING} \
+                != {i: s for i, s in fixed.invoice_states if i not in missing}:
+            problems.append(f"{cell}: the counterfactual changed something other than the three rows")
+
+    # the two are one template, two parent groups — the history's shape matters
+    if {cell["template"] for cell in _SCREEN_1_PARTIALS.values()} != {"ar-tenterhook"}:
+        problems.append("the two partials are not one structural template")
+    return check("the two observed screen-1 partials rescore to their live delivery receipts' own digests, each "
+                 "losing register_exact and ar_tie_break to three omitted in-period invoices with every receipt, "
+                 "credit and write-off tie exact; and the published three-row counterfactual is additive and "
+                 "takes A to 1.000000 with nothing else changed", not problems, "\n".join(problems))
+
+
 TESTS = [
     test_every_golden_register_scores_one_and_completes_with_the_golden_ledger,
     test_every_variant_golden_scores_one_and_completes_with_the_golden_ledger,
@@ -1655,6 +1817,7 @@ TESTS = [
     test_every_state_is_reached_and_everything_reached_is_a_state,
     test_penalty_vocabulary_and_prices_are_the_declared_ones,
     test_the_observed_007_delivery_and_its_two_row_counterfactual,
+    test_the_two_observed_screen_1_partials_and_their_three_row_counterfactuals,
     test_the_007_result_digests_replay_by_identity_not_by_nonce,
     test_the_007_pins_follow_the_runtime_scoped_convention,
 ]

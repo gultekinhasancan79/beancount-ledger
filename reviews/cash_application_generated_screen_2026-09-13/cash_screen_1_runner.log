@@ -1,0 +1,167 @@
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 250.30 examples/s]
+model qwen3.7-max-2026-05-20; arm custom (40000 tok/turn, reasoning replay on); 12 selectors; budget 50,000 tokens / 25 turns; max total completion tokens 40000; sampling temperature=0.0 top_p=1.0 seed=None; replicate 1; default-profile prompt_schema_digest 29d6a0993c94...; replay_contract v1 180288689de6...; SDK retries 0
+
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.98 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.92 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:17<00:00, 197.86s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:17<00:00, 197.86s/it, reward=0.625]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:17<00:00, 197.86s/it, reward=0.625]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 498.79 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 476.90 examples/s]
+cash_application:cash-application-development-2:ar-tenterhook:24:a reward 0.625  turns  9.0  tokens  163908 (in 144341.0, out 19567.0, last turn in/out 28798/243)  stop piv_submitted truncated False  201.6s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'run_beancount', 'write_ledger', 'write_cash_application', 'write_cash_application', 'run_beancount', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 385.08 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 332.99 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:29<00:00, 149.57s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:29<00:00, 149.57s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:29<00:00, 149.57s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 321.48 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 332.96 examples/s]
+cash_application:cash-application-development-2:cr-pikestaff:6:b reward 1.0    turns  6.0  tokens   97435 (in 81588.0, out 15847.0, last turn in/out 24064/640)  stop piv_submitted truncated False  149.6s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'write_cash_application', 'run_beancount', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 333.30 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 166.67 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:30<00:00, 150.01s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:30<00:00, 150.01s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:30<00:00, 150.01s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 498.91 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 334.85 examples/s]
+cash_application:cash-application-development-2:cr-pikestaff:6:a reward 1.0    turns  7.0  tokens   99811 (in 84707.0, out 15104.0, last turn in/out 23941/46)  stop piv_submitted truncated False  150.0s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'run_beancount', 'write_cash_application', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.86 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.74 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:13<00:00, 193.63s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:13<00:00, 193.63s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:13<00:00, 193.63s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 500.57 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 500.22 examples/s]
+cash_application:cash-application-development-2:ar-tenterhook:22:b reward 1.0    turns  7.0  tokens  133777 (in 113419.0, out 20358.0, last turn in/out 29306/448)  stop piv_submitted truncated False  193.7s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'run_beancount', 'write_ledger', 'write_cash_application', 'write_cash_application', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.80 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 332.85 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:40<00:00, 160.22s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:40<00:00, 160.22s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:40<00:00, 160.22s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.44 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 332.75 examples/s]
+cash_application:cash-application-development-2:fc-quarrymill:4:b reward 1.0    turns  7.0  tokens  125444 (in 108459.0, out 16985.0, last turn in/out 26039/192)  stop piv_submitted truncated False  160.3s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'write_cash_application', 'write_cash_application', 'run_beancount', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.62 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 501.71 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:42<00:00, 162.43s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:42<00:00, 162.43s/it, reward=0.625]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:42<00:00, 162.43s/it, reward=0.625]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 198.12 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 498.97 examples/s]
+cash_application:cash-application-development-2:ar-tenterhook:22:a reward 0.625  turns  7.0  tokens  120711 (in 104701.0, out 16010.0, last turn in/out 25186/201)  stop piv_submitted truncated False  162.5s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'write_cash_application', 'write_cash_application', 'run_beancount', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.80 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 515.46 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:40<00:00, 160.85s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:40<00:00, 160.85s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:40<00:00, 160.85s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 503.16 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 496.37 examples/s]
+cash_application:cash-application-development-2:fc-quarrymill:4:a reward 1.0    turns  6.0  tokens   97137 (in 81175.0, out 15962.0, last turn in/out 24145/617)  stop piv_submitted truncated False  160.9s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'write_cash_application', 'run_beancount', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 500.10 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 503.46 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:48<00:00, 168.24s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:48<00:00, 168.24s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [02:48<00:00, 168.24s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 500.16 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 334.29 examples/s]
+cash_application:cash-application-development-2:cr-pikestaff:12:b reward 1.0    turns  8.0  tokens  132284 (in 114265.0, out 18019.0, last turn in/out 27070/251)  stop piv_submitted truncated False  168.3s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'run_beancount', 'write_cash_application', 'write_cash_application', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 486.13 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 361.45 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:23<00:00, 203.84s/it, reward=?]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:23<00:00, 203.84s/it, reward=1]Processing 1 groups (1 total rollouts): 100%|##########| 1/1 [03:23<00:00, 203.84s/it, reward=1]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 499.62 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 199.79 examples/s]
+cash_application:cash-application-development-2:ar-tenterhook:24:b reward 1.0    turns  7.0  tokens  113585 (in 94200.0, out 19385.0, last turn in/out 28164/221)  stop piv_submitted truncated False  203.9s  artifact BOUND submitted True  budget_accounting VALID  row_validation VALID  tools ['list_files', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'read_file', 'write_ledger', 'run_beancount', 'write_cash_application', 'submit']
+                 scorer: total None outcome None renderable None components None penalties [] 
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 500.10 examples/s]
+Map:   0%|          | 0/1 [00:00<?, ? examples/s]Map: 100%|##########| 1/1 [00:00<00:00, 498.67 examples/s]
+eval_dataset is not set, falling back to train dataset
+Processing 1 groups (1 total rollouts):   0%|          | 0/1 [00:00<?, ?it/s, reward=?]Processing 1 groups (1 total rollouts):   0%|          | 0/1 [02:56<?, ?it/s, reward=?]
+Traceback (most recent call last):
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\tests\measure_budget.py", line 3429, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\tests\measure_budget.py", line 3258, in main
+    row = one_rollout(env_mod, client_cls, config, selector, args.model, max_tokens, args.retries,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\tests\measure_budget.py", line 2831, in one_rollout
+    results, got_optional = _run_evaluate(
+                            ^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\tests\measure_budget.py", line 2677, in _run_evaluate
+    results = asyncio.run(env.evaluate(state_columns=BASE_STATE_COLUMNS + OPTIONAL_STATE_COLUMNS, **eval_kwargs))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\AppData\Roaming\uv\python\cpython-3.12.12-windows-x86_64-none\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\AppData\Roaming\uv\python\cpython-3.12.12-windows-x86_64-none\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\AppData\Roaming\uv\python\cpython-3.12.12-windows-x86_64-none\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\beancount_ledger\beancount_ledger.py", line 3610, in evaluate
+    return await super().evaluate(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\environment.py", line 1257, in evaluate
+    return await self.generate(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\beancount_ledger\beancount_ledger.py", line 3662, in generate
+    results = await super().generate(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\environment.py", line 1108, in generate
+    result = await coro
+             ^^^^^^^^^^
+  File "C:\Users\gulte\AppData\Roaming\uv\python\cpython-3.12.12-windows-x86_64-none\Lib\asyncio\tasks.py", line 631, in _wait_for_one
+    return f.result()  # May raise f.exception().
+           ^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\utils\async_utils.py", line 30, in with_sem
+    return await coro
+           ^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\environment.py", line 814, in run_group
+    group_states = await maybe_retry(run_group_attempt, max_retries=max_retries)()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\environment.py", line 807, in run_group_attempt
+    return await self._run_group_states(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\environment.py", line 707, in _run_group_states
+    group_states = await asyncio.gather(*rollout_tasks)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\multiturn_env.py", line 219, in rollout
+    await asyncio.wait_for(rollout_loop(), timeout=self.timeout_seconds)
+  File "C:\Users\gulte\AppData\Roaming\uv\python\cpython-3.12.12-windows-x86_64-none\Lib\asyncio\tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\multiturn_env.py", line 207, in rollout_loop
+    response = await self.get_model_response(state, prompt_messages)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\beancount_ledger\beancount_ledger.py", line 2719, in get_model_response
+    response = await super().get_model_response(state, prompt, client=client, model=model,
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\envs\environment.py", line 528, in get_model_response
+    response = await client.get_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\clients\client.py", line 133, in get_response
+    native_response = await self.get_native_response(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\tests\measure_budget.py", line 2483, in get_native_response
+    response = await super(PacedClient, self).get_native_response(*a, **k)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\clients\openai_chat_completions_client.py", line 74, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\clients\openai_chat_completions_client.py", line 345, in get_native_response
+    return await post_chat_completion_with_routed_experts_sidecar(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\tests\measure_budget.py", line 2423, in _capturing_post
+    response = await original_post(client, path, body=body, extra_headers=extra_headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\verifiers\legacy\utils\client_utils.py", line 106, in post_chat_completion_with_routed_experts_sidecar
+    raw_response = await client.post(
+                   ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\openai\_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gulte\Desktop\PIV\beancount-ledger-workflows\.venv\Lib\site-packages\openai\_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.PermissionDeniedError: Error code: 403 - {'error': {'message': 'Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the "use free tier only" mode in the management console.', 'id': '1b73fcc5-983a-9286-9d11-74f67b95f5a7', 'type': 'insufficient_quota', 'code': 'insufficient_quota'}}
+exit=1

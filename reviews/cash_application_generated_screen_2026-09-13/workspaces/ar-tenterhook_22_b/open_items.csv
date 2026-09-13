@@ -1,0 +1,10 @@
+invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-7301,Glenhaven Resorts Company,2024-09-24,2024-10-24,2385.00,2385.00
+SI-7303,Ivyrise Contract Interiors,2024-10-09,2024-11-23,4664.00,4664.00
+SI-7311,Aldergate Facilities Group,2024-10-16,2024-11-15,3392.00,3392.00
+SI-7313,Glenhaven Resorts Company,2024-10-28,2024-11-27,3816.00,2544.00
+SI-7321,Ivyrise Contract Interiors,2024-11-04,2024-12-19,1484.00,1484.00
+SI-7326,Aldergate Facilities Group,2024-11-12,2024-12-12,2385.00,2385.00
+SI-7328,Glenhaven Resorts Company,2024-11-25,2024-12-25,4611.00,4611.00
+SI-7330,Ivyrise Contract Interiors,2024-12-09,2025-01-23,1060.00,1060.00
+SI-7332,Glenhaven Resorts Company,2024-12-16,2025-01-15,4823.00,4823.00

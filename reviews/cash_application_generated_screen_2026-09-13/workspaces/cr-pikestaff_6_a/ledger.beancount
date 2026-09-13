@@ -1,0 +1,77 @@
+option "title" "Ashgrove Cordage & Net Co. - FY2025"
+option "operating_currency" "USD"
+
+2024-01-01 open Assets:AR                              USD
+2024-01-01 open Assets:Bank:Checking                   USD
+2024-01-01 open Assets:Inventory                       USD
+2024-01-01 open Assets:Prepayments                     USD
+2024-01-01 open Equity:Opening                         USD
+2024-01-01 open Expenses:BankFees                      USD
+2024-01-01 open Expenses:COGS                          USD
+2024-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2024-01-01 open Income:Sales                           USD
+2024-01-01 open Liabilities:AP                         USD
+2024-01-01 open Liabilities:SalesTax-Payable           USD
+
+2025-11-01 * "Opening balance" "Carried forward from October close"
+  Assets:Bank:Checking                         73737.00 USD
+  Assets:AR                                    21465.00 USD
+  Assets:Inventory                             69840.00 USD
+  Liabilities:AP                              -11500.00 USD
+  Equity:Opening                             -153542.00 USD
+
+2025-11-04 * "Quarrybrook Materials Co" "Payment of purchase invoice PI-8002"
+  Liabilities:AP                               11500.00 USD
+  Assets:Bank:Checking                        -11500.00 USD
+
+2025-11-10 * "Calloway Marine Services" "Customer payment, CALLOWAY PAYRUN 1107"
+  Assets:Bank:Checking                          3657.00 USD
+  Assets:AR                                    -3657.00 USD
+
+2025-11-11 * "Ivyrise Contract Interiors" "Sale SI-7943"
+  Assets:AR                                     2279.00 USD
+  Income:Sales                                 -2150.00 USD
+  Liabilities:SalesTax-Payable                  -129.00 USD
+
+2025-11-11 * "Ivyrise Contract Interiors" "Cost of goods sold on SI-7943"
+  Expenses:COGS                                 1290.00 USD
+  Assets:Inventory                             -1290.00 USD
+
+2025-11-13 * "Fairstead Property Services" "Sale SI-7945"
+  Assets:AR                                     1325.00 USD
+  Income:Sales                                 -1250.00 USD
+  Liabilities:SalesTax-Payable                   -75.00 USD
+
+2025-11-13 * "Ivyrise Contract Interiors" "Customer payment, IVYRISE PAYRUN 1111"
+  Assets:Bank:Checking                          3233.00 USD
+  Assets:AR                                    -3233.00 USD
+
+2025-11-13 * "Fairstead Property Services" "Cost of goods sold on SI-7945"
+  Expenses:COGS                                  750.00 USD
+  Assets:Inventory                              -750.00 USD
+
+2025-11-17 * "Calloway Marine Services" "Credit note CN-629 against SI-7910: Agreed allowance for finish defects on units the customer kept; nothing returned and nothing remade."
+  Income:Sales                                  3000.00 USD
+  Liabilities:SalesTax-Payable                   180.00 USD
+  Assets:AR                                    -3180.00 USD
+
+2025-11-17 * "Fairstead Property Services" "Customer payment, FAIRSTEAD PAYRUN 1114"
+  Assets:Bank:Checking                          2968.00 USD
+  Assets:AR                                    -2968.00 USD
+
+2025-11-19 * "Ivyrise Contract Interiors" "Customer payment, IVYRISE PAYRUN 1117"
+  Assets:Bank:Checking                          2279.00 USD
+  Assets:AR                                    -2279.00 USD
+
+2025-11-24 * "Calloway Marine Services" "Cost of goods sold on SI-7941"
+  Expenses:COGS                                 1740.00 USD
+  Assets:Inventory                             -1740.00 USD
+
+2025-11-24 * "Calloway Marine Services" "Sale SI-7941"
+  Assets:AR                                     3074.00 USD
+  Income:Sales                                 -2900.00 USD
+  Liabilities:SalesTax-Payable                  -174.00 USD
+
+2025-11-30 * "Kettleby Mutual Bank" "Monthly account service charge"
+  Expenses:BankFees                               65.00 USD
+  Assets:Bank:Checking                           -65.00 USD

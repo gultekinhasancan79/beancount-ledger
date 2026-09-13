@@ -1,7 +1,7 @@
 {
  "schema": "piv.retrospective-census/1",
  "record_type": "RETROSPECTIVE RECONSTRUCTION -- post-hoc, not an observation",
- "written_at": "2026-09-14T00:25:57",
+ "written_at": "2026-09-14T02:11:51",
  "written_by": {
   "module": "tests/measure_budget.py",
   "functions": [
@@ -27,12 +27,12 @@
   "1. The twelve cells and their order are the frozen selection's `execution_order`, whose self-digest is the screen's selection digest. Nothing is re-sampled.",
   "2. A cell whose selector appears in the nine observed rows is passed THROUGH `measure_budget.cell_disposition`, which derives SCORED from the row's own reward and quarantined fields. The row itself is not modified, and the reward, L, A and both binding digests are echoed under `original_row_preserved` so this file can be checked against it.",
   "3. `planned_ordinal` is the cell's 1-based index in that order. The rows carry null (the field postdates the run); every cell says so under `reconstructed_fields`.",
-  "4. The cell at ordinal 10 was never recorded at all. It is ATTEMPTED_UNSCORED with reward null, and every field the log does not support is the string UNKNOWN -- never null, never 0. Its two supported facts carry their source under `evidence`.",
+  "4. The cell at ordinal 10 was never recorded at all. It is ATTEMPTED_UNSCORED with reward null. Its HTTP status, provider error code, type, message and request id are PARSED out of the published runner log; every field that log does not support is the string UNKNOWN -- never null, never 0. Each supported fact carries its source under `evidence`.",
   "5. Cells 11 and 12 are `measure_budget.unattempted_cell` entries: attempted false, no task id, no times, `stopped_after_planned_ordinal` 10."
  ],
  "builder": {
   "path": "reviews/cash_screen_1_retrospective_census_2026-09-13.py",
-  "sha256": "4c087842372492909df0e1c25ca4c534644a2a3f6b73928ac11534ea0d6c6a8d",
+  "sha256": "fe560872262722368903d47de8e72892ffc706d868609aa6ecddba8dd824ea91",
   "note": "published beside this record; re-running it over the same three inputs reproduces every field but `written_at`. Every digest here is taken over LF bytes, which is what .gitattributes (`* text=auto eol=lf`) checks out on every platform"
  },
  "disposition_note": "nine scored, one attempted but unscored, two unattempted -- the ruling's own disposition (round18.answer.md:7,15). A lost cell and an unattempted cell are different objects here, as they now are in the data the fixed runner writes.",
@@ -43,7 +43,13 @@
   "rows": 9,
   "unmodified": "this record READS the nine rows; it does not rewrite, supersede or correct them",
   "per_selector_directory": "reviews/budget_qwen3.7-max-2026-05-20_2026-09-13_cash_screen_1/",
-  "rescued_workspaces": "C:/Users/gulte/Desktop/PIV/v10-codex/cash_screen_1_workspaces/ (nine cells, copied by hand before %TEMP% was cleaned)",
+  "rescued_workspaces": "reviews/cash_application_generated_screen_2026-09-13/workspaces/ (nine cells, thirteen files each, copied by hand out of %TEMP% before it was cleaned and published there; each file's digests are checked against the result rows by reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.py)",
+  "runner_log": {
+   "path": "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log",
+   "bytes": 22080,
+   "sha256": "95a10321ecff0294ecf72313998cb47161dbc38361cd30456c5b7c5e02b0644c",
+   "note": "the console log of the run, published so the lost cell's reconstruction has evidence a reader can check rather than prose to take on trust"
+  },
   "selection_record": {
    "path": "reviews/cash_screen_1_selection_2026-09-13.json",
    "bytes": 2497,
@@ -470,10 +476,11 @@
    "reason": "provider refused the request: free quota exhausted (HTTP 403)",
    "failure_stage": "inference",
    "http_status": 403,
-   "provider_error_code": "UNKNOWN",
-   "provider_error_type": "UNKNOWN",
-   "provider_error_message": "UNKNOWN",
-   "provider_request_id": "UNKNOWN",
+   "provider_error_code": "insufficient_quota",
+   "provider_error_type": "insufficient_quota",
+   "provider_error_message": "Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the \"use free tier only\" mode in the management console.",
+   "provider_request_id": "1b73fcc5-983a-9286-9d11-74f67b95f5a7",
+   "elapsed_before_refusal_seconds": 176,
    "quota_exhausted": true,
    "archive_dir": null,
    "stopped_after_planned_ordinal": null,
@@ -494,11 +501,17 @@
    "ledger_scored": "UNKNOWN",
    "application_committed": "UNKNOWN",
    "application_scored": "UNKNOWN",
-   "record": "RECONSTRUCTION -- this cell was never recorded. The 403 escaped one_rollout (the defect fixed at 2d6bc76) and the process exited on the traceback, so no row, no start record, no archive and no workspace exist for it. Only the two facts below were preserved, and only in prose.",
+   "record": "RECONSTRUCTION -- this cell was never recorded. The 403 escaped one_rollout (the defect fixed at 2d6bc76) and the process exited on the traceback, so no row, no start record, no archive and no workspace exist for it. What survives is the runner's console log, now published beside this record; the fields below are parsed out of it, and every field it does not carry stays UNKNOWN.",
    "evidence": {
     "selector, planned ordinal": "the frozen selection reviews/cash_screen_1_selection_2026-09-13.json (321c9715), execution order index 10",
-    "HTTP 403 / free quota exhausted": "round18.md:30,36 and round18.answer.md:15 -- the operator's console and the traceback, neither of which is in this repository",
-    "everything else": "UNKNOWN: never captured. A run of the FIXED runner would record all of it (tests/measure_budget.py terminal_row)."
+    "HTTP 403, error code, type, message, request id": "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log -- the provider's own error body, echoed verbatim in the traceback that ended the run, parsed rather than retyped",
+    "elapsed before the refusal": "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log -- the progress bar's reading for the cell that never finished. The cell therefore SPENT, and its spend is unrecorded; UNKNOWN below is not zero",
+    "everything else": "UNKNOWN: never captured, and not in the log either -- task id, start and end times, workspace, usage, and whether either deliverable was written. A run of the FIXED runner would record all of it (tests/measure_budget.py terminal_row)."
+   },
+   "log": {
+    "path": "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log",
+    "bytes": 22080,
+    "sha256": "95a10321ecff0294ecf72313998cb47161dbc38361cd30456c5b7c5e02b0644c"
    }
   },
   {

@@ -1,0 +1,77 @@
+option "title" "Harlington Rope & Canvas Co. - FY2027"
+option "operating_currency" "USD"
+
+2026-01-01 open Assets:AR                              USD
+2026-01-01 open Assets:Bank:Checking                   USD
+2026-01-01 open Assets:Inventory                       USD
+2026-01-01 open Assets:Prepayments                     USD
+2026-01-01 open Equity:Opening                         USD
+2026-01-01 open Expenses:BankFees                      USD
+2026-01-01 open Expenses:COGS                          USD
+2026-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2026-01-01 open Income:Sales                           USD
+2026-01-01 open Liabilities:AP                         USD
+2026-01-01 open Liabilities:SalesTax-Payable           USD
+
+2027-10-01 * "Opening balance" "Carried forward from September close"
+  Assets:Bank:Checking                         92279.00 USD
+  Assets:AR                                    25626.50 USD
+  Assets:Inventory                             52980.00 USD
+  Liabilities:AP                               -8500.00 USD
+  Equity:Opening                             -162385.50 USD
+
+2027-10-04 * "Northrop Timber & Board Co" "Payment of purchase invoice PI-8002"
+  Liabilities:AP                                8500.00 USD
+  Assets:Bank:Checking                         -8500.00 USD
+
+2027-10-11 * "Aldergate Facilities Group" "Cost of goods sold on SI-5846"
+  Expenses:COGS                                 1530.00 USD
+  Assets:Inventory                             -1530.00 USD
+
+2027-10-11 * "Fairstead Property Services" "Customer payment, FAIRSTEAD PAYRUN 1007"
+  Assets:Bank:Checking                          3370.50 USD
+  Assets:AR                                    -3370.50 USD
+
+2027-10-11 * "Aldergate Facilities Group" "Sale SI-5846"
+  Assets:AR                                     2728.50 USD
+  Income:Sales                                 -2550.00 USD
+  Liabilities:SalesTax-Payable                  -178.50 USD
+
+2027-10-13 * "Aldergate Facilities Group" "Customer payment, ALDERGATE PAYRUN 1011"
+  Assets:Bank:Checking                          4066.00 USD
+  Assets:AR                                    -4066.00 USD
+
+2027-10-13 * "Calloway Marine Services" "Sale SI-5848"
+  Assets:AR                                     1444.50 USD
+  Income:Sales                                 -1350.00 USD
+  Liabilities:SalesTax-Payable                   -94.50 USD
+
+2027-10-13 * "Calloway Marine Services" "Cost of goods sold on SI-5848"
+  Expenses:COGS                                  810.00 USD
+  Assets:Inventory                              -810.00 USD
+
+2027-10-18 * "Calloway Marine Services" "Customer payment, CALLOWAY PAYRUN 1014"
+  Assets:Bank:Checking                          3317.00 USD
+  Assets:AR                                    -3317.00 USD
+
+2027-10-18 * "Fairstead Property Services" "Credit note CN-868 against SI-5813: Agreed allowance for finish defects on units the customer kept; nothing returned and nothing remade."
+  Income:Sales                                  2450.00 USD
+  Liabilities:SalesTax-Payable                   171.50 USD
+  Assets:AR                                    -2621.50 USD
+
+2027-10-20 * "Aldergate Facilities Group" "Customer payment, ALDERGATE PAYRUN 1018"
+  Assets:Bank:Checking                          3798.50 USD
+  Assets:AR                                    -3798.50 USD
+
+2027-10-22 * "Fairstead Property Services" "Cost of goods sold on SI-5825"
+  Expenses:COGS                                 1320.00 USD
+  Assets:Inventory                             -1320.00 USD
+
+2027-10-22 * "Fairstead Property Services" "Sale SI-5825"
+  Assets:AR                                     2354.00 USD
+  Income:Sales                                 -2200.00 USD
+  Liabilities:SalesTax-Payable                  -154.00 USD
+
+2027-10-31 * "Beacon Row Savings Bank" "Monthly account service charge"
+  Expenses:BankFees                               40.00 USD
+  Assets:Bank:Checking                           -40.00 USD

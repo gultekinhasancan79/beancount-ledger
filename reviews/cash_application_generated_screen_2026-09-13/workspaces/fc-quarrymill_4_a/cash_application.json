@@ -1,0 +1,191 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2026-01-08:BRACKENHURST PAYRUN 0106",
+   "applied": [
+    {
+     "invoice_id": "SI-6426",
+     "amount": "2756.00"
+    },
+    {
+     "invoice_id": "SI-6451",
+     "amount": "1250.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2026-01-15:TRC7348915 SI-6421 SI-6431 SI-6401",
+   "applied": [
+    {
+     "invoice_id": "SI-6401",
+     "amount": "3604.00"
+    },
+    {
+     "invoice_id": "SI-6421",
+     "amount": "1635.00"
+    },
+    {
+     "invoice_id": "SI-6431",
+     "amount": "3657.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2026-01-26:LARKMEAD PAYRUN 0123",
+   "applied": [
+    {
+     "invoice_id": "SI-6403",
+     "amount": "1749.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2026-01-26:TRC7348952 SI-6441 SI-6451",
+   "applied": [
+    {
+     "invoice_id": "SI-6407",
+     "amount": "750.00"
+    },
+    {
+     "invoice_id": "SI-6441",
+     "amount": "1749.00"
+    },
+    {
+     "invoice_id": "SI-6451",
+     "amount": "1347.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-648",
+   "applied": [
+    {
+     "invoice_id": "SI-6403",
+     "amount": "1696.00"
+    }
+   ],
+   "unapplied_amount": "0.00"
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-6401",
+   "customer": "Larkmead Venue Management",
+   "period_basis": "3604.00",
+   "applied_total": "3604.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-6403",
+   "customer": "Larkmead Venue Management",
+   "period_basis": "3445.00",
+   "applied_total": "1749.00",
+   "credited": "1696.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-6407",
+   "customer": "Brackenhurst Leisure Partners",
+   "period_basis": "3021.00",
+   "applied_total": "750.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2271.00"
+  },
+  {
+   "invoice_id": "SI-6413",
+   "customer": "Hollowbrook Estates Group",
+   "period_basis": "2597.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2597.00"
+  },
+  {
+   "invoice_id": "SI-6421",
+   "customer": "Larkmead Venue Management",
+   "period_basis": "2385.00",
+   "applied_total": "1635.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "750.00"
+  },
+  {
+   "invoice_id": "SI-6426",
+   "customer": "Brackenhurst Leisure Partners",
+   "period_basis": "2756.00",
+   "applied_total": "2756.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-6431",
+   "customer": "Larkmead Venue Management",
+   "period_basis": "3657.00",
+   "applied_total": "3657.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-6436",
+   "customer": "Hollowbrook Estates Group",
+   "period_basis": "3233.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3233.00"
+  },
+  {
+   "invoice_id": "SI-6441",
+   "customer": "Brackenhurst Leisure Partners",
+   "period_basis": "1749.00",
+   "applied_total": "1749.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-6443",
+   "customer": "Larkmead Venue Management",
+   "period_basis": "3657.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3657.00"
+  },
+  {
+   "invoice_id": "SI-6451",
+   "customer": "Brackenhurst Leisure Partners",
+   "period_basis": "2597.00",
+   "applied_total": "2597.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-6453",
+   "customer": "Hollowbrook Estates Group",
+   "period_basis": "1696.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1696.00"
+  }
+ ]
+}

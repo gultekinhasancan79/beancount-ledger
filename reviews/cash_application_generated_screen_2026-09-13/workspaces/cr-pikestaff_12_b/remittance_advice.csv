@@ -1,0 +1,7 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-1007-FP,Fairstead Property Services,2027-10-07,ACH,FAIRSTEAD PAYRUN 1007,3370.50,SI-5801,0.00,no,0.00,withheld; allowance requested for the disputed units
+RA-1007-FP,Fairstead Property Services,2027-10-07,ACH,FAIRSTEAD PAYRUN 1007,3370.50,SI-5819,1605.00,yes,0.00,
+RA-1007-FP,Fairstead Property Services,2027-10-07,ACH,FAIRSTEAD PAYRUN 1007,3370.50,SI-5813,1765.50,no,0.00,part payment; balance held pending the agreed allowance
+RA-1011-AF,Aldergate Facilities Group,2027-10-11,ACH,ALDERGATE PAYRUN 1011,4066.00,SI-5803,4066.00,yes,0.00,
+RA-1014-CM,Calloway Marine Services,2027-10-14,ACH,CALLOWAY PAYRUN 1014,3317.00,SI-5811,3317.00,yes,0.00,
+RA-1018-AF,Aldergate Facilities Group,2027-10-18,ACH,ALDERGATE PAYRUN 1018,3798.50,SI-5815,3798.50,yes,0.00,

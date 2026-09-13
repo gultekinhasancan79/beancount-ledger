@@ -1,0 +1,77 @@
+option "title" "Gorsewell Signage LLC - FY2026"
+option "operating_currency" "USD"
+
+2025-01-01 open Assets:AR                              USD
+2025-01-01 open Assets:Bank:Checking                   USD
+2025-01-01 open Assets:Inventory                       USD
+2025-01-01 open Assets:Prepayments                     USD
+2025-01-01 open Equity:Opening                         USD
+2025-01-01 open Expenses:BankFees                      USD
+2025-01-01 open Expenses:COGS                          USD
+2025-01-01 open Expenses:SmallBalanceWriteOffs         USD
+2025-01-01 open Income:Sales                           USD
+2025-01-01 open Liabilities:AP                         USD
+2025-01-01 open Liabilities:SalesTax-Payable           USD
+
+2026-01-01 * "Opening balance" "Carried forward from December close"
+  Assets:Bank:Checking                         66798.00 USD
+  Assets:AR                                    26394.00 USD
+  Assets:Inventory                             66090.00 USD
+  Liabilities:AP                              -10000.00 USD
+  Equity:Opening                             -149282.00 USD
+
+2026-01-05 * "Quarrybrook Materials Co" "Payment of purchase invoice PI-8002"
+  Liabilities:AP                               10000.00 USD
+  Assets:Bank:Checking                        -10000.00 USD
+
+2026-01-08 * "Brackenhurst Leisure Partners" "Customer payment, BRACKENHURST PAYRUN 0106"
+  Assets:Bank:Checking                          4006.00 USD
+  Assets:AR                                    -4006.00 USD
+
+2026-01-12 * "Brackenhurst Leisure Partners" "Sale SI-6441"
+  Assets:AR                                     1749.00 USD
+  Income:Sales                                 -1650.00 USD
+  Liabilities:SalesTax-Payable                   -99.00 USD
+
+2026-01-12 * "Brackenhurst Leisure Partners" "Cost of goods sold on SI-6441"
+  Expenses:COGS                                  990.00 USD
+  Assets:Inventory                              -990.00 USD
+
+2026-01-15 * "Larkmead Venue Management" "Customer payment, TRC7348915 SI-6421 SI-6431 SI-6401"
+  Assets:Bank:Checking                          8896.00 USD
+  Assets:AR                                    -8896.00 USD
+
+2026-01-19 * "Larkmead Venue Management" "Credit note CN-648 against SI-6403: Agreed price allowance on goods retained by the customer; no return and no replacement supplied."
+  Income:Sales                                  1600.00 USD
+  Liabilities:SalesTax-Payable                    96.00 USD
+  Assets:AR                                    -1696.00 USD
+
+2026-01-20 * "Larkmead Venue Management" "Cost of goods sold on SI-6443"
+  Expenses:COGS                                 2070.00 USD
+  Assets:Inventory                             -2070.00 USD
+
+2026-01-20 * "Larkmead Venue Management" "Sale SI-6443"
+  Assets:AR                                     3657.00 USD
+  Income:Sales                                 -3450.00 USD
+  Liabilities:SalesTax-Payable                  -207.00 USD
+
+2026-01-22 * "Hollowbrook Estates Group" "Cost of goods sold on SI-6413"
+  Expenses:COGS                                 1470.00 USD
+  Assets:Inventory                             -1470.00 USD
+
+2026-01-22 * "Hollowbrook Estates Group" "Sale SI-6413"
+  Assets:AR                                     2597.00 USD
+  Income:Sales                                 -2450.00 USD
+  Liabilities:SalesTax-Payable                  -147.00 USD
+
+2026-01-26 * "Brackenhurst Leisure Partners" "Customer payment, TRC7348952 SI-6441 SI-6451"
+  Assets:Bank:Checking                          3846.00 USD
+  Assets:AR                                    -3846.00 USD
+
+2026-01-26 * "Larkmead Venue Management" "Customer payment, LARKMEAD PAYRUN 0123"
+  Assets:Bank:Checking                          1749.00 USD
+  Assets:AR                                    -1749.00 USD
+
+2026-01-31 * "Padstow Mercantile Bank" "Monthly account service charge"
+  Expenses:BankFees                               80.00 USD
+  Assets:Bank:Checking                           -80.00 USD
