@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="510" viewBox="0 0 1200 510" role="img" aria-labelledby="title desc">
+  <title id="title">beancount-ledger: inspect the criteria behind the reward</title>
+  <desc id="desc">Accounting evidence becomes a ledger and a payment register. Ledger checks cover balances, repairs, and record integrity. Application checks cover receipts, invoice rows, credit notes, and accounting identities. Both feed a deterministic reward and an explicit completion decision.</desc>
+  <rect width="1200" height="510" rx="20" fill="#0f172a"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="42" y="48" font-size="15" font-weight="700" letter-spacing="2" fill="#5eead4">BEANCOUNT-LEDGER</text>
+    <text x="42" y="95" font-size="34" font-weight="650" fill="#f8fafc">Inspect the criteria behind the reward.</text>
+    <text x="42" y="128" font-size="18" fill="#cbd5e1">Accounting tasks for tool-using agents · deterministic evaluation</text>
+    <rect x="42" y="161" width="264" height="247" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="64" y="194" font-size="13" font-weight="700" letter-spacing="1.5" fill="#94a3b8">01 / EVIDENCE &amp; WORK</text>
+    <text x="64" y="230" font-size="20" font-weight="650" fill="#f8fafc">Business records</text>
+    <text x="64" y="257" font-size="16" fill="#cbd5e1">Statements, invoices, policies</text>
+    <path d="M78 277v28m-5-5 5 5 5-5" fill="none" stroke="#5eead4" stroke-width="2"/>
+    <text x="64" y="338" font-size="20" font-weight="650" fill="#f8fafc">Two deliverables</text>
+    <text x="64" y="365" font-size="16" fill="#cbd5e1">Ledger + payment register</text>
+    <path d="M319 279h30m-6-6 6 6-6 6" fill="none" stroke="#5eead4" stroke-width="2"/>
+    <rect x="361" y="161" width="455" height="247" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="383" y="194" font-size="13" font-weight="700" letter-spacing="1.5" fill="#94a3b8">02 / SCORING CRITERIA</text>
+    <text x="383" y="229" font-size="20" font-weight="650" fill="#5eead4">Ledger</text>
+    <text x="383" y="255" font-size="16" fill="#e2e8f0">Target balances · resolved errors</text>
+    <text x="383" y="280" font-size="16" fill="#cbd5e1">Record preservation · integrity checks</text>
+    <path d="M383 297h410" stroke="#334155"/>
+    <text x="383" y="325" font-size="20" font-weight="650" fill="#5eead4">Payment register</text>
+    <text x="383" y="351" font-size="16" fill="#e2e8f0">Receipts · invoice rows · credit notes</text>
+    <text x="383" y="377" font-size="16" fill="#cbd5e1">Conservation · receivables · write-offs</text>
+    <path d="M829 279h30m-6-6 6 6-6 6" fill="none" stroke="#5eead4" stroke-width="2"/>
+    <rect x="871" y="161" width="287" height="247" rx="12" fill="#123536" stroke="#2b6561"/>
+    <text x="893" y="194" font-size="13" font-weight="700" letter-spacing="1.5" fill="#99f6e4">03 / RESULT</text>
+    <text x="893" y="240" font-size="26" font-weight="650" fill="#f8fafc">L × A</text>
+    <text x="893" y="270" font-size="16" fill="#d1fae5">Ledger × application score</text>
+    <path d="M893 292h242" stroke="#2b6561"/>
+    <text x="893" y="326" font-size="20" font-weight="650" fill="#f8fafc">Complete?</text>
+    <text x="893" y="354" font-size="16" fill="#d1fae5">Checked explicitly against</text>
+    <text x="893" y="378" font-size="16" fill="#d1fae5">both deliverables.</text>
+    <text x="42" y="448" font-size="16" fill="#cbd5e1">Run the local reference-solution walkthrough. See criteria, findings, and result digests.</text>
+    <text x="42" y="478" font-size="14" fill="#94a3b8">Source 0.2.0 · cash-application workflow · no model call required for the walkthrough</text>
+  </g>
+</svg>
