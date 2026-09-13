@@ -6917,6 +6917,195 @@ def test_the_archive_writer_emits_every_declared_file():
                  "and scored", not problems, "\n".join(problems))
 
 
+def _cell_manifest(row) -> dict:
+    return json.loads((Path(row["archive_dir"]) / "manifest.json").read_text(encoding="utf-8"))
+
+
+def _cell_receipt(row) -> tuple:
+    """The scorer's OWN receipt, out of the archive directory beside the
+    manifest — the evidence the manifest's flags must agree with."""
+    return env_mod._read_publication(
+        (Path(row["archive_dir"]) / "delivery.json").read_text(encoding="utf-8"))
+
+
+def test_committed_and_scored_are_read_from_the_receipt_not_from_the_tool_calls():
+    """THE DEFECT: the archive derived `committed` from whether the agent
+    CALLED a write tool and `scored` from whether a `delivery.json` existed —
+    properties of the transcript, not of the commitment. So the manifest
+    claimed a positive for both deliverables in exactly the failure cases it
+    exists to document.
+
+    Both episodes below call BOTH write tools and reach `submit`, so the
+    tool-call list is identical between them and cannot distinguish them. The
+    scorer's receipt can, and that is the whole test: an over-envelope
+    register is refused BEFORE storage (`revision 0`, `status absent`), and a
+    protocol-rejected ledger IS committed (`committed_revision` names it) but
+    is never scored.
+    """
+    import tempfile
+    problems = []
+    with tempfile.TemporaryDirectory() as directory:
+        # SEPARATE archives: one cell directory per selector, and both
+        # episodes are the same selector.
+        refused = mb.one_rollout(FAMILY_SHIM, scripted([CAR.deliver(register=CAR.case()["oversize"]),
+                                                        CAR.submit()]),
+                                 DUMMY_CONFIG, "cash_application_001", "scripted", 4000, 0, 0, True,
+                                 archive=Path(directory) / "refused", arm="A",
+                                 screen="offline-witness", selection_digest="n/a")
+        rejected = mb.one_rollout(FAMILY_SHIM, scripted([CAR.deliver(register=CAR.case()["register"]),
+                                                         CAR.write_ledger(tag="bad", text="not beancount @@@\n"),
+                                                         CAR.submit()]),
+                                  DUMMY_CONFIG, "cash_application_001", "scripted", 4000, 0, 0, True,
+                                  archive=Path(directory) / "rejected", arm="A",
+                                  screen="offline-witness", selection_digest="n/a")
+        for name, row in (("refused-register", refused), ("rejected-ledger", rejected)):
+            tools = row.get("tools") or []
+            for required in (env_mod.WRITE_TOOL, env_mod.APPLICATION_TOOL):
+                if required not in tools:
+                    problems.append(f"{name}: the fixture must CALL {required} for the tool-call "
+                                    f"derivation to be the thing under test: {tools}")
+        refused_manifest, rejected_manifest = _cell_manifest(refused), _cell_manifest(rejected)
+
+        # 1. the over-envelope register: nothing stored, nothing committed
+        block = refused_manifest["application"]
+        _delivery, application = _cell_receipt(refused)
+        if application.revision != 0 or application.status != "absent" \
+                or application.submitted_stored_bytes_digest != env_mod.NO_ARTIFACT:
+            problems.append(f"the fixture did not refuse the register before storage: {application}")
+        if block["committed"] is not False or block["scored"] is not False:
+            problems.append(f"a register refused BEFORE storage is recorded committed/scored: {block}")
+        if refused.get("application_committed") is not False or refused.get("application_scored") is not False:
+            problems.append(f"the row repeats the false positive: "
+                            f"{refused.get('application_committed')}/{refused.get('application_scored')}")
+        if (block["revision"], block["status"]) != (application.revision, application.status):
+            problems.append(f"the manifest's register evidence is not the receipt's: {block}")
+
+        # 2. the protocol-rejected ledger: COMMITTED (the receipt names the
+        #    revision) and NOT scored — two different facts, stated apart.
+        ledger_block = rejected_manifest["ledger"]
+        delivery, _application = _cell_receipt(rejected)
+        if delivery.outcome == "delivered" or delivery.committed_revision < 1:
+            problems.append(f"the fixture did not protocol-reject a committed ledger: {delivery.outcome}/"
+                            f"{delivery.committed_revision}")
+        if ledger_block["committed"] is not True or ledger_block["committed_revision"] != delivery.committed_revision:
+            problems.append(f"the committed revision the receipt names is not recorded: {ledger_block}")
+        if ledger_block["scored"] is not False:
+            problems.append(f"a ledger the scorer REFUSED to render is recorded as scored: {ledger_block}")
+        if ledger_block["outcome"] != delivery.outcome or ledger_block["binding"] != "NO_ARTIFACT":
+            problems.append(f"the manifest's ledger evidence disagrees with the receipt: {ledger_block}")
+        if rejected["application"] != "BOUND" or rejected_manifest["application"]["scored"] is not True:
+            problems.append(f"the same episode's DELIVERED register was not recorded as scored: "
+                            f"{rejected_manifest['application']}")
+        for manifest in (refused_manifest, rejected_manifest):
+            if set(manifest.get("deliverable_flags") or {}) != {"committed", "scored"}:
+                problems.append("the manifest does not define the two words it publishes")
+            for half in ("ledger", "application"):
+                if not (manifest[half].get("evidence") or "").startswith("delivery.json"):
+                    problems.append(f"the {half} flags do not name the receipt they were read from: "
+                                    f"{manifest[half].get('evidence')}")
+
+    # 3. the pure function, over receipts alone: no workspace, no transcript.
+    absent = mb.deliverable_disposition(None, None, env_mod)
+    if absent["ledger"]["committed"] or absent["ledger"]["scored"] \
+            or absent["application"]["committed"] or absent["application"]["scored"]:
+        problems.append(f"a cell with no receipt at all claims a deliverable: {absent}")
+    if "no delivery.json" not in absent["ledger"]["evidence"]:
+        problems.append(f"a cell with no receipt does not say so: {absent['ledger']['evidence']}")
+    return check("`committed` and `scored` are read from the SCORER'S RECEIPT, not from the tool-call "
+                 "list: a register refused before storage is neither, a protocol-rejected ledger is "
+                 "committed but not scored, and the receipt fields that decided each flag are written "
+                 "beside it", not problems, "\n".join(problems))
+
+
+def test_a_register_that_bound_without_its_ledger_still_decomposes():
+    """The A half was still gated on the L half: `breakdown()` ran only when
+    the LEDGER bound, so a rollout whose register bound and whose ledger did
+    not got no decomposition at all — backwards for the failure the family
+    exists to measure. Both of screen 1's partials had both artifacts BOUND,
+    so nothing observed changes here; this is the case that had none.
+    """
+    import tempfile
+    problems = []
+    with tempfile.TemporaryDirectory() as directory:
+        row = mb.one_rollout(FAMILY_SHIM, scripted([CAR.deliver(register=CAR.case()["register"]),
+                                                    CAR.write_ledger(tag="bad", text="not beancount @@@\n"),
+                                                    CAR.submit()]),
+                             DUMMY_CONFIG, "cash_application_001", "scripted", 4000, 0, 0, True,
+                             archive=Path(directory) / "archive", arm="A",
+                             screen="offline-witness", selection_digest="n/a")
+    if row.get("artifact") == "BOUND" or row.get("application") != "BOUND":
+        return check("a register that bound without its ledger still decomposes", False,
+                     f"the fixture must bind the register and NOT the ledger: "
+                     f"{row.get('artifact')}/{row.get('application')}")
+    b = row.get("breakdown") or {}
+    if not b or b.get("error"):
+        problems.append(f"the register-only rollout has no decomposition: {b or 'None'}")
+    else:
+        application = b.get("application") or {}
+        if application.get("scored") is not True or not application.get("components"):
+            problems.append(f"the A half was not preserved: {application}")
+        if application.get("total") != "1.000000":
+            problems.append(f"the delivered register's A is {application.get('total')}, not 1.0")
+        if (b.get("ledger") or {}).get("scored") is not False:
+            problems.append(f"a protocol-rejected ledger claims an L decomposition: {b.get('ledger')}")
+        # the L half did not come from the public path, and the record says so
+        if b.get("ledger_source") != "submitted" or not b.get("ledger_source_note"):
+            problems.append(f"the breakdown does not say where its ledger bytes came from: "
+                            f"{b.get('ledger_source')!r}")
+        if b.get("agrees_with_live_metrics") is not True:
+            problems.append(f"the replay does not reproduce the rollout's own metrics: "
+                            f"{b.get('live_metrics')} vs {b.get('replayed_metrics')}")
+    return check("a rollout whose REGISTER bound and whose ledger did not still gets its A "
+                 "decomposition, replayed from the bytes the agent submitted and labelled as such",
+                 not problems, "\n".join(problems))
+
+
+def test_a_cancelled_cell_is_recorded_as_cancelled_and_the_cancellation_propagates():
+    """`asyncio.CancelledError` is a `BaseException`, so the catch-all that
+    exists for an unknown PROVIDER exception would have recorded a cancelled
+    cell as a provider failure at stage `inference` — a verdict about the
+    provider that nobody returned. It is recorded at its own stage, with no
+    HTTP status and no session-stop claim, and then re-raised so the
+    cancellation is not swallowed."""
+    import tempfile
+    problems = []
+    with tempfile.TemporaryDirectory() as directory:
+        journal = Path(directory) / "cells.starts.jsonl"
+        shim = _ProviderFailureShim(asyncio.CancelledError(), journal)
+        raised = None
+        try:
+            mb.one_rollout(shim, _SpentClient, DUMMY_CONFIG, "test:0", "m", 4000, 0, 0, True,
+                           planned_ordinal=4, start_journal=journal)
+        except asyncio.CancelledError as exc:
+            raised = exc
+        except BaseException as exc:                                        # noqa: BLE001
+            problems.append(f"a cancellation was turned into {type(exc).__name__}")
+        if raised is None:
+            problems.append("the cancellation was SWALLOWED: one_rollout returned a row for a cell "
+                            "whose task was cancelled")
+        records = [json.loads(line) for line in journal.read_text(encoding="utf-8").splitlines() if line]
+        terminal = [r for r in records if r.get("schema") == "piv.cell-cancelled/1"]
+        if len(terminal) != 1:
+            problems.append(f"the cancelled cell left no durable record: {[r.get('schema') for r in records]}")
+        else:
+            record = terminal[0]
+            if record.get("failure_stage") != mb.FAILURE_STAGE_CANCELLED or record.get("cancelled") is not True:
+                problems.append(f"the record does not say it was cancelled: {record.get('failure_stage')}")
+            if record.get("failure_stage") == mb.FAILURE_STAGE_INFERENCE:
+                problems.append("a cancellation is filed as a provider failure at inference")
+            if record.get("http_status") is not None or record.get("provider_error") is not None \
+                    or record.get("provider_error_code") is not None:
+                problems.append(f"a cancellation claims a provider verdict: {record.get('provider_error')}")
+            if record.get("quota_exhausted") or record.get("session_fatal") or record.get("stop_schedule"):
+                problems.append("a cancellation stops the schedule as if the key had been refused")
+            if record.get("reward") is not None or record.get("scored") is not False \
+                    or record.get("planned_ordinal") != 4:
+                problems.append(f"the cancelled cell is not an attempted/unscored cell 4: {record}")
+    return check("a cancelled cell is recorded at its own stage — no HTTP status, no provider error, no "
+                 "session-stop claim — and the CancelledError propagates instead of being filed as a "
+                 "provider failure", not problems, "\n".join(problems))
+
+
 def test_a_legacy_rollouts_breakdown_and_archive_are_unchanged_in_shape():
     """The other half of every fix above: a contract-4 rollout's breakdown is
     still the legacy dict, with no family keys on it, and its archive holds
@@ -7159,6 +7348,9 @@ TESTS = [
     test_the_session_stops_on_quota_and_writes_the_whole_cell_census,
     test_a_two_artifact_episode_reproduces_both_decompositions,
     test_the_archive_writer_emits_every_declared_file,
+    test_committed_and_scored_are_read_from_the_receipt_not_from_the_tool_calls,
+    test_a_register_that_bound_without_its_ledger_still_decomposes,
+    test_a_cancelled_cell_is_recorded_as_cancelled_and_the_cancellation_propagates,
     test_a_legacy_rollouts_breakdown_and_archive_are_unchanged_in_shape,
 ]
 

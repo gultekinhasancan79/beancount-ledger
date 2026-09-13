@@ -109,8 +109,10 @@ THE ARCHIVE (`archive_cell`) writes BYTES, per cell, at the one moment they
 all still exist: the served public inputs, both delivered artifacts, the
 delivery receipt, the texts the agent actually submitted, the full trajectory
 and an indexed manifest saying whether each deliverable was committed and
-scored. Digests preserve identity, not content, and a `%TEMP%` workspace path
-preserves neither once the directory is gone.
+scored — both read off the SCORER'S OWN RECEIPT (`deliverable_disposition`),
+never from whether the agent called a write tool, and written beside the
+receipt fields they were derived from. Digests preserve identity, not content,
+and a `%TEMP%` workspace path preserves neither once the directory is gone.
 
 The API key is read from HKCU\\Environment (NVIDIA_API_KEY) into this
 process's environment for the framework client to pick up by name; it is
@@ -1187,6 +1189,11 @@ CELL_UNATTEMPTED = "UNATTEMPTED"
 #: environment's own quarantine, raised after the framework returned.
 FAILURE_STAGE_INFERENCE = "inference"
 FAILURE_STAGE_EVALUATION = "evaluation"
+#: `cancelled` is NEITHER: the cell was cancelled (a timeout, or its caller),
+#: no provider verdict was returned and none is claimed. Kept distinct because
+#: `asyncio.CancelledError` is a `BaseException` and would otherwise be filed
+#: as a provider failure at `inference` by the catch-all that exists for one.
+FAILURE_STAGE_CANCELLED = "cancelled"
 
 #: Provider error codes that mean "this key cannot buy another episode".
 #: Matched against the provider's own `code`/`type`, at any HTTP status.
@@ -2751,6 +2758,100 @@ def _write_bytes(path: Path, data: bytes) -> dict:
     return {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
 
 
+#: What `committed` and `scored` MEAN in an archive manifest. Written into
+#: every manifest, so a reader never has to guess which question a flag
+#: answers — and so the two words cannot quietly drift back to meaning
+#: "the agent called a write tool" and "a delivery.json exists".
+DELIVERABLE_FLAG_DEFINITIONS = {
+    "committed": "the SCORER'S OWN RECEIPT names a stored revision of this deliverable's own bytes "
+                 "(ledger: delivery.json committed_revision; register: the application block's "
+                 "revision and submitted digest). NOT whether the agent called the write tool.",
+    "scored": "the scorer scored those committed bytes on their merits and published the artifact "
+              "(ledger: outcome == delivered; register: status == delivered). A deliverable that was "
+              "refused before storage, protocol-rejected, policy-blocked or never filed is NOT scored, "
+              "whatever fixed value the composite then used in its place.",
+}
+
+
+def deliverable_disposition(delivery, application, env_mod, *, reason: str | None = None) -> dict:
+    """WHETHER EACH DELIVERABLE WAS COMMITTED AND SCORED, read off the
+    scorer's own receipt.
+
+    THE DEFECT THIS FUNCTION EXISTS FOR. The archive used to derive these two
+    flags from the wrong evidence entirely: `committed` from whether the agent
+    CALLED a write tool (`entry["tool"] == env_mod.WRITE_TOOL`), and `scored`
+    from the mere EXISTENCE of `delivery.json`. Both are properties of the
+    transcript, not of the commitment, and they part company in exactly the
+    cases this archive exists to document. Driven offline on
+    `cash_application_001` with an over-envelope register — refused BEFORE
+    storage, so the scorer's receipt in the same directory says `{"status":
+    "absent", "revision": 0, "submitted_stored_bytes_digest": "NO_ARTIFACT"}`
+    — the manifest written beside it claimed `"application": {"committed":
+    true, "scored": true}`. With a protocol-rejected `write_ledger` it claimed
+    the same for the ledger, next to its own `"binding": "NO_ARTIFACT",
+    "reason": "write_refused"`. A declared value, published in the one field
+    the ruling named (round18.answer.md:29, "whether either deliverable was
+    committed or scored").
+
+    So both flags now come from the receipt, and the EVIDENCE THEY WERE READ
+    FROM is written beside them — `committed_revision`, `outcome`/`status`,
+    the scorer's own score and `delivered` — so a reader can re-derive either
+    flag from the same manifest rather than trusting it.
+
+    The two words are not synonyms and the distinction is the point:
+
+      committed  the bytes were stored and taken as this deliverable's
+                 current revision. A ledger that was stored and then failed
+                 to parse IS committed (`committed_revision` names it) and is
+                 NOT scored.
+      scored     the scorer scored those bytes on their merits and published
+                 an artifact for them.
+
+    `delivery` and `application` are the two halves `env_mod._read_publication`
+    returns; either may be None (no receipt at all, a legacy episode with no
+    register block, or a manifest that would not parse), and `reason` then
+    says which.
+    """
+    no_artifact = getattr(env_mod, "NO_ARTIFACT", "NO_ARTIFACT")
+    unknown = reason or "no delivery.json: the scorer published no receipt for this cell"
+    ledger = {"committed": False, "scored": False, "committed_revision": None, "outcome": None,
+              "rollout_score": None, "delivered": False, "evidence": unknown}
+    register = {"committed": False, "scored": False, "revision": None, "status": None,
+                "application_score": None, "delivered": False, "evidence": unknown}
+    if delivery is not None:
+        revision = getattr(delivery, "committed_revision", 0) or 0
+        renderable = bool(getattr(delivery, "renderable", False))
+        published = getattr(delivery, "artifact_stored_bytes_digest", no_artifact) != no_artifact
+        ledger = {"committed": revision > 0,
+                  "scored": revision > 0 and renderable,
+                  "committed_revision": revision,
+                  "outcome": getattr(delivery, "outcome", None),
+                  # `DeliveryReceipt.score` is the ROLLOUT's recorded total —
+                  # the COMPOSITE for a family episode, not the ledger's own
+                  # L — so it is named for what it is. The L half lives in the
+                  # breakdown, not in the receipt.
+                  "rollout_score": getattr(delivery, "score", None),
+                  "delivered": published,
+                  "evidence": "delivery.json: committed_revision, outcome, score"}
+        register["evidence"] = ("the publication manifest carries no register block: a legacy episode "
+                                "has one deliverable")
+    if application is not None:
+        revision = getattr(application, "revision", 0) or 0
+        status = getattr(application, "status", None)
+        stored = getattr(application, "submitted_stored_bytes_digest", no_artifact)
+        committed = revision > 0 and stored != no_artifact
+        register = {"committed": committed,
+                    "scored": committed and status == "delivered",
+                    "revision": revision, "status": status,
+                    "application_score": getattr(application, "application_score", None),
+                    "delivered": getattr(application, "artifact_stored_bytes_digest",
+                                         no_artifact) != no_artifact,
+                    "evidence": "delivery.json[application]: revision, status, submitted digest"}
+    # The definitions live once, on the module and in the manifest's
+    # `deliverable_flags` — not repeated into every row.
+    return {"ledger": ledger, "application": register}
+
+
 def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
                  out: dict | None = None, row: dict | None = None,
                  workspace: str | None = None) -> dict:
@@ -2770,7 +2871,10 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
       `trajectory.json`     the full trajectory, every turn, as returned.
       `completion.json`     the full message list, reasoning included.
       `manifest.json`       the index: what was written, its digest, and
-                            whether each deliverable was committed and scored.
+                            whether each deliverable was committed and scored
+                            — from the scorer's receipt (`deliverable_
+                            disposition`), with the receipt fields that
+                            decided each flag written beside it.
 
     Returns the row fields describing the archive. Never raises for a missing
     piece: a piece that does not exist is recorded as absent, with its reason.
@@ -2788,20 +2892,24 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
         absent["inputs"] = "the environment exposed no public_files for this cell"
 
     workspace = workspace or (out or {}).get("workspace")
-    ledger_committed = application_committed = False
-    ledger_scored = application_scored = False
+    # THE RECEIPT, not the transcript, decides what was committed and scored.
+    # `deliverable_disposition` starts from "no receipt, therefore neither",
+    # which is also the right answer for a cell that never produced one.
+    disposition = deliverable_disposition(None, None, env_mod)
     if workspace and Path(workspace).is_dir():
         ws = Path(workspace)
         delivery_path = ws / "delivery.json"
         if delivery_path.is_file():
             files["delivery.json"] = _write_bytes(cell_dir / "delivery.json", delivery_path.read_bytes())
-            ledger_scored = True
             try:
-                _delivery, published_application = env_mod._read_publication(
+                published_delivery, published_application = env_mod._read_publication(
                     delivery_path.read_text(encoding="utf-8"))
-                application_scored = published_application is not None
+                disposition = deliverable_disposition(published_delivery, published_application, env_mod)
             except Exception as exc:                                        # noqa: BLE001
                 absent["delivery_parse"] = f"{type(exc).__name__}: {exc}"[:200]
+                disposition = deliverable_disposition(
+                    None, None, env_mod,
+                    reason=f"delivery.json did not parse: {type(exc).__name__}"[:120])
         else:
             absent["delivery.json"] = "the scorer published no manifest for this rollout"
         for name in (env_mod.LEDGER, getattr(env_mod, "APPLICATION_FILE", None)):
@@ -2826,9 +2934,6 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
         body = entry["content"] if entry["content"] is not None else (entry["raw_arguments"] or "")
         name = f"{index:02d}_{entry['tool']}." + (suffix if entry["content"] is not None else "raw")
         files[f"submitted/{name}"] = _write_bytes(cell_dir / "submitted" / name, body.encode("utf-8"))
-        ledger_committed = ledger_committed or entry["tool"] == env_mod.WRITE_TOOL
-        application_committed = application_committed or entry["tool"] == getattr(
-            env_mod, "APPLICATION_TOOL", "write_cash_application")
     if not submissions:
         absent["submitted"] = "the agent called no write tool in this episode"
 
@@ -2845,9 +2950,15 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
     else:
         absent["completion.json"] = "the framework returned no completion for this cell"
 
-    # The row is the authority on binding; the archive records what it says
-    # rather than re-deriving a second opinion from the same bytes.
+    # The row is the authority on BINDING (what is on the public path and
+    # whether it matches the receipt's digests); the SCORER'S RECEIPT is the
+    # authority on what was COMMITTED and SCORED. Neither is re-derived here,
+    # and both are written with the evidence they were read from.
     row = row or {}
+    ledger_disposition, application_disposition = disposition["ledger"], disposition["application"]
+    ledger_committed, ledger_scored = ledger_disposition["committed"], ledger_disposition["scored"]
+    application_committed = application_disposition["committed"]
+    application_scored = application_disposition["scored"]
     manifest = {
         "schema": ARCHIVE_SCHEMA,
         "selector": selector,
@@ -2859,14 +2970,15 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
         "cell_status": row.get("cell_status"),
         "reward": row.get("reward"),
         "workspace": workspace,
-        "ledger": {"committed": ledger_committed, "scored": ledger_scored,
+        "deliverable_flags": DELIVERABLE_FLAG_DEFINITIONS,
+        "ledger": {**ledger_disposition,
                    "binding": row.get("artifact"), "reason": row.get("artifact_reason"),
                    "stored_bytes_digest": row.get("artifact_stored_bytes_digest"),
                    "logical_text_digest": row.get("artifact_logical_text_digest")},
-        "application": {"committed": application_committed, "scored": application_scored,
+        "application": {**application_disposition,
                         "binding": row.get("application"), "reason": row.get("application_reason"),
-                        "status": row.get("application_status"),
-                        "revision": row.get("application_revision"),
+                        "row_status": row.get("application_status"),
+                        "row_revision": row.get("application_revision"),
                         "stored_bytes_digest": row.get("application_stored_bytes_digest"),
                         "logical_text_digest": row.get("application_logical_text_digest")},
         "files": files,
@@ -2876,6 +2988,7 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
     return {"archive_dir": str(cell_dir),
             "archive_files": sorted(files),
             "archive_absent": absent or None,
+            "deliverable_disposition": disposition,
             "ledger_committed": ledger_committed, "ledger_scored": ledger_scored,
             "application_committed": application_committed, "application_scored": application_scored}
 
@@ -3598,6 +3711,34 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         raise
     except (KeyboardInterrupt, SystemExit):
         raise
+    except asyncio.CancelledError as exc:
+        # CANCELLATION IS NOT A PROVIDER FAILURE, and the clause below would
+        # have recorded it as one — `asyncio.CancelledError` derives from
+        # `BaseException`, so a cell cancelled by a timeout or by its caller
+        # would have been filed at stage `inference` with a provider-failure
+        # classification nobody made. A silent reclassification of the one
+        # event the instrument cannot distinguish from the outside.
+        #
+        # It is recorded — durability is the whole point of this rewrite, and
+        # a cancelled cell spent real quota too — but at its OWN stage, with
+        # no provider verdict and no session-stop claim, and then RE-RAISED:
+        # swallowing a cancellation would leave the event loop believing a
+        # cancelled task finished normally. The record survives in the START
+        # JOURNAL rather than in a returned row, because there is no return.
+        row = terminal_row(common, started=started, stage=FAILURE_STAGE_CANCELLED, exc=exc, client=client,
+                           status="Cancelled")
+        row["cancelled"] = True
+        row["quota_exhausted"] = row["session_fatal"] = row["stop_schedule"] = False
+        row["provider_error"] = None
+        row["cancellation_note"] = ("the cell was CANCELLED (asyncio.CancelledError), not refused by the "
+                                    "provider: no HTTP status, no provider error code and no claim about "
+                                    "the key. The exception is re-raised after this record is journalled.")
+        if start_journal is not None:
+            try:
+                append_start_record(start_journal, {**row, "schema": "piv.cell-cancelled/1"})
+            except Exception:                                              # noqa: BLE001
+                pass
+        raise
     except BaseException as exc:                                           # noqa: BLE001
         # THE DEFECT THIS CLAUSE EXISTS FOR. `PIVEvaluationBatchInvalid` is
         # raised by the environment AFTER the framework returns; a provider
@@ -3611,8 +3752,10 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # Caught by BASE class deliberately: which exception type a provider
         # library raises is not something this instrument gets to assume, and
         # the cost of guessing wrong is the whole record of a cell that spent
-        # real quota. `InstrumentDrift` and the interpreter's own control-flow
-        # exceptions are re-raised above, before this.
+        # real quota. `InstrumentDrift`, the interpreter's own control-flow
+        # exceptions and `asyncio.CancelledError` — which is a cancellation,
+        # not a provider verdict — are all handled above, before this, so the
+        # catch-all never reclassifies one of them as a provider failure.
         row = terminal_row(common, started=started, stage=FAILURE_STAGE_INFERENCE, exc=exc, client=client)
         row.update(_archive_served_world(row))
         return row
@@ -3804,7 +3947,9 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
                                     out=out, row=row, workspace=artifact_info.get("workspace")))
         except Exception as exc:                # noqa: BLE001 — the instrument must not hide a rollout
             row["archive_error"] = f"{type(exc).__name__}: {exc}"[:200]
-    if artifact_info["artifact"] == "BOUND":
+    ledger_bound = artifact_info["artifact"] == "BOUND"
+    register_bound = row.get("application") == "BOUND"
+    if ledger_bound:
         ledger_path = Path(artifact_info["workspace"]) / env_mod.LEDGER
         delivered = ledger_path.read_text(encoding="utf-8")
         if archive is not None:
@@ -3812,21 +3957,52 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
             # where every existing reader expects it.
             archive.mkdir(parents=True, exist_ok=True)
             write_atomic(archive / f"{selector.replace(':', '_')}.beancount", delivered)
+    # THE DECOMPOSITION IS NOT GATED ON THE LEDGER HALF. It used to be: a
+    # rollout whose REGISTER bound but whose ledger did not got no breakdown
+    # at all, so the A-half decomposition the ruling asks to preserve was
+    # conditional on the L half having survived — precisely backwards for the
+    # failure the family exists to measure. Both of screen 1's partials had
+    # both artifacts BOUND, so nothing observed changes; a protocol-rejected
+    # ledger over a perfect register no longer loses its A half.
+    #
+    # When the ledger did not bind there are no PUBLISHED ledger bytes to
+    # replay (the scorer removes the public path), so the replay uses the
+    # last text the agent SUBMITTED through `write_ledger` — the bytes that
+    # became the committed revision — and `ledger_source` says so. It is
+    # never silently substituted: a breakdown whose L half came from the
+    # transcript rather than the public path says which, in the record.
+    if ledger_bound or register_bound:
+        ledger_source, ledger_note = "published", None
+        if not ledger_bound:
+            submitted_ledger = [entry for entry in submitted_texts(
+                completion, getattr(env_mod, "WRITE_TOOLS", (env_mod.WRITE_TOOL,)))
+                if entry["tool"] == env_mod.WRITE_TOOL and entry["content"] is not None]
+            delivered = submitted_ledger[-1]["content"] if submitted_ledger else ""
+            ledger_source = "submitted" if submitted_ledger else "absent"
+            ledger_note = (f"the ledger did not bind ({row.get('artifact')}/{row.get('artifact_reason')}); "
+                           f"the L half below replays the last text the agent SUBMITTED, not published "
+                           f"bytes" if submitted_ledger else
+                           "the ledger did not bind and the agent submitted no ledger text at all")
         # BOTH bound artifacts are replayed. The register's bytes come from
         # the public path only when the row says the register BOUND — that is,
         # when the scorer's own receipt and the file on disk agree. A
         # mismatched or absent register is not resubmitted, and the breakdown
         # says so instead of pretending.
         register = None
-        if row.get("application") == "BOUND":
+        if register_bound:
             register_path = Path(artifact_info["workspace"]) / env_mod.APPLICATION_FILE
             if register_path.is_file():
                 register = register_path.read_text(encoding="utf-8")
+        # The two provenance keys are added ONLY when the L half did not come
+        # from the public path: a bound rollout's breakdown — every one of
+        # screen 1's nine, and every legacy row — keeps its exact key set.
+        provenance = {} if ledger_bound else {"ledger_source": ledger_source,
+                                              "ledger_source_note": ledger_note}
         try:
-            row["breakdown"] = breakdown(selector, delivered, application=register,
-                                         live_metrics=row.get("metrics"))
+            row["breakdown"] = {**breakdown(selector, delivered, application=register,
+                                            live_metrics=row.get("metrics")), **provenance}
         except Exception as exc:                # noqa: BLE001 — the instrument must not hide a rollout
-            row["breakdown"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
+            row["breakdown"] = {"error": f"{type(exc).__name__}: {exc}"[:200], **provenance}
     # ONE validator, both ends: the writer runs the same
     # pure archived-row check `tests/arm_table.py` will run when it reads the
     # file back, so a row that the table would refuse is refused HERE, at
