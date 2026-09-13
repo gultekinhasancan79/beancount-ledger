@@ -273,6 +273,20 @@ it and what does not.
    from the published 0.2.0 wheel, which contains no cash-application generation at all. Decision 4
    names this a delivery boundary and asks for the checker to move into the runtime package before any
    installable-release claim; **that work is not done here, and no installable-release claim is made.**
+
+   > **UPDATE, later the same day (2026-09-13).** That work is now done, and the sentences above are
+   > kept as the account of the run this record describes rather than rewritten. The battery moved to
+   > `beancount_ledger/world_checks.py` (with `beancount_ledger/graph/repair_keys.py`), and
+   > `tests/world_checks.py` is a shim binding the old name to that same module object — one
+   > implementation, unchanged suite behaviour, `tests/` and `reviews/` still excluded from both
+   > artifacts. An installed wheel in a clean throwaway virtual environment, with the repository
+   > absent from `sys.path`, then MINTED one declared group per mechanism stratum of this very
+   > population and served both variants of each through the real `env.evaluate()` door at reward
+   > 1.0, `complete`, register `delivered`, composite 1 — six of six, with the battery recorded as
+   > resolving from `site-packages` and shown able to fail on tampered inputs. The evidence is
+   > `reviews/installable_serving_check_2026-09-13/`. **The numbers in THIS record were still taken
+   > from a repository checkout**, and the wheel measured there is a build of the later tree, not the
+   > published 0.2.0 Hub artifact.
 9. **The census is evaluator-side.** It binds enumerable selectors to public-content digests. It
    belongs beside the manifest and this note; it is not an agent-visible surface and must not become
    one.

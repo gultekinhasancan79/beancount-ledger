@@ -869,3 +869,85 @@ some earlier run executed, both hashes are recorded and which is which is said.
   bundles re-derive to the same public digests.
 - **No model or API call.** The twelve-episode runs are scripted and offline.
 - `tests/run_all.py`: **34 of 34 suites pass** on this checkout with the repository's own venv.
+
+## The packaging boundary is closed: the generator MINTS from an installed package (2026-09-13)
+
+Round 17, decision 4 named a delivery boundary beside the accounting correction:
+`graph/cash_admit.py` loaded `tests/world_checks.py` during reconstruction, the wheel deliberately
+ships no tests, and so a generated cash-application instance could be reconstructed only inside a
+repository checkout. **Checkout serving was established; an installable generator was not.** The
+ruling asked for the checker to move into the runtime package and for installed serving to be
+verified before any installable-release claim. Both are done here.
+
+**What moved, and what did not.** `tests/world_checks.py` is now
+`beancount_ledger/world_checks.py`, and the one module it needed,
+`tests/repair_keys.py`, is now `beancount_ledger/graph/repair_keys.py`. Nothing was copied: the two
+files under `tests/` are shims that bind the old names to those same module objects, so a suite's
+`from world_checks import …` and the construction path's `from .. import world_checks` are the same
+code with the same identity, and no suite's behaviour changed. `cash_admit` no longer loads anything
+by path; it imports the battery and still FAILS CLOSED, raising `AdmissionUnavailable` if the import
+raises. Packaging exclusions are untouched — the wheel built for this check ships no `tests/` and no
+`reviews/` member.
+
+**The structural guard, because the fix is one import and the rule is what stops the next one.**
+`tests/test_entrypoints.py` gained two checks: no module under `beancount_ledger/` may import by
+bare name anything that ships only under `tests/` (82 such names today), and the battery the
+construction path resolves must be `beancount_ledger.world_checks`, inside the package, and the same
+module object the suites import.
+
+**Measured, not asserted.** A wheel was built from this tree with `uv build`, installed into a clean
+throwaway virtual environment (CPython 3.13.11, Unicode 15.1.0, nothing but the wheel and its pins;
+never the repository's `.venv`), and driven from outside the repository with the repository asserted
+absent from `sys.path`, the package asserted inside `site-packages`, and every one of the wheel's 71
+`beancount_ledger/` members compared byte for byte with the installed file before anything ran.
+
+- **where the battery came from**, through `cash_admit._world_checks()` itself:
+  `…/site-packages/beancount_ledger/world_checks.py` — inside the installed package, not a checkout.
+- **that the battery can still fail**: run twice over one minted variant through
+  `world_checker_problems`, it is silent on the clean variant and returns three problems on a copy
+  whose golden ledger was replaced by the opening ledger ("the golden scores 0.000000, not 1").
+- **minting**: one declared parent group per mechanism stratum of `cash-application-development-2`
+  (`fc-quarrymill/1/0`, `cr-pikestaff/1/0`, `ar-tenterhook/1/0`), a prefix of the frozen roster,
+  minted by the installed package on attempt 0 with all 31 gates evaluated and passed, under the
+  run's own throwaway secret and rotation and a manifest in a temporary directory — never the
+  evaluator's provisioned key, never `~/.piv`, and no development bypass.
+- **serving**: all six variants signed into that manifest and served through the real
+  `env.evaluate()` door with a scripted offline client delivering the installed package's own golden
+  ledger and golden register — **six of six at reward 1.0**, `delivery.json` `complete`, score `1`,
+  register `delivered`, composite `1`, each served id the one its record was signed for, profile
+  `cash_application`, and every episode-contract digest CAPTURED from its own state column and equal
+  to the one `cash_application_001` serves under in the same process (`b11bc1ac…`).
+- **the authored eleven, re-checked on the same wheel** with the published 2026-09-12 runner at its
+  published hash `893f2e6f…`: **twelve of twelve**, `failures: []`, the eleven at `b11bc1ac…` and
+  `bank_recon_001` at `e8b8753d…`. The 2026-09-12 release claim still holds on a wheel built from
+  this tree.
+
+Evidence: `reviews/installable_serving_check_2026-09-13/` — the runner at the bytes that ran and
+both records.
+
+| file | sha256 |
+|---|---|
+| `reviews/installable_serving_check_2026-09-13/installable_serving_check.py` | `e59e47151d2f8122cc4a07f3ffd698f07810337e2eb87f60adafbefa5357e841` |
+| `reviews/installable_serving_check_2026-09-13/installable_serving_0.2.0.json` | `48b23b2aeb90245f84618080705b22887d4cc8a736f699c92cc10242e9b58ca7` |
+| `reviews/installable_serving_check_2026-09-13/installed_wheel_recheck_0.2.0.json` | `1f2f224eeaaa339a4f44ae33f60f5ad52973323dba5bc25434d27555a768143f` |
+
+**The claim, stated exactly.** A package installed from a wheel built from this tree can mint a
+declared cash-application group and serve both its variants. **The wheel uploaded to the
+Environments Hub (`1c83e4c5…`) cannot**, and nothing here rebuilds, re-uploads or withdraws it; the
+wheel measured above hashes to `4c783b06…` and shares only the version string with it. No model or
+API call was made, and no difficulty, performance or training claim is made or implied.
+
+**Prose corrected by this phase.** Where this document names `tests/world_checks.check_world_task`
+(the `co_authored` bullet of the 2026-09-11 family section), it names where that battery lived when
+that was written; the entry point is now `beancount_ledger.world_checks.check_world_task` and the
+`tests/` path is a shim. The replacement population record's note 8 —
+`reviews/cash_application_development_population_2026-09-13_replacement.md`, "that work is not done
+here, and no installable-release claim is made" — carries a dated update pointing here, with its own
+sentences preserved: **the numbers in that record were taken from a repository checkout.** The
+superseded 2026-09-13 record is left unaltered, as the ruling requires.
+
+**What did not move.** No shipped byte: the 95 legacy tasks' and the eleven authored cash tasks'
+public bytes roll to `dbac991578fcc6292af8d547c335e648c068d1d8320c538001dd9cc9cb500f0b` before and
+after, `GENERATOR_VERSION` is 9 and the bank family's manifest is untouched, and both
+episode-contract digests are unchanged. `tests/run_all.py`: **39 of 39 suites pass** on this
+checkout with the repository's own venv.

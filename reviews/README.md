@@ -332,6 +332,17 @@ bookkeeping.
   by comparing every runtime member of the wheel with the installed file, and each row's contract digest is
   captured from the episode's own state column rather than declared. See the publication record at the end
   of `RELEASE_ATTESTATION.md` for why the two wheels differ.
+- `installable_serving_check_2026-09-13/` — the INSTALLABLE generator, measured. Round 17, decision 4's
+  delivery boundary: the admission battery the construction path runs moved from `tests/world_checks.py`
+  into `beancount_ledger/world_checks.py` (with `graph/repair_keys.py`), the `tests/` files becoming shims
+  onto the same module objects, so an installed package can MINT and not only serve. Holds the runner at
+  the bytes that ran and two bound records: one where a wheel installed in a clean throwaway virtual
+  environment mints one declared group per mechanism stratum and serves all six variants through the real
+  `env.evaluate()` door at reward 1.0, `complete`, register `delivered`, composite 1 — with the battery
+  recorded as resolving from `site-packages` and shown able to fail on tampered inputs — and one that
+  re-runs the published eleven-authored-task check on the same wheel, twelve of twelve. **The wheel
+  measured is a build of that tree, NOT the 0.2.0 artifact uploaded to the Hub, which still cannot mint.**
+  No model was called.
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 
 ## A note on citations inside the dated documents

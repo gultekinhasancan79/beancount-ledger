@@ -1860,6 +1860,92 @@ def test_what_logical_means_is_pinned_for_every_ledger_variant():
                  not problems, "\n".join(problems))
 
 
+#: Everything importable by a BARE name only because `tests/` is on
+#: `sys.path`. A runtime module that imports one of these can run from a
+#: checkout and nowhere else, which is precisely the delivery boundary round
+#: 17, decision 4 named.
+def _test_only_module_names():
+    return {path.stem for path in Path(__file__).resolve().parent.glob("*.py")}
+
+
+def _absolute_import_roots(tree):
+    """Every absolute import in a module, as (lineno, root package name).
+
+    Relative imports (`from .. import world_checks`) carry `level > 0` and are
+    skipped: they resolve inside the installed package by construction.
+    """
+    roots = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                roots.append((node.lineno, alias.name.split(".")[0]))
+        elif isinstance(node, ast.ImportFrom) and not node.level:
+            roots.append((node.lineno, (node.module or "").split(".")[0]))
+    return roots
+
+
+def test_the_runtime_package_imports_nothing_that_ships_only_under_tests():
+    """An INSTALLED package must be able to run every path it advertises.
+
+    The wheel deliberately ships no tests, so an import of a bare
+    `tests/`-only module name inside `beancount_ledger/` is a path that works
+    in this checkout and fails in `site-packages`. That is how the admission
+    battery came to be reachable only from a checkout: `cash_admit` loaded
+    `tests/world_checks.py` by path, so an installed package could SERVE a
+    signed cash-application instance but could not MINT one.
+
+    Structural for the same reason the loader rule above is: the fix is one
+    import today, and the rule is what stops the next one.
+    """
+    only_tests = _test_only_module_names()
+    offenders = []
+    for path in sorted(PACKAGE.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for lineno, root in _absolute_import_roots(tree):
+            if root in only_tests:
+                offenders.append(f"{path.relative_to(ROOT)}:{lineno} imports {root!r}, which ships only under tests/")
+    return check(
+        f"no runtime module imports a tests-only module by name ({len(only_tests)} such names)",
+        not offenders, "\n".join(offenders))
+
+
+def test_the_admission_battery_is_one_implementation_inside_the_package():
+    """The other half: the battery the construction path runs is IN the
+    package, and it is the same module object the suites import.
+
+    `world_checker_problems` fails closed, so a battery the package cannot
+    import is not a silent pass — but it is also not a generator. Both
+    claims are made here: `cash_admit._world_checks()` resolves to
+    `beancount_ledger.world_checks` (a file under the package directory), and
+    the bare name the suites import binds to that very object, so there is no
+    second copy to drift.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import world_checks as by_the_old_name
+
+    from beancount_ledger import world_checks as packaged
+    from beancount_ledger.graph import cash_admit as ADMIT
+
+    problems = []
+    battery = ADMIT._world_checks()
+    if battery is not packaged:
+        problems.append(f"the construction path runs {getattr(battery, '__file__', battery)!r}")
+    if by_the_old_name is not packaged:
+        problems.append(f"the suites' `world_checks` is a second module: {by_the_old_name.__file__!r}")
+    where = Path(packaged.__file__).resolve()
+    if PACKAGE.resolve() not in where.parents:
+        problems.append(f"the battery is at {where}, outside the package")
+    if not callable(getattr(packaged, "check_derived", None)):
+        problems.append("the battery has no check_derived")
+    for name, module in (("repair_keys", "beancount_ledger.graph.repair_keys"),):
+        if __import__(name).__name__ != module:
+            problems.append(f"{name} is not {module}")
+    return check(
+        "the admission battery is beancount_ledger.world_checks, under the package, and the suites' "
+        "`world_checks` is that same module object",
+        not problems, "\n".join(problems))
+
+
 TESTS = [
     test_the_production_composition_root,
     test_the_submission_path_is_live_end_to_end,
@@ -1871,6 +1957,8 @@ TESTS = [
     test_quarantine_semantics_by_mode_and_edge_case,
     test_a_throwing_reward_becomes_an_agent_zero_in_this_framework,
     test_only_one_module_may_parse_submitted_text,
+    test_the_runtime_package_imports_nothing_that_ships_only_under_tests,
+    test_the_admission_battery_is_one_implementation_inside_the_package,
     test_safe_parse_actually_is_the_door,
     test_the_trap_itself_works,
     test_read_tools_grant_only_the_manifest,

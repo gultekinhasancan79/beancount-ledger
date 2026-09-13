@@ -47,27 +47,32 @@ needs the two cases to be separable BEFORE the scorer runs:
     3's "valid golden failing its scorer", which `cash_construct` raises as a
     ConstructionDefect rather than redrawing past.
   * `world_checker_problems` runs every remaining gate a hand-authored world
-    must pass, through the shipped `tests/world_checks.check_derived` — the
+    must pass, through `beancount_ledger.world_checks.check_derived` — the
     same battery, over the inputs `derive_contract` already produced, so the
     generated population is held to the standard the authored eleven are
     held to rather than to a private copy of it that could drift from it.
 
-WHY THE CHECKER IS IMPORTED AND NOT REIMPLEMENTED. `tests/world_checks.py` is
-the one implementation of those gates; a second one here would be a second
-thing to keep in step, and the failure it would eventually have is precisely
-the one this repair exists to close. It lives under `tests/` because that is
-where the authored-world gate was written, and the wheel deliberately ships
-no tests, so `world_checker_problems` FAILS CLOSED: if the battery cannot be
-located it raises `AdmissionUnavailable` and the construction path turns that
-into a defect. A pair that could not be checked is not a pair that passed.
+WHY THE CHECKER IS IMPORTED AND NOT REIMPLEMENTED. `world_checks` is the one
+implementation of those gates; a second one here would be a second thing to
+keep in step, and the failure it would eventually have is precisely the one
+this repair exists to close.
+
+WHY IT IS IN THE RUNTIME PACKAGE. It was written under `tests/`, where the
+authored-world gate was written, and the wheel deliberately ships no tests —
+so until round 17, decision 4, this line was a DELIVERY BOUNDARY: an
+installed package could serve a signed instance but could not mint one,
+because reconstruction could not find the battery. The battery is now
+`beancount_ledger/world_checks.py` and `tests/world_checks.py` is a shim
+binding the old name to it, so the suites and the construction path still run
+one implementation and an installed generator carries it. The import still
+FAILS CLOSED: if it raises, `world_checker_problems` raises
+`AdmissionUnavailable` and the construction path turns that into a defect. A
+pair that could not be checked is not a pair that passed.
 """
 
 from __future__ import annotations
 
-import importlib.util
-import sys
 from decimal import Decimal
-from pathlib import Path
 
 ONE = Decimal("1")
 
@@ -271,30 +276,25 @@ def golden_score_problems(inputs, golden_register: str) -> list:
 # --------------------------------------------------------------------------
 
 def _world_checks():
-    """The shipped gate battery, or `AdmissionUnavailable`.
+    """The gate battery from the runtime package, or `AdmissionUnavailable`.
 
-    Already imported by every suite that uses it, so the common case is a
-    `sys.modules` hit; otherwise it is loaded from the repository checkout
-    this package sits in, by path, and registered under its own name so the
-    suites and the construction path share one module object.
+    One import of one module, `beancount_ledger.world_checks`, wherever the
+    package is installed from — a checkout, a wheel in `site-packages`, a
+    zipapp. It is imported HERE rather than at module scope for the same
+    reason `score_ledger` imports the environment at call time: the battery
+    reads the environment module, which sits above `graph/` in the stack, so
+    binding it at call time keeps the layering one-way.
+
+    Failure to import is `AdmissionUnavailable`, never a pass: a candidate
+    nobody checked is not a candidate that passed.
     """
-    module = sys.modules.get("world_checks")
-    if module is not None:
-        return module
-    path = Path(__file__).resolve().parents[2] / "tests" / "world_checks.py"
-    if not path.is_file():
-        raise AdmissionUnavailable(
-            f"the admission battery is not at {path}; construction may not admit a pair it cannot check")
-    spec = importlib.util.spec_from_file_location("world_checks", path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["world_checks"] = module
     try:
-        spec.loader.exec_module(module)
-    except Exception as exc:
-        del sys.modules["world_checks"]
-        raise AdmissionUnavailable(f"the admission battery at {path} did not load: "
-                                   f"{type(exc).__name__}: {exc}") from exc
-    return module
+        from .. import world_checks
+    except Exception as exc:                       # noqa: BLE001
+        raise AdmissionUnavailable(
+            f"the admission battery beancount_ledger.world_checks did not import "
+            f"({type(exc).__name__}: {exc}); construction may not admit a pair it cannot check") from exc
+    return world_checks
 
 
 def world_checker_problems(world, task, bundle, inputs) -> list:
