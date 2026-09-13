@@ -1895,7 +1895,13 @@ def test_arms_and_signature_are_stable():
                "max_total_completion_tokens", "reasoning_replay", "archive", "arm",
                "temperature", "top_p", "seed", "replicate", "prompt_schema_digest",
                "schedule_id", "planned_ordinal", "actual_ordinal", "session_id", "block_id",
-               "permutation_index", "arm_position", "window_ledger"]
+               "permutation_index", "arm_position", "window_ledger",
+               # round 18: the experiment this cell belongs to, the frozen
+               # selection it was drawn from, and the journal that takes its
+               # START record BEFORE inference. All three ride on the terminal
+               # row a provider failure now produces, so a lost cell can still
+               # name itself.
+               "screen", "selection_digest", "start_journal"]
     if params != expected:
         problems.append(f"one_rollout signature: {params}")
     # The schedule owns replicates and arm order now: the
@@ -6470,6 +6476,593 @@ def test_confirm1v4_real_archive_census_unrun_tuple_and_wording():
                  not problems, "\n".join(problems))
 
 
+
+# --------------------------------------------------------------------------
+# ROUND 18: THE THREE INSTRUMENTATION DEFECTS
+#
+# Screen 1 lost a cell to a provider 403 that escaped `one_rollout`, archived
+# nine breakdowns that were all the SAME AttributeError, and kept only the
+# delivered ledger of each cell. All three boundaries are driven here with
+# OFFLINE SCRIPTED EPISODES — no provider call is made or possible.
+#
+#   1. a scripted provider failure produces the terminal row, with the start
+#      record already on disk before inference, and stops the session with
+#      every later cell recorded UNATTEMPTED;
+#   2. a scripted TWO-ARTIFACT episode's breakdown reproduces BOTH
+#      decompositions, and agrees with the live rubric metrics;
+#   3. the archive writer emits every file the declared record claims.
+# --------------------------------------------------------------------------
+
+
+class _ExplodingEnv:
+    """A real environment whose `evaluate` raises the PROVIDER'S OWN
+    exception instead of returning.
+
+    This is the shape of the failure that ended screen 1:
+    `PIVEvaluationBatchInvalid` is raised by the environment AFTER the
+    framework returns, so a refusal that stops the framework BEFORE it
+    returns arrives as the provider library's exception and met no handler at
+    all. Everything except `evaluate` is the real environment, so the row
+    under test carries the real world's task id, contract digest and public
+    files.
+
+    It also WITNESSES THE ORDERING the ruling requires: at the instant
+    inference would have happened it records whether the cell's start record
+    was already on disk.
+    """
+
+    def __init__(self, env, exc, journal):
+        self._env = env
+        self._exc = exc
+        self._journal = journal
+        self.journal_present_at_inference = None
+
+    def __getattr__(self, name):
+        return getattr(self._env, name)
+
+    async def evaluate(self, *args, **kwargs):
+        self.journal_present_at_inference = Path(self._journal).exists()
+        raise self._exc
+
+
+class _ProviderFailureShim:
+    """`_DefaultEnvModShim` serving an `_ExplodingEnv`."""
+
+    PIVEvaluationBatchInvalid = env_mod.PIVEvaluationBatchInvalid
+
+    def __init__(self, exc, journal):
+        self.env = _ExplodingEnv(env_mod.load_environment(), exc, journal)
+
+    def __getattr__(self, name):
+        return getattr(env_mod, name)
+
+    def load_environment(self, selector=None):
+        return self.env
+
+
+class _QuotaResponse:
+    status_code = 403
+    headers = {"x-request-id": "req_7f3c19ab", "x-ratelimit-limit-tokens": "1000000",
+               "authorization": "Bearer nvapi-abcdefghijklmnop"}
+
+
+class ProviderQuotaRefused(Exception):
+    """A 403 shaped like the one the run met: an `openai.APIStatusError` with
+    a status, a provider code/type, a body and a response carrying headers."""
+
+    status_code = 403
+    code = "AllocationQuotaExceeded"
+    body = {"error": {"code": "AllocationQuotaExceeded", "type": "Forbidden"}}
+    response = _QuotaResponse()
+    request_id = "req_7f3c19ab"
+
+
+class _SpentClient:
+    """A client that had already made — and been billed for — two requests
+    when the third was refused."""
+
+    def __init__(self, config):
+        self.requests = [{"attempt_id": "a1", "status": "ok", "billed_input_tokens": 60000},
+                         {"attempt_id": "a1", "status": "error:403", "http_status": 403}]
+        self.billed_input_tokens_all_attempts = 97137
+        self.billed_output_tokens_all_attempts = 12004
+        self.attempts = 1
+
+
+class _SilentClient:
+    """A client that tracked nothing at all — the case in which the record
+    must say UNKNOWN rather than 0."""
+
+    def __init__(self, config):
+        pass
+
+
+def test_a_provider_failure_produces_a_durable_terminal_row():
+    """THE DEFECT: `one_rollout` caught `PIVEvaluationBatchInvalid` but not
+    the raw provider exception, so the 403 escaped, the process died on the
+    traceback, and the cell it died in has no record of its own.
+
+    Driven offline: a scripted environment raises the provider's own 403 out
+    of `evaluate`. `one_rollout` must RETURN — never raise — a terminal row
+    carrying every field the ruling lists, and the cell's START record must
+    already be on disk at the moment inference was attempted.
+    """
+    import tempfile
+    problems = []
+    with tempfile.TemporaryDirectory() as directory:
+        journal = Path(directory) / "cells.starts.jsonl"
+        archive = Path(directory) / "archive"
+        exc = ProviderQuotaRefused(
+            "Error code: 403 - {'error': {'code': 'AllocationQuotaExceeded', 'message': "
+            "'Free allocated quota exceeded, key nvapi-abcdefghijklmnop'}}")
+        shim = _ProviderFailureShim(exc, journal)
+        try:
+            row = mb.one_rollout(shim, _SpentClient, DUMMY_CONFIG, "test:0", "qwen3.7-max-2026-05-20",
+                                 4000, 0, 0, True, archive=archive, arm="A",
+                                 planned_ordinal=10, session_id="s-1",
+                                 screen="cash-application-screen-1",
+                                 selection_digest="321c97158f2fa56c1564b299278dea7280abda899a740fa90b134c77722923d0",
+                                 start_journal=journal)
+        except BaseException as raised:                                   # noqa: BLE001 — the whole point
+            return check("a provider failure produces a durable terminal row, not a traceback",
+                         False, f"one_rollout raised {type(raised).__name__}: {raised}")
+
+        # 1. the START record, written BEFORE inference
+        if shim.env.journal_present_at_inference is not True:
+            problems.append("the cell's start record was NOT on disk when inference was attempted")
+        starts = [json.loads(line) for line in journal.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if len(starts) != 1 or starts[0].get("cell_status") != mb.CELL_STARTED:
+            problems.append(f"start journal: {starts}")
+        elif starts[0].get("selector") != "test:0" or starts[0].get("planned_ordinal") != 10 \
+                or starts[0].get("screen") != "cash-application-screen-1":
+            problems.append(f"the start record does not name the cell: {starts[0]}")
+
+        # 2. the cell is named
+        for field, expected in (("selector", "test:0"), ("planned_ordinal", 10),
+                                ("model", "qwen3.7-max-2026-05-20"),
+                                ("screen", "cash-application-screen-1")):
+            if row.get(field) != expected:
+                problems.append(f"{field} = {row.get(field)!r}, expected {expected!r}")
+        for field in ("selection_digest", "endpoint", "task_id", "runtime_head", "execution_tree_digest",
+                      "runtime_environment_digest", "episode_contract_digest_declared",
+                      "episode_contract_version", "episode_contract_profile", "started_at", "finished_at"):
+            if row.get(field) in (None, ""):
+                problems.append(f"the terminal row does not carry {field}")
+
+        # 3. attempted / quarantined / unscored, with NULL reward and components
+        if (row.get("cell_status"), row.get("attempted"), row.get("quarantined"), row.get("scored")) != \
+                (mb.CELL_ATTEMPTED_UNSCORED, True, True, False):
+            problems.append(f"disposition: {row.get('cell_status')} attempted={row.get('attempted')} "
+                            f"quarantined={row.get('quarantined')} scored={row.get('scored')}")
+        for field in ("reward", "breakdown", "components", "ledger_total", "application_total",
+                      "total_tokens", "prompt_tokens", "completion_tokens"):
+            if row.get(field, "MISSING") is not None:
+                problems.append(f"{field} must be null on a terminal row, got {row.get(field, 'MISSING')!r}")
+
+        # 4. the failure, structured
+        if row.get("failure_stage") != mb.FAILURE_STAGE_INFERENCE:
+            problems.append(f"failure_stage {row.get('failure_stage')!r}")
+        if row.get("http_status") != 403 or row.get("provider_error_code") != "AllocationQuotaExceeded":
+            problems.append(f"status/code: {row.get('http_status')}/{row.get('provider_error_code')}")
+        if row.get("provider_error_type") != "Forbidden":
+            problems.append(f"provider_error_type {row.get('provider_error_type')!r}")
+        if row.get("provider_request_id") != "req_7f3c19ab":
+            problems.append(f"provider_request_id {row.get('provider_request_id')!r}")
+        if "quota" not in (row.get("provider_error_message") or "").lower():
+            problems.append(f"provider_error_message {row.get('provider_error_message')!r}")
+        if "nvapi-abcdefghijklmnop" in json.dumps(row, default=str):
+            problems.append("a key-shaped string survived into the terminal row")
+        if not row.get("quota_exhausted") or not row.get("session_fatal") or not row.get("stop_schedule"):
+            problems.append(f"quota={row.get('quota_exhausted')} fatal={row.get('session_fatal')} "
+                            f"stop={row.get('stop_schedule')}")
+
+        # 5. what was spent before it — captured, and never a false zero
+        usage = row.get("usage_before_failure") or {}
+        if usage.get("billed_input_tokens_all_attempts") != 97137 or usage.get("requests_recorded") != 2:
+            problems.append(f"usage_before_failure did not capture the spend: {usage}")
+        if not row.get("requests"):
+            problems.append("the requests made before the failure were not archived")
+
+        # 6. artifact / deliverable references
+        if row.get("artifact") != "NO_ARTIFACT" or "provider_failed" not in (row.get("artifact_reason") or ""):
+            problems.append(f"artifact {row.get('artifact')}/{row.get('artifact_reason')}")
+        for field in ("ledger_committed", "ledger_scored", "application_committed", "application_scored"):
+            if row.get(field) is not False:
+                problems.append(f"{field} must be False on a lost cell, got {row.get(field)!r}")
+        if not row.get("trajectory_reason"):
+            problems.append("the row does not say why it carries no trajectory")
+
+        # 7. even a lost cell archives the world it was served
+        if not row.get("archive_dir") or not (Path(row["archive_dir"]) / "manifest.json").is_file():
+            problems.append(f"no archive was written for the lost cell: {row.get('archive_dir')}")
+        else:
+            served = sorted(q.name for q in (Path(row["archive_dir"]) / "inputs").glob("*"))
+            if env_mod.LEDGER not in served:
+                problems.append(f"the lost cell's served world was not archived: {served}")
+
+        # 8. the UNKNOWN rule: a client that tracked nothing says so
+        silent = mb.one_rollout(_ProviderFailureShim(exc, journal), _SilentClient, DUMMY_CONFIG, "test:0",
+                                "m", 4000, 0, 0, True, planned_ordinal=11, start_journal=journal)
+        silent_usage = silent.get("usage_before_failure") or {}
+        if silent_usage.get("billed_input_tokens_all_attempts") != mb.UNKNOWN \
+                or silent_usage.get("requests_recorded") != mb.UNKNOWN:
+            problems.append(f"an unmeasured spend must be UNKNOWN, never 0: {silent_usage}")
+        if 0 in (silent_usage.get("billed_input_tokens_all_attempts"),
+                 silent_usage.get("billed_output_tokens_all_attempts")):
+            problems.append("an unmeasured spend was recorded as zero")
+    return check("a provider failure returns a DURABLE TERMINAL ROW naming the cell, the failure and the "
+                 "spend before it — start record on disk before inference, reward and components null, "
+                 "unmeasured usage UNKNOWN and never 0, and the served world archived even for a lost cell",
+                 not problems, "\n".join(problems))
+
+
+def test_quota_exhaustion_stops_the_session_and_marks_the_rest_unattempted():
+    """A lost cell and an unattempted cell must be different objects in the
+    data. The terminal row is the lost cell; the census entry is the
+    unattempted one; and the session stops rather than spending the remaining
+    cells against a key that has already refused."""
+    problems = []
+    fields_403 = {"http_status": 403, "provider_error_code": "AllocationQuotaExceeded",
+                  "error_message": "Free allocated quota exceeded"}
+    fields_plain = {"http_status": 403, "provider_error_code": None, "error_message": "forbidden"}
+    fields_429 = {"http_status": 429, "provider_error_code": "rate_limit_exceeded",
+                  "error_message": "429 Too Many Requests"}
+    if not mb.is_quota_exhaustion(fields_403):
+        problems.append("a quota-worded 403 was not recognised as quota exhaustion")
+    if mb.is_quota_exhaustion(fields_plain):
+        problems.append("a bare 403 with no quota vocabulary was CLAIMED as quota exhaustion")
+    if not mb.is_session_fatal(fields_plain):
+        problems.append("a bare 403 must still stop the session: the key is refused, not the request")
+    if mb.is_quota_exhaustion(fields_429) or mb.is_session_fatal(fields_429):
+        problems.append("an ordinary rate limit must NOT stop the session")
+
+    # screen 1's own shape: twelve planned cells, nine scored, the tenth lost.
+    selectors = [f"cell-{i}" for i in range(1, 13)]
+    ordinals = list(range(1, 13))
+    lost = {"quota_exhausted": True, "http_status": 403, "provider_error_code": "AllocationQuotaExceeded",
+            "screen": "cash-application-screen-1", "selection_digest": "321c9715", "model": "qwen",
+            "provider": "alibaba", "endpoint": "https://example.invalid/v1", "session_id": "s-1",
+            "schedule_id": None, "cell_status": mb.CELL_ATTEMPTED_UNSCORED, "quarantined": True,
+            "selector": "cell-10", "planned_ordinal": 10, "reward": None,
+            "started_at": "t0", "finished_at": "t1", "status": "ProviderQuotaRefused"}
+    reason, tail = mb.unattempted_tail(lost, selectors, 9, ordinals)
+    if len(tail) != 2 or [e["selector"] for e in tail] != ["cell-11", "cell-12"]:
+        problems.append(f"the unattempted tail is {[e.get('selector') for e in tail]}")
+    if any(e["cell_status"] != mb.CELL_UNATTEMPTED or e["attempted"] is not False for e in tail):
+        problems.append(f"a tail entry is not explicitly UNATTEMPTED/not-attempted: {tail}")
+    if any(e["stopped_after_planned_ordinal"] != 10 for e in tail):
+        problems.append("an unattempted entry does not name the ordinal the session stopped at")
+    if any(e.get("usage") != mb.UNKNOWN or e.get("reward") is not None for e in tail):
+        problems.append("an unattempted cell must carry no usage and no reward")
+    if "quota" not in reason.lower() or "10" not in reason:
+        problems.append(f"the stop reason does not say what happened and where: {reason!r}")
+
+    lost_entry = mb.cell_disposition(lost)
+    if lost_entry["cell_status"] != mb.CELL_ATTEMPTED_UNSCORED or lost_entry["attempted"] is not True:
+        problems.append(f"the LOST cell's census entry is {lost_entry['cell_status']}")
+    if lost_entry["cell_status"] == tail[0]["cell_status"]:
+        problems.append("a lost cell and an unattempted cell carry the SAME status: they are not "
+                        "distinguishable in the data")
+    scored_entry = mb.cell_disposition({"reward": 1.0, "quarantined": False, "selector": "cell-1",
+                                        "planned_ordinal": 1, "total_tokens": 120454})
+    if scored_entry["cell_status"] != mb.CELL_SCORED or scored_entry["scored"] is not True:
+        problems.append(f"a scored cell's census entry is {scored_entry}")
+    return check("quota exhaustion stops the session, the stopping cell stays ATTEMPTED_UNSCORED and every "
+                 "later scheduled cell is recorded UNATTEMPTED with the ordinal it was stopped at — three "
+                 "distinct statuses in the data, not one silence",
+                 not problems, "\n".join(problems))
+
+
+def _partial_register() -> str:
+    """The golden register with one closing invoice row dropped — the exact
+    shape of screen 1's two partials: every receipt and credit right, one
+    `INVOICE_MISSING`, and the AR tie-break penalty that follows from it.
+    `L` stays a perfect 1.0, so a ledger-only replay sees nothing wrong."""
+    register = json.loads(CAR.case()["register"])
+    register["closing_open_items"] = [r for r in register["closing_open_items"]
+                                      if r["invoice_id"] != "SI-3100"]
+    return json.dumps(register)
+
+
+def test_a_two_artifact_episode_reproduces_both_decompositions():
+    """THE DEFECT: every archived screen-1 breakdown was the same
+    `AttributeError: 'CompositeOutcome' object has no attribute 'components'`
+    — the diagnostic harness assumed a ledger outcome and submitted only the
+    ledger.
+
+    Changing `.components` to `.ledger.components` would not have been
+    enough, and this test is what says so: the PARTIAL case below has `L =
+    1.0` and a perfect ledger decomposition. Everything that went wrong in it
+    is in the A half, which a ledger-only replay never scores at all.
+    """
+    import tempfile
+    problems = []
+    with tempfile.TemporaryDirectory() as directory:
+        archive = Path(directory) / "archive"
+        golden = family([CAR.deliver(register=CAR.case()["register"]), CAR.submit()],
+                        selector="cash_application_001")
+        # `family()` does not take an archive; run the partial through `one`
+        # with the family shim so the archive test below has a cell to read.
+        partial = mb.one_rollout(FAMILY_SHIM, scripted([CAR.deliver(register=_partial_register()),
+                                                        CAR.submit()]),
+                                 DUMMY_CONFIG, "cash_application_001", "scripted", 4000, 0, 0, True,
+                                 archive=archive, arm="A", screen="offline-witness",
+                                 selection_digest="n/a")
+    for name, row in (("golden", golden), ("partial", partial)):
+        b = row.get("breakdown") or {}
+        if b.get("error"):
+            problems.append(f"{name}: the breakdown failed: {b['error']}")
+            continue
+        if b.get("profile") != "cash_application":
+            problems.append(f"{name}: breakdown profile {b.get('profile')!r}")
+        for half in ("ledger", "application", "composite"):
+            if not isinstance(b.get(half), dict):
+                problems.append(f"{name}: no {half} decomposition")
+        ledger, application, composite = b.get("ledger") or {}, b.get("application") or {}, b.get("composite") or {}
+        if ledger.get("engine") != "candidate/1" or application.get("engine") != "application/1" \
+                or composite.get("engine") != "composite/1":
+            problems.append(f"{name}: engines {ledger.get('engine')}/{application.get('engine')}/"
+                            f"{composite.get('engine')}")
+        if not application.get("components") or not ledger.get("components"):
+            problems.append(f"{name}: a half carries no component vector")
+        if set(application.get("components") or {}) & set(ledger.get("components") or {}):
+            problems.append(f"{name}: the two decompositions share channel names and cannot be told apart")
+        if b.get("agrees_with_live_metrics") is not True:
+            problems.append(f"{name}: the replay does not reproduce the rollout's own live metrics: "
+                            f"live {b.get('live_metrics')} vs replayed {b.get('replayed_metrics')}")
+        if b.get("application_replayed") is not True:
+            problems.append(f"{name}: the register was not replayed")
+        if b.get("verdict") is not None or not b.get("verdict_note"):
+            problems.append(f"{name}: a ledger-only entitlement verdict was claimed for a family episode")
+
+    gb, pb = golden.get("breakdown") or {}, partial.get("breakdown") or {}
+    if gb.get("total") != 1.0 or gb.get("complete") is not True:
+        problems.append(f"golden: total {gb.get('total')} complete {gb.get('complete')}")
+    if (gb.get("ledger_total"), gb.get("application_total")) != ("1.000000", "1.000000"):
+        problems.append(f"golden: L/A {gb.get('ledger_total')}/{gb.get('application_total')}")
+    # THE WHOLE POINT: the partial's ledger is PERFECT and its register is not.
+    if pb.get("ledger_total") != "1.000000" or (pb.get("ledger") or {}).get("complete") is not True:
+        problems.append(f"partial: L {pb.get('ledger_total')} — the fixture must leave the ledger perfect, "
+                        f"or it does not witness what a ledger-only replay misses")
+    if pb.get("application_total") == "1.000000":
+        problems.append("partial: A is 1.0 — the register fixture did not lose anything")
+    pa = pb.get("application") or {}
+    if "INVOICE_MISSING" not in (pa.get("invoice_states") or {}).values():
+        problems.append(f"partial: no INVOICE_MISSING state survived into the A decomposition: "
+                        f"{pa.get('invoice_states')}")
+    if "ar_tie_break" not in (pa.get("penalty_labels") or []):
+        problems.append(f"partial: the AR tie-break penalty is not in the A decomposition: "
+                        f"{pa.get('penalties')}")
+    if pb.get("complete") is not False:
+        problems.append(f"partial: complete {pb.get('complete')} — a register below 1 cannot complete")
+    return check("a two-artifact episode replays BOTH bound artifacts and preserves SEPARATE ledger and "
+                 "application decompositions that agree with the rollout's own live L and A — and the "
+                 "partial witnesses what a ledger-only replay cannot see: L = 1.0 over a register that "
+                 "lost an invoice row and took the AR tie-break penalty",
+                 not problems, "\n".join(problems))
+
+
+def test_the_archive_writer_emits_every_declared_file():
+    """THE DEFECT: the archive writer saved only the delivered ledger.
+    Everything else the declared record claims lived in a `%TEMP%` workspace
+    that is removed, and in digests, which preserve identity and not content —
+    which is why screen 1's nine workspaces survived only because somebody
+    copied them by hand before the temporary directories were cleaned.
+    """
+    import tempfile
+    problems = []
+    submitted_ledger = CAR.case()["ledger"]
+    submitted_register = _partial_register()
+    with tempfile.TemporaryDirectory() as directory:
+        archive = Path(directory) / "archive"
+        row = mb.one_rollout(FAMILY_SHIM, scripted([CAR.deliver(register=submitted_register), CAR.submit()]),
+                             DUMMY_CONFIG, "cash_application_001", "scripted", 4000, 0, 0, True,
+                             archive=archive, arm="A", planned_ordinal=3,
+                             screen="offline-witness", selection_digest="n/a")
+        cell = Path(row.get("archive_dir") or "")
+        if not cell.is_dir():
+            return check("the archive writer emits every declared file", False,
+                         f"no cell directory was written: {row.get('archive_dir')!r} "
+                         f"({row.get('archive_error')})")
+        declared = ["delivery.json", "trajectory.json", "completion.json", "manifest.json",
+                    f"delivered/{env_mod.LEDGER}", f"delivered/{env_mod.APPLICATION_FILE}"]
+        for relative in declared:
+            if not (cell / relative).is_file():
+                problems.append(f"the archive is missing {relative}")
+        served = sorted(q.name for q in (cell / "inputs").glob("*"))
+        expected_inputs = sorted(env_mod.public_file_names(env_mod.PROFILE_CASH_APPLICATION))
+        if served != expected_inputs:
+            problems.append(f"the initial public inputs are incomplete: {served} vs {expected_inputs}")
+        submissions = sorted(q.name for q in (cell / "submitted").glob("*"))
+        if len(submissions) != 2:
+            problems.append(f"the original submitted texts are not both archived: {submissions}")
+        else:
+            texts = {q.name: q.read_text(encoding="utf-8") for q in (cell / "submitted").glob("*")}
+            if submitted_ledger not in texts.values():
+                problems.append("the ledger the agent actually submitted is not in the archive")
+            if submitted_register not in texts.values():
+                problems.append("the register the agent actually submitted is not in the archive")
+        # the delivered bytes are the PUBLISHED ones, and they are not the
+        # submitted ones by construction — both are kept, separately.
+        if (cell / "delivered" / env_mod.LEDGER).read_text(encoding="utf-8") == "":
+            problems.append("the delivered ledger was archived empty")
+        trajectory = json.loads((cell / "trajectory.json").read_text(encoding="utf-8"))
+        if not trajectory:
+            problems.append("the full trajectory was not archived")
+        manifest = json.loads((cell / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("schema") != mb.ARCHIVE_SCHEMA or manifest.get("selector") != "cash_application_001":
+            problems.append(f"the archive manifest does not identify the cell: {manifest.get('schema')} "
+                            f"{manifest.get('selector')}")
+        for half in ("ledger", "application"):
+            block = manifest.get(half) or {}
+            if block.get("committed") is not True or block.get("scored") is not True:
+                problems.append(f"the manifest does not record that the {half} was committed AND scored: "
+                                f"{block}")
+            if block.get("binding") != "BOUND":
+                problems.append(f"the manifest's {half} binding is {block.get('binding')!r}")
+        if not manifest.get("files"):
+            problems.append("the archive manifest indexes no files")
+        for entry in (manifest.get("files") or {}).values():
+            if not entry.get("sha256") or entry.get("bytes") is None:
+                problems.append(f"an archived file has no digest or size: {entry}")
+        if row.get("ledger_scored") is not True or row.get("application_scored") is not True:
+            problems.append(f"the row does not state that both deliverables were scored: "
+                            f"{row.get('ledger_scored')}/{row.get('application_scored')}")
+        # the flat per-cell ledger every existing reader expects is still there
+        if not (archive / "cash_application_001.beancount").is_file():
+            problems.append("the flat <cell>.beancount the archive has always written is gone")
+    return check("the archive writes BYTES for every declared file — the served public inputs, both "
+                 "delivered artifacts, the delivery receipt, the texts the agent actually submitted, the "
+                 "full trajectory and an indexed manifest saying whether each deliverable was committed "
+                 "and scored", not problems, "\n".join(problems))
+
+
+def test_a_legacy_rollouts_breakdown_and_archive_are_unchanged_in_shape():
+    """The other half of every fix above: a contract-4 rollout's breakdown is
+    still the legacy dict, with no family keys on it, and its archive holds
+    exactly the legacy world — eight public files, one deliverable, no
+    register."""
+    import tempfile
+    problems = []
+    with tempfile.TemporaryDirectory() as directory:
+        archive = Path(directory) / "archive"
+        row = mb.one_rollout(DEFAULT_SHIM, scripted([tec.write(), tec.submit()]), DUMMY_CONFIG,
+                             "", "scripted", 4000, 0, 0, True, archive=archive, arm="A")
+        b = row.get("breakdown") or {}
+        if b.get("error"):
+            problems.append(f"the legacy breakdown failed: {b['error']}")
+        stray = sorted(k for k in b if k in ("composite", "ledger", "application", "profile"))
+        if stray:
+            problems.append(f"a legacy breakdown grew family keys: {stray}")
+        if set(b) - set(mb.LEGACY_BREAKDOWN_KEYS):
+            problems.append(f"a legacy breakdown's key set moved: {sorted(set(b) - set(mb.LEGACY_BREAKDOWN_KEYS))}")
+        if b.get("verdict") != "CORRECT_SOLUTION" or b.get("complete") is not True:
+            problems.append(f"the legacy entitlement verdict is {b.get('verdict')}/{b.get('complete')}")
+        cell = Path(row.get("archive_dir") or "")
+        served = sorted(q.name for q in (cell / "inputs").glob("*"))
+        if served != sorted(env_mod.public_file_names(env_mod.PROFILE_LEGACY)):
+            problems.append(f"the legacy archive's inputs are {served}")
+        if (cell / "delivered" / env_mod.APPLICATION_FILE).exists():
+            problems.append("a legacy cell archived a register")
+        if row.get("application_scored") is not False:
+            problems.append("a legacy row claims an application was scored")
+    return check("a legacy rollout keeps its exact breakdown shape and archives exactly the legacy world: "
+                 "no family keys, no register, no entitlement verdict lost",
+                 not problems, "\n".join(problems))
+
+
+
+def test_the_session_stops_on_quota_and_writes_the_whole_cell_census():
+    """The same stop, driven through `main()` end to end with NO provider:
+    `one_rollout` is replaced by a scripted one that scores two cells and
+    then meets the 403. What must land on disk afterwards is the whole
+    disposition of the run — twelve planned cells, not the two that came
+    back — with the lost cell and the unattempted ones in different states.
+    """
+    import tempfile
+    problems = []
+    saved = (mb.ROOT, mb.one_rollout, mb.load_key_from_registry, mb.compute_prompt_schema_digest,
+             mb.make_client_cls, mb.client_config, mb.PROVIDER, mb.BASE_URL, mb.KEY_VAR)
+    saved_argv = sys.argv
+    selectors = [f"cash_application:pop:fam:{i}:a" for i in range(1, 13)]
+    calls = []
+
+    def _scripted_one_rollout(env_mod_, client_cls, config, selector, model, *args, **kwargs):
+        calls.append(selector)
+        index = selectors.index(selector)
+        common = {"selector": selector, "model": model, "provider": mb.PROVIDER, "endpoint": mb.BASE_URL,
+                  "arm": "A", "replicate": 1, "task_id": f"cash_application_{index:03d}",
+                  "screen": kwargs.get("screen"), "selection_digest": kwargs.get("selection_digest"),
+                  "planned_ordinal": kwargs.get("planned_ordinal"), "session_id": kwargs.get("session_id"),
+                  "schedule_id": kwargs.get("schedule_id"), "started_at": "2026-09-13T17:00:00",
+                  "actual_ordinal": None, "block_id": None, "permutation_index": None, "arm_position": None,
+                  "episode_contract_version": 5, "episode_contract_profile": "cash_application",
+                  "episode_contract_digest_declared": "d" * 64, "replay_contract_version": 1,
+                  "replay_contract_digest": "r" * 64, "runtime_head": "h" * 40,
+                  "execution_tree_digest": "e" * 64, "runtime_environment_digest": "v" * 64,
+                  "instrument_identity_version": 1, "runtime_environment_identity_version": 1}
+        if index < 2:
+            return {**common, "reward": 1.0, "quarantined": False, "attempted": True, "scored": True,
+                    "cell_status": mb.CELL_SCORED, "stop_schedule": False, "turns": 6, "tools": ["submit"],
+                    "wrote_ledger": True, "artifact": "BOUND", "artifact_reason": None, "submitted": True,
+                    "budget_accounting": "VALID", "total_tokens": 120454, "prompt_tokens": 100000,
+                    "completion_tokens": 20454, "stop": "piv_submitted", "truncated": False,
+                    "per_turn": [], "row_validation": {"status": "VALID", "reasons": []},
+                    "last_turn_input_tokens": 18000, "last_turn_output_tokens": 2000,
+                    "budget_accounting_suspicious": None, "breakdown": {"complete": True},
+                    "seconds": 60.0, "finished_at": "2026-09-13T17:05:00"}
+        exc = ProviderQuotaRefused("Error code: 403 - Free allocated quota exceeded")
+        return mb.terminal_row(common, started=time.monotonic(), stage=mb.FAILURE_STAGE_INFERENCE,
+                               exc=exc, client=_SpentClient(None))
+
+    try:
+        with tempfile.TemporaryDirectory() as directory:
+            mb.ROOT = Path(directory)
+            mb.one_rollout = _scripted_one_rollout
+            mb.load_key_from_registry = lambda *a, **k: None
+            mb.compute_prompt_schema_digest = lambda *a, **k: "p" * 64
+            mb.make_client_cls = lambda *a, **k: (lambda config: _SpentClient(config))
+            mb.client_config = lambda *a, **k: DUMMY_CONFIG
+            sys.argv = ["measure_budget.py", "--model", "alibaba/qwen3.7-max-2026-05-20",
+                        "--selectors", *selectors, "--arm", "A", "--stamp-date", "2026-09-13",
+                        "--tag", "cash_screen_witness", "--screen", "cash-application-screen-1",
+                        "--selection-digest", "321c9715"]
+            code = mb.main()
+            if code != 0:
+                problems.append(f"main() exited {code}")
+            if calls != selectors[:3]:
+                problems.append(f"the session did not stop after the failing cell: it ran {calls}")
+            reviews = Path(directory) / "reviews"
+            census_file = next(iter(reviews.glob("*cash_screen_witness.cells.json")), None)
+            starts_file = next(iter(reviews.glob("*cash_screen_witness.starts.jsonl")), None)
+            rows_file = next(iter(reviews.glob("*cash_screen_witness.json")), None)
+            if census_file is None or rows_file is None:
+                return check("the session stops on quota and writes the whole cell census", False,
+                             f"files written: {sorted(q.name for q in reviews.glob('*'))}")
+            if starts_file is not None:
+                problems.append("main() wrote a start journal itself; only one_rollout may")
+            census = json.loads(census_file.read_text(encoding="utf-8"))
+            rows = json.loads(rows_file.read_text(encoding="utf-8"))
+            if len(rows) != 3:
+                problems.append(f"{len(rows)} rows written; the two scored cells and the lost one")
+            if census.get("planned_cells") != 12 or len(census.get("cells") or []) != 12:
+                problems.append(f"the census covers {len(census.get('cells') or [])} of "
+                                f"{census.get('planned_cells')} planned cells")
+            counts = census.get("counts") or {}
+            if counts != {mb.CELL_SCORED: 2, mb.CELL_ATTEMPTED_UNSCORED: 1, mb.CELL_UNATTEMPTED: 9}:
+                problems.append(f"the disposition counts are {counts}; expected 2 scored, 1 attempted but "
+                                f"unscored, 9 unattempted")
+            if census.get("stopped_after_planned_ordinal") != 3:
+                problems.append(f"the census does not name the ordinal it stopped at: "
+                                f"{census.get('stopped_after_planned_ordinal')}")
+            if "quota" not in (census.get("stop_reason") or "").lower():
+                problems.append(f"stop_reason {census.get('stop_reason')!r}")
+            lost = [c for c in census["cells"] if c["cell_status"] == mb.CELL_ATTEMPTED_UNSCORED]
+            unrun = [c for c in census["cells"] if c["cell_status"] == mb.CELL_UNATTEMPTED]
+            if len(lost) != 1 or lost[0]["planned_ordinal"] != 3 or lost[0]["attempted"] is not True:
+                problems.append(f"the lost cell's entry is {lost}")
+            if lost and (lost[0].get("http_status") != 403 or not lost[0].get("provider_request_id")):
+                problems.append(f"the lost cell's entry carries no provider evidence: {lost[0]}")
+            if [c["planned_ordinal"] for c in unrun] != list(range(4, 13)):
+                problems.append(f"the unattempted ordinals are {[c['planned_ordinal'] for c in unrun]}")
+            if any(c["attempted"] is not False or c["reward"] is not None for c in unrun):
+                problems.append("an unattempted cell claims to have been attempted or scored")
+            if any(c.get("screen") != "cash-application-screen-1" or c.get("selection_digest") != "321c9715"
+                   for c in census["cells"]):
+                problems.append("a census entry does not name the screen and selection it belongs to")
+            markdown = next(iter(reviews.glob("*cash_screen_witness.md"))).read_text(encoding="utf-8")
+            if "## Cell disposition" not in markdown or "UNATTEMPTED" not in markdown:
+                problems.append("the run's markdown does not report the disposition of every planned cell")
+    finally:
+        (mb.ROOT, mb.one_rollout, mb.load_key_from_registry, mb.compute_prompt_schema_digest,
+         mb.make_client_cls, mb.client_config, mb.PROVIDER, mb.BASE_URL, mb.KEY_VAR) = saved
+        sys.argv = saved_argv
+    return check("a quota 403 stops the session inside main(): the failing cell is finalised as a row, the "
+                 "nine cells after it are written UNATTEMPTED in the census, and the run reports its "
+                 "disposition against the twelve cells it PLANNED rather than the three that came back",
+                 not problems, "\n".join(problems))
+
+
 TESTS = [
     test_no_write_is_no_artifact_no_write,
     test_refused_write_is_no_artifact_write_refused,
@@ -6560,6 +7153,13 @@ TESTS = [
     # the two report-only corrections before the M3 freeze
     test_census_invariant_fails_closed_on_a_crafted_disagreement,
     test_confirm1v4_real_archive_census_unrun_tuple_and_wording,
+    # round 18: the three instrumentation defects, driven offline
+    test_a_provider_failure_produces_a_durable_terminal_row,
+    test_quota_exhaustion_stops_the_session_and_marks_the_rest_unattempted,
+    test_the_session_stops_on_quota_and_writes_the_whole_cell_census,
+    test_a_two_artifact_episode_reproduces_both_decompositions,
+    test_the_archive_writer_emits_every_declared_file,
+    test_a_legacy_rollouts_breakdown_and_archive_are_unchanged_in_shape,
 ]
 
 

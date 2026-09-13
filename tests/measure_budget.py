@@ -83,6 +83,35 @@ THE EVIDENCE SIDE:
     separate from `episode_contract_digest()`. Rows carrying different
     replay digests are never pooled in one condition.
 
+THE DISPOSITION SIDE — every planned cell is accounted for, scored or not:
+
+  - a START RECORD per cell, written to `<rows>.starts.jsonl` BEFORE the first
+    provider request, so that a process which dies inside `evaluate` still
+    leaves proof the cell was attempted (`start_record`);
+  - a TERMINAL ROW for any failure, whatever exception class carries it
+    (`terminal_row`). `PIVEvaluationBatchInvalid` is raised by the environment
+    AFTER the framework returns; a refusal that stops the framework BEFORE it
+    returns arrives as the provider library's own exception and used to escape
+    every handler here — that is how screen 1 lost a cell to a 403 and died on
+    the traceback. The terminal row names the cell (screen, selection digest,
+    planned ordinal, selector, task id, model, endpoint, runtime and
+    episode-contract identities), states attempted / quarantined / unscored
+    with a NULL reward and null components, and carries the failure stage, HTTP
+    status, provider code, sanitised message, request identifier and the spend
+    captured before it — with any unmeasured counter `UNKNOWN`, never 0;
+  - a CELL CENSUS, `<rows>.cells.json`, one entry per PLANNED cell, rewritten
+    after every cell. On quota exhaustion the session finalises that cell,
+    stops, and records every later cell UNATTEMPTED with the ordinal it
+    stopped at — so a lost cell and an unattempted one are different objects
+    in the data (`unattempted_tail`, `cell_disposition`).
+
+THE ARCHIVE (`archive_cell`) writes BYTES, per cell, at the one moment they
+all still exist: the served public inputs, both delivered artifacts, the
+delivery receipt, the texts the agent actually submitted, the full trajectory
+and an indexed manifest saying whether each deliverable was committed and
+scored. Digests preserve identity, not content, and a `%TEMP%` workspace path
+preserves neither once the directory is gone.
+
 The API key is read from HKCU\\Environment (NVIDIA_API_KEY) into this
 process's environment for the framework client to pick up by name; it is
 never printed.
@@ -1058,8 +1087,17 @@ def provider_error_fields(exc) -> dict:
     offers is what we archive. Every field is `None` when the exception does
     not carry it — never a placeholder that would look like evidence."""
     out = {"error_class": type(exc).__name__, "http_status": None, "provider_error_code": None,
-           "provider_error_type": None, "error_message": None, "rate_limit_headers": None}
+           "provider_error_type": None, "error_message": None, "rate_limit_headers": None,
+           "provider_request_id": None}
     out["error_message"] = redact_secrets(str(exc))[:MAX_ERROR_MESSAGE_CHARS] or None
+    # THE REQUEST IDENTIFIER. The only handle a provider's own support desk
+    # can resolve, and the one field that lets a lost cell be reconciled
+    # against a console ledger months later. `openai` puts it on the
+    # exception; every provider also echoes one header, under a name of its
+    # own choosing, so both are looked for and neither is invented.
+    request_id = getattr(exc, "request_id", None)
+    if isinstance(request_id, (str, int)):
+        out["provider_request_id"] = redact_secrets(str(request_id))[:120]
     status = getattr(exc, "status_code", None)
     if isinstance(status, int):
         out["http_status"] = status
@@ -1078,7 +1116,7 @@ def provider_error_fields(exc) -> dict:
     if headers is not None:
         collected = {}
         try:
-            items = headers.items()
+            items = list(headers.items())          # materialised: read twice below
         except (AttributeError, TypeError):                                # noqa: BLE001
             items = []
         for name, value in items:
@@ -1086,11 +1124,349 @@ def provider_error_fields(exc) -> dict:
             if any(lowered.startswith(prefix) for prefix in RATE_LIMIT_HEADER_PREFIXES):
                 collected[lowered] = redact_secrets(str(value))[:120]
         out["rate_limit_headers"] = collected or None
+        if out["provider_request_id"] is None:
+            for name, value in items:
+                if str(name).lower() in REQUEST_ID_HEADERS:
+                    out["provider_request_id"] = redact_secrets(str(value))[:120]
+                    break
         if out["http_status"] is None:
             code = getattr(response, "status_code", None)
             if isinstance(code, int):
                 out["http_status"] = code
     return out
+
+
+# ---------------------------------------------------------------------------
+# THE TERMINAL RECORD
+#
+# A cell that met a provider failure used to leave NOTHING: `one_rollout`
+# caught `PIVEvaluationBatchInvalid` — which the environment raises AFTER the
+# framework returns — but not the raw provider exception that arrives when the
+# framework never returns at all. The 403 of screen 1 escaped, the process died
+# on the traceback, and the cell it died in has no record of its own. Nine
+# scored rows survived; the tenth cell is visible only as an absence, and the
+# eleventh and twelfth are indistinguishable from it.
+#
+# Three rules follow, and this section implements them:
+#
+#   1. Every cell writes a START record BEFORE inference. It is durable and it
+#      is separate from the row file, so "this cell was attempted" survives a
+#      process that dies with no chance to write anything else.
+#   2. Every failure — whatever exception class carries it — produces a
+#      TERMINAL ROW naming the cell, the failure and everything that was known
+#      before it. `attempted` / `quarantined` / `scored` are stated
+#      explicitly; reward and every component score are null, never zero.
+#      Usage that was never captured is `UNKNOWN`, never 0: a lost cell that
+#      spent an unknown amount must not read as a cell that spent nothing.
+#   3. On QUOTA EXHAUSTION the session stops after finalising that cell, and
+#      every later scheduled cell is recorded UNATTEMPTED — in the data, in
+#      the cell census beside the rows, not only in a sentence somebody wrote
+#      afterwards. A LOST cell has a start record and a terminal row; an
+#      UNATTEMPTED cell has neither, and says so.
+# ---------------------------------------------------------------------------
+
+#: Header names, lower-cased, that carry a provider's own request identifier.
+REQUEST_ID_HEADERS = ("x-request-id", "x-requestid", "request-id", "x-amzn-requestid",
+                      "x-ms-request-id", "cf-ray")
+
+#: The marker for a quantity that was NEVER CAPTURED, as distinct from one
+#: that was captured as zero. Written into the record wherever a count is
+#: unavailable, so no reader can mistake an unmeasured spend for no spend.
+UNKNOWN = "UNKNOWN"
+
+#: The three dispositions a planned cell can end in, and the pre-inference
+#: marker. `SCORED` and `ATTEMPTED_UNSCORED` are both ATTEMPTED — the provider
+#: was called. `UNATTEMPTED` means no request was ever made for that cell.
+CELL_STARTED = "STARTED"
+CELL_SCORED = "SCORED"
+CELL_ATTEMPTED_UNSCORED = "ATTEMPTED_UNSCORED"
+CELL_UNATTEMPTED = "UNATTEMPTED"
+
+#: Where in the cell the failure happened. `inference` is the provider call
+#: itself (the exception escaped `evaluate`); `evaluation` is the
+#: environment's own quarantine, raised after the framework returned.
+FAILURE_STAGE_INFERENCE = "inference"
+FAILURE_STAGE_EVALUATION = "evaluation"
+
+#: Provider error codes that mean "this key cannot buy another episode".
+#: Matched against the provider's own `code`/`type`, at any HTTP status.
+QUOTA_ERROR_CODES = frozenset({
+    "insufficient_quota", "insufficient_user_quota", "quota_exceeded", "quota_exhausted",
+    "free_quota_exhausted", "billing_hard_limit_reached", "billing_not_active",
+    "account_deactivated", "insufficient_balance", "arrearage",
+})
+
+#: Words that make an authorization-class refusal a QUOTA refusal rather than
+#: a credential one. Only consulted for a status in `QUOTA_STATUSES`, and only
+#: against the already-redacted message.
+QUOTA_MESSAGE_NEEDLES = ("quota", "free allowance", "insufficient balance", "out of credit",
+                         "credit balance", "billing", "exhausted", "spending limit")
+
+#: Statuses at which a quota refusal is plausible at all.
+QUOTA_STATUSES = (402, 403, 429)
+
+#: Statuses after which NO later cell of this session can succeed: the key is
+#: refused, not the request. The session stops and the rest is UNATTEMPTED.
+SESSION_FATAL_STATUSES = (401, 402, 403)
+
+
+def is_quota_exhaustion(fields: dict) -> bool:
+    """Whether this provider failure means the allowance is spent.
+
+    Decided from the STRUCTURED evidence first — the provider's own error
+    code or type — and only then, for an authorization-class status, from the
+    redacted message. A bare 403 with no quota vocabulary is NOT called quota
+    exhaustion: it is still session-fatal (`is_session_fatal`), but the record
+    must not claim to know why.
+    """
+    for key in ("provider_error_code", "provider_error_type"):
+        value = fields.get(key)
+        if isinstance(value, str) and value.strip().lower().replace("-", "_") in QUOTA_ERROR_CODES:
+            return True
+    if fields.get("http_status") in QUOTA_STATUSES:
+        message = (fields.get("error_message") or "").lower()
+        return any(needle in message for needle in QUOTA_MESSAGE_NEEDLES)
+    return False
+
+
+def is_session_fatal(fields: dict) -> bool:
+    """Whether the session must STOP rather than move to the next cell.
+
+    Quota exhaustion always is. So is any authorization-class status: a key
+    that was refused for cell n is refused for cell n+1, and spending the
+    remaining cells against it turns one lost cell into a column of them.
+    """
+    return is_quota_exhaustion(fields) or fields.get("http_status") in SESSION_FATAL_STATUSES
+
+
+def usage_before_failure(client) -> dict:
+    """What this cell had already spent when it failed, as captured — with
+    every unavailable counter marked `UNKNOWN` rather than 0.
+
+    A 429 bills nothing and a 403 bills nothing, but the attempts BEFORE the
+    fatal one were billed, and they are this cell's real operational cost. A
+    client that never tracked a counter reports `UNKNOWN` for it: the absence
+    of a measurement is itself a fact about the record and must not be
+    rendered as a measurement of zero.
+    """
+    def captured(name):
+        value = getattr(client, name, None)
+        return value if isinstance(value, int) else UNKNOWN
+
+    requests = getattr(client, "requests", None)
+    return {
+        "billed_input_tokens_all_attempts": captured("billed_input_tokens_all_attempts"),
+        "billed_output_tokens_all_attempts": captured("billed_output_tokens_all_attempts"),
+        "requests_recorded": len(requests) if isinstance(requests, list) else UNKNOWN,
+        "attempts": captured("attempts"),
+        "prompt_tokens": UNKNOWN,          # the framework never returned a token_usage for this cell
+        "completion_tokens": UNKNOWN,
+        "total_tokens": UNKNOWN,
+        "source": "client counters, captured before the failure" if requests is not None
+                  else "no client counters were available",
+    }
+
+
+def cell_identity(common: dict) -> dict:
+    """The fields that NAME a cell, lifted out of the row it rides on, so a
+    start record, a terminal row and a census entry all identify the same cell
+    the same way."""
+    return {key: common.get(key) for key in
+            ("screen", "selection_digest", "schedule_id", "planned_ordinal", "actual_ordinal",
+             "session_id", "selector", "task_id", "model", "provider", "endpoint", "arm", "replicate",
+             "episode_contract_version", "episode_contract_profile", "episode_contract_digest_declared",
+             "replay_contract_version", "replay_contract_digest",
+             "runtime_head", "execution_tree_digest", "runtime_environment_digest",
+             "instrument_identity_version", "runtime_environment_identity_version")}
+
+
+def start_record(common: dict) -> dict:
+    """The record written BEFORE the first provider request of a cell.
+
+    Everything in it is known without calling anybody: the cell's identity,
+    the instrument's, and the clock. Its whole purpose is to survive a process
+    that dies during inference, so that "this cell was attempted" is a fact in
+    the archive rather than an inference from a gap in the ordinals.
+    """
+    return {"schema": "piv.cell-start/1", "cell_status": CELL_STARTED, "attempted": True,
+            "scored": False, "started_at": common.get("started_at"),
+            "recorded_at": datetime.now().isoformat(), **cell_identity(common)}
+
+
+def append_start_record(path, record: dict) -> None:
+    """Append one start record to the cell-start journal, DURABLY.
+
+    JSON Lines, opened for append and fsynced before returning: the point of
+    the record is lost entirely if it is still sitting in a buffer when the
+    process dies. A journal that cannot be written is not a reason to refuse
+    the cell — it is recorded on the row instead — so the caller catches.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(record, sort_keys=True, default=str) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def terminal_row(common: dict, *, started: float, stage: str, exc=None, client=None,
+                 status: str | None = None, reasons=None, archive_dir=None,
+                 archive_note: str | None = None) -> dict:
+    """THE DURABLE RECORD OF A CELL THAT WAS ATTEMPTED AND NEVER SCORED.
+
+    Carries, as the ruling requires: the cell's identity (screen and selection
+    digest, planned ordinal, selector, public task id, requested model,
+    endpoint, runtime and episode-contract identities — all of them already on
+    `common`); an explicit attempted / quarantined / unscored status with a
+    NULL reward and null component scores; start and end times; the failure
+    stage, HTTP status, provider error code, sanitised message and request
+    identifier; the requests and usage captured before the failure, with
+    anything unmeasured marked `UNKNOWN`; and the trajectory, workspace and
+    artifact references that exist — including, explicitly, that NEITHER
+    deliverable was committed or scored.
+
+    `quarantined` is True so that every existing reader (`partition_rows_for_
+    summary`, `arm_table.is_quarantined`) already excludes it from every
+    scored statistic without being taught anything new. `cell_status` is what
+    distinguishes it from a cell that never ran.
+    """
+    fields = provider_error_fields(exc) if exc is not None else {}
+    quota = is_quota_exhaustion(fields) if fields else False
+    fatal = is_session_fatal(fields) if fields else False
+    row = {
+        **common,
+        # THE DISPOSITION, stated rather than inferred.
+        "cell_status": CELL_ATTEMPTED_UNSCORED,
+        "attempted": True,
+        "quarantined": True,
+        "scored": False,
+        # NULL, never zero: this cell produced no reward and no component
+        # score, and a 0.0 here would enter a mean as an observation.
+        "reward": None,
+        "breakdown": None,
+        "components": None,
+        "ledger_total": None,
+        "application_total": None,
+        "total_tokens": None,
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "token_usage": None,
+        # THE FAILURE.
+        "status": status if status is not None else f"{type(exc).__name__}" if exc is not None else "unknown",
+        "reasons": reasons if reasons is not None else {},
+        "failure_stage": stage,
+        "failure_class": type(exc).__name__ if exc is not None else None,
+        "error": redact_secrets(f"{type(exc).__name__}: {exc}")[:MAX_ERROR_MESSAGE_CHARS] if exc is not None else None,
+        "provider_error": fields or None,
+        "http_status": fields.get("http_status"),
+        "provider_error_code": fields.get("provider_error_code"),
+        "provider_error_type": fields.get("provider_error_type"),
+        "provider_error_message": fields.get("error_message"),
+        "provider_request_id": fields.get("provider_request_id"),
+        "rate_limit_headers": fields.get("rate_limit_headers"),
+        "quota_exhausted": quota,
+        "session_fatal": fatal,
+        "stop_schedule": fatal,
+        # WHAT WAS SPENT BEFORE IT.
+        "requests": getattr(client, "requests", None),
+        "attempts": getattr(client, "attempts", None),
+        "billed_input_tokens_all_attempts": getattr(client, "billed_input_tokens_all_attempts", None),
+        "billed_output_tokens_all_attempts": getattr(client, "billed_output_tokens_all_attempts", None),
+        "usage_before_failure": usage_before_failure(client),
+        # WHAT SURVIVED OF THE EPISODE. A failure at inference returns no
+        # trajectory, no workspace and no deliverable; the served world is
+        # archived anyway (`archive_cell`), which is the only artifact a lost
+        # cell has.
+        "workspace": None,
+        "trajectory": None,
+        "trajectory_reason": ("the provider exception escaped evaluate(); the framework returned no "
+                              "trajectory for this cell"),
+        "artifact": "NO_ARTIFACT",
+        "artifact_reason": f"provider_failed_at_{stage}",
+        "ledger_committed": False,
+        "ledger_scored": False,
+        "application_committed": False,
+        "application_scored": False,
+        "archive_dir": str(archive_dir) if archive_dir else None,
+        "archive_note": archive_note,
+        "finished_at": datetime.now().isoformat(),
+        "seconds": round(time.monotonic() - started, 1),
+    }
+    return row
+
+
+def unattempted_cell(common_template: dict, selector: str, planned_ordinal, *, reason: str,
+                     stopped_after) -> dict:
+    """A cell that was SCHEDULED and never called: no start record, no
+    request, no spend.
+
+    It is a census entry, not a row — it is deliberately NOT appended to the
+    row file, because a row file is a record of observations and this is a
+    record of an observation that was never made. It says so in the data:
+    `attempted` False, `cell_status` UNATTEMPTED, and the ordinal of the cell
+    the session actually stopped at.
+    """
+    return {"schema": "piv.cell-disposition/1", "cell_status": CELL_UNATTEMPTED,
+            "attempted": False, "quarantined": False, "scored": False,
+            "reward": None, "total_tokens": None, "usage": UNKNOWN,
+            "selector": selector, "planned_ordinal": planned_ordinal,
+            "screen": common_template.get("screen"),
+            "selection_digest": common_template.get("selection_digest"),
+            "schedule_id": common_template.get("schedule_id"),
+            "session_id": common_template.get("session_id"),
+            "model": common_template.get("model"), "provider": common_template.get("provider"),
+            "endpoint": common_template.get("endpoint"),
+            "task_id": None, "started_at": None, "finished_at": None,
+            "reason": reason, "stopped_after_planned_ordinal": stopped_after}
+
+
+def unattempted_tail(row: dict, selectors, index: int, ordinals) -> tuple[str, list[dict]]:
+    """The reason the session stopped at `index`, and one UNATTEMPTED census
+    entry for every cell scheduled after it.
+
+    Pure: it makes no request, touches no file and decides nothing about
+    whether to stop — the caller has already read `row["stop_schedule"]`. Its
+    whole job is to turn "we stopped here" into an explicit record for each
+    cell that will therefore never run, so the screen's denominator stays the
+    number of cells it planned.
+    """
+    stopped_at = ordinals[index]
+    if row.get("quota_exhausted"):
+        code = row.get("provider_error_code") or ""
+        reason = (f"provider quota exhausted at planned ordinal {stopped_at} "
+                  f"(HTTP {row.get('http_status')}{' ' + code if code else ''})")
+    else:
+        reason = (f"session-fatal provider refusal at planned ordinal {stopped_at} "
+                  f"(HTTP {row.get('http_status')})")
+    tail = [unattempted_cell(row, selectors[later], ordinals[later],
+                             reason=reason, stopped_after=stopped_at)
+            for later in range(index + 1, len(selectors))]
+    return reason, tail
+
+
+def cell_disposition(row: dict) -> dict:
+    """The census entry for a cell that WAS attempted, derived from its own
+    row. `SCORED` requires a reward: a row that came back without one is
+    attempted and unscored whatever else it carries."""
+    scored = row.get("reward") is not None and not row.get("quarantined")
+    return {"schema": "piv.cell-disposition/1",
+            "cell_status": CELL_SCORED if scored else CELL_ATTEMPTED_UNSCORED,
+            "attempted": True, "quarantined": bool(row.get("quarantined")), "scored": scored,
+            "reward": row.get("reward"),
+            "total_tokens": row.get("total_tokens") if scored else UNKNOWN,
+            "selector": row.get("selector"), "planned_ordinal": row.get("planned_ordinal"),
+            "screen": row.get("screen"), "selection_digest": row.get("selection_digest"),
+            "schedule_id": row.get("schedule_id"), "session_id": row.get("session_id"),
+            "model": row.get("model"), "provider": row.get("provider"), "endpoint": row.get("endpoint"),
+            "task_id": row.get("task_id"),
+            "started_at": row.get("started_at"), "finished_at": row.get("finished_at"),
+            "reason": row.get("status") if not scored else None,
+            "failure_stage": row.get("failure_stage"),
+            "http_status": row.get("http_status"),
+            "provider_request_id": row.get("provider_request_id"),
+            "quota_exhausted": bool(row.get("quota_exhausted")),
+            "archive_dir": row.get("archive_dir"),
+            "stopped_after_planned_ordinal": None}
 
 
 class ScheduledRowOverwrite(SystemExit):
@@ -2170,23 +2546,338 @@ def candidate_vs_original(candidate_logical_digest, original_raw: bytes, env_mod
     return {"original_logical_digest": original_logical_digest, "candidate_equals_original": equals}
 
 
-def breakdown(selector: str, delivered: str) -> dict:
-    """The scorer's own account of the delivered ledger, through the harness
-    that the adversary pass uses (real loop, real contract). Only ever
-    called over a BOUND artifact (never a mismatched one — that would be
-    scoring bytes we cannot prove this rollout delivered)."""
+#: The keys a LEGACY breakdown has always carried. Named once, so the
+#: family's extra keys cannot silently change a legacy row's shape.
+LEGACY_BREAKDOWN_KEYS = ("total", "verdict", "outcome", "renderable", "components", "penalties",
+                         "protocol_reason", "protocol_detail", "gated", "same_books_as_golden",
+                         "complete")
+
+
+def breakdown(selector: str, delivered: str, application: str | None = None,
+              live_metrics: dict | None = None) -> dict:
+    """The scorer's own account of THIS ROLLOUT'S DELIVERABLES, through the
+    harness the adversary pass uses (real loop, real contract). Only ever
+    called over BOUND artifacts — never mismatched ones, which would be
+    scoring bytes we cannot prove this rollout delivered.
+
+    TWO PROFILES, TWO SHAPES. A legacy episode has one deliverable and one
+    engine, and its breakdown is exactly the dict it has always been. A
+    cash-application episode has TWO bound deliverables and three engines
+    (`candidate/1` for the ledger, `application/1` for the register,
+    `composite/1` over the product), and both halves are replayed and
+    preserved separately.
+
+    Why both halves rather than a reach-through. Every archived screen-1
+    breakdown failed with `AttributeError: 'CompositeOutcome' object has no
+    attribute 'components'` because this harness submitted only the ledger and
+    then read the composite as if it were a ledger outcome. Reaching through
+    to `.ledger.components` would have silenced the traceback and kept the
+    real defect: the register was never submitted, so `A` would have been
+    scored over an ABSENT document and every family breakdown would have
+    claimed a rejected-or-missing register for rollouts that delivered a
+    perfect one.
+
+    `live_metrics` is the row's own `metrics` dict — the rubric's
+    zero-weight `piv/ledger_score` and `piv/application_score`, computed at
+    scoring time from the recorded composite. When it is given, the replay is
+    CHECKED against it: `agrees_with_live_metrics` is the only thing that
+    makes this replay evidence rather than a second, unconnected computation.
+    """
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import score_payload as SP
     SP.set_task(selector)
-    out = SP.assess(delivered)
-    # `complete` (`state["piv_result"].complete`, via `score_payload.
-    # run_payload`/`assess`) is the scorer's own semantic-completeness flag —
-    # distinct from `reward`/`verdict` — and is the third conjunct of
-    # `CORRECT_DELIVERY` in `arm_table.py`: `artifact ==
-    # "BOUND"` and `reward == 1.0` and `breakdown["complete"] is True`.
-    return {k: out.get(k) for k in ("total", "verdict", "outcome", "renderable", "components", "penalties",
-                                    "protocol_reason", "protocol_detail", "gated", "same_books_as_golden",
-                                    "complete")}
+    if not SP.family_task():
+        if application is not None:
+            raise ValueError(f"{selector!r} is a legacy task and has no register to replay")
+        out = SP.assess(delivered)
+        # `complete` (`state["piv_result"].complete`, via `score_payload.
+        # run_payload`/`assess`) is the scorer's own semantic-completeness flag —
+        # distinct from `reward`/`verdict` — and is the third conjunct of
+        # `CORRECT_DELIVERY` in `arm_table.py`: `artifact ==
+        # "BOUND"` and `reward == 1.0` and `breakdown["complete"] is True`.
+        return {k: out.get(k) for k in LEGACY_BREAKDOWN_KEYS}
+    out = SP.run_payload(delivered, application=application)
+    result = {k: out.get(k) for k in LEGACY_BREAKDOWN_KEYS}
+    result.update(
+        profile="cash_application",
+        # The two decompositions, each in its own engine's vocabulary, kept
+        # apart. Neither is derivable from the other.
+        composite=out.get("composite"),
+        ledger=out.get("ledger"),
+        application=out.get("application"),
+        ledger_total=out.get("ledger_total"),
+        application_total=out.get("application_total"),
+        ledger_complete=out.get("ledger_complete"),
+        application_status=out.get("application_status"),
+        application_revision=out.get("application_revision"),
+        replayed_artifacts=out.get("replayed_artifacts"),
+        # An honest statement of what this replay could NOT do: a register
+        # that was never published has no bytes to resubmit, so the A half
+        # below describes an ABSENT register — which is not necessarily the
+        # status the episode itself recorded (it may have been REJECTED).
+        # The row's own `application`/`application_status` fields are the
+        # authority on that; this says so rather than letting the two
+        # disagree silently.
+        application_replayed=application is not None,
+        application_replay_note=(None if application is not None else
+                                 "no register bytes were bound for this rollout: the A half below is "
+                                 "the score of an ABSENT register, not a replay of a delivered one"),
+    )
+    # `verdict` belongs to the legacy entitlement oracle, which recomputes a
+    # LEDGER-ONLY bound from the planted repairs and has no account of a
+    # register. Claiming one here would be claiming an audit nobody ran.
+    result["verdict"] = None
+    result["verdict_note"] = ("the entitlement oracle in tests/exploits/entitlement.py bounds the LEDGER "
+                              "reward only; it has no application/1 counterpart, so no verdict is claimed "
+                              "for a cash-application episode")
+    if live_metrics is not None:
+        result.update(**_metric_agreement(out, live_metrics))
+    return result
+
+
+def _metric_agreement(out: dict, live_metrics: dict) -> dict:
+    """Compare the replayed decomposition against the LIVE rubric metrics
+    (`piv/ledger_score`, `piv/application_score`) the rollout itself recorded.
+
+    A disagreement is a finding about the instrument, not about the model, and
+    it is recorded rather than resolved: `agrees_with_live_metrics` False with
+    both numbers beside each other.
+    """
+    def as_float(value):
+        try:
+            return round(float(value), 6)
+        except (TypeError, ValueError):
+            return None
+
+    live = {"ledger": as_float(live_metrics.get("piv/ledger_score")),
+            "application": as_float(live_metrics.get("piv/application_score"))}
+    replayed = {"ledger": as_float(out.get("ledger_total")),
+                "application": as_float(out.get("application_total"))}
+    if live["ledger"] is None and live["application"] is None:
+        return {"live_metrics": live, "replayed_metrics": replayed,
+                "agrees_with_live_metrics": None,
+                "agreement_note": "the row recorded no piv/ledger_score or piv/application_score to compare against"}
+    return {"live_metrics": live, "replayed_metrics": replayed,
+            "agrees_with_live_metrics": live == replayed,
+            "agreement_note": None if live == replayed else
+                              "the replayed decomposition does not reproduce the metrics the rollout recorded"}
+
+
+# ---------------------------------------------------------------------------
+# THE CELL ARCHIVE
+#
+# The archive used to hold ONE file per cell: the delivered ledger. Everything
+# else the declared record claims — the register, the delivery receipt, the
+# public inputs the episode was served, the texts the agent actually
+# submitted, the trajectory — lived only in a `%TEMP%` workspace that the OS
+# removes, and in digests, which preserve identity and not content. When
+# screen 1's nine workspaces were needed they survived only because somebody
+# copied them by hand before the temporary directories were cleaned.
+#
+# So the archive writes BYTES, for every cell, at the one moment they all
+# still exist: immediately after `evaluate` returns, inside the same process.
+# ---------------------------------------------------------------------------
+
+ARCHIVE_SCHEMA = "piv.cell-archive/2"
+
+
+def cell_slug(selector: str) -> str:
+    """The per-cell directory name: the selector with its separators flattened.
+    Matches the flat `<slug>.beancount` file the archive has always written, so
+    a cell's ledger and a cell's directory sort together."""
+    return re.sub(r"[^A-Za-z0-9._-]", "_", selector)
+
+
+def submitted_texts(completion, write_tools) -> list[dict]:
+    """Every text the agent actually SUBMITTED through a write tool, in call
+    order, exactly as it sent it.
+
+    This is NOT the delivered artifact. The scorer publishes CANONICAL bytes —
+    `render_committed` prints planted repairs from the graph and preserved
+    entries from the original, never from what was submitted — so two
+    different submissions can render to byte-identical output by design. The
+    submitted text is the only record of what the model wrote, and it is the
+    only evidence that can answer a question about the model's own output
+    rather than about the renderer's.
+    """
+    texts = []
+    for index, message in enumerate(completion or []):
+        for call in _field(message, "tool_calls") or []:
+            if isinstance(call, str):
+                try:
+                    call = json.loads(call)
+                except ValueError:
+                    pass
+            function = _field(call, "function")
+            name = _field(call, "name") or (_field(function, "name") if function is not None else None)
+            if name not in tuple(write_tools):
+                continue
+            arguments = _field(call, "arguments")
+            if arguments is None and function is not None:
+                arguments = _field(function, "arguments")
+            entry = {"message_index": index, "tool": name,
+                     "call_id": _field(call, "id"), "content": None, "raw_arguments": None}
+            payload = None
+            if isinstance(arguments, str):
+                try:
+                    payload = json.loads(arguments)
+                except ValueError:
+                    entry["raw_arguments"] = arguments
+            elif isinstance(arguments, dict):
+                payload = arguments
+            if isinstance(payload, dict) and isinstance(payload.get("content"), str):
+                entry["content"] = payload["content"]
+            elif entry["raw_arguments"] is None:
+                entry["raw_arguments"] = json.dumps(arguments, sort_keys=True, default=str)
+            texts.append(entry)
+    return texts
+
+
+def _write_bytes(path: Path, data: bytes) -> dict:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        with open(tmp, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
+    return {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
+                 out: dict | None = None, row: dict | None = None,
+                 workspace: str | None = None) -> dict:
+    """Write EVERYTHING this cell produced into `archive/<cell>/`, as bytes.
+
+    What is written, and why each one cannot be reconstructed later:
+
+      `inputs/*`            the eleven (or eight) public files the episode was
+                            SERVED, from `env.public_files` — the world itself.
+                            A lost cell has nothing else, and this is what
+                            makes even a lost cell reproducible.
+      `delivered/*`         the ledger and, for the family, the register, as
+                            PUBLISHED on the public path.
+      `delivery.json`       the publication manifest: both receipts, both sets
+                            of digests, the outcome and the completion word.
+      `submitted/*`         the texts the agent itself wrote, in call order.
+      `trajectory.json`     the full trajectory, every turn, as returned.
+      `completion.json`     the full message list, reasoning included.
+      `manifest.json`       the index: what was written, its digest, and
+                            whether each deliverable was committed and scored.
+
+    Returns the row fields describing the archive. Never raises for a missing
+    piece: a piece that does not exist is recorded as absent, with its reason.
+    """
+    archive = Path(archive)
+    cell_dir = archive / cell_slug(selector)
+    files: dict = {}
+    absent: dict = {}
+
+    for name, data in sorted((public_files or {}).items()):
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        files[f"inputs/{name}"] = _write_bytes(cell_dir / "inputs" / name, data)
+    if not public_files:
+        absent["inputs"] = "the environment exposed no public_files for this cell"
+
+    workspace = workspace or (out or {}).get("workspace")
+    ledger_committed = application_committed = False
+    ledger_scored = application_scored = False
+    if workspace and Path(workspace).is_dir():
+        ws = Path(workspace)
+        delivery_path = ws / "delivery.json"
+        if delivery_path.is_file():
+            files["delivery.json"] = _write_bytes(cell_dir / "delivery.json", delivery_path.read_bytes())
+            ledger_scored = True
+            try:
+                _delivery, published_application = env_mod._read_publication(
+                    delivery_path.read_text(encoding="utf-8"))
+                application_scored = published_application is not None
+            except Exception as exc:                                        # noqa: BLE001
+                absent["delivery_parse"] = f"{type(exc).__name__}: {exc}"[:200]
+        else:
+            absent["delivery.json"] = "the scorer published no manifest for this rollout"
+        for name in (env_mod.LEDGER, getattr(env_mod, "APPLICATION_FILE", None)):
+            if not name:
+                continue
+            path = ws / name
+            if path.is_file():
+                files[f"delivered/{name}"] = _write_bytes(cell_dir / "delivered" / name, path.read_bytes())
+            else:
+                absent[f"delivered/{name}"] = "nothing was published at this public path"
+    elif workspace:
+        absent["workspace"] = f"the workspace {workspace} no longer exists"
+    else:
+        absent["workspace"] = "this cell produced no workspace (it failed before the episode ran)"
+
+    completion = (out or {}).get("completion") or []
+    trajectory = (out or {}).get("trajectory") or []
+    write_tools = getattr(env_mod, "WRITE_TOOLS", ("write_ledger", "write_cash_application"))
+    submissions = submitted_texts(completion, write_tools)
+    for index, entry in enumerate(submissions, start=1):
+        suffix = "json" if entry["tool"] == getattr(env_mod, "APPLICATION_TOOL", "write_cash_application")             else "beancount"
+        body = entry["content"] if entry["content"] is not None else (entry["raw_arguments"] or "")
+        name = f"{index:02d}_{entry['tool']}." + (suffix if entry["content"] is not None else "raw")
+        files[f"submitted/{name}"] = _write_bytes(cell_dir / "submitted" / name, body.encode("utf-8"))
+        ledger_committed = ledger_committed or entry["tool"] == env_mod.WRITE_TOOL
+        application_committed = application_committed or entry["tool"] == getattr(
+            env_mod, "APPLICATION_TOOL", "write_cash_application")
+    if not submissions:
+        absent["submitted"] = "the agent called no write tool in this episode"
+
+    if trajectory:
+        files["trajectory.json"] = _write_bytes(
+            cell_dir / "trajectory.json",
+            json.dumps(trajectory, indent=1, default=str).encode("utf-8"))
+    else:
+        absent["trajectory.json"] = "the framework returned no trajectory for this cell"
+    if completion:
+        files["completion.json"] = _write_bytes(
+            cell_dir / "completion.json",
+            json.dumps(completion, indent=1, default=str).encode("utf-8"))
+    else:
+        absent["completion.json"] = "the framework returned no completion for this cell"
+
+    # The row is the authority on binding; the archive records what it says
+    # rather than re-deriving a second opinion from the same bytes.
+    row = row or {}
+    manifest = {
+        "schema": ARCHIVE_SCHEMA,
+        "selector": selector,
+        "cell": cell_slug(selector),
+        "written_at": datetime.now().isoformat(),
+        "screen": row.get("screen"), "selection_digest": row.get("selection_digest"),
+        "planned_ordinal": row.get("planned_ordinal"), "task_id": row.get("task_id"),
+        "model": row.get("model"), "endpoint": row.get("endpoint"),
+        "cell_status": row.get("cell_status"),
+        "reward": row.get("reward"),
+        "workspace": workspace,
+        "ledger": {"committed": ledger_committed, "scored": ledger_scored,
+                   "binding": row.get("artifact"), "reason": row.get("artifact_reason"),
+                   "stored_bytes_digest": row.get("artifact_stored_bytes_digest"),
+                   "logical_text_digest": row.get("artifact_logical_text_digest")},
+        "application": {"committed": application_committed, "scored": application_scored,
+                        "binding": row.get("application"), "reason": row.get("application_reason"),
+                        "status": row.get("application_status"),
+                        "revision": row.get("application_revision"),
+                        "stored_bytes_digest": row.get("application_stored_bytes_digest"),
+                        "logical_text_digest": row.get("application_logical_text_digest")},
+        "files": files,
+        "absent": absent,
+    }
+    write_atomic(cell_dir / "manifest.json", json.dumps(manifest, indent=1, sort_keys=True, default=str))
+    return {"archive_dir": str(cell_dir),
+            "archive_files": sorted(files),
+            "archive_absent": absent or None,
+            "ledger_committed": ledger_committed, "ledger_scored": ledger_scored,
+            "application_committed": application_committed, "application_scored": application_scored}
 
 
 def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=None,
@@ -2691,7 +3382,30 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
                 schedule_id: str | None = None, planned_ordinal: int | None = None,
                 actual_ordinal: int | None = None, session_id: str | None = None,
                 block_id: str | None = None, permutation_index: int | None = None,
-                arm_position: int | None = None, window_ledger=None) -> dict:
+                arm_position: int | None = None, window_ledger=None,
+                screen: str | None = None, selection_digest: str | None = None,
+                start_journal=None) -> dict:
+    """One cell, end to end, and a ROW EITHER WAY.
+
+    Three outcomes, all of them recorded:
+
+      SCORED                the episode ran and the environment scored it.
+      ATTEMPTED_UNSCORED    the provider failed — an environment quarantine
+                            (`PIVEvaluationBatchInvalid`) or a raw provider
+                            exception out of `evaluate` — and a `terminal_row`
+                            names the cell, the failure and everything spent
+                            before it. NOTHING escapes this function as a
+                            traceback: a cell that spent a provider call and
+                            left no record is the one failure mode the
+                            instrument cannot recover from afterwards.
+      (no return)           `InstrumentDrift` only, which is a refusal to have
+                            run at all and is handled by the caller.
+
+    `start_journal`, when given, receives this cell's START record BEFORE the
+    first provider request — see `start_record`. `screen`/`selection_digest`
+    name the experiment and the frozen selection this cell belongs to, on
+    every row including a terminal one.
+    """
     env = env_mod.load_environment(selector)
     # The UNTOUCHED original ledger this episode was served, fixed at world
     # construction and unaffected by anything the agent does later --
@@ -2805,6 +3519,12 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "actual_ordinal": actual_ordinal, "session_id": session_id,
         "block_id": block_id, "permutation_index": permutation_index,
         "arm_position": arm_position,
+        # THE EXPERIMENT this cell belongs to and the FROZEN SELECTION it was
+        # drawn from, on every row including a terminal one. A screen's rows
+        # are only interpretable against the selection that was written before
+        # any model call; a row that cannot name its selection digest cannot
+        # be placed in one.
+        "screen": screen, "selection_digest": selection_digest,
         # The served world's public id, on EVERY row including a quarantined
         # one, and the shared window ledger this cell paced against.
         "task_id": public_task_id,
@@ -2827,6 +3547,33 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "runtime_environment_identity_version":
             runtime_identity().get("runtime_environment_identity_version"),
     }
+    # THE START RECORD, WRITTEN BEFORE INFERENCE. Durable and separate from
+    # the row file, so that a process which dies inside `evaluate` still
+    # leaves proof that this cell was attempted. A journal that cannot be
+    # written is recorded on the row and does not stop the cell — refusing to
+    # measure because a log file is unwritable would be the worse failure.
+    start_journal_error = None
+    if start_journal is not None:
+        try:
+            append_start_record(start_journal, start_record(common))
+        except OSError as exc:                                             # noqa: BLE001
+            start_journal_error = f"{type(exc).__name__}: {exc}"[:200]
+    common = {**common, "start_journal": str(start_journal) if start_journal else None,
+              "start_journal_error": start_journal_error}
+
+    def _archive_served_world(row_so_far: dict) -> dict:
+        """The served world, archived even for a cell that never ran. It is
+        the only artifact a lost cell has, and without it the cell cannot be
+        reproduced at all."""
+        if archive is None:
+            return {}
+        try:
+            return archive_cell(archive, selector, env_mod=env_mod,
+                                public_files=getattr(env, "public_files", {}) or {},
+                                out=None, row=row_so_far, workspace=None)
+        except Exception as exc:                                           # noqa: BLE001
+            return {"archive_dir": None, "archive_error": f"{type(exc).__name__}: {exc}"[:200]}
+
     try:
         results, got_optional = _run_evaluate(
             env, client=client, model=model, sampling_args=sampling_args,
@@ -2838,13 +3585,37 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         # belong in the OPERATIONAL cost of the arm whose own
         # request size or replay payload caused the failure, so they are
         # archived here rather than lost with the exception.
-        return {**common, "quarantined": True, "status": str(exc.status),
-                "reasons": {str(k): v for k, v in exc.reason_counts.items()},
-                "requests": getattr(client, "requests", None),
-                "billed_input_tokens_all_attempts": getattr(client, "billed_input_tokens_all_attempts", None),
-                "billed_output_tokens_all_attempts": getattr(client, "billed_output_tokens_all_attempts", None),
-                "finished_at": datetime.now().isoformat(),
-                "seconds": round(time.monotonic() - started, 1)}
+        row = terminal_row(common, started=started, stage=FAILURE_STAGE_EVALUATION, exc=exc, client=client,
+                           status=str(exc.status),
+                           reasons={str(k): v for k, v in exc.reason_counts.items()})
+        row["batch_id"] = getattr(exc, "batch_id", None)
+        row["quarantine_records"] = getattr(exc, "quarantined", None)
+        row.update(_archive_served_world(row))
+        return row
+    except InstrumentDrift:
+        # A refusal to have made the request at all. The caller withdraws this
+        # cell's bytes; it is not an observation and gets no row.
+        raise
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException as exc:                                           # noqa: BLE001
+        # THE DEFECT THIS CLAUSE EXISTS FOR. `PIVEvaluationBatchInvalid` is
+        # raised by the environment AFTER the framework returns; a provider
+        # refusal that stops the framework BEFORE it returns — the 403 that
+        # ended screen 1 — arrives as the provider library's own exception and
+        # escaped every handler here. The process died on the traceback and
+        # the cell it died in was never recorded: nine rows survived, the
+        # tenth cell existed only as a gap in the ordinals, and the eleventh
+        # and twelfth were indistinguishable from it.
+        #
+        # Caught by BASE class deliberately: which exception type a provider
+        # library raises is not something this instrument gets to assume, and
+        # the cost of guessing wrong is the whole record of a cell that spent
+        # real quota. `InstrumentDrift` and the interpreter's own control-flow
+        # exceptions are re-raised above, before this.
+        row = terminal_row(common, started=started, stage=FAILURE_STAGE_INFERENCE, exc=exc, client=client)
+        row.update(_archive_served_world(row))
+        return row
     out = results["outputs"][0]
     metrics = out.get("metrics") or {}
     usage = out.get("token_usage") or {}
@@ -3013,14 +3784,47 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "per_turn": per_turn,
         **artifact_info,
     }
+    # THE DISPOSITION, on every scored row, so that a reader never has to
+    # infer "this cell ran and was scored" from the presence of a number.
+    row["attempted"] = True
+    row["quarantined"] = False
+    row["scored"] = row.get("reward") is not None
+    row["cell_status"] = CELL_SCORED if row["scored"] else CELL_ATTEMPTED_UNSCORED
+    row["stop_schedule"] = False
+    row["failure_stage"] = None
+    # THE ARCHIVE. Written for EVERY rollout that produced a workspace, not
+    # only for one whose ledger bound: an episode that delivered nothing still
+    # has a served world, a trajectory and the texts the agent wrote, and all
+    # three vanish with the temporary directory the moment this process moves
+    # on. Bytes, not digests and not paths.
+    if archive is not None:
+        try:
+            row.update(archive_cell(archive, selector, env_mod=env_mod,
+                                    public_files=getattr(env, "public_files", {}) or {},
+                                    out=out, row=row, workspace=artifact_info.get("workspace")))
+        except Exception as exc:                # noqa: BLE001 — the instrument must not hide a rollout
+            row["archive_error"] = f"{type(exc).__name__}: {exc}"[:200]
     if artifact_info["artifact"] == "BOUND":
         ledger_path = Path(artifact_info["workspace"]) / env_mod.LEDGER
         delivered = ledger_path.read_text(encoding="utf-8")
         if archive is not None:
+            # The flat per-cell ledger the archive has always written, kept
+            # where every existing reader expects it.
             archive.mkdir(parents=True, exist_ok=True)
             write_atomic(archive / f"{selector.replace(':', '_')}.beancount", delivered)
+        # BOTH bound artifacts are replayed. The register's bytes come from
+        # the public path only when the row says the register BOUND — that is,
+        # when the scorer's own receipt and the file on disk agree. A
+        # mismatched or absent register is not resubmitted, and the breakdown
+        # says so instead of pretending.
+        register = None
+        if row.get("application") == "BOUND":
+            register_path = Path(artifact_info["workspace"]) / env_mod.APPLICATION_FILE
+            if register_path.is_file():
+                register = register_path.read_text(encoding="utf-8")
         try:
-            row["breakdown"] = breakdown(selector, delivered)
+            row["breakdown"] = breakdown(selector, delivered, application=register,
+                                         live_metrics=row.get("metrics"))
         except Exception as exc:                # noqa: BLE001 — the instrument must not hide a rollout
             row["breakdown"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
     # ONE validator, both ends: the writer runs the same
@@ -3179,6 +3983,13 @@ def main() -> int:
                              "is a fresh subprocess, so that memory is always empty at the boundary that "
                              "matters), and a 429 archives the observed trailing-60 s window it was refused "
                              "in. tests/run_arms.py passes one per schedule")
+    parser.add_argument("--screen", default=None,
+                        help="the experiment (screen) these cells belong to, recorded on every row "
+                             "including a terminal one")
+    parser.add_argument("--selection-digest", default=None,
+                        help="the self-digest of the FROZEN selection record these cells were drawn from, "
+                             "written before any model call. A screen's rows are only interpretable against "
+                             "it, so it rides on every row rather than living in a sentence beside them")
     # THE SEALED INSTRUMENT. Passed down by tests/run_arms.py
     # from the sealed experiment contract, so that this process — the one that
     # actually spends the provider call — can refuse to make it.
@@ -3253,17 +4064,58 @@ def main() -> int:
           f"replay_contract v{REPLAY_CONTRACT_VERSION} {replay_contract_digest(reasoning_replay)[:12]}...; "
           f"SDK retries 0\n", flush=True)
     markdown_path = out_dir / f"budget_{slug}_{stamp}.md"
+    # THE CELL-START JOURNAL and THE CELL CENSUS, beside the rows.
+    #
+    # The rows file records OBSERVATIONS. These two record the PLAN and what
+    # became of it, which is the thing a provider failure destroys. The
+    # journal gets one line per cell BEFORE its first provider request; the
+    # census gets one entry per PLANNED cell, rewritten after every cell, so
+    # that a lost cell (attempted, terminal row, start record) and an
+    # unattempted one (no request, no row, no start record) are different
+    # objects in the data rather than the same silence.
+    start_journal_path = out_dir / f"budget_{slug}_{stamp}.starts.jsonl"
+    census_path = out_dir / f"budget_{slug}_{stamp}.cells.json"
+    # A bare invocation's planned order IS its `--selectors` order; a scheduled
+    # cell carries the schedule's own ordinal. Whichever it is, the census says
+    # which, so nobody reads an invocation index as a schedule position.
+    ordinal_source = "schedule" if (args.planned_ordinal is not None and len(args.selectors) == 1) \
+        else "invocation_order"
+
+    def planned_ordinal_for(index: int):
+        if ordinal_source == "schedule":
+            return args.planned_ordinal
+        return index + 1
+
+    census: list[dict] = []
+    stopped_at = None
+
+    def write_census(reason: str | None = None) -> None:
+        write_atomic(census_path, json.dumps(
+            {"schema": "piv.cell-census/1", "screen": args.screen,
+             "selection_digest": args.selection_digest, "schedule_id": args.schedule_id,
+             "session_id": args.session_id, "model": args.model, "provider": PROVIDER,
+             "endpoint": BASE_URL, "planned_cells": len(args.selectors),
+             "planned_ordinal_source": ordinal_source,
+             "written_at": datetime.now().isoformat(),
+             "stopped_after_planned_ordinal": stopped_at, "stop_reason": reason,
+             "counts": dict(Counter(entry["cell_status"] for entry in census)),
+             "cells": census}, indent=1, sort_keys=True, default=str))
+
+    write_census()
     try:
-        for selector in args.selectors:
+        for index, selector in enumerate(args.selectors):
             row = one_rollout(env_mod, client_cls, config, selector, args.model, max_tokens, args.retries,
                               args.max_total_completion_tokens, reasoning_replay,
                               archive=out_dir / f"budget_{slug}_{stamp}", arm=arm_label,
                               temperature=args.temperature, top_p=args.top_p, seed=args.seed,
                               replicate=args.replicate, prompt_schema_digest=prompt_schema_digest,
-                              schedule_id=args.schedule_id, planned_ordinal=args.planned_ordinal,
+                              schedule_id=args.schedule_id,
+                              planned_ordinal=planned_ordinal_for(index),
                               actual_ordinal=args.actual_ordinal, session_id=args.session_id,
                               block_id=args.block_id, permutation_index=args.permutation_index,
-                              arm_position=args.arm_position, window_ledger=args.window_ledger)
+                              arm_position=args.arm_position, window_ledger=args.window_ledger,
+                              screen=args.screen, selection_digest=args.selection_digest,
+                              start_journal=start_journal_path)
             # Set here rather than inside `one_rollout`: `--tag` names the
             # output file, so `tests/run_arms.py` can decide a scheduled cell
             # is done only by finding a row that says so; `--min-interval` is
@@ -3273,8 +4125,10 @@ def main() -> int:
             row["tag"] = args.tag
             row["min_interval"] = args.min_interval
             rows.append(row)
+            census.append(cell_disposition(row))
             if row.get("quarantined"):
-                print(f"{selector:16s} QUARANTINED {row['status']} {row['reasons']}", flush=True)
+                print(f"{selector:16s} QUARANTINED {row['status']} {row['reasons']}"
+                      f"{'  QUOTA EXHAUSTED' if row.get('quota_exhausted') else ''}", flush=True)
             else:
                 print(f"{selector:16s} reward {row['reward']!s:6s} turns {row['turns']!s:>4}  tokens {row['total_tokens'] or '?':>7} "
                       f"(in {row['prompt_tokens']}, out {row['completion_tokens']}, last turn in/out "
@@ -3291,6 +4145,23 @@ def main() -> int:
                           f"components {b.get('components')} penalties {list((b.get('penalties') or {}).keys())} "
                           f"{('protocol: ' + str(b.get('protocol_reason'))) if b.get('protocol_reason') else ''}", flush=True)
             write_atomic(row_path, json.dumps(rows, indent=1, default=str))
+            write_census()
+            # THE STOP. A refused key does not become a working key on the
+            # next cell: continuing would turn one lost cell into a column of
+            # them, each spending a request that cannot succeed. So this cell
+            # is finalised, the session stops, and every cell after it is
+            # recorded UNATTEMPTED — with the ordinal it was stopped at, so
+            # "never run" is never confused with "run and lost".
+            if row.get("stop_schedule"):
+                stopped_at = planned_ordinal_for(index)
+                ordinals = [planned_ordinal_for(i) for i in range(len(args.selectors))]
+                reason, tail = unattempted_tail(row, args.selectors, index, ordinals)
+                census.extend(tail)
+                write_census(reason)
+                print(f"\nSTOPPED after planned ordinal {stopped_at}: {reason}.\n"
+                      f"  {len(args.selectors) - index - 1} scheduled cell(s) recorded UNATTEMPTED in "
+                      f"{census_path.name}. No further provider request was made.", flush=True)
+                break
     except InstrumentDrift as exc:
         # Raised immediately before a provider request, so the request was
         # never made. Anything this process had already written for the cell is
@@ -3394,6 +4265,23 @@ def main() -> int:
             f"{dict(Counter(r['budget_accounting_suspicious'] for r in suspicious))}"
             if suspicious else "- SUSPICIOUS: none")
     lines += [""] + summary_bullets
+
+    # THE DISPOSITION OF EVERY PLANNED CELL, against the planned denominator.
+    # A screen is reported as counts against the cells it planned, never as a
+    # rate over the cells that happened to come back.
+    counts = Counter(entry["cell_status"] for entry in census)
+    lines += ["", "## Cell disposition", "",
+              f"Planned cells: {len(args.selectors)} (ordinals from {ordinal_source}). "
+              f"{counts.get(CELL_SCORED, 0)} scored, {counts.get(CELL_ATTEMPTED_UNSCORED, 0)} attempted "
+              f"but unscored, {counts.get(CELL_UNATTEMPTED, 0)} unattempted. "
+              f"Full census: `{census_path.name}`; cell start journal: `{start_journal_path.name}`.", "",
+              "| planned # | selector | status | reward | reason |", "|---|---|---|---|---|"]
+    for entry in census:
+        lines.append("| " + " | ".join([
+            str(entry.get("planned_ordinal") if entry.get("planned_ordinal") is not None else ""),
+            str(entry.get("selector") or ""), str(entry.get("cell_status") or ""),
+            "" if entry.get("reward") is None else str(entry["reward"]),
+            str(entry.get("reason") or "")]) + " |")
 
     lines += ["", "## Per-turn detail", ""]
     for r in rows:
