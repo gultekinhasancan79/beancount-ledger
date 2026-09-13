@@ -165,9 +165,13 @@ def rewrite(path, mutate):
 
 def test_the_family_manifest_is_separate_all_the_way_down():
     problems = []
-    if (FM.FAMILY_MANIFEST_SCHEMA, FM.FAMILY_PREFLIGHT_CONTRACT) != (1, 1):
+    # Round 17, decision 4: the admission contract moved to 2 when
+    # `cumulative_reversal_bounded` stopped capping a credit at the opening
+    # balance. The manifest SCHEMA did not move — the record's shape is
+    # unchanged, only what admission means.
+    if (FM.FAMILY_MANIFEST_SCHEMA, FM.FAMILY_PREFLIGHT_CONTRACT) != (1, 2):
         problems.append(f"schema/preflight contract are {FM.FAMILY_MANIFEST_SCHEMA}/"
-                        f"{FM.FAMILY_PREFLIGHT_CONTRACT}, not 1/1")
+                        f"{FM.FAMILY_PREFLIGHT_CONTRACT}, not 1/2")
     if FM._FAMILY_SIGNING_DOMAIN == BANK._SIGNING_DOMAIN:
         problems.append("the family signs under the bank family's domain")
     if FM._signing_key(SECRET) == BANK._signing_key(SECRET):

@@ -110,21 +110,42 @@ class ServingRefused(RuntimeError):
 #: None of them binds compiled code, so all three are the same on every
 #: interpreter. The baseline catalogue's digest is not here for exactly the
 #: opposite reason; it is in `runtime_freeze()`.
+#:
+#: ROUND 17, DECISION 4 — THIS DECLARATION MOVED, AND THE 2026-09-13 RECORD
+#: DID NOT. `gate_version` is now 2, `family_preflight_contract` 2 and
+#: `gate_set_digest` `2491e97f97b48cee`, because the admission rule
+#: `cumulative_reversal_bounded` was corrected: it no longer caps a credit
+#: note at the invoice's OPENING BALANCE, only at the ORIGINAL SALE it
+#: reverses. `cash_gate._cumulative_reversal_bounded` carries the accounting
+#: and the two false rejections that measured it.
+#:
+#: The published census under
+#: `reviews/cash_application_development_population_2026-09-13/` declares
+#: `gate_version` 1, `family_preflight_contract` 1 and gate set
+#: `6b246422badd05a6`. It is therefore NO LONGER a census of this generator,
+#: and it is deliberately left untouched: it is the historical artifact of
+#: the superseded rule, and it records which groups that rule refused.
+#: Admission under contract 2 is strictly wider, so the old population's
+#: groups remain admissible — but its REFUSALS do not stand, and its
+#: acceptance ordinals were drawn against a rule that no longer applies. A
+#: replacement population must be minted, censused, validated and frozen
+#: under these values before anything is sampled. That minting is NOT done
+#: here; this phase corrects the rule and versions it, nothing more.
 DECLARED_FREEZE: dict = {
     "family": "cash_application",
     "family_generator_version": 1,
     "construction_version": 1,
     "template_version": 1,
-    "gate_version": 1,
+    "gate_version": 2,
     "profile": "bounded-v1",
     "profile_digest": "310e96729061410467f0e4285976743f",
     "baseline_catalogue": "cash_application_baselines/1",
     "binding_baselines": 9,
     "diagnostic_baselines": 1,
     "family_manifest_schema": 1,
-    "family_preflight_contract": 1,
+    "family_preflight_contract": 2,
     "gate_count": 31,
-    "gate_set_digest": "6b246422badd05a6",
+    "gate_set_digest": "2491e97f97b48cee",
     "split_map_schema": 1,
     "split_map_digest": "c41f5d150aec53ccce514f7123206ac5",
     "structure_schema": 1,

@@ -38,6 +38,19 @@ Round 16, decision 3. What is witnessed here:
   * no shipped task's public bytes moved, and GENERATOR_VERSION 9 and its
     manifest are untouched.
 
+Round 17, decision 4 adds one correction to the above. The gate
+`cumulative_reversal_bounded` used to cap a credit note at its invoice's
+OPENING BALANCE as well as at the original sale. That was wrong accounting —
+a credit reverses a SALE, and part payment of that sale does not shrink what
+may be credited — and it falsely refused two parent attempts in the census
+published on 2026-09-13. The clause is removed; the original-sale bound, its
+cumulative reach and the positive-net requirement stay. Because the gate kept
+its name and its group, `gate_set_digest()` could not notice on its own, so
+GATE_VERSION and the admission contract FAMILY_PREFLIGHT_CONTRACT are both
+bumped to 2 and the digest moves off `6b246422badd05a6`. The 2026-09-13
+record is preserved unaltered as the historical artifact of the superseded
+rule, and NO replacement population is minted here.
+
     python tests/test_cash_gate.py
 """
 
@@ -476,6 +489,186 @@ def test_every_gate_speaks():
     return check(f"every one of the {len(FM.family_gates())} declared gates has a negative control that makes "
                  f"THAT gate fail and puts its own rejection code on the report, and an over-bound "
                  f"enumeration is a VERIFICATION-LIMIT rejection rather than evidence of resistance",
+                 not problems, "\n".join(problems))
+
+
+# --------------------------------------------------------------------------
+# 3b. the credit bound is the SALE, not the balance entering the period
+# --------------------------------------------------------------------------
+#
+# Round 17, decision 4. Until preflight contract 1 the gate
+# `cumulative_reversal_bounded` carried a second, wrong clause that ALSO
+# rejected any credit note exceeding its invoice's OPENING BALANCE. A credit
+# reverses a SALE: the customer having already paid part of that sale is not
+# a reason the sale may not be credited in full. The accounting review says
+# it outright — "Do not cap the credit at the unpaid balance" — and
+# `cash_construct._shape_the_target_customer` was always built on the same
+# rule: "The bound is the original sale, never the unpaid balance."
+#
+# The clause falsely refused real candidates. The census published on
+# 2026-09-13 refused two parent attempts for it ALONE, neither witness naming
+# any original-sale excess: 2,332.00 against an opening balance of 2,173.00,
+# and 2,415.00 against 2,362.50.
+
+#: Bowline Marine Supply Co., April 2026 — CASE 5, a SHIPPED authored task.
+#: SI-3100 is an original sale of 1,080.00 which a March part payment has
+#: reduced to 300.00 open, and CN-0412 credits 540.00 against it: over the
+#: balance entering the period, well inside the sale. The numbers are taken
+#: from that world deliberately, so that the legitimacy of the admitted case
+#: here and the legitimacy of the shipped case are visibly the same fact.
+BOWLINE_SALE = D("1080.00")          # SI-3100's original gross
+BOWLINE_OPEN = D("300.00")           # what the March part payment left open
+BOWLINE_CREDIT_NET = D("500.00")     # CN-0412, at the world's 0.08 rate
+BOWLINE_CREDIT_TAX = D("40.00")
+BOWLINE_CREDIT_GROSS = D("540.00")
+
+
+def _one_note_against_one_sale(c, name, *, face, basis, net, tax, gross):
+    """The candidate rewritten so that exactly ONE credit note names exactly
+    one invoice, that invoice carrying the given original sale and opening
+    balance and the note the given amounts."""
+    ev = c.evidence[name]
+    note = dataclasses.replace(ev.credit_notes[0], net=net, tax=tax, gross=gross)
+    invoices = tuple(dataclasses.replace(inv, face_value=face, period_basis=basis)
+                     if inv.invoice_id == note.invoice_id else inv
+                     for inv in ev.invoices)
+    return _doctor_evidence(c, name, credit_notes=(note,), invoices=invoices)
+
+
+def test_a_credit_above_the_opening_balance_is_admitted():
+    """The correction, both ways round: a properly supported credit ABOVE the
+    opening balance is admitted, and a reversal exceeding the ORIGINAL SALE
+    is still rejected under its own code."""
+    problems = []
+    c = candidate("cr-brindlecote")
+    ev = c.evidence["a"]
+    if not ev.credit_notes:
+        return check("the credit bound is the sale, not the opening balance", False,
+                     "the credit-residue control family drew no credit note to doctor")
+    if ev.invoice(ev.credit_notes[0].invoice_id) is None:
+        problems.append(f"the drawn note names {ev.credit_notes[0].invoice_id}, which is not an invoice")
+
+    # The fixture must be the case actually at issue. A "credit above the
+    # opening balance" that does not exceed the opening balance would pass
+    # under the OLD rule too, and would witness nothing at all.
+    if not BOWLINE_OPEN < BOWLINE_CREDIT_GROSS <= BOWLINE_SALE:
+        problems.append(f"the fixture {BOWLINE_CREDIT_GROSS} is not above the opening balance "
+                        f"{BOWLINE_OPEN} and within the sale {BOWLINE_SALE}")
+    if BOWLINE_CREDIT_NET + BOWLINE_CREDIT_TAX != BOWLINE_CREDIT_GROSS:
+        problems.append("the fixture note's net and tax are not its gross")
+
+    # (1) ADMITTED: Bowline case 5's shape — 540.00 credited against a
+    #     1,080.00 sale showing 300.00 open.
+    admitted = _one_note_against_one_sale(c, "a", face=BOWLINE_SALE, basis=BOWLINE_OPEN,
+                                          net=BOWLINE_CREDIT_NET, tax=BOWLINE_CREDIT_TAX,
+                                          gross=BOWLINE_CREDIT_GROSS)
+    findings = G._cumulative_reversal_bounded(admitted, "a")
+    if findings:
+        problems.append(f"a credit of {BOWLINE_CREDIT_GROSS} against an opening balance of {BOWLINE_OPEN} "
+                        f"and an original sale of {BOWLINE_SALE} — the shipped Bowline case 5 — was "
+                        f"rejected: {findings}")
+
+    # (2) THE BOUND IS THE SALE, and it is inclusive. Every credit from just
+    #     over the opening balance up to the sale itself is admitted; the
+    #     first cent above the sale is not. This is behaviour rather than a
+    #     reading of the source, so a cap reintroduced under any spelling
+    #     fails here.
+    for gross in (BOWLINE_OPEN + D("0.01"), BOWLINE_CREDIT_GROSS, BOWLINE_SALE):
+        probe = _one_note_against_one_sale(c, "a", face=BOWLINE_SALE, basis=BOWLINE_OPEN,
+                                           net=gross - BOWLINE_CREDIT_TAX, tax=BOWLINE_CREDIT_TAX,
+                                           gross=gross)
+        if G._cumulative_reversal_bounded(probe, "a"):
+            problems.append(f"a credit of {gross} within the sale {BOWLINE_SALE} was rejected")
+    over = BOWLINE_SALE + D("0.01")
+    probe = _one_note_against_one_sale(c, "a", face=BOWLINE_SALE, basis=BOWLINE_OPEN,
+                                       net=over - BOWLINE_CREDIT_TAX, tax=BOWLINE_CREDIT_TAX, gross=over)
+    if not G._cumulative_reversal_bounded(probe, "a"):
+        problems.append(f"a credit of {over} exceeding the sale {BOWLINE_SALE} was admitted")
+
+    # (3) CUMULATIVE still means cumulative: two notes that each fit the sale
+    #     but together exceed it are rejected. Removing the balance clause
+    #     must not have loosened this.
+    note = dataclasses.replace(ev.credit_notes[0], net=D("600.00"), tax=D("48.00"), gross=D("648.00"))
+    invoices = tuple(dataclasses.replace(inv, face_value=BOWLINE_SALE, period_basis=BOWLINE_OPEN)
+                     if inv.invoice_id == note.invoice_id else inv for inv in ev.invoices)
+    twice = _doctor_evidence(c, "a", invoices=invoices, credit_notes=(
+        note, dataclasses.replace(note, credit_note_id=note.credit_note_id + "-B", index=note.index + 1)))
+    if not G._cumulative_reversal_bounded(twice, "a"):
+        problems.append(f"two notes of 648.00 against one sale of {BOWLINE_SALE} were admitted: the bound "
+                        f"is no longer cumulative")
+
+    # (4) REJECTED, through the WHOLE gate and under its EXISTING code: a
+    #     reversal the original sale does not support.
+    code = G.rejection_codes()["cumulative_reversal_bounded"]
+    if code != "ACC-CUMULATIVE-REVERSAL-BOUNDED":
+        problems.append(f"the gate's rejection code moved to {code}")
+    unsupported = _doctor_evidence(c, "a", credit_notes=(dataclasses.replace(
+        ev.credit_notes[0], gross=ev.credit_notes[0].gross + D("100000.00")),) + ev.credit_notes[1:])
+    report = evaluate(unsupported)
+    if "cumulative_reversal_bounded" not in failed(report):
+        problems.append(f"a note reversing more than the sale it names was admitted "
+                        f"(failed: {sorted(failed(report))})")
+    if code not in report.codes:
+        problems.append(f"the rejection does not carry {code}: {sorted(report.codes)}")
+    witness = " ".join(f.witness for f in report.findings
+                       if f.gate == "cumulative_reversal_bounded")
+    if not witness:
+        problems.append("the rejection recorded no witness for the gate")
+    if "opening balance" in witness:
+        problems.append(f"a rejection still speaks of an opening balance: {witness[:200]}")
+
+    return check("a credit note is bounded by the ORIGINAL SALE and not by the balance entering the period: "
+                 "the shipped Bowline case 5's shape (540.00 against a 1,080.00 sale showing 300.00 open) is "
+                 "admitted, the bound is inclusive and still cumulative, and a reversal the sale does not "
+                 "support is rejected under ACC-CUMULATIVE-REVERSAL-BOUNDED",
+                 not problems, "\n".join(problems))
+
+
+def test_the_corrected_admission_semantics_are_versioned():
+    """A population minted under the capped rule must not be confusable with
+    one minted under the corrected rule. The gate implementation's version,
+    the ADMISSION CONTRACT and the digest that binds the gate set all move."""
+    problems = []
+    if G.GATE_VERSION != 2:
+        problems.append(f"GATE_VERSION is {G.GATE_VERSION}, not 2")
+    if FM.FAMILY_PREFLIGHT_CONTRACT != 2:
+        problems.append(f"the admission contract is {FM.FAMILY_PREFLIGHT_CONTRACT}, not 2")
+    # The superseded gate set, as the 2026-09-13 record declares it. The
+    # digest MUST no longer be this, or a census minted under either rule
+    # could be read as the other.
+    if FM.gate_set_digest() == "6b246422badd05a6":
+        problems.append("the gate-set digest is still the superseded 6b246422badd05a6")
+    # `gate_set_digest` cannot see a predicate's body, so only the contract
+    # bump can carry this change into it. Witness that directly.
+    original = FM.FAMILY_PREFLIGHT_CONTRACT
+    try:
+        FM.FAMILY_PREFLIGHT_CONTRACT = 1
+        if FM.gate_set_digest() != "6b246422badd05a6":
+            problems.append("restoring contract 1 does not restore the superseded digest, so the digest "
+                            "moved for some reason other than the contract bump")
+    finally:
+        FM.FAMILY_PREFLIGHT_CONTRACT = original
+    # The gate kept its NAME and its GROUP: this is a changed meaning under an
+    # unchanged name, which is exactly why the contract had to be bumped by
+    # hand rather than being noticed by the digest.
+    if G.group_of("cumulative_reversal_bounded") != "accounting_integrity":
+        problems.append("the gate changed group")
+    if len(FM.family_gates()) != 31:
+        problems.append(f"the gate set is {len(FM.family_gates())} gates, not 31")
+    # The published record is preserved and NOT re-minted by this phase.
+    record = ROOT / "reviews" / "cash_application_development_population_2026-09-13" / "freeze.json"
+    if not record.exists():
+        problems.append("the 2026-09-13 record is missing; it is the historical artifact")
+    else:
+        import json as _json
+        declared = _json.loads(record.read_text(encoding="utf-8"))["freeze"]["declared"]
+        if declared.get("gate_set_digest") != "6b246422badd05a6" or declared.get("gate_version") != 1:
+            problems.append("the published 2026-09-13 record was altered; it must stay as minted")
+        if declared.get("gate_set_digest") == FM.gate_set_digest():
+            problems.append("the published record still matches the live gate set")
+    return check("the corrected admission semantics are versioned: GATE_VERSION 2, admission contract 2, a "
+                 "gate-set digest off the superseded 6b246422badd05a6, and the 2026-09-13 record preserved "
+                 "unaltered as the historical artifact of the rule it was minted under",
                  not problems, "\n".join(problems))
 
 
@@ -946,6 +1139,8 @@ TESTS = [
     test_every_family_mints_with_every_gate_true,
     test_gate_o_runs_at_mint_time_on_both_variants,
     test_every_gate_speaks,
+    test_a_credit_above_the_opening_balance_is_admitted,
+    test_the_corrected_admission_semantics_are_versioned,
     test_the_census_retains_everything_decision_three_names,
     test_aggregates_are_published,
     test_exhaustion_is_a_named_failed_group_and_defects_are_not_drawn_past,

@@ -110,7 +110,24 @@ from .cash_split import SPLIT_MAP, SplitMap
 from .manifest import rotation_id
 
 FAMILY_MANIFEST_SCHEMA = 1
-FAMILY_PREFLIGHT_CONTRACT = 1
+
+#: The ADMISSION CONTRACT: what passing preflight MEANS. It is a declaration,
+#: not a measurement — `gate_set_digest()` cannot see a predicate's body, so
+#: this number is the only thing that can carry a changed admission RULE into
+#: that digest, and a human must bump it when one changes.
+#:
+#: 2 — round 17, decision 4. The gate `cumulative_reversal_bounded` kept its
+#: name and its group, and its MEANING changed: it no longer caps a credit
+#: note at the invoice's opening balance, only at the original sale it
+#: reverses. See `cash_gate._cumulative_reversal_bounded` for the accounting
+#: and the two false rejections that measured it. Admission under 2 is
+#: strictly wider than under 1, so the two are NOT interchangeable: the
+#: development population published under `reviews/` on 2026-09-13 was minted
+#: under contract 1 and is preserved as the historical record of the
+#: superseded rule. Bumping this moves `gate_set_digest()` off
+#: `6b246422badd05a6`, which is what stops a record minted under either rule
+#: from being read as the other.
+FAMILY_PREFLIGHT_CONTRACT = 2
 FAMILY_MANIFEST_ENV = "PIV_CASH_APPLICATION_MANIFEST"
 _FAMILY_SIGNING_DOMAIN = b"piv:cash-application-manifest-signing-key:v1\0"
 _GATE_SET_DOMAIN = b"piv:cash-application-preflight-gates:v1\0"

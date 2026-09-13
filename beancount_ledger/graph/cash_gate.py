@@ -97,7 +97,17 @@ from .cash_split import SPLIT_MAP, SplitMap, StructuralAliasError, StructureLedg
 #: version and NOT the catalogue version: those are declarations in
 #: `cash_manifest`, and this is the number that moves when the code that
 #: evaluates them moves.
-GATE_VERSION = 1
+#:
+#: 2 — round 17, decision 4. `_cumulative_reversal_bounded` lost its
+#: `gross > invoice.period_basis` clause, which capped a credit note at the
+#: balance ENTERING the period instead of at the ORIGINAL SALE it reverses.
+#: That clause was wrong accounting and it falsely refused real candidates;
+#: the gate's own docstring carries the reasoning and the two census
+#: rejections that measured it. Admission is now STRICTLY WIDER than it was
+#: under 1, so a population minted under 1 is not a population this gate
+#: would mint: every census, freeze and manifest record binding `gate: 1`
+#: describes the superseded rule and must not be read as describing this one.
+GATE_VERSION = 2
 
 _CENSUS_DOMAIN = b"piv:cash-application-mint-census:v1\0"
 
@@ -551,6 +561,51 @@ def _consistent_sale_and_credit_tax_bases(c: Candidate, name: str) -> list:
 
 
 def _cumulative_reversal_bounded(c: Candidate, name: str) -> list:
+    """A credit note reverses A SALE. The bound is that sale's ORIGINAL
+    amount — its `face_value` — and never the balance entering the period.
+
+    ROUND 17, DECISION 4 — WHAT CHANGED AND WHY. Until preflight contract 1
+    this gate carried a THIRD clause, `gross > invoice.period_basis`, which
+    additionally rejected any note reversing more than the invoice's OPENING
+    BALANCE. That was wrong accounting, and it is removed here.
+
+    A sale is reversed in full even when the customer has already paid part
+    of it; the money already received is then a refund or an overpayment to
+    apply elsewhere, not a reason the credit may not be issued. Capping the
+    credit at the unpaid balance confuses the SALE being reversed with what
+    is still OWED on it. The accounting review says so in terms — "Do not cap
+    the credit at the unpaid balance; that would wrongly prohibit Page 5" —
+    and `cash_construct._shape_the_target_customer` has always built the
+    credit-residue recipe on the same rule: "The bound is the original sale,
+    never the unpaid balance."
+
+    The rule the removed clause forbade is the one the SHIPPED authored
+    population already relies on. Bowline Marine Supply, April 2026, case 5:
+    SI-3100 is an original sale of 1,080.00 which a March part payment has
+    reduced to 300.00 open, and CN-0412 credits 540.00 against it — over the
+    opening balance, well inside the sale. That case is legitimate, and the
+    old clause would have refused to mint its generated analogue.
+
+    It was not hypothetical. The census published on 2026-09-13 records two
+    parent attempts refused for this clause ALONE, their witnesses naming no
+    original-sale excess: 2,332.00 against an opening balance of 2,173.00
+    (cr-pikestaff/1/0) and 2,415.00 against 2,362.50 (cr-pikestaff/1/3).
+    Both were false rejections. That population is preserved unchanged under
+    `reviews/` as the historical record of the superseded rule; a population
+    minted under the corrected rule is told apart from it by the bumped
+    `GATE_VERSION` and `FAMILY_PREFLIGHT_CONTRACT`, which move
+    `gate_set_digest()` off `6b246422badd05a6`.
+
+    WHAT IS RETAINED. The cumulative gross of every note naming one invoice
+    may not exceed that invoice's original sale, and the cumulative net must
+    be positive. The bound is CUMULATIVE on purpose: several notes against
+    one sale may not reverse it twice between them. The sale's original NET
+    and TAX are bounded by the same comparison, because
+    `_consistent_sale_and_credit_tax_bases` has already established that the
+    note and the sale it names are struck at the world's single rate — so
+    gross <= face_value at a shared rate is net <= original net and
+    tax <= original tax. Those two gates are read together.
+    """
     out = []
     ev = c.evidence[name]
     by_invoice: dict = {}
@@ -568,9 +623,8 @@ def _cumulative_reversal_bounded(c: Candidate, name: str) -> list:
                        f"{invoice.face_value}: cumulative reversal is bounded by the sale")
         if net <= 0:
             out.append(f"the notes against {invoice_id} reverse a non-positive net {net}")
-        if gross > invoice.period_basis:
-            out.append(f"the notes against {invoice_id} reverse {gross} of an opening balance of "
-                       f"{invoice.period_basis}")
+        # NO opening-balance clause. See the docstring: a credit may exceed an
+        # invoice's remaining balance; it may not exceed the sale it reverses.
     return out
 
 

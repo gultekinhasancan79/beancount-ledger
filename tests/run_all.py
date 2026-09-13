@@ -47,7 +47,8 @@ SUITES = [
                                   "the split map is a frozen 60/20/20 by structural-template family, stratified "
                                   "across the three mechanisms, and a renamed or rescaled cross-split sibling is "
                                   "refused by canonical structure"),
-    ("test_cash_family_manifest", "the family manifest schema and preflight contract, both version 1: a record "
+    ("test_cash_family_manifest", "the family manifest schema (1) and the admission contract (2, since the "
+                                  "credit bound was corrected to the original sale): a record "
                                   "binds the construction identity, public-content digest, parent/variant, "
                                   "split-map digest, profile, baseline catalogue, exact gate set and every "
                                   "semantic component; admission reads today's gate set, not the record's own "
