@@ -20,6 +20,16 @@ Round 16, decision 3. What is witnessed here:
     exhaustion counts and rejection distributions;
   * exhaustion is a NAMED failed group carrying `GROUP-EXHAUSTED`, and no
     replacement selector is drawn; a defect is not drawn past;
+  * the DIAGNOSTIC STAYS DIAGNOSTIC against the catalogue version's own
+    declared roles rather than against the shipped tuple: a swap that
+    promotes `number_order` into the binding set while demoting another to
+    keep the counts is rejected, where a self-comparison admitted it;
+  * an attempt whose enumeration crossed the reading bound still retains
+    every baseline's observation and reading count, names the baseline that
+    crossed it and the count it reached, and carries VERIFICATION-LIMIT as
+    gate (o)'s only code — no second, untrue reason in the distribution;
+  * a population declaring one construction identity twice is a DEFECT,
+    refused before anything is minted;
   * the minting docstring is the ruling's paragraph VERBATIM;
   * the baseline catalogue is `cash_application_baselines/1` and its digest
     moves when an admission predicate's BODY changes under an unchanged name;
@@ -615,6 +625,144 @@ def test_exhaustion_is_a_named_failed_group_and_defects_are_not_drawn_past():
                  not problems, "\n".join(problems))
 
 
+def test_the_declared_roles_are_what_the_diagnostic_gate_compares_against():
+    """Decision 3: "`number_order` is diagnostic in the shipped catalogue; do
+    not silently promote it into an admission rule."
+
+    The gate that says so must not take both of its sides from
+    `CA.BASELINES`: that compares the tuple with itself and admits whatever
+    it says. The probe here is the one a self-comparison passes — a SWAP,
+    `number_order` promoted into the binding set and a binding baseline
+    demoted to keep a diagnostic in the catalogue, leaving the counts intact
+    and the shape plausible.
+    """
+    problems = []
+    declared = dict(FM.BASELINE_CATALOGUE_ROLES)
+    if declared.get("number_order") != "diagnostic" or FM.declared_role_counts() != {"binding": 9,
+                                                                                     "diagnostic": 1}:
+        problems.append(f"{FM.BASELINE_CATALOGUE_ID} declares {FM.declared_role_counts()} with "
+                        f"number_order {declared.get('number_order')!r}, not nine binding and "
+                        f"number_order diagnostic")
+    if FM.catalogue_role_findings():
+        problems.append(f"the shipped catalogue already disagrees with its declaration: "
+                        f"{FM.catalogue_role_findings()}")
+    c = candidate()
+    original = CA.BASELINES
+
+    def with_roles(swap: dict, what: str):
+        try:
+            CA.BASELINES = tuple(
+                CA.Baseline(b.name, b.strategy, b.admitted_when, swap[b.name] == "diagnostic", b.description)
+                if b.name in swap else b for b in original)
+            if not FM.catalogue_role_findings():
+                problems.append(f"{what}: catalogue_role_findings() saw nothing")
+            report = evaluate(c)
+            if "diagnostic_baseline_recorded" not in failed(report):
+                problems.append(f"{what} was admitted by the gate (failed: {sorted(failed(report))})")
+            if "BAS-DIAGNOSTIC-BASELINE-RECORDED" not in report.codes:
+                problems.append(f"{what} carries codes {report.codes}")
+        finally:
+            CA.BASELINES = original
+
+    with_roles({"number_order": "binding", "write_off_nothing": "diagnostic"},
+               "number_order promoted into the binding set, write_off_nothing demoted to keep the counts")
+    with_roles({"credit_ignored": "diagnostic"}, "a binding baseline quietly made diagnostic")
+    if FM.catalogue_role_findings():
+        problems.append("the shipped catalogue did not return to its declared roles after the probes")
+    if evaluate(c).passed is False:
+        problems.append("the undoctored candidate no longer passes after the probes")
+    return check("the diagnostic gate compares the recorded roles and the binding/diagnostic COUNTS against "
+                 "cash_application_baselines/1's own declaration, so a swap that promotes number_order into "
+                 "an admission rule while keeping one diagnostic is rejected rather than admitted",
+                 not problems, "\n".join(problems))
+
+
+def test_the_verification_limit_records_the_count_it_exists_to_record():
+    """Decision 3 gives the reading bound "its own code" and requires every
+    attempt's READING COUNT retained. The attempt that exceeded the bound is
+    the one whose count is the finding, so it may not be the one attempt that
+    records no baselines, no counts and a second untrue rejection reason."""
+    problems = []
+    c = candidate()
+    original = CA.MAX_BASELINE_READINGS
+    try:
+        CA.MAX_BASELINE_READINGS = 0
+        report = evaluate(c)
+    finally:
+        CA.MAX_BASELINE_READINGS = original
+    if not report.verification_limited or "VERIFICATION-LIMIT" not in report.codes:
+        problems.append(f"an over-bound enumeration recorded {report.codes}")
+    if "BAS-DIAGNOSTIC-BASELINE-RECORDED" in report.codes:
+        problems.append("an over-bound enumeration ALSO reported the diagnostic as unrecorded: a census "
+                        "reader counting rejections sees a second, untrue reason")
+    if "no_binding_baseline_reaches_truth" in failed(report):
+        problems.append("an over-bound enumeration was reported as a baseline reaching the truth")
+    # Gate (o)'s OWN codes are the claim here. The probe drops a global to
+    # zero, so the fold itself cannot run either and `order_insensitive` also
+    # speaks — an artifact of patching the bound rather than a property of an
+    # over-bound candidate, and the census would not carry it on a real one,
+    # since the policy fold does not branch. Said plainly rather than hidden
+    # by asserting only what suits.
+    stray = [code for code in report.codes if code.startswith("BAS-") or code == "VERIFICATION-LIMIT"]
+    if stray != ["VERIFICATION-LIMIT"]:
+        problems.append(f"gate (o) recorded {stray}, not the verification limit alone")
+    if set(failed(report)) - {"reading_bound_respected", "order_insensitive"}:
+        problems.append(f"the probe failed gates beyond the bound and the fold it also disables: "
+                        f"{sorted(failed(report))}")
+    for name in VARIANTS:
+        seen = [o for o in report.baselines if o.variant == name]
+        if {o.name for o in seen} != {b.name for b in CA.BASELINES}:
+            problems.append(f"{name}: the limited attempt observed {sorted(o.name for o in seen)}")
+        if not any(o.limited for o in seen):
+            problems.append(f"{name}: no baseline was marked as having crossed the bound")
+        for o in seen:
+            if o.limited and o.readings < 1:
+                problems.append(f"{name}: {o.name} crossed the bound and recorded {o.readings} readings")
+        if not report.reading_counts.get(name):
+            problems.append(f"{name}: the limited attempt retained no reading counts")
+    witness = report.baseline_witness()
+    if "reading-bound" not in witness or not any(b.name in witness for b in CA.BASELINES):
+        problems.append(f"the verification-limit witness names no baseline: {witness!r}")
+    attempt = G._attempt_from_report(0, c, report, "probe")
+    if attempt.outcome != "refused" or "VERIFICATION-LIMIT" not in attempt.codes:
+        problems.append(f"the census row reads {attempt.outcome} with codes {attempt.codes}")
+    if not attempt.reading_counts or attempt.readings < 1:
+        problems.append(f"the census row retained {len(attempt.reading_counts)} reading counts and "
+                        f"{attempt.readings} readings")
+    return check("an attempt whose enumeration crossed the reading bound still retains every baseline's "
+                 "observation and reading count, names the baseline that crossed it and the count it "
+                 "reached, and carries VERIFICATION-LIMIT as gate (o)'s ONLY code — no second, untrue "
+                 "reason in the census's rejection distribution", not problems, "\n".join(problems))
+
+
+def test_a_population_may_not_declare_one_identity_twice():
+    """Two admitted pairs under one construction identity would bind one
+    identity digest to two family-manifest records, name two groups the same
+    thing, and overwrite each other in a census keyed by that name."""
+    problems = []
+    ident = CC.identity_of(POPULATION, "cr-brindlecote", 0)
+    ledger = G.PopulationLedger()
+    message = raises(G.PopulationDefect, G.mint_population, [ident, ident], BOUNDED_V1, SECRET, ledger)
+    if message is None or message.startswith("!!"):
+        problems.append(f"a population declaring one identity twice was minted: {message}")
+    else:
+        if ident.label() not in message:
+            problems.append(f"the refusal does not name the repeated group: {message}")
+        if ledger.groups():
+            problems.append(f"the repeated identity was refused only after {len(ledger.groups())} group(s) "
+                            f"were already minted into the population")
+    if not issubclass(G.PopulationDefect, G.GateUnavailable):
+        problems.append("PopulationDefect is not a GateUnavailable, so a caller failing closed on one does "
+                        "not fail closed on the other")
+    minted, censuses = G.mint_population([ident, CC.identity_of(POPULATION, "cr-brindlecote", 1)],
+                                         BOUNDED_V1, SECRET, G.PopulationLedger())
+    if len(minted) != 2 or len({m.census.group for m in minted}) != 2:
+        problems.append(f"two distinct identities minted {len(minted)} group(s): {[c.group for c in censuses]}")
+    return check("a population that declares one construction identity twice is refused as a defect before "
+                 "anything is minted, and two distinct identities still mint two named groups",
+                 not problems, "\n".join(problems))
+
+
 def test_the_pair_is_the_unit_of_rejection():
     """Decision 3: "Reject BOTH variants when either fails any acceptance
     condition." A finding on one variant must reject the pair, not the
@@ -761,6 +909,9 @@ TESTS = [
     test_the_census_retains_everything_decision_three_names,
     test_aggregates_are_published,
     test_exhaustion_is_a_named_failed_group_and_defects_are_not_drawn_past,
+    test_the_declared_roles_are_what_the_diagnostic_gate_compares_against,
+    test_the_verification_limit_records_the_count_it_exists_to_record,
+    test_a_population_may_not_declare_one_identity_twice,
     test_the_pair_is_the_unit_of_rejection,
     test_the_minting_docstring_is_verbatim,
     test_the_catalogue_digest_binds_predicate_bodies_not_names,

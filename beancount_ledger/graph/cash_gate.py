@@ -22,8 +22,9 @@ and they are the whole of this module:
   * THE SIX INTEGRITY FAMILIES HAD NO EXPLICIT CHECKS. Some of what they ask
     for was implied by other gates passing; implication is not a check, and a
     gate that is never evaluated cannot be reported, cannot carry a rejection
-    code, and cannot appear in a census. Each of the thirty declared gates is
-    evaluated here by name.
+    code, and cannot appear in a census. Each of the thirty-one declared
+    gates — twenty-five per variant, six per pair — is evaluated here by
+    name.
   * THE CENSUS KEPT THE SUCCESSFUL ATTEMPT AND THE LAST EXCEPTION. Decision 3
     calls that insufficient. Every attempt now retains its ordinal, stage,
     evaluated rejection codes, the relevant baseline and witness, the reading
@@ -48,10 +49,22 @@ module keeps:
 
 `number_order` stays diagnostic. Its result is recorded on every attempt and
 it is never consulted for admission; `diagnostic_baseline_recorded` is the
-gate that fails if it ever stops being recorded, and it would also fail if
-somebody moved it into the binding set, because the count of binding
-baselines is checked against the catalogue's own declaration rather than
-against a number typed here.
+gate that fails if it ever stops being recorded, and it also fails if
+somebody moves it into the binding set, because the roles and the
+binding/diagnostic counts are compared against
+`cash_manifest.BASELINE_CATALOGUE_ROLES` — what `cash_application_baselines/1`
+DECLARES itself to hold — rather than against the shipped
+`cash_application.BASELINES` tuple, which would be that tuple compared with
+itself.
+
+One thing that comparison does NOT do, and no reader should be told it does:
+the catalogue's DIGEST is not pinned to a literal anywhere in shipped code,
+because it binds compiled predicate bytecode and is therefore runtime-scoped.
+So a role change under an unchanged `BASELINE_CATALOGUE_ID` moves the digest
+and fails this gate, and the suite watches the digest move; but a record
+signed under one runtime and read under another cannot tell a recompile from
+a change, which is why the ROLES are declared as data here and not left to
+the digest alone.
 """
 
 from __future__ import annotations
@@ -124,6 +137,21 @@ class GateUnavailable(RuntimeError):
     """A declared gate has no implementation, or an implementation could not
     be run. Never a pass: decision 3 admits a pair that satisfied every
     condition, and a condition nobody evaluated is not one of them."""
+
+
+class PopulationDefect(GateUnavailable):
+    """The declared population is not a population: the same construction
+    identity appears in it twice.
+
+    A defect rather than a draw outcome, so it is raised before anything is
+    minted. Two admitted pairs under one identity would bind one identity
+    digest to two family-manifest records, give two groups the same name, and
+    silently overwrite each other in a census keyed by that name — and the
+    second would be drawn from the same seed, so the only thing separating
+    them would be which of the two the population ledger saw first. A
+    subclass of `GateUnavailable` because a caller that already fails closed
+    on an unavailable gate must fail closed here too.
+    """
 
 
 class GroupExhausted(CC.ConstructionRefused):
@@ -203,7 +231,8 @@ def group_of(gate: str) -> str:
 @dataclass(frozen=True)
 class Candidate:
     """Everything the gates read about one attempt's rendered pair, built
-    once so that thirty checks do not re-fold the same bytes thirty times."""
+    once so that thirty-one checks do not re-fold the same bytes thirty-one
+    times."""
 
     identity: ConstructionIdentity
     profile: GenerationProfile
@@ -1084,44 +1113,62 @@ _FRESH = PopulationLedger()
 
 @dataclass(frozen=True)
 class BaselineObservation:
-    """One baseline's result on one variant, retained whatever it says."""
+    """One baseline's result on one variant, retained whatever it says —
+    including the case where its enumeration crossed the reading bound, which
+    is recorded as `limited` with the count it reached rather than dropped."""
 
     variant: str
     name: str
     role: str                         # "binding" | "diagnostic"
     admitted: bool
     readings: int
-    reaches_truth: object             # True / False / None when not admitted
+    reaches_truth: object             # True / False / None when not admitted or limited
+    limited: bool = False             # its enumeration crossed MAX_BASELINE_READINGS
 
     def view(self) -> dict:
         return {"variant": self.variant, "name": self.name, "role": self.role, "admitted": self.admitted,
-                "readings": self.readings, "reaches_truth": self.reaches_truth}
+                "readings": self.readings, "reaches_truth": self.reaches_truth, "limited": self.limited}
 
 
 def observe_baselines(c: Candidate, name: str) -> tuple:
-    """Every baseline the catalogue declares, run over one variant.
+    """Every baseline the catalogue declares, run over one variant — ONE AT A
+    TIME, through `cash_application.baseline_result`, which is the same code
+    `baseline_report` runs.
 
-    Returns `(observations, limit_problem_or_None)`. The reading bound is the
-    fold's own: `_run` raises when a baseline branches past
+    Returns `(observations, limit_problems)`. The reading bound is the fold's
+    own: `_run` raises `CA.ReadingBound` when a baseline branches past
     `MAX_BASELINE_READINGS`, and decision 3 says what that means — the
     verification was incomplete, so the candidate is rejected as UNVERIFIED
     rather than admitted as resistant.
+
+    WHY BASELINE BY BASELINE RATHER THAN ONE `baseline_report` CALL. The
+    report raises out of the whole call, so ONE over-bound enumeration used
+    to take the other nine observations with it and leave the attempt
+    recording no baselines and no reading counts at all. Decision 3 requires
+    every attempt's READING COUNT retained, and the attempt that exceeded the
+    bound is precisely the one whose count is the finding. Here the offending
+    baseline is named, its count at the moment the enumeration was abandoned
+    is kept, and every other baseline on that variant is still observed.
     """
-    public, kw = c.public(name), c.fold_kwargs(name)
-    try:
-        report = CA.baseline_report(public, c.application[name], c.evidence[name], **kw)
-    except ValueError as exc:
-        if "readings" in str(exc):
-            return (), (f"{name}: the enumeration exceeded the {CA.MAX_BASELINE_READINGS}-reading bound "
-                        f"({exc}); the candidate was NOT shown to resist the baselines")
-        raise
-    observations = []
+    ev, target = c.evidence[name], CA.application_key(c.application[name])
+    observations, limits = [], []
     for baseline in CA.BASELINES:
-        result = report[baseline.name]
+        role = "diagnostic" if baseline.diagnostic else "binding"
+        try:
+            result = CA.baseline_result(ev, baseline, target)
+        except CA.ReadingBound as exc:
+            readings = getattr(exc, "readings", CA.MAX_BASELINE_READINGS + 1)
+            observations.append(BaselineObservation(variant=name, name=baseline.name, role=role,
+                                                    admitted=True, readings=readings, reaches_truth=None,
+                                                    limited=True))
+            limits.append(f"{name}: {baseline.name} reached {readings} readings, over the "
+                          f"{CA.MAX_BASELINE_READINGS}-reading bound; verification was INCOMPLETE and the "
+                          f"candidate was NOT shown to resist it")
+            continue
         observations.append(BaselineObservation(
-            variant=name, name=baseline.name, role="diagnostic" if baseline.diagnostic else "binding",
-            admitted=result.admitted, readings=len(result.readings), reaches_truth=result.reaches_truth))
-    return tuple(observations), None
+            variant=name, name=baseline.name, role=role, admitted=result.admitted,
+            readings=len(result.readings), reaches_truth=result.reaches_truth))
+    return tuple(observations), tuple(limits)
 
 
 def _no_binding_baseline_reaches_truth(c: Candidate, name: str) -> list:
@@ -1137,28 +1184,53 @@ def _no_binding_baseline_reaches_truth(c: Candidate, name: str) -> list:
 
 
 def _reading_bound_respected(c: Candidate, name: str) -> list:
-    limit = _LIMITS.get((id(c), name))
-    if limit:
-        return [limit]
+    out = list(_LIMITS.get((id(c), name)) or ())
     observations = _OBSERVED.get((id(c), name)) or ()
-    return [f"{o.name} enumerated {o.readings} readings, over the bound of {CA.MAX_BASELINE_READINGS}"
-            for o in observations if o.readings > CA.MAX_BASELINE_READINGS]
+    out += [f"{o.name} enumerated {o.readings} readings, over the bound of {CA.MAX_BASELINE_READINGS}"
+            for o in observations if o.readings > CA.MAX_BASELINE_READINGS and not o.limited]
+    return out
 
 
 def _diagnostic_baseline_recorded(c: Candidate, name: str) -> list:
+    """The diagnostic is recorded and stays diagnostic.
+
+    Every comparison here has the CATALOGUE VERSION'S OWN DECLARATION on one
+    side — `cash_manifest.BASELINE_CATALOGUE_ROLES`, written beneath
+    `cash_application_baselines/1` — and the shipped tuple or the recorded
+    observations on the other. Deriving both sides from
+    `cash_application.BASELINES` would compare that tuple with itself and
+    admit whatever it said, so promoting `number_order` into the binding set
+    (or demoting a binding baseline to make room for it) would pass. Against
+    the declaration it is a rejection, and changing the declaration is
+    decision 3's "new catalogue version and re-preflight" rather than an edit
+    in place.
+    """
     out = []
     observations = _OBSERVED.get((id(c), name))
     if observations is None:
         return [f"gate (o) produced no observations for variant {name!r}"]
-    declared = {b.name: ("diagnostic" if b.diagnostic else "binding") for b in CA.BASELINES}
+    out += FM.catalogue_role_findings()
+    declared = dict(FM.BASELINE_CATALOGUE_ROLES)
     recorded = {o.name: o.role for o in observations}
     if recorded != declared:
-        out.append(f"the recorded roles {recorded} are not the catalogue's {declared}")
+        out.append(f"the roles recorded on variant {name!r} {recorded} are not "
+                   f"{FM.BASELINE_CATALOGUE_ID}'s {declared}")
+    counts = {"binding": 0, "diagnostic": 0}
+    for role in recorded.values():
+        counts[role] = counts.get(role, 0) + 1
+    if counts != FM.declared_role_counts():
+        out.append(f"variant {name!r} recorded {counts}; {FM.BASELINE_CATALOGUE_ID} declares "
+                   f"{FM.declared_role_counts()}, and a baseline moved into the binding set is an "
+                   f"admission rule decision 3 did not authorise")
     diagnostics = [o for o in observations if o.role == "diagnostic"]
     if not diagnostics:
-        out.append("the catalogue declares no diagnostic baseline; decision 3 keeps number_order as one")
+        out.append("no diagnostic baseline was recorded; decision 3 keeps number_order as one")
     for o in diagnostics:
-        if o.admitted and o.reaches_truth is None:
+        # A diagnostic whose own enumeration crossed the bound has no result
+        # to record: that is the verification limit, which carries its own
+        # code, and reporting it a second time here would put an untrue
+        # second reason in the census's rejection distribution.
+        if o.admitted and o.reaches_truth is None and not o.limited:
             out.append(f"the diagnostic baseline {o.name} was admitted and its result was not recorded")
     return out
 
@@ -1280,9 +1352,12 @@ class GateReport:
 
     def baseline_witness(self) -> str:
         """The relevant baseline, for the census. A verification limit names
-        no baseline — that is the point of it — so it names the bound."""
+        the bound AND the baselines that crossed it with the count each
+        reached: an incomplete verification whose census said only
+        "reading-bound" would record none of what it exists to record."""
         if self.verification_limited:
-            return f"reading-bound/{CA.MAX_BASELINE_READINGS}"
+            crossed = sorted({f"{o.name}/{o.variant}/{o.readings}" for o in self.baselines if o.limited})
+            return f"reading-bound/{CA.MAX_BASELINE_READINGS}" + (":" + ",".join(crossed) if crossed else "")
         reached = [o for o in self.baselines if o.role == "binding" and o.admitted and o.reaches_truth]
         return ",".join(sorted({f"{o.name}/{o.variant}" for o in reached}))
 
@@ -1541,9 +1616,24 @@ def mint_population(identities, profile: GenerationProfile = BOUNDED_V1, secret:
 
     Returns `(minted, censuses)`. An exhausted group is a named failure and
     is recorded in the censuses; it does not stop the rest of the population,
-    and no replacement selector is drawn for it. A defect stops everything.
+    and no replacement selector is drawn for it. A defect stops everything —
+    including a population that declares one construction identity twice,
+    which is refused as a `PopulationDefect` BEFORE a single group is minted,
+    because a repeated identity is a specification mistake and every group
+    after it would inherit an ambiguous census.
     """
     ledger = ledger if ledger is not None else PopulationLedger()
+    identities = list(identities)
+    seen: dict = {}
+    for position, ident in enumerate(identities):
+        for what, key in (("identity digest", ident.digest()), ("group name", ident.label())):
+            if key in seen:
+                raise PopulationDefect(
+                    f"the declared population repeats the {what} {key!r}: positions {seen[key]} and "
+                    f"{position} ({ident.label()}). Two family-manifest records would bind one "
+                    f"construction identity and a census keyed by the group name would overwrite the "
+                    f"first. A repeated identity is a specification defect, not a draw outcome.")
+            seen[key] = position
     minted, censuses = [], []
     for ident in identities:
         try:
@@ -1608,7 +1698,7 @@ def aggregate(censuses) -> dict:
 
 
 __all__ = [
-    "GATE_VERSION", "GateUnavailable", "GroupExhausted",
+    "GATE_VERSION", "GateUnavailable", "PopulationDefect", "GroupExhausted",
     "GROUP_PREFIX", "VERIFICATION_LIMIT", "EXHAUSTION_CODE", "code_of", "rejection_codes", "group_of",
     "DECLARED_REFUSALS", "FORBIDDEN_WARNINGS", "DECLARED_COLUMNS",
     "Candidate", "candidate_of", "Finding", "GateReport", "BaselineObservation", "observe_baselines",

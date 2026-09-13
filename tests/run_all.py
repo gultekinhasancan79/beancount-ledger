@@ -83,8 +83,11 @@ SUITES = [
                        "retains its ordinal, stage, codes, baseline, witness, reading count, component "
                        "versions and content digests; acceptance rates, exhaustion counts and rejection "
                        "distributions are published; exhaustion is a named failed group that draws no "
-                       "replacement selector, and a defect is not drawn past; the ruling's minting paragraph "
-                       "is verbatim; the catalogue digest binds admission predicates, not their names"),
+                       "replacement selector, and a defect is not drawn past; a population declaring one "
+                       "construction identity twice is refused before anything is minted; the ruling's "
+                       "minting paragraph is verbatim; the catalogue digest binds admission predicates, not "
+                       "their names, and the diagnostic's role is compared against the catalogue version's "
+                       "own declaration rather than against the tuple it is read from"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),

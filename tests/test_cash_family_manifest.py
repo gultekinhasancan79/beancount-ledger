@@ -375,6 +375,46 @@ def test_the_baseline_catalogue_binds_more_than_names():
     for baseline in view["baselines"]:
         if not baseline["admitted_when"] or baseline["admitted_when"].startswith("<"):
             problems.append(f"{baseline['name']} records no admission predicate: {baseline['admitted_when']}")
+    # The catalogue's declared ROLES, which the minting gate compares the
+    # shipped tuple against. Decision 3 names diagnostic roles among the
+    # things this version binds, and a declaration nobody reads is not one.
+    if dict(FM.BASELINE_CATALOGUE_ROLES).get("number_order") != "diagnostic":
+        problems.append(f"{FM.BASELINE_CATALOGUE_ID} does not declare number_order diagnostic")
+    if FM.declared_role_counts() != {"binding": 9, "diagnostic": 1}:
+        problems.append(f"{FM.BASELINE_CATALOGUE_ID} declares {FM.declared_role_counts()}, not 9 and 1")
+    if FM.catalogue_role_findings():
+        problems.append(f"the shipped catalogue disagrees with its own declaration: "
+                        f"{FM.catalogue_role_findings()}")
+
+    # REPRODUCIBLE, or it is not an identity. `predicate_digest` reads the
+    # predicate's code object, and a predicate holding a comprehension or a
+    # generator expression — `_any_deduction` and `_any_multi_reference` both
+    # do — carries a NESTED CODE OBJECT whose repr is
+    # `<code object <genexpr> at 0x..., file "...", line N>`. Digesting that
+    # repr put a memory address into the catalogue's identity: the digest
+    # changed on every run, so a record signed in one process stopped
+    # verifying in the next and "the catalogue changed" could not be told
+    # from "the process restarted". Witnessed here by compiling one source
+    # twice: two different code objects at two different addresses from two
+    # different file names, one implementation, one digest.
+    source = "def probe(ev):\n    return any(line.deduction > 0 for line in ev)\n"
+    first, second = {}, {}
+    exec(compile(source, "<probe-one>", "exec"), first)             # noqa: S102
+    exec(compile(source, "<probe-two>", "exec"), second)            # noqa: S102
+    if FM.predicate_digest(first["probe"]) != FM.predicate_digest(second["probe"]):
+        problems.append("two compilations of one predicate source digest differently: the digest binds "
+                        "something that is not the implementation")
+    third: dict = {}
+    exec(compile(source.replace("> 0", "> 1"), "<probe-three>", "exec"), third)      # noqa: S102
+    if FM.predicate_digest(third["probe"]) == FM.predicate_digest(first["probe"]):
+        problems.append("a changed comparison INSIDE the generator expression did not move the digest: "
+                        "recursing into nested code lost what repr at least saw")
+    rendered = json.dumps([FM.predicate_view(b.admitted_when) for b in CA.BASELINES], sort_keys=True)
+    for leak in ("0x", "cash_application.py", "<code object"):
+        if leak in rendered:
+            problems.append(f"the digested predicate payload carries {leak!r}, which is not the "
+                            f"implementation and does not survive a restart")
+
     baseline_digest = FM.baseline_catalogue_digest()
     original_baselines, original_bound = CA.BASELINES, CA.MAX_BASELINE_READINGS
     try:
@@ -400,9 +440,11 @@ def test_the_baseline_catalogue_binds_more_than_names():
         CA.BASELINES, CA.MAX_BASELINE_READINGS = original_baselines, original_bound
     if FM.baseline_catalogue_digest() != baseline_digest:
         problems.append("the catalogue digest did not return to its value after the probes")
-    return check("the baseline catalogue is versioned as cash_application_baselines/1 and its digest binds "
-                 "strategies, admission predicates, diagnostic roles, enumeration semantics and the 256-reading "
-                 "bound — not merely names", not problems, "\n".join(problems))
+    return check("the baseline catalogue is versioned as cash_application_baselines/1, declares its own nine "
+                 "binding and one diagnostic roles, and its digest binds strategies, admission predicates, "
+                 "diagnostic roles, enumeration semantics and the 256-reading bound — not merely names, and "
+                 "not one byte of memory address, path or line number, so it is the same digest in the next "
+                 "process", not problems, "\n".join(problems))
 
 
 def test_semantic_components_name_every_declared_component():

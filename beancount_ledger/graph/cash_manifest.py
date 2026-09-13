@@ -120,6 +120,82 @@ _PUBLIC_CONTENT_DOMAIN = b"piv:cash-application-public-content:v1\0"
 #: Decision 3: version the baseline catalogue independently.
 BASELINE_CATALOGUE_ID = "cash_application_baselines/1"
 
+#: WHAT `cash_application_baselines/1` DECLARES ITSELF TO BE: the baselines
+#: it holds and the ROLE each one carries. Decision 3: "keep the current nine
+#: binding baselines and one diagnostic baseline. `number_order` is
+#: diagnostic in the shipped catalogue; do not silently promote it into an
+#: admission rule."
+#:
+#: This is a DECLARATION, deliberately not a reading of
+#: `cash_application.BASELINES`. A check that takes both of its sides from
+#: that tuple compares it with itself: it passes whatever the tuple says, so
+#: making `number_order` binding — the exact move decision 3 forbids — would
+#: satisfy it. Here the promotion is a DISAGREEMENT with this version's
+#: declared roles, and `catalogue_role_findings()` is what sees it.
+#:
+#: Editing a row below changes what `cash_application_baselines/1` IS.
+#: Decision 3 requires a NEW CATALOGUE VERSION and re-preflight for that: a
+#: new `BASELINE_CATALOGUE_ID` and this table rewritten beneath it, never an
+#: edit in place under the same identity.
+BASELINE_CATALOGUE_ROLES = (
+    ("amount_only", "binding"),
+    ("oldest_first", "binding"),
+    ("mixed_amount_only", "binding"),
+    ("mixed_oldest_first", "binding"),
+    ("hold_on_account", "binding"),
+    ("printed_order", "binding"),
+    ("credit_ignored", "binding"),
+    ("write_off_everything", "binding"),
+    ("write_off_nothing", "binding"),
+    ("number_order", "diagnostic"),
+)
+
+
+def declared_role_counts() -> dict:
+    """How many baselines of each role `BASELINE_CATALOGUE_ROLES` declares —
+    nine binding and one diagnostic, counted from the declaration rather than
+    typed as a number a reader would have to trust."""
+    counts: dict = {"binding": 0, "diagnostic": 0}
+    for _name, role in BASELINE_CATALOGUE_ROLES:
+        counts[role] = counts.get(role, 0) + 1
+    return counts
+
+
+def catalogue_role_findings(baselines=None) -> list:
+    """Every disagreement between the SHIPPED catalogue and the roles this
+    catalogue version declares: a baseline that appeared, one that vanished,
+    one whose role moved, and the binding/diagnostic counts.
+
+    Returned as witnesses rather than raised, because the caller is the
+    minting gate and decision 3 wants this as a REJECTION with a code, not as
+    an import-time crash. The gate that carries it is
+    `diagnostic_baseline_recorded`.
+    """
+    from .cash_application import BASELINES
+
+    shipped = {b.name: ("diagnostic" if b.diagnostic else "binding")
+               for b in (BASELINES if baselines is None else baselines)}
+    declared = dict(BASELINE_CATALOGUE_ROLES)
+    out = []
+    for name in sorted(set(declared) | set(shipped)):
+        if name not in shipped:
+            out.append(f"{BASELINE_CATALOGUE_ID} declares the {declared[name]} baseline {name!r} and the "
+                       f"shipped catalogue does not carry it")
+        elif name not in declared:
+            out.append(f"the shipped catalogue carries a {shipped[name]} baseline {name!r} that "
+                       f"{BASELINE_CATALOGUE_ID} does not declare")
+        elif declared[name] != shipped[name]:
+            out.append(f"{name} is {shipped[name]} in the shipped catalogue and {declared[name]} in "
+                       f"{BASELINE_CATALOGUE_ID}: a role change needs a new catalogue version, not an "
+                       f"edit in place")
+    counts = {"binding": 0, "diagnostic": 0}
+    for role in shipped.values():
+        counts[role] = counts.get(role, 0) + 1
+    if counts != declared_role_counts():
+        out.append(f"the shipped catalogue holds {counts} and {BASELINE_CATALOGUE_ID} declares "
+                   f"{declared_role_counts()}")
+    return out
+
 
 class FamilyManifestError(ValueError):
     """A family manifest record that may not exist."""
@@ -263,17 +339,63 @@ def predicate_digest(predicate) -> str:
     the object does, and `baseline_catalogue_view` records the name beside
     this so a reader can see which case they are in.
     """
+    return domain_digest(_BASELINE_CATALOGUE_DOMAIN, canonical_bytes(predicate_view(predicate)))[:16]
+
+
+def predicate_view(predicate) -> dict:
+    """The exact input `predicate_digest` digests, as data a test can read.
+
+    Exposed because the one way this digest can fail is invisible in the
+    digest itself: if the payload carries anything but the implementation —
+    a memory address, a source path, a line number — the digest changes
+    between two runs of the same unchanged code, every family record signed
+    in one process stops verifying in the next, and "the catalogue changed"
+    becomes indistinguishable from "the process restarted". A test can scan
+    this and see it.
+    """
     code = getattr(predicate, "__code__", None)
     if code is None:
-        return domain_digest(_BASELINE_CATALOGUE_DOMAIN, canonical_bytes(repr(predicate)))[:16]
-    payload = canonical_bytes({
+        return {"repr": repr(predicate)}
+    return _code_view(code)
+
+
+def _code_view(code, *, nested: bool = False) -> dict:
+    view = {
         "co_code": code.co_code.hex(),
-        "co_consts": [repr(c) for c in code.co_consts],
+        "co_consts": [_constant_view(const) for const in code.co_consts],
         "co_names": list(code.co_names),
         "co_varnames": list(code.co_varnames),
         "co_argcount": code.co_argcount,
-    })
-    return domain_digest(_BASELINE_CATALOGUE_DOMAIN, payload)[:16]
+    }
+    if nested:
+        # A nested code object's name is structural — `<genexpr>`,
+        # `<listcomp>` — not a label an author chose, so it belongs to the
+        # implementation. The TOP-LEVEL name stays out: decision 3 asks this
+        # to bind the predicate itself, and `baseline_catalogue_view` records
+        # the name separately.
+        view["co_name"] = code.co_name
+    return view
+
+
+def _constant_view(const):
+    """One constant of a code object, rendered so that identical source gives
+    identical bytes.
+
+    A predicate that contains a comprehension or a generator expression —
+    `_any_deduction` and `_any_multi_reference` both do — carries a NESTED
+    CODE OBJECT among its constants, and `repr()` of one is
+    `<code object <genexpr> at 0x000001F..., file "...", line 970>`: a
+    memory address, an absolute path and a line number, none of which is the
+    implementation and the first of which changes on every run. Nested code
+    is therefore recursed into rather than repr'd, sets are sorted because
+    their iteration order follows string hashing, and everything else is a
+    plain literal whose repr is stable.
+    """
+    if hasattr(const, "co_code"):
+        return {"nested": _code_view(const, nested=True)}
+    if isinstance(const, (frozenset, set)):
+        return {"set": sorted(repr(item) for item in const)}
+    return repr(const)
 
 
 def baseline_catalogue_view() -> dict:
@@ -282,7 +404,18 @@ def baseline_catalogue_view() -> dict:
 
     Decision 3: "Changing any of those requires a new catalogue version and
     re-preflight." The digest below is what makes that true rather than
-    aspirational."""
+    aspirational.
+
+    `BASELINE_CATALOGUE_ROLES` is deliberately NOT an input here, and the
+    omission is the point rather than an oversight. This view is a
+    measurement of what the shipped catalogue IS; the role table is version
+    1's FROZEN STATEMENT of what it must be, and the two are only useful
+    while they are separate. Feeding the declaration into the digest would
+    also change `cash_application_baselines/1`'s identity for a change that
+    is not one of the five things decision 3 names. A role that actually
+    moves still moves this digest — every baseline's `role` is recorded below
+    — and, separately, fails the minting gate's
+    `diagnostic_baseline_recorded` against the declaration."""
     from .cash_application import (
         BASELINES,
         MAX_BASELINE_READINGS,
@@ -701,9 +834,10 @@ def admit(secret: bytes, ident: ConstructionIdentity, variant: str, public_id: s
 
 __all__ = [
     "FAMILY_MANIFEST_SCHEMA", "FAMILY_PREFLIGHT_CONTRACT", "FAMILY_MANIFEST_ENV",
-    "BASELINE_CATALOGUE_ID", "FamilyManifestError",
+    "BASELINE_CATALOGUE_ID", "BASELINE_CATALOGUE_ROLES", "declared_role_counts",
+    "catalogue_role_findings", "FamilyManifestError",
     "GATE_GROUPS", "FAMILY_GATES", "family_gates", "gate_set_digest",
-    "predicate_digest", "baseline_catalogue_view", "baseline_catalogue_digest",
+    "predicate_digest", "predicate_view", "baseline_catalogue_view", "baseline_catalogue_digest",
     "semantic_components", "runtime_scope", "runtime_scope_key",
     "REQUIRED_RECORD_FIELDS", "STRUCTURE_DIGEST_WIDTH", "CONTENT_DIGEST_WIDTH",
     "public_content_digest", "parent_digest", "family_selector_key",
