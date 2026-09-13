@@ -1,0 +1,118 @@
+{
+ "by_stratum": {
+  "advice_residue": {
+   "accepted_attempts": 32,
+   "admitted_groups": 32,
+   "attempt_acceptance_rate": 1.0,
+   "attempts": 32,
+   "attempts_by_stage": {
+    "gate": 32
+   },
+   "attempts_per_admitted_group": 1.0,
+   "by_mechanism": {
+    "advice_residue": {
+     "admitted": 32,
+     "attempts": 32,
+     "groups": 32
+    }
+   },
+   "components": "41733838b2873d06",
+   "exhausted_groups": 0,
+   "group_acceptance_rate": 1.0,
+   "groups": 32,
+   "rejection_distribution": {}
+  },
+  "credit_residue": {
+   "accepted_attempts": 32,
+   "admitted_groups": 32,
+   "attempt_acceptance_rate": 0.8888888888888888,
+   "attempts": 36,
+   "attempts_by_stage": {
+    "draw": 1,
+    "gate": 34,
+    "render": 1
+   },
+   "attempts_per_admitted_group": 1.125,
+   "by_mechanism": {
+    "credit_residue": {
+     "admitted": 32,
+     "attempts": 36,
+     "groups": 32
+    }
+   },
+   "components": "41733838b2873d06",
+   "exhausted_groups": 0,
+   "group_acceptance_rate": 1.0,
+   "groups": 32,
+   "rejection_distribution": {
+    "ACC-CUMULATIVE-REVERSAL-BOUNDED": 2,
+    "DRAW-LAYOUT-REFUSED": 1,
+    "RENDER-POSTING-COLLISION": 1
+   }
+  },
+  "fallback_continuation": {
+   "accepted_attempts": 32,
+   "admitted_groups": 32,
+   "attempt_acceptance_rate": 0.8888888888888888,
+   "attempts": 36,
+   "attempts_by_stage": {
+    "draw": 4,
+    "gate": 32
+   },
+   "attempts_per_admitted_group": 1.125,
+   "by_mechanism": {
+    "fallback_continuation": {
+     "admitted": 32,
+     "attempts": 36,
+     "groups": 32
+    }
+   },
+   "components": "41733838b2873d06",
+   "exhausted_groups": 0,
+   "group_acceptance_rate": 1.0,
+   "groups": 32,
+   "rejection_distribution": {
+    "DRAW-LAYOUT-REFUSED": 4
+   }
+  }
+ },
+ "overall": {
+  "accepted_attempts": 96,
+  "admitted_groups": 96,
+  "attempt_acceptance_rate": 0.9230769230769231,
+  "attempts": 104,
+  "attempts_by_stage": {
+   "draw": 5,
+   "gate": 98,
+   "render": 1
+  },
+  "attempts_per_admitted_group": 1.0833333333333333,
+  "by_mechanism": {
+   "advice_residue": {
+    "admitted": 32,
+    "attempts": 32,
+    "groups": 32
+   },
+   "credit_residue": {
+    "admitted": 32,
+    "attempts": 36,
+    "groups": 32
+   },
+   "fallback_continuation": {
+    "admitted": 32,
+    "attempts": 36,
+    "groups": 32
+   }
+  },
+  "components": "41733838b2873d06",
+  "exhausted_groups": 0,
+  "group_acceptance_rate": 1.0,
+  "groups": 96,
+  "rejection_distribution": {
+   "ACC-CUMULATIVE-REVERSAL-BOUNDED": 2,
+   "DRAW-LAYOUT-REFUSED": 5,
+   "RENDER-POSTING-COLLISION": 1
+  }
+ },
+ "population": "cash-application-development-1"
+}

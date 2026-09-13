@@ -308,6 +308,13 @@ bookkeeping.
   - `cash_application_screen_2026-09-10.{md,/}` — the three-episode Bowline screen (two complete deliveries, one register losing a single field), its rescore and single-field counterfactual, and a provenance sidecar that records every digest **at the revision the screen was measured at**;
   - `cash_application_adjudication_2026-09-10.{md,/}` — the cold adjudication of the Bowline five: two models of different lineages, neither screen subject, shown only the eleven public files. Holds the predeclared rule, the runner as executed, every parsed answer, the original verdicts and the corrected comparison under the scorer's pre-existing zero-application normalisation, and identifies the input revision;
   - `cash_application_six_variant_screen_2026-09-11.{md,/}` — the six-variant screen, published as an **INCOMPLETE DESCRIPTIVE SCREEN**: five scored deliveries and one cell lost to a provider 403, which stays missing. Holds the calibration JSON untouched, the run log, five delivered workspaces, the two executed `cash_application_007` scorer decompositions and a receipt check re-run at publication.
+- `cash_application_development_population_2026-09-13.{md,/}` — the **offline** minting census and
+  serving evidence for the generated cash-application development population: the freeze, 96
+  predeclared parent groups (32 per mechanism stratum, 0 exhausted, 104 retained attempts), the seven
+  offline validation gates over all 192 variants, and 192/192 records served through the real
+  `load_environment` under the same episode contract an authored cash task serves. **No model was
+  called**; it establishes admissibility and serving, not difficulty, and not training utility.
+  Holds the freeze, the complete census, the aggregates, the validation rows and the serving rows.
 - `installed_wheel_check_2026-09-12/` — the installed-wheel check, published with its attribution: the runner
   and two bound records, twelve of twelve each, one against the wheel **uploaded** to the Hub (`1c83e4c5…`)
   and one against the build the attestation names (`5a1171c5…`). Each record binds the artifact it tested

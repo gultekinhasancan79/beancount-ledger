@@ -88,6 +88,24 @@ SUITES = [
                        "minting paragraph is verbatim; the catalogue digest binds admission predicates, not "
                        "their names, and the diagnostic's role is compared against the catalogue version's "
                        "own declaration rather than against the tuple it is read from"),
+    ("test_cash_population", "phase D of the generated cash-application population: the FROZEN DEVELOPMENT "
+                             "POPULATION and its SERVING DOOR. The freeze is declared as literals and matches "
+                             "the live modules in both directions, with a negative control per declaration "
+                             "and the runtime-scoped half recorded rather than pinned; 96 predeclared parent "
+                             "groups, 32 per mechanism stratum, all in the development split, in a fixed "
+                             "order with no repeated identity; the evaluation split stays unopened because no "
+                             "released population declares a sealed evaluation family, so the selector does "
+                             "not exist; the selector round-trips and refuses an unreleased population, an "
+                             "undeclared index, a non-ASCII index, an unknown variant, a bank selector and an "
+                             "authored id; a bounded slice mints, validates offline — every phase-C gate, the "
+                             "public fold against the truth, ONE identifiable reading, both goldens and their "
+                             "composite at 1.0 through the actual frozen engines, no provenance leak — is "
+                             "signed into a manifest and then SERVES through the real load_environment "
+                             "exactly as cash_application_001 does: same profile, public file manifest, tool "
+                             "surface and episode-contract digest, with no selector on an agent surface; the "
+                             "signed manifest is the only door, with no development bypass; the census "
+                             "retains decision 3's nine fields and the aggregates are per stratum; no "
+                             "phase-D source reaches a provider"),
     ("test_identify", "public-only identifiability over the new graph's public bytes"),
     ("test_state_conformance", "every scorer state answered by a public reading class or a written exclusion"),
     ("test_lag", "date lag: the bank's date is the repair date, at every rail and across a month boundary"),
