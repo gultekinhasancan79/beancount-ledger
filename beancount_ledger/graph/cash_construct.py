@@ -1482,7 +1482,7 @@ def candidate_pair(ident: ConstructionIdentity, profile: GenerationProfile = BOU
     the loop and the acceptance conditions are one decision: an attempt is
     redrawn exactly when the gate rejects it, and two loops — one knowing
     about the construction's own refusals, one knowing about decision 3's
-    thirty gates — would be two different answers to "was this pair
+    thirty-one gates — would be two different answers to "was this pair
     admitted", with the weaker one shipping. This stays as the door earlier
     callers walk through and it returns what they expect; anything minting a
     POPULATION calls `mint_group` instead, because that also returns the gate

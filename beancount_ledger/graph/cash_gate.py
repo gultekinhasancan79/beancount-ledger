@@ -143,8 +143,11 @@ class PopulationDefect(GateUnavailable):
     """The declared population is not a population: the same construction
     identity appears in it twice.
 
-    A defect rather than a draw outcome, so it is raised before anything is
-    minted. Two admitted pairs under one identity would bind one identity
+    A defect rather than a draw outcome. `mint_population` raises it from the
+    declared list BEFORE anything is minted; `PopulationLedger.record` raises
+    it again when a pair reaches a ledger that already holds that identity,
+    which is the `mint_group` path, where there is no declared list to
+    pre-check. Two admitted pairs under one identity would bind one identity
     digest to two family-manifest records, give two groups the same name, and
     silently overwrite each other in a census keyed by that name — and the
     second would be drawn from the same seed, so the only thing separating
@@ -269,7 +272,7 @@ def candidate_of(ident: ConstructionIdentity, profile: GenerationProfile, attemp
     """One attempt's rendered pair, with the evidence, the public fold and
     the public-content digest of each variant read ONCE.
 
-    Thirty checks share these three readings. Reading them per check would
+    Thirty-one checks share these three readings. Reading them per check would
     make the gate's cost a function of how many checks happen to want the
     fold, and — worse — would let two checks disagree about what the bytes
     say because one of them re-read after a mutation.
@@ -1032,12 +1035,23 @@ class PopulationLedger:
     records, and only after the whole gate passed. A candidate that fails its
     fortieth gate must not have been written into the population by its
     third.
+
+    A THIRD register, the identity one, is why `record` can refuse. The
+    ledger IS the population for everything minted through `mint_group`, and
+    a caller minting group by group has no declared list for
+    `mint_population` to pre-check, so without this the same construction
+    identity could be admitted into one ledger twice: two pairs under one
+    group name, one identity digest bound to two family-manifest records, and
+    a census keyed by the name silently overwriting the first. That is the
+    `PopulationDefect` its own docstring warns about, so the register that
+    would have to hold both of them is the one that says no.
     """
 
     def __init__(self, split_map: SplitMap = SPLIT_MAP):
         self.structures = StructureLedger(split_map)
         self._content: dict = {}
         self._groups: list = []
+        self._identities: dict = {}
 
     def content_collisions(self, c: Candidate) -> list:
         out = []
@@ -1060,6 +1074,20 @@ class PopulationLedger:
         return []
 
     def record(self, c: Candidate) -> None:
+        """Admit one accepted pair into all three registers, or refuse the
+        whole write. The identity check runs FIRST and mutates nothing before
+        it passes, so a refused repeat leaves the ledger exactly as the
+        population it legitimately holds."""
+        position = len(self._groups)
+        keys = (("identity digest", c.identity.digest()), ("group name", c.identity.label()))
+        for what, key in keys:
+            prior = self._identities.get(key)
+            if prior is not None:
+                raise PopulationDefect(
+                    f"this population ledger already admitted the {what} {key!r}: positions {prior} "
+                    f"and {position} ({c.identity.label()}). Two family-manifest records would bind "
+                    f"one construction identity and a census keyed by the group name would overwrite "
+                    f"the first. A repeated identity is a specification defect, not a draw outcome.")
         try:
             self.structures.admit(c.template)
         except StructuralAliasError as exc:
@@ -1067,6 +1095,8 @@ class PopulationLedger:
         for name in c.names:
             self._content.setdefault(c.content_digests[name], c.variants[name].task.id)
         self._groups.append((c.identity.label(), c.family, tuple(c.content_digests[n] for n in c.names)))
+        for _, key in keys:
+            self._identities[key] = position
 
     def groups(self) -> tuple:
         return tuple(self._groups)

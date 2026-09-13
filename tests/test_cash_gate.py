@@ -763,6 +763,46 @@ def test_a_population_may_not_declare_one_identity_twice():
                  not problems, "\n".join(problems))
 
 
+def test_one_ledger_may_not_admit_one_identity_twice():
+    """`mint_population` pre-checks a DECLARED list. A caller minting group by
+    group has no list to pre-check, so the population ledger — which IS the
+    population for everything minted through `mint_group` — has to be the
+    register that refuses. Without this, the second mint's attempt 0 is
+    refused for republishing the first pair's bytes and its attempt 1 is
+    ADMITTED, leaving two pairs under one group name and one identity digest:
+    exactly what `PopulationDefect` says must never happen.
+    """
+    problems = []
+    ident = CC.identity_of(POPULATION, "fc-sedgewick", 1)
+    ledger = G.PopulationLedger()
+    first = G.mint_group(ident, BOUNDED_V1, SECRET, ledger)
+    if first.census.outcome != "admitted" or len(ledger.groups()) != 1:
+        problems.append(f"the first mint was {first.census.outcome} and left {len(ledger.groups())} "
+                        f"group(s) in the ledger")
+    message = raises(G.PopulationDefect, G.mint_group, ident, BOUNDED_V1, SECRET, ledger)
+    if message is None or message.startswith("!!"):
+        problems.append(f"the same construction identity was admitted into one ledger twice: {message}")
+    else:
+        if ident.label() not in message:
+            problems.append(f"the refusal does not name the repeated group: {message}")
+        if "positions 0 and 1" not in message:
+            problems.append(f"the refusal does not name both positions: {message}")
+    if [g[0] for g in ledger.groups()] != [ident.label()]:
+        problems.append(f"the refused repeat still reached the population: {[g[0] for g in ledger.groups()]}")
+
+    # The register said no to the REPEAT, not to everything after it, and it
+    # mutated nothing on the way out: a distinct identity still goes in.
+    other = CC.identity_of(POPULATION, "fc-sedgewick", 2)
+    G.mint_group(other, BOUNDED_V1, SECRET, ledger)
+    if [g[0] for g in ledger.groups()] != [ident.label(), other.label()]:
+        problems.append(f"after the refusal the ledger holds {[g[0] for g in ledger.groups()]}, not the "
+                        f"first pair and the next distinct one")
+    return check("minting one construction identity twice into one population ledger is refused as a "
+                 "PopulationDefect naming both positions, the refused repeat leaves the population "
+                 "unchanged, and a distinct identity still mints after it", not problems,
+                 "\n".join(problems))
+
+
 def test_the_pair_is_the_unit_of_rejection():
     """Decision 3: "Reject BOTH variants when either fails any acceptance
     condition." A finding on one variant must reject the pair, not the
@@ -912,6 +952,7 @@ TESTS = [
     test_the_declared_roles_are_what_the_diagnostic_gate_compares_against,
     test_the_verification_limit_records_the_count_it_exists_to_record,
     test_a_population_may_not_declare_one_identity_twice,
+    test_one_ledger_may_not_admit_one_identity_twice,
     test_the_pair_is_the_unit_of_rejection,
     test_the_minting_docstring_is_verbatim,
     test_the_catalogue_digest_binds_predicate_bodies_not_names,
