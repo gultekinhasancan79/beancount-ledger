@@ -105,6 +105,41 @@ THE DISPOSITION SIDE — every planned cell is accounted for, scored or not:
     stopped at — so a lost cell and an unattempted one are different objects
     in the data (`unattempted_tail`, `cell_disposition`).
 
+    QUOTA EXHAUSTION REACHES THIS RULE BY TWO DIFFERENT ROADS, and the first
+    version of this module only walked one of them. `verifiers`' client
+    re-raises the provider library's own exception for AUTH errors alone
+    (`AUTHENTICATION` and `PERMISSION_DENIED`, i.e. 401/403) and wraps EVERY
+    other exception as `vf.ModelError`; the environment then quarantines that
+    rollout and — by deliberate design, so an agent-influenceable string
+    cannot reach a record — strips the framework's message from the
+    quarantine summary. So the canonical quota-exhaustion shape, a 429 whose
+    body says `insufficient_quota`, arrived as a `PIVEvaluationBatchInvalid`
+    carrying "1 of 1 rollouts quarantined ({'ModelError': 1})" and NOTHING
+    ELSE: no status, no provider code, `quota_exhausted` False,
+    `stop_schedule` False. The guarantee above was published unconditionally
+    and was reachable only for 401/403. Driven offline, a second exhaustion of
+    that shape burned every remaining scheduled cell and produced 9 SCORED /
+    3 ATTEMPTED_UNSCORED / 0 UNATTEMPTED — no cell left unattempted, which is
+    the exact distinction the rule exists to make.
+
+    The evidence was never lost, only unread: the batch's QUARANTINE ARTIFACT
+    (`env_mod.quarantine_artifact(exc.batch_id)`) holds each rollout's full
+    framework error, whose `error_chain_repr` carries the wrapped provider
+    exception verbatim. `recovered_provider_verdict` mines it at
+    `FAILURE_STAGE_EVALUATION` and re-runs `is_quota_exhaustion` /
+    `is_session_fatal` on what it recovers, so both roads reach the same rule.
+    What it mines is TYPED and ANCHORED — provider exception CLASS NAMES
+    (nonnumeric) and key-anchored `code`/`type`/status fields — never a bare
+    digit run in free text, which is the defect `test_free_text_429_is_never_
+    a_rate_limit_needle` closed elsewhere; every recovered field carries its
+    own provenance (`provider_error_recovery`) and is marked derived.
+
+    And because no miner can be assumed exhaustive, `consecutive_unscored_
+    stop` is the backstop: CONSECUTIVE_UNSCORED_LIMIT cells in a row that were
+    attempted and never scored stop the session too — with a reason that
+    claims NO provider verdict — so the remaining cells are UNATTEMPTED rather
+    than a column of failures, whatever the instrument failed to classify.
+
 THE ARCHIVE (`archive_cell`) writes BYTES, per cell, at the one moment they
 all still exist: the served public inputs, both delivered artifacts, the
 delivery receipt, the texts the agent actually submitted, the full trajectory
@@ -1246,6 +1281,255 @@ def is_session_fatal(fields: dict) -> bool:
     return is_quota_exhaustion(fields) or fields.get("http_status") in SESSION_FATAL_STATUSES
 
 
+# ---------------------------------------------------------------------------
+# RECOVERING A PROVIDER VERDICT FROM A QUARANTINED BATCH
+#
+# THE DEFECT THIS SECTION EXISTS FOR. `verifiers.legacy.clients.client`
+# re-raises the provider library's own exception for AUTH_ERRORS only
+# (`AuthenticationError`, `PermissionDeniedError` — 401 and 403) and wraps
+# every other exception as `vf.ModelError`. The environment quarantines the
+# wrapped rollout and `PIVEvaluationBatchInvalid` deliberately publishes OWNED
+# text for it ("model client failure; not the policy's answer") rather than the
+# framework's message, so the terminal row for the canonical quota shape — a
+# 429 whose body says `insufficient_quota` — came out with `http_status` null,
+# `provider_error_code` null, `quota_exhausted` False and `stop_schedule`
+# False. Only 401/403 could ever reach the stop rule the module's own header
+# published without qualification.
+#
+# The evidence exists and was simply never read. `_store_artifact` keeps the
+# FULL rollout records under the batch id, and each one's framework error is
+# `{"error", "message", "error_chain_repr", "error_chain_str"}` — the repr
+# chain being `" -> ".join(repr(e) for e in chain)`, which contains the wrapped
+# provider exception exactly as the library rendered it.
+#
+# WHAT MAY BE MINED FROM IT, AND WHAT MAY NOT. A numeric class must never come
+# from a bare digit run in free text — that is the defect
+# `test_free_text_429_is_never_a_rate_limit_needle` and the header-value
+# finding before it both closed. So only two kinds of evidence are read here:
+#
+#   TYPED, NONNUMERIC   the exception CLASS NAMES in the chain. `openai.
+#                       RateLimitError` IS the 429 class; the name is exact,
+#                       carries no digits, and is the library's own typing of
+#                       its own failure.
+#   KEY-ANCHORED        a value that follows a literal key the provider
+#                       libraries themselves emit (`Error code: `,
+#                       `status_code=`, `'code':`, `'type':`). The anchor, not
+#                       the value's shape, is what makes it a field.
+#
+# Anything else is left null. Every recovered field is marked derived and
+# carries where it came from, so a reader can tell a status the exception
+# itself reported from one reconstructed out of a repr.
+# ---------------------------------------------------------------------------
+
+#: Provider exception class names -> the HTTP status that class IS. Exact,
+#: lower-cased, nonnumeric typed evidence: these are the `openai` /`anthropic`
+#: status subclasses, whose whole meaning is the status they name.
+PROVIDER_EXCEPTION_STATUS = {
+    "authenticationerror": 401,
+    "permissiondeniederror": 403,
+    "notfounderror": 404,
+    "conflicterror": 409,
+    "unprocessableentityerror": 422,
+    "ratelimiterror": 429,
+    "internalservererror": 500,
+    "badrequesterror": 400,
+}
+
+#: Class names that mark a chain as a PROVIDER/CLIENT failure at all. Without
+#: one of these nothing is mined: a quarantined `ToolCallError` or a
+#: `PIVEvaluatorFailed` is not a provider verdict and must not acquire one.
+#: `modelerror` is the framework's own wrapper for exactly this event.
+PROVIDER_FAILURE_CLASS_NAMES = frozenset({
+    "modelerror", "apistatuserror", "apiconnectionerror", "apitimeouterror",
+    "apiresponsevalidationerror", "internalservererror",
+    *PROVIDER_EXCEPTION_STATUS,
+})
+
+#: A status is read only after a literal key the provider libraries emit.
+#: `openai.APIStatusError` builds its message as `f"Error code: {status} - ..."`.
+PROVIDER_STATUS_ANCHORS = (
+    re.compile(r"error\s+code:\s*(\d{3})(?!\d)", re.I),
+    re.compile(r"status[_ ]?code\s*[=:]\s*'?\"?(\d{3})(?!\d)", re.I),
+    re.compile(r"http[_ ]?status\s*[=:]\s*'?\"?(\d{3})(?!\d)", re.I),
+)
+
+#: `code` / `type` / a request id, each read only after its own quoted key as
+#: it appears in a serialised provider error body.
+PROVIDER_BODY_ANCHORS = {
+    "provider_error_code": re.compile(r"['\"]code['\"]\s*:\s*['\"]([A-Za-z0-9_.\-]{1,64})['\"]"),
+    "provider_error_type": re.compile(r"['\"]type['\"]\s*:\s*['\"]([A-Za-z0-9_.\-]{1,64})['\"]"),
+    "provider_request_id": re.compile(r"['\"](?:request_id|x-request-id|id)['\"]\s*:\s*['\"]([A-Za-z0-9_.:\-]{1,120})['\"]"),
+}
+
+
+def provider_fields_from_error_chain(error) -> dict:
+    """Provider fields recovered from ONE framework error record, or `{}`.
+
+    `error` is the framework's serialised error — `{"error", "message",
+    "error_chain_repr", "error_chain_str"}` — as it sits inside a quarantined
+    rollout output. Returns the same keys `provider_error_fields` produces,
+    plus `recovered_from` and `http_status_source`, so nothing downstream has
+    to know which road the fields came in on. `{}` when the chain names no
+    provider/client failure class: an evaluator or tool failure gets no
+    provider verdict invented for it.
+    """
+    if not isinstance(error, dict):
+        return {}
+    chain_str = str(error.get("error_chain_str") or "")
+    chain_repr = str(error.get("error_chain_repr") or "")
+    top = str(error.get("error") or "")
+    names = {part.strip().lower() for part in chain_str.split("->") if part.strip()}
+    if top:
+        names.add(top.strip().lower())
+    # Class names also appear in the repr as `Name(` — the repr is the only
+    # place a chain survives when `error_chain_str` was not populated.
+    names |= {match.lower() for match in re.findall(r"\b([A-Za-z_][A-Za-z0-9_]{2,63})\(", chain_repr)}
+    if not (names & PROVIDER_FAILURE_CLASS_NAMES):
+        return {}
+    text = redact_secrets(chain_repr or str(error.get("message") or ""))[:MAX_ERROR_MESSAGE_CHARS]
+    out = {"error_class": top or None, "http_status": None, "provider_error_code": None,
+           "provider_error_type": None, "error_message": text or None, "rate_limit_headers": None,
+           "provider_request_id": None, "recovered_from": "quarantined_rollout_error_chain",
+           "http_status_source": None, "error_chain": chain_str or None}
+    # 1. THE ANCHORED STATUS, preferred: the provider's own rendering of it.
+    for pattern in PROVIDER_STATUS_ANCHORS:
+        match = pattern.search(chain_repr)
+        if match:
+            status = int(match.group(1))
+            if 100 <= status <= 599:
+                out["http_status"] = status
+                out["http_status_source"] = f"anchored:{match.group(0).split(match.group(1))[0].strip()}"
+                break
+    # 2. THE TYPED CLASS NAME, when the message rendered no status. A status
+    #    subclass names its status by definition; nothing numeric is read.
+    if out["http_status"] is None:
+        for name in sorted(names & set(PROVIDER_EXCEPTION_STATUS)):
+            out["http_status"] = PROVIDER_EXCEPTION_STATUS[name]
+            out["http_status_source"] = f"exception_class:{name}"
+            break
+    for field, pattern in PROVIDER_BODY_ANCHORS.items():
+        match = pattern.search(chain_repr)
+        if match:
+            out[field] = redact_secrets(match.group(1))[:120]
+    return out
+
+
+def quarantined_provider_fields(records) -> dict:
+    """The provider verdict of a quarantined BATCH: the most severe rollout's.
+
+    A cell runs one rollout, so in practice there is one record. Ordered
+    anyway, and by SEVERITY rather than by position — quota exhaustion, then
+    session-fatal, then any recovered fields — because the decision that comes
+    out of this is whether to spend the rest of the schedule, and the worst
+    verdict in the batch is the one that answers it.
+    """
+    best, best_rank = {}, -1
+    for record in records or []:
+        output = record.get("output") if isinstance(record, dict) else None
+        error = output.get("error") if isinstance(output, dict) else None
+        fields = provider_fields_from_error_chain(error)
+        if not fields:
+            continue
+        rank = 2 if is_quota_exhaustion(fields) else 1 if is_session_fatal(fields) else 0
+        if rank > best_rank:
+            best, best_rank = fields, rank
+    return best
+
+
+def recovered_provider_verdict(row: dict, *, env_mod, batch_id) -> dict:
+    """The row fields that a quarantined batch's own artifact supplies.
+
+    Returns ONLY what it recovered, for the caller to merge. Fields already
+    present on the row are never overwritten — a status the exception itself
+    reported outranks one reconstructed from a repr — and the verdict flags
+    are recomputed from the merged evidence, so this can only ever ADD a stop,
+    never remove one the exception already justified.
+
+    Never raises: the artifact may have been evicted (`ArtifactEvicted`), may
+    never have been stored, or may hold nothing this miner understands. Each
+    of those is recorded as its own reason rather than as an absence.
+    """
+    note = {"attempted": True, "batch_id": batch_id, "recovered": False, "reason": None}
+    if batch_id is None:
+        note["reason"] = "the exception carried no batch id; no artifact to read"
+        return {"provider_error_recovery": note}
+    getter = getattr(env_mod, "quarantine_artifact", None)
+    if getter is None:
+        note["reason"] = "the environment exposes no quarantine_artifact(); no artifact to read"
+        return {"provider_error_recovery": note}
+    try:
+        records = getter(batch_id)
+    except Exception as exc:                                               # noqa: BLE001
+        note["reason"] = f"the quarantine artifact could not be read: {type(exc).__name__}: {exc}"[:200]
+        return {"provider_error_recovery": note}
+    note["records_in_artifact"] = len(records) if isinstance(records, list) else UNKNOWN
+    fields = quarantined_provider_fields(records)
+    if not fields:
+        note["reason"] = ("the artifact names no provider/client failure class: this batch was "
+                          "quarantined by something other than a provider refusal")
+        return {"provider_error_recovery": note}
+    merged = {key: (row.get(key) if row.get(key) is not None else fields.get(key))
+              for key in ("http_status", "provider_error_code", "provider_error_type", "provider_request_id")}
+    merged["error_message"] = row.get("provider_error_message") or fields.get("error_message")
+    quota, fatal = is_quota_exhaustion(merged), is_session_fatal(merged)
+    note.update(recovered=True, reason=None,
+                http_status_source=fields.get("http_status_source"),
+                error_chain=fields.get("error_chain"),
+                source="env_mod.quarantine_artifact(batch_id) -> rollout error_chain_repr",
+                derived=("these provider fields were RECONSTRUCTED from the framework's error chain, "
+                         "not reported by an exception this process caught: the client wrapped the "
+                         "provider's exception as ModelError and only AUTH errors are re-raised"),
+                recovered_fields={k: v for k, v in fields.items()
+                                  if k in ("http_status", "provider_error_code", "provider_error_type",
+                                           "provider_request_id") and v is not None})
+    return {
+        **{key: value for key, value in merged.items() if key != "error_message"},
+        "provider_error_message": merged["error_message"],
+        "provider_error": {**(row.get("provider_error") or {}), **fields},
+        "quota_exhausted": quota,
+        "session_fatal": fatal,
+        # Never downgrades: a stop the exception itself justified stands.
+        "stop_schedule": bool(row.get("stop_schedule")) or fatal,
+        "provider_error_recovery": note,
+    }
+
+
+#: How many cells in a row may be attempted and never scored before the
+#: session stops on its own. The miner above covers the failure shapes this
+#: instrument has seen; this covers the ones it has not. Two, because one
+#: lost cell is an incident and two in a row is a condition — and because the
+#: cost of stopping early (a re-run) is smaller than the cost of burning a
+#: whole schedule against a refusal nobody classified.
+CONSECUTIVE_UNSCORED_LIMIT = 2
+
+
+def consecutive_unscored_stop(rows, limit: int | None = None) -> str | None:
+    """The reason to stop after a RUN of unscored cells, or None.
+
+    Claims NOTHING about the provider: it is a statement about this session's
+    own results, so the census reason it produces says so and carries no HTTP
+    status, no error code and no quota verdict. Its whole purpose is that the
+    remaining cells end up UNATTEMPTED rather than as a column of failures
+    when the failure shape is one `recovered_provider_verdict` could not read.
+
+    `limit` is read from the module constant AT CALL TIME (not bound as a
+    default), so `CONSECUTIVE_UNSCORED_LIMIT` is the operative number rather
+    than a value frozen when this function was defined — which is what lets a
+    witness move it and watch the disposition change.
+    """
+    limit = CONSECUTIVE_UNSCORED_LIMIT if limit is None else limit
+    if limit < 1 or len(rows) < limit:
+        return None
+    tail = rows[-limit:]
+    if not all(row.get("attempted") and not row.get("scored") and row.get("reward") is None
+               for row in tail):
+        return None
+    stages = sorted({str(row.get("failure_stage")) for row in tail})
+    return (f"{limit} consecutive cells attempted and never scored (stages {', '.join(stages)}); "
+            f"the session stopped on its own evidence. NO provider verdict is claimed: this is not a "
+            f"quota or authorization finding")
+
+
 def usage_before_failure(client) -> dict:
     """What this cell had already spent when it failed, as captured — with
     every unavailable counter marked `UNKNOWN` rather than 0.
@@ -1438,10 +1722,17 @@ def unattempted_tail(row: dict, selectors, index: int, ordinals) -> tuple[str, l
     number of cells it planned.
     """
     stopped_at = ordinals[index]
-    if row.get("quota_exhausted"):
+    if row.get("stop_reason"):
+        # A stop this session decided on its own evidence (the consecutive-
+        # unscored backstop). It carries no provider verdict and must not be
+        # dressed as one, so its own sentence is used verbatim.
+        reason = f"{row['stop_reason']} — stopped at planned ordinal {stopped_at}"
+    elif row.get("quota_exhausted"):
         code = row.get("provider_error_code") or ""
+        derived = (row.get("provider_error_recovery") or {}).get("recovered")
         reason = (f"provider quota exhausted at planned ordinal {stopped_at} "
-                  f"(HTTP {row.get('http_status')}{' ' + code if code else ''})")
+                  f"(HTTP {row.get('http_status')}{' ' + code if code else ''}"
+                  f"{', recovered from the quarantine artifact' if derived else ''})")
     else:
         reason = (f"session-fatal provider refusal at planned ordinal {stopped_at} "
                   f"(HTTP {row.get('http_status')})")
@@ -2766,10 +3057,15 @@ DELIVERABLE_FLAG_DEFINITIONS = {
     "committed": "the SCORER'S OWN RECEIPT names a stored revision of this deliverable's own bytes "
                  "(ledger: delivery.json committed_revision; register: the application block's "
                  "revision and submitted digest). NOT whether the agent called the write tool.",
-    "scored": "the scorer scored those committed bytes on their merits and published the artifact "
-              "(ledger: outcome == delivered; register: status == delivered). A deliverable that was "
-              "refused before storage, protocol-rejected, policy-blocked or never filed is NOT scored, "
-              "whatever fixed value the composite then used in its place.",
+    "scored": "the deliverable is COMMITTED (above) AND the scorer scored those committed bytes on "
+              "their merits and published the artifact for them — ledger: committed_revision > 0 and "
+              "DeliveryReceipt.renderable (outcome == delivered); register: revision > 0 with a stored "
+              "submitted digest and status == delivered. The conjunction is stated because it is what "
+              "the code computes: bytes that were never committed cannot have been scored on their "
+              "merits, and an earlier wording that named only the outcome/status half described a "
+              "WIDER flag than the one published here. A deliverable that was refused before storage, "
+              "protocol-rejected, policy-blocked or never filed is NOT scored, whatever fixed value "
+              "the composite then used in its place.",
 }
 
 
@@ -3703,6 +3999,12 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
                            reasons={str(k): v for k, v in exc.reason_counts.items()})
         row["batch_id"] = getattr(exc, "batch_id", None)
         row["quarantine_records"] = getattr(exc, "quarantined", None)
+        # THE SECOND ROAD TO THE STOP RULE. The exception the environment
+        # raises carries a deliberately owned summary and no provider detail,
+        # so a 429 `insufficient_quota` wrapped as `ModelError` reached here
+        # with nothing to classify. The batch's own artifact still holds the
+        # framework's full error chain; mine it and re-run the classifier.
+        row.update(recovered_provider_verdict(row, env_mod=env_mod, batch_id=row["batch_id"]))
         row.update(_archive_served_world(row))
         return row
     except InstrumentDrift:
@@ -4301,6 +4603,17 @@ def main() -> int:
             row["tag"] = args.tag
             row["min_interval"] = args.min_interval
             rows.append(row)
+            # THE BACKSTOP. `recovered_provider_verdict` classifies the
+            # failure shapes this instrument has seen; a run of unscored cells
+            # stops the session for the ones it has not, so the remainder are
+            # UNATTEMPTED rather than a column of failures. It claims no
+            # provider verdict — the reason says so and carries no status.
+            if not row.get("stop_schedule"):
+                guard = consecutive_unscored_stop(rows)
+                if guard is not None:
+                    row["stop_schedule"] = True
+                    row["stop_reason"] = guard
+                    row["stop_reason_source"] = "consecutive_unscored_guard"
             census.append(cell_disposition(row))
             if row.get("quarantined"):
                 print(f"{selector:16s} QUARANTINED {row['status']} {row['reasons']}"

@@ -7011,6 +7011,29 @@ def test_committed_and_scored_are_read_from_the_receipt_not_from_the_tool_calls(
         problems.append(f"a cell with no receipt at all claims a deliverable: {absent}")
     if "no delivery.json" not in absent["ledger"]["evidence"]:
         problems.append(f"a cell with no receipt does not say so: {absent['ledger']['evidence']}")
+
+    # 4. THE PUBLISHED DEFINITION IS THE COMPUTED FLAG. `scored` is computed
+    #    as a CONJUNCTION — committed AND the scorer's outcome/status half —
+    #    while the published wording named only the second half, so the
+    #    definition shipped beside the flag described a WIDER flag than the
+    #    one in the manifest. Driven over receipts that pull the two halves
+    #    apart: a deliverable whose receipt SAYS delivered while nothing was
+    #    stored is not scored, and the definition must say why.
+    delivered_uncommitted_ledger = types.SimpleNamespace(
+        committed_revision=0, renderable=True, outcome="delivered", score=1.0,
+        artifact_stored_bytes_digest="d" * 64)
+    delivered_uncommitted_register = types.SimpleNamespace(
+        revision=0, status="delivered", application_score=1.0,
+        submitted_stored_bytes_digest=env_mod.NO_ARTIFACT, artifact_stored_bytes_digest="d" * 64)
+    split = mb.deliverable_disposition(delivered_uncommitted_ledger, delivered_uncommitted_register, env_mod)
+    for half in ("ledger", "application"):
+        if split[half]["committed"] is not False or split[half]["scored"] is not False:
+            problems.append(f"a {half} that was never committed is recorded scored on the outcome word "
+                            f"alone: {split[half]}")
+    wording = (mb.DELIVERABLE_FLAG_DEFINITIONS.get("scored") or "").lower()
+    if "committed" not in wording:
+        problems.append("the published definition of `scored` does not state the conjunction the code "
+                        "computes (committed AND the scorer's outcome/status)")
     return check("`committed` and `scored` are read from the SCORER'S RECEIPT, not from the tool-call "
                  "list: a register refused before storage is neither, a protocol-rejected ledger is "
                  "committed but not scored, and the receipt fields that decided each flag are written "
@@ -7252,6 +7275,419 @@ def test_the_session_stops_on_quota_and_writes_the_whole_cell_census():
                  not problems, "\n".join(problems))
 
 
+class _WrappedProviderClient(tec.TurnScript):
+    """A real `vf.Client` whose native call raises a real provider exception.
+
+    NOT a monkeypatch of anything: `verifiers.legacy.clients.client.Client.
+    get_response` is the real wrapper, and it re-raises only AUTH_ERRORS and
+    wraps everything else as `vf.ModelError from e`. So a `RateLimitError`
+    raised here travels the EXACT path a 429 travels in production, and the
+    environment quarantines the rollout exactly as it did on 13 September.
+    """
+
+    def __init__(self, exc_factory):
+        super().__init__([])
+        self._exc_factory = exc_factory
+
+    async def get_native_response(self, prompt, model, sampling_args, tools=None, **kwargs):
+        raise self._exc_factory()
+
+
+def _openai_status_error(cls, status, body, request_id="req_REAL"):
+    """A REAL `openai` status exception with a real `httpx` response behind
+    it — the library builds its own `Error code: <status> - <body>` message,
+    which is the only rendering the framework's error chain preserves."""
+    import httpx
+    import openai                                                          # noqa: F401 -- the real library
+    request = httpx.Request("POST", "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions")
+    response = httpx.Response(status, request=request,
+                              headers={"x-request-id": request_id, "retry-after": "3600"})
+    return cls(f"Error code: {status} - {body}", response=response, body=body)
+
+
+def test_a_wrapped_quota_refusal_reaches_the_stop_rule_from_the_quarantine_artifact():
+    """THE DEFECT: the module header published, with no qualification, that
+    "on quota exhaustion the session finalises that cell, stops, and records
+    every later cell UNATTEMPTED". Only 401/403 could ever reach that logic.
+
+    `verifiers`' client re-raises AUTH_ERRORS alone and wraps every other
+    exception as `vf.ModelError`; the environment quarantines it and — by
+    design — publishes OWNED text instead of the framework's message. So the
+    CANONICAL quota-exhaustion shape, a 429 whose body says
+    `insufficient_quota`, produced a row with `http_status` null,
+    `provider_error_code` null, `quota_exhausted` False and `stop_schedule`
+    False. Measured: a second such refusal burns every remaining cell and
+    yields 0 UNATTEMPTED — the distinction the requirement exists for
+    disappears, because no cell is left unattempted to record.
+
+    Driven OFFLINE, through the real client wrapper and the real evaluate
+    door, with no monkeypatch and no provider call. The evidence was never
+    lost: the batch's own quarantine artifact holds the full error chain.
+    """
+    import openai
+    import tempfile
+    problems = []
+    body = {"error": {"message": "Free allocated quota exhausted for key sk-LEAK-CANARY-1234567890.",
+                      "type": "billing_error", "code": "insufficient_quota"}}
+
+    def client_factory(_config):
+        return _WrappedProviderClient(
+            lambda: _openai_status_error(openai.RateLimitError, 429, body, "req_REAL_429"))
+
+    with tempfile.TemporaryDirectory() as directory:
+        journal = Path(directory) / "c.starts.jsonl"
+        row = mb.one_rollout(DEFAULT_SHIM, client_factory, DUMMY_CONFIG, "test:0",
+                             "qwen3.7-max-2026-05-20", 4000, 0, 0, True,
+                             archive=Path(directory) / "arc", arm="A", planned_ordinal=10,
+                             session_id="s-1", screen="cash-application-screen-1",
+                             selection_digest="321c9715", start_journal=journal)
+
+        # 1. THE PATH IS THE REAL ONE: the environment quarantined it and its
+        #    published summary still carries no provider detail, which is the
+        #    package's deliberate design and is NOT what this repairs.
+        if row.get("failure_stage") != mb.FAILURE_STAGE_EVALUATION:
+            problems.append(f"failure_stage {row.get('failure_stage')!r}: the fixture did not take the "
+                            f"quarantine road")
+        records = row.get("quarantine_records") or []
+        if [q.get("code") for q in records] != ["ModelError"]:
+            problems.append(f"the batch was not quarantined as a ModelError: {records}")
+        if any("429" in str(q.get("message")) or "RateLimit" in str(q.get("message")) for q in records):
+            problems.append("the environment's OWNED quarantine message was not the thing it publishes; "
+                            "this repair must not weaken that boundary")
+
+        # 2. THE VERDICT IS RECOVERED, and the schedule stops.
+        if row.get("http_status") != 429:
+            problems.append(f"http_status {row.get('http_status')!r}, expected 429")
+        if row.get("provider_error_code") != "insufficient_quota":
+            problems.append(f"provider_error_code {row.get('provider_error_code')!r}")
+        if row.get("provider_error_type") != "billing_error":
+            problems.append(f"provider_error_type {row.get('provider_error_type')!r}")
+        if not (row.get("quota_exhausted") and row.get("session_fatal") and row.get("stop_schedule")):
+            problems.append(f"the 429 did not reach the stop rule: quota={row.get('quota_exhausted')} "
+                            f"fatal={row.get('session_fatal')} stop={row.get('stop_schedule')}")
+
+        # 3. IT SAYS IT IS DERIVED. A status reconstructed from a repr is not
+        #    a status an exception reported, and the record must not blur them.
+        recovery = row.get("provider_error_recovery") or {}
+        if recovery.get("recovered") is not True or not recovery.get("source"):
+            problems.append(f"the row does not say where the fields came from: {recovery}")
+        if "RECONSTRUCTED" not in (recovery.get("derived") or ""):
+            problems.append(f"the recovery does not mark itself derived: {recovery.get('derived')!r}")
+        if recovery.get("http_status_source") != "anchored:Error code:":
+            problems.append(f"http_status_source {recovery.get('http_status_source')!r}: a status must "
+                            f"name the anchor it was read after")
+        if recovery.get("error_chain") != "ModelError -> RateLimitError":
+            problems.append(f"the framework's error chain is not preserved: {recovery.get('error_chain')!r}")
+
+        # 4. NO SECRET SURVIVES the new text path.
+        if "sk-LEAK-CANARY-1234567890" in json.dumps(row, default=str):
+            problems.append("a key-shaped string survived into the row through the recovered chain")
+        # ... and the cell is still an unscored, null-reward, archived one.
+        if (row.get("cell_status"), row.get("reward")) != (mb.CELL_ATTEMPTED_UNSCORED, None):
+            problems.append(f"disposition {row.get('cell_status')}/{row.get('reward')!r}")
+        if not row.get("archive_dir") or not (Path(row["archive_dir"]) / "manifest.json").is_file():
+            problems.append("the lost cell's served world was not archived")
+
+        # 5. THE MUTATION WITNESS: with the artifact unreadable, the row must
+        #    NOT stop the schedule on a verdict it does not have — and must
+        #    say why it could not classify, rather than reading as a clean
+        #    non-fatal failure.
+        class _Blind:
+            PIVEvaluationBatchInvalid = env_mod.PIVEvaluationBatchInvalid
+            quarantine_artifact = staticmethod(
+                lambda batch_id, release=True: (_ for _ in ()).throw(env_mod.ArtifactEvicted(batch_id)))
+
+            def __getattr__(self, name):
+                return getattr(DEFAULT_SHIM, name)
+
+            def load_environment(self, selector=None):
+                return DEFAULT_SHIM.load_environment(selector)
+
+        blind = mb.one_rollout(_Blind(), client_factory, DUMMY_CONFIG, "test:0", "m", 4000, 0, 0, True,
+                               planned_ordinal=11, start_journal=journal)
+        blind_recovery = blind.get("provider_error_recovery") or {}
+        if blind.get("stop_schedule") or blind.get("quota_exhausted"):
+            problems.append("a cell whose artifact could not be read claimed a quota verdict anyway")
+        if blind_recovery.get("recovered") is not False or not blind_recovery.get("reason"):
+            problems.append(f"an unreadable artifact was not recorded as such: {blind_recovery}")
+
+        # 6. NOTHING IS INVENTED. A quarantine that is not a provider failure,
+        #    and free text that merely CONTAINS a status-shaped number, get no
+        #    verdict at all — the defect `test_free_text_429_is_never_a_rate_
+        #    limit_needle` closed, in the new miner.
+        for label, error in (
+                ("a tool failure", {"error": "ToolCallError", "message": "bad arguments",
+                                    "error_chain_repr": "ToolCallError('429 quota exhausted billing')",
+                                    "error_chain_str": "ToolCallError"}),
+                ("an evaluator failure", {"error": "PIVEvaluatorFailed", "message": "phase=score",
+                                          "error_chain_repr": "PIVEvaluatorFailed('phase=score 403 quota')",
+                                          "error_chain_str": "PIVEvaluatorFailed"}),
+                ("free text", {"error": "SomethingNew", "message": "worker 429 exited",
+                               "error_chain_repr": "SomethingNew('worker 429 exited, quota exhausted')",
+                               "error_chain_str": "SomethingNew"})):
+            if mb.provider_fields_from_error_chain(error):
+                problems.append(f"{label} was given a provider verdict: "
+                                f"{mb.provider_fields_from_error_chain(error)}")
+        # A TRANSIENT 429 is a provider failure and is NOT session-fatal: the
+        # recovery must not turn every rate limit into a stop.
+        transient = mb.provider_fields_from_error_chain(_error_chain_of(_openai_status_error(
+            openai.RateLimitError, 429,
+            {"error": {"message": "too fast", "type": "requests", "code": "rate_limit_exceeded"}})))
+        if transient.get("http_status") != 429 or mb.is_session_fatal(transient):
+            problems.append(f"a transient rate limit became a session-fatal stop: {transient}")
+        # A 402 `insufficient_balance` is the same family of refusal and DOES.
+        broke = mb.provider_fields_from_error_chain(_error_chain_of(_openai_status_error(
+            openai.APIStatusError, 402,
+            {"error": {"message": "no balance", "type": "billing", "code": "insufficient_balance"}})))
+        if not mb.is_quota_exhaustion(broke):
+            problems.append(f"a 402 insufficient_balance was not read as quota exhaustion: {broke}")
+
+    return check("a quota refusal the client WRAPPED as ModelError still reaches the stop rule: the "
+                 "batch's quarantine artifact is mined for the provider's own status, code and type, "
+                 "the verdict is recomputed and marked derived, an unreadable artifact claims nothing, "
+                 "and neither a non-provider quarantine nor a status-shaped number in free text is "
+                 "given a verdict it did not earn",
+                 not problems, "\n".join(problems))
+
+
+def _error_chain_of(exc):
+    """The framework's serialised error for `ModelError from exc`, built by
+    the framework's own `error_data` — the exact record a quarantined rollout
+    carries."""
+    from verifiers.legacy.utils.error_utils import error_data
+    try:
+        try:
+            raise exc
+        except Exception as inner:
+            raise vf.ModelError from inner
+    except Exception as wrapped:
+        return dict(error_data(wrapped))
+
+
+def test_a_run_of_unscored_cells_stops_the_session_claiming_no_provider_verdict():
+    """THE BACKSTOP, driven through `main()` end to end with no provider.
+
+    No miner can be assumed exhaustive. When a failure shape reaches the
+    runner with nothing to classify — no status, no code, no chain it
+    understands — the old code continued to the next cell and the next, and a
+    twelve-cell schedule ended with every cell ATTEMPTED_UNSCORED and NOT ONE
+    unattempted. That is the disposition the ruling's requirement 1 exists to
+    prevent: "a lost cell and an unattempted cell must be distinguishable in
+    the data".
+
+    Two cells score, then two fail unclassifiably. The session must stop on
+    its OWN evidence and say so — carrying no HTTP status, no quota claim and
+    no authorization finding, because it made none.
+    """
+    import tempfile
+    problems = []
+    saved = (mb.ROOT, mb.one_rollout, mb.load_key_from_registry, mb.compute_prompt_schema_digest,
+             mb.make_client_cls, mb.client_config, mb.CONSECUTIVE_UNSCORED_LIMIT)
+    saved_argv = sys.argv
+    selectors = [f"cash_application:pop:fam:{i}:a" for i in range(1, 13)]
+
+    class _Unclassifiable(Exception):
+        """No status, no code, no response — the shape the miner cannot read."""
+
+    def scripted_rollouts(calls):
+        def _one(env_mod_, client_cls, config, selector, model, *args, **kwargs):
+            calls.append(selector)
+            index = selectors.index(selector)
+            common = {"selector": selector, "model": model, "provider": mb.PROVIDER, "endpoint": mb.BASE_URL,
+                      "arm": "A", "replicate": 1, "task_id": f"cash_application_{index:03d}",
+                      "screen": kwargs.get("screen"), "selection_digest": kwargs.get("selection_digest"),
+                      "planned_ordinal": kwargs.get("planned_ordinal"), "session_id": kwargs.get("session_id"),
+                      "schedule_id": kwargs.get("schedule_id"), "started_at": "2026-09-13T17:00:00",
+                      "actual_ordinal": None, "block_id": None, "permutation_index": None,
+                      "arm_position": None, "episode_contract_version": 5,
+                      "episode_contract_profile": "cash_application",
+                      "episode_contract_digest_declared": "d" * 64, "replay_contract_version": 1,
+                      "replay_contract_digest": "r" * 64, "runtime_head": "h" * 40,
+                      "execution_tree_digest": "e" * 64, "runtime_environment_digest": "v" * 64,
+                      "instrument_identity_version": 1, "runtime_environment_identity_version": 1}
+            if index < 2:
+                return {**common, "reward": 1.0, "quarantined": False, "attempted": True, "scored": True,
+                        "cell_status": mb.CELL_SCORED, "stop_schedule": False, "turns": 6,
+                        "tools": ["submit"], "wrote_ledger": True, "artifact": "BOUND",
+                        "artifact_reason": None, "submitted": True, "budget_accounting": "VALID",
+                        "total_tokens": 120454, "prompt_tokens": 100000, "completion_tokens": 20454,
+                        "stop": "piv_submitted", "truncated": False, "per_turn": [],
+                        "row_validation": {"status": "VALID", "reasons": []},
+                        "last_turn_input_tokens": 18000, "last_turn_output_tokens": 2000,
+                        "budget_accounting_suspicious": None, "breakdown": {"complete": True},
+                        "seconds": 60.0, "finished_at": "2026-09-13T17:05:00"}
+            return mb.terminal_row(common, started=time.monotonic(), stage=mb.FAILURE_STAGE_EVALUATION,
+                                   exc=_Unclassifiable("1 of 1 rollouts quarantined ({'ModelError': 1})"),
+                                   client=_SilentClient(None))
+        return _one
+
+    def run_session(directory, tag):
+        sys.argv = ["measure_budget.py", "--model", "alibaba/qwen3.7-max-2026-05-20",
+                    "--selectors", *selectors, "--arm", "A", "--stamp-date", "2026-09-13",
+                    "--tag", tag, "--screen", "cash-application-screen-1",
+                    "--selection-digest", "321c9715"]
+        mb.main()
+        reviews = Path(directory) / "reviews"
+        census = json.loads(next(iter(reviews.glob(f"*{tag}.cells.json"))).read_text(encoding="utf-8"))
+        rows = json.loads(next(iter(reviews.glob(f"*{tag}.json"))).read_text(encoding="utf-8"))
+        return census, rows
+
+    try:
+        with tempfile.TemporaryDirectory() as directory:
+            mb.ROOT = Path(directory)
+            mb.load_key_from_registry = lambda *a, **k: None
+            mb.compute_prompt_schema_digest = lambda *a, **k: "p" * 64
+            mb.make_client_cls = lambda *a, **k: (lambda config: _SilentClient(config))
+            mb.client_config = lambda *a, **k: DUMMY_CONFIG
+
+            guarded_calls = []
+            mb.one_rollout = scripted_rollouts(guarded_calls)
+            census, rows = run_session(directory, "guarded")
+            if guarded_calls != selectors[:4]:
+                problems.append(f"the session did not stop after the run of failures: {guarded_calls}")
+            counts = census.get("counts") or {}
+            if counts != {mb.CELL_SCORED: 2, mb.CELL_ATTEMPTED_UNSCORED: 2, mb.CELL_UNATTEMPTED: 8}:
+                problems.append(f"disposition {counts}; expected 2 scored, 2 lost, 8 unattempted")
+            if census.get("stopped_after_planned_ordinal") != 4:
+                problems.append(f"stopped_after_planned_ordinal "
+                                f"{census.get('stopped_after_planned_ordinal')}")
+            reason = (census.get("stop_reason") or "")
+            if "consecutive" not in reason.lower():
+                problems.append(f"the census does not name the guard that stopped it: {reason!r}")
+            for forbidden in ("quota exhausted", "authorization"):
+                if forbidden in reason.lower().replace("no provider verdict is claimed: this is not a "
+                                                       "quota or authorization finding", ""):
+                    problems.append(f"the stop reason claims a provider verdict it does not have: {reason!r}")
+            if "NO provider verdict is claimed" not in reason:
+                problems.append(f"the stop reason does not disclaim a provider verdict: {reason!r}")
+            lost = [c for c in census["cells"] if c["cell_status"] == mb.CELL_ATTEMPTED_UNSCORED]
+            if any(c.get("quota_exhausted") or c.get("http_status") is not None for c in lost):
+                problems.append(f"a lost cell acquired a provider verdict nobody returned: {lost}")
+            unrun = [c for c in census["cells"] if c["cell_status"] == mb.CELL_UNATTEMPTED]
+            if [c["planned_ordinal"] for c in unrun] != list(range(5, 13)) \
+                    or any(c["attempted"] is not False for c in unrun):
+                problems.append(f"the unattempted tail is wrong: {[c['planned_ordinal'] for c in unrun]}")
+            if any(c.get("stopped_after_planned_ordinal") != 4 for c in unrun):
+                problems.append("an unattempted cell does not carry the ordinal the session stopped at")
+            if len(rows) != 4:
+                problems.append(f"{len(rows)} rows written; four cells were attempted")
+
+            # THE MUTATION WITNESS: without the guard the same run burns the
+            # whole schedule and leaves NO cell unattempted — the exact
+            # disposition the requirement forbids.
+            mb.CONSECUTIVE_UNSCORED_LIMIT = 99
+            ungated_calls = []
+            mb.one_rollout = scripted_rollouts(ungated_calls)
+            ungated, _ = run_session(directory, "ungated")
+            if len(ungated_calls) != 12:
+                problems.append(f"the counterfactual did not run the whole schedule: {len(ungated_calls)}")
+            if (ungated.get("counts") or {}).get(mb.CELL_UNATTEMPTED):
+                problems.append("the counterfactual left cells unattempted; the witness proves nothing")
+            if (ungated.get("counts") or {}) != {mb.CELL_SCORED: 2, mb.CELL_ATTEMPTED_UNSCORED: 10}:
+                problems.append(f"the counterfactual's disposition is {ungated.get('counts')}")
+    finally:
+        (mb.ROOT, mb.one_rollout, mb.load_key_from_registry, mb.compute_prompt_schema_digest,
+         mb.make_client_cls, mb.client_config, mb.CONSECUTIVE_UNSCORED_LIMIT) = saved
+        sys.argv = saved_argv
+    return check("a run of cells attempted and never scored stops the session on ITS OWN evidence: the "
+                 "remaining cells are recorded UNATTEMPTED with the ordinal it stopped at, the reason "
+                 "claims no provider verdict, and without the guard the same failures burn the whole "
+                 "schedule and leave nothing unattempted at all",
+                 not problems, "\n".join(problems))
+
+
+def test_the_assess_door_runs_on_a_cash_application_selector():
+    """`score_payload.assess()` could not run on a family task at all.
+
+    `golden_text()` went straight to `minted_task()`, which `int()`s the
+    second selector segment — `ValueError` on
+    `cash_application:cash-application-development-2:...`, and an unpack error
+    on an authored `cash_application_001`. `breakdown()` in the runner
+    sidesteps it by calling `run_payload()` directly, so no observed row is
+    affected; the harness's own CLI and `assess()` door were legacy-only.
+
+    Driven OFFLINE on the authored `cash_application_001`, through the real
+    serving door and the real scorer.
+    """
+    import score_payload as SP
+    problems = []
+    saved_task = SP.TASK
+    try:
+        SP.set_task("cash_application_001")
+        if not SP.family_task():
+            return check("the assess door runs on a cash-application selector", False,
+                         "the fixture is not a family task")
+        # 1. The golden of a TWO-ARTIFACT episode is two artifacts. The
+        #    register comes from the package's own PUBLIC fold, not from a
+        #    second renderer living in this harness.
+        register = SP.golden_application_text()
+        if not register or "closing_open_items" not in register:
+            problems.append(f"no golden register was folded from the public evidence: {register!r:.80}")
+        out = SP.assess(SP.golden_text(), register)
+        if out.get("replayed_artifacts") != ["ledger", "application"]:
+            problems.append(f"assess replayed {out.get('replayed_artifacts')}")
+        if out.get("verdict") != "CORRECT_SOLUTION" or out.get("total") != 1.0:
+            problems.append(f"the golden pair does not assess as a correct solution: "
+                            f"{out.get('verdict')} total={out.get('total')}")
+        if str(out.get("ledger_total")) != "1.000000" or str(out.get("application_total")) != "1.000000":
+            problems.append(f"L/A {out.get('ledger_total')}/{out.get('application_total')}")
+        if out.get("published_application_equals_golden") is not True:
+            problems.append("the published register was not compared against the golden fold")
+        if not out.get("within_entitlement") or out.get("entitlement_violations"):
+            problems.append(f"the golden pair breached entitlement: {out.get('entitlement_violations')}")
+
+        # 2. THE ORACLE IS APPLIED TO THE LEDGER'S OWN TOTAL, not to the
+        #    composite: a ledger bound compared against `L x A` is slack by
+        #    construction and would be a quietly weakened oracle.
+        if out.get("oracle_applied_to") != "ledger_total":
+            problems.append(f"oracle_applied_to {out.get('oracle_applied_to')!r}")
+
+        # 3. LEDGER-ONLY over the same family world still assesses — and is
+        #    told apart from the pair, rather than being read as one.
+        alone = SP.assess(SP.golden_text())
+        if alone.get("replayed_artifacts") != ["ledger"]:
+            problems.append(f"the ledger-only replay claims {alone.get('replayed_artifacts')}")
+        if alone.get("application_status") != "absent" or str(alone.get("application_total")) != "0.000000":
+            problems.append(f"an unfiled register is not recorded absent: "
+                            f"{alone.get('application_status')}/{alone.get('application_total')}")
+        if str(alone.get("ledger_total")) != "1.000000":
+            problems.append(f"the ledger half moved when the register was withheld: "
+                            f"{alone.get('ledger_total')}")
+
+        # 4. `minted_task()` keeps its own narrow meaning and REFUSES the two
+        #    selector shapes it cannot mint, rather than raising ValueError
+        #    from inside `int()`.
+        for selector in ("cash_application:cash-application-development-2:ar-tenterhook:24:a",
+                         "cash_application_001"):
+            SP.set_task(selector)
+            try:
+                SP.minted_task()
+                problems.append(f"minted_task() did not refuse {selector!r}")
+            except ValueError as exc:
+                if "minted bank selector" not in str(exc):
+                    problems.append(f"minted_task() refused {selector!r} obscurely: {exc}")
+
+        # 5. THE LEGACY DOOR IS UNCHANGED: the shipped world still reads its
+        #    golden off disk and replays one artifact.
+        SP.set_task("")
+        if SP.task_inputs() is not None:
+            problems.append("the shipped world must have no ContractInputs behind it")
+        legacy = SP.assess(SP.golden_text())
+        if legacy.get("family") or legacy.get("replayed_artifacts") != ["ledger"] \
+                or legacy.get("oracle_applied_to") != "total":
+            problems.append(f"the legacy door changed shape: family={legacy.get('family')} "
+                            f"{legacy.get('replayed_artifacts')} {legacy.get('oracle_applied_to')}")
+        if legacy.get("verdict") != "CORRECT_SOLUTION":
+            problems.append(f"the shipped golden no longer assesses correct: {legacy.get('verdict')}")
+    finally:
+        SP.set_task(saved_task)
+    return check("`assess()` and the CLI door run on a cash-application selector: the golden is the "
+                 "task's own through whichever of the three doors served it, a family's golden is BOTH "
+                 "artifacts with the register folded from the public evidence, the entitlement oracle is "
+                 "applied to the ledger's own total, and the legacy door is unchanged",
+                 not problems, "\n".join(problems))
+
+
 TESTS = [
     test_no_write_is_no_artifact_no_write,
     test_refused_write_is_no_artifact_write_refused,
@@ -7346,6 +7782,9 @@ TESTS = [
     test_a_provider_failure_produces_a_durable_terminal_row,
     test_quota_exhaustion_stops_the_session_and_marks_the_rest_unattempted,
     test_the_session_stops_on_quota_and_writes_the_whole_cell_census,
+    test_a_wrapped_quota_refusal_reaches_the_stop_rule_from_the_quarantine_artifact,
+    test_a_run_of_unscored_cells_stops_the_session_claiming_no_provider_verdict,
+    test_the_assess_door_runs_on_a_cash_application_selector,
     test_a_two_artifact_episode_reproduces_both_decompositions,
     test_the_archive_writer_emits_every_declared_file,
     test_committed_and_scored_are_read_from_the_receipt_not_from_the_tool_calls,
