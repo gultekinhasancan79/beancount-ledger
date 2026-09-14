@@ -2,6 +2,13 @@
 two counterfactuals.
 
     .venv/Scripts/python.exe reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.py
+        # verification run, the DEFAULT: rebuilds everything into a fresh
+        # directory and compares it with the published record and files
+    ... rescore_cash_screen_1.py --out DIR
+        # the same, into DIR (absent or empty; never under ~/.piv)
+    ... rescore_cash_screen_1.py --write-record
+        # author-side: write the published record and the counterfactual
+        # files in place, exactly as the published ones were written
 
 WHY. round18.answer.md:69-71: the earlier counterfactual record held only
 missing ids, amounts and before/after totals, so "adding only these rows
@@ -36,13 +43,25 @@ recomputed `A`, not as a full replay of `composite/1`.
 
 Nothing observed is written. The corrected documents are NEW files beside the
 delivered ones.
+
+VERIFICATION IS THE DEFAULT. `rescore_cash_screen_1.json` and the
+`counterfactual/` files are published evidence, pinned by digest in
+docs/evaluation_pack/evidence_index.json, and round 19 found that every run of
+this script overwrote that indexed record. A plain run therefore writes into
+a FRESH directory and compares what it produced with the published copies:
+the record field by field, `written_at` excepted because it carries the time
+of the run, and every counterfactual file byte for byte. Each comparison
+prints PASS or FAIL, and any difference exits non-zero. Only `--write-record`
+writes into this directory, and it writes exactly what a run always wrote.
 """
 from __future__ import annotations
 
+import argparse
 import difflib
 import hashlib
 import json
 import sys
+import tempfile
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -60,8 +79,8 @@ from beancount_ledger.candidate import application as A            # noqa: E402
 ROWS = ROOT / "reviews/budget_qwen3.7-max-2026-05-20_2026-09-13_cash_screen_1.json"
 SELECTION = ROOT / "reviews/cash_screen_1_selection_2026-09-13.json"
 WORKSPACES = HERE / "workspaces"
-COUNTERFACTUAL = HERE / "counterfactual"
-OUT = HERE / "rescore_cash_screen_1.json"
+PUBLISHED_COUNTERFACTUAL = HERE / "counterfactual"
+PUBLISHED_RECORD = HERE / "rescore_cash_screen_1.json"
 
 #: The two application-only partials. Everything about the correction — which
 #: rows, whose customer, at what basis — is read out of the reconstructed
@@ -91,7 +110,17 @@ def missing_rows(outcome, truth) -> list[dict]:
     return rows
 
 
-def main() -> int:
+def check(name, ok, detail=""):
+    print(f"{'PASS' if ok else 'FAIL'}  {name}")
+    if not ok and detail:
+        for line in str(detail).splitlines()[:30]:
+            print(f"      {line}")
+    return ok
+
+
+def rescore(record_path: Path, counterfactual_root: Path) -> list[str]:
+    """The whole rescore, written to `record_path` with the counterfactual
+    files under `counterfactual_root`; returns the problems it found."""
     problems: list[str] = []
     rows = json.loads(ROWS.read_text(encoding="utf-8"))
     selection = json.loads(SELECTION.read_text(encoding="utf-8"))
@@ -171,7 +200,7 @@ def main() -> int:
 
         if key in PARTIALS:
             counterfactuals.append(build_counterfactual(key, workspace, outcome, truth, expected_balances,
-                                                        row, receipt, problems))
+                                                        row, receipt, problems, counterfactual_root))
 
     consumption = token_arithmetic(rows, problems)
     attribution = service_attribution(rows, problems)
@@ -208,7 +237,8 @@ def main() -> int:
         "service_attribution": attribution,
         "problems": problems,
     }
-    OUT.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
 
     for cell in cells:
         print(f"{cell['planned_ordinal']:2d}. {cell['selector'].split(':', 1)[1]:<46} "
@@ -221,14 +251,15 @@ def main() -> int:
               f"diff +{cf['diff']['added_lines']}/-{cf['diff']['removed_lines']} lines")
     print(f"\nconsumption: {consumption['input_tokens']} + {consumption['output_tokens']} = "
           f"{consumption['total_tokens']}, mean {consumption['mean_per_scored_episode']}")
-    print(f"written: {OUT}")
+    print(f"written: {record_path}")
     print(f"problems: {problems or 'none'}")
-    return 1 if problems else 0
+    return problems
 
 
-def build_counterfactual(key, workspace, outcome, truth, expected_balances, row, receipt, problems) -> dict:
+def build_counterfactual(key, workspace, outcome, truth, expected_balances, row, receipt, problems,
+                         counterfactual_root) -> dict:
     """The corrected document, the exact diff, and the rescore of both arms."""
-    directory = COUNTERFACTUAL / key
+    directory = counterfactual_root / key
     directory.mkdir(parents=True, exist_ok=True)
     delivered_text = (workspace / "cash_application.json").read_text(encoding="utf-8")
     rows_to_add = missing_rows(outcome, truth)
@@ -362,6 +393,110 @@ def service_attribution(rows, problems) -> dict:
         "system_fingerprints": "all null" if fingerprints == {None} else sorted(str(f) for f in fingerprints),
         "captured_responses": sum(len(row["wire_caps_all_attempts"]) for row in rows),
     }
+
+
+def json_differences(fresh, published, path="") -> list[str]:
+    """Where two JSON values differ, by path; a list is compared element by
+    element so a moved cell is named, not merely counted."""
+    if isinstance(fresh, dict) and isinstance(published, dict):
+        out = []
+        for key in sorted(set(fresh) | set(published)):
+            if key not in fresh:
+                out.append(f"{path}/{key}: only in the published record")
+            elif key not in published:
+                out.append(f"{path}/{key}: only in the fresh record")
+            else:
+                out.extend(json_differences(fresh[key], published[key], f"{path}/{key}"))
+        return out
+    if isinstance(fresh, list) and isinstance(published, list):
+        if len(fresh) != len(published):
+            return [f"{path}: {len(fresh)} fresh elements, {len(published)} published"]
+        out = []
+        for index, (a, b) in enumerate(zip(fresh, published)):
+            out.extend(json_differences(a, b, f"{path}[{index}]"))
+        return out
+    if fresh != published:
+        return [f"{path or '/'}: fresh {fresh!r} != published {published!r}"]
+    return []
+
+
+def compare_with_published(record_path: Path, counterfactual_root: Path) -> bool:
+    """The fresh run against the published evidence: the record field by
+    field except `written_at`, and the counterfactual files byte for byte.
+    One PASS/FAIL line per comparison; True only if every one passed."""
+    fresh = json.loads(record_path.read_text(encoding="utf-8"))
+    published = json.loads(PUBLISHED_RECORD.read_text(encoding="utf-8"))
+    ok = True
+    for key in sorted(set(fresh) | set(published)):
+        if key == "written_at":
+            continue
+        differences = json_differences(fresh.get(key), published.get(key), f"/{key}")
+        ok &= check(f"record field {key} equals the published {PUBLISHED_RECORD.name}", not differences,
+                    "\n".join(differences))
+    ok &= check("written_at is present on both sides and is the only field left out of the comparison",
+                "written_at" in fresh and "written_at" in published)
+    published_files = sorted(p.relative_to(PUBLISHED_COUNTERFACTUAL).as_posix()
+                             for p in PUBLISHED_COUNTERFACTUAL.rglob("*") if p.is_file())
+    fresh_files = sorted(p.relative_to(counterfactual_root).as_posix()
+                         for p in counterfactual_root.rglob("*") if p.is_file())
+    ok &= check(f"the fresh counterfactual tree has the published {len(published_files)} files and no other",
+                fresh_files == published_files,
+                f"fresh {fresh_files}\npublished {published_files}")
+    for rel in published_files:
+        fresh_path = counterfactual_root / rel
+        same = fresh_path.is_file() and fresh_path.read_bytes() == (PUBLISHED_COUNTERFACTUAL / rel).read_bytes()
+        ok &= check(f"counterfactual/{rel} is byte-identical to the published file", same,
+                    f"fresh sha256 {sha256(fresh_path.read_bytes()) if fresh_path.is_file() else 'absent'}, "
+                    f"published {sha256((PUBLISHED_COUNTERFACTUAL / rel).read_bytes())}")
+    return ok
+
+
+def fresh_directory(requested: str | None) -> Path:
+    """Where a verification run writes: the directory asked for, which must
+    be absent or empty and never under ~/.piv, or a new one under the system
+    temp directory. A verification run overwrites nothing."""
+    if requested is None:
+        return Path(tempfile.mkdtemp(prefix="rescore_cash_screen_1_"))
+    out = Path(requested).expanduser().resolve()
+    piv = (Path.home() / ".piv").resolve()
+    if out == piv or piv in out.parents:
+        raise SystemExit(f"refusing to write under {piv}: this script never writes into the evaluator's key store")
+    if out.exists() and not out.is_dir():
+        raise SystemExit(f"--out {out} exists and is not a directory; a verification run writes only into a "
+                         f"fresh directory")
+    if out.exists() and any(out.iterdir()):
+        raise SystemExit(f"--out {out} is not empty; a verification run writes only into a fresh directory")
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--out", default=None,
+                        help="fresh directory for the verification run (default: a new one under the system temp)")
+    parser.add_argument("--write-record", action="store_true",
+                        help="author-side: write the published record and counterfactual files in place")
+    args = parser.parse_args(argv)
+    if args.write_record and args.out:
+        parser.error("--write-record writes into this directory; it takes no --out")
+    return args
+
+
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    if args.write_record:
+        return 1 if rescore(PUBLISHED_RECORD, PUBLISHED_COUNTERFACTUAL) else 0
+    out = fresh_directory(args.out)
+    problems = rescore(out / PUBLISHED_RECORD.name, out / PUBLISHED_COUNTERFACTUAL.name)
+    print(f"\nverification against the published record and files (fresh run in {out}):")
+    agrees = compare_with_published(out / PUBLISHED_RECORD.name, out / PUBLISHED_COUNTERFACTUAL.name)
+    if agrees and not problems:
+        print("PASS  the fresh rescore reproduces the published record in every field except written_at and every "
+              "counterfactual file byte for byte")
+    else:
+        print("FAIL  the fresh rescore does not reproduce the published evidence, or found problems of its own; "
+              "nothing published was modified")
+    return 1 if problems or not agrees else 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,155 @@
+{
+ "arm": {
+  "fresh_context_per_episode": true,
+  "max_total_completion_tokens": 40000,
+  "note": "the episode-contract digest covers the environment's budget, not every client setting; rows are the same arm only if every value in this block is the same",
+  "per_turn_max_tokens": 40000,
+  "reasoning_replay": true,
+  "replay_policy": "full",
+  "request_timeout_seconds": 3600.0,
+  "retry_policy": {
+   "framework_rollout_retries": 0,
+   "one_attempt_per_cell": true,
+   "pacing_retries": 0,
+   "rate_limited_or_refused_cell": "ATTEMPTED_UNSCORED; the cell is never re-requested",
+   "retries": 0,
+   "sdk_max_retries": 0
+  },
+  "routing": {
+   "api_key_value_recorded": false,
+   "api_key_var": "OPENROUTER_API_KEY",
+   "base_url": "https://openrouter.ai/api/v1",
+   "provider_label": "openrouter"
+  },
+  "runner_flags": [
+   "--max-tokens 40000",
+   "--max-total-completion-tokens 40000",
+   "--temperature 0.0",
+   "--top-p 1.0",
+   "--timeout 3600",
+   "--retries 0",
+   "--provider openrouter",
+   "--base-url https://openrouter.ai/api/v1",
+   "--api-key-var OPENROUTER_API_KEY"
+  ],
+  "sampling": {
+   "seed": null,
+   "temperature": 0.0,
+   "top_p": 1.0
+  },
+  "turns": 25
+ },
+ "chosen_groups": {
+  "advice_residue": [
+   "cash-application-development-2:ar-tenterhook:19",
+   "cash-application-development-2:ar-tenterhook:30",
+   "cash-application-development-2:ar-tenterhook:29",
+   "cash-application-development-2:ar-tenterhook:8"
+  ],
+  "credit_residue": [
+   "cash-application-development-2:cr-pikestaff:13",
+   "cash-application-development-2:cr-pikestaff:1",
+   "cash-application-development-2:cr-pikestaff:9",
+   "cash-application-development-2:cr-pikestaff:8"
+  ],
+  "fallback_continuation": [
+   "cash-application-development-2:fc-quarrymill:25",
+   "cash-application-development-2:fc-quarrymill:26",
+   "cash-application-development-2:fc-quarrymill:30",
+   "cash-application-development-2:fc-quarrymill:14"
+  ]
+ },
+ "digest_excludes": [
+  "serving_record.path",
+  "serving_record.manifest.path"
+ ],
+ "eligibility": "a parent group is eligible only when both variants have a served row, exactly once each",
+ "eligible_groups_per_stratum": {
+  "advice_residue": 32,
+  "credit_residue": 32,
+  "fallback_continuation": 32
+ },
+ "episodes": 24,
+ "evaluation_split_opened": false,
+ "execution_order": [
+  "cash_application:cash-application-development-2:ar-tenterhook:8:a",
+  "cash_application:cash-application-development-2:cr-pikestaff:13:a",
+  "cash_application:cash-application-development-2:fc-quarrymill:26:a",
+  "cash_application:cash-application-development-2:ar-tenterhook:29:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:13:b",
+  "cash_application:cash-application-development-2:fc-quarrymill:26:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:8:a",
+  "cash_application:cash-application-development-2:fc-quarrymill:30:b",
+  "cash_application:cash-application-development-2:fc-quarrymill:14:b",
+  "cash_application:cash-application-development-2:ar-tenterhook:29:a",
+  "cash_application:cash-application-development-2:ar-tenterhook:30:a",
+  "cash_application:cash-application-development-2:ar-tenterhook:30:b",
+  "cash_application:cash-application-development-2:fc-quarrymill:30:a",
+  "cash_application:cash-application-development-2:fc-quarrymill:25:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:9:a",
+  "cash_application:cash-application-development-2:cr-pikestaff:1:a",
+  "cash_application:cash-application-development-2:ar-tenterhook:8:b",
+  "cash_application:cash-application-development-2:ar-tenterhook:19:b",
+  "cash_application:cash-application-development-2:fc-quarrymill:14:a",
+  "cash_application:cash-application-development-2:cr-pikestaff:9:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:1:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:8:b",
+  "cash_application:cash-application-development-2:ar-tenterhook:19:a",
+  "cash_application:cash-application-development-2:fc-quarrymill:25:a"
+ ],
+ "groups_per_stratum": 4,
+ "groups_with_a_served_row_per_stratum": {
+  "advice_residue": 32,
+  "credit_residue": 32,
+  "fallback_continuation": 32
+ },
+ "population": "cash-application-development-2",
+ "population_identity": {
+  "declared_matches_live": true,
+  "family_preflight_contract": 2,
+  "gate_set_digest": "2491e97f97b48cee",
+  "population": "cash-application-development-2",
+  "profile_digest": "310e96729061410467f0e4285976743f",
+  "split_map_digest": "c41f5d150aec53ccce514f7123206ac5"
+ },
+ "rules": [
+  "no cell is re-run, refilled or substituted; a missing outcome stays missing and is reported against the planned denominator",
+  "a provider refusal is ATTEMPTED_UNSCORED, never a model failure; a cell never reached is UNATTEMPTED",
+  "rows taken under any other value in `arm` are another arm and are never pooled with these",
+  "the subject's own outputs never adjudicate the subject's own cells",
+  "every result row quotes this record's self_digest; a row without it is not a row of this screen"
+ ],
+ "sampling_seed": "cash-application-screen-2:2026-09-15",
+ "schema": "piv.screen-selection/2",
+ "screen": "cash-application-screen-2",
+ "selection_problems": [],
+ "self_digest": "2abd628c966480439e1a3a7bb11ac601b5ba79dd5d97bf30bb2ed6ff7ffea843",
+ "serving_record": {
+  "authored_reference": "cash_application_001",
+  "bytes": 72037,
+  "manifest": null,
+  "manifest_note": "manifest identity not present in this serving record",
+  "path": "C:\\Users\\gulte\\Desktop\\PIV\\beancount-ledger-workflows\\reviews\\cash_application_development_population_2026-09-13_replacement\\serving.json",
+  "rows": 192,
+  "schema": null,
+  "served_rows": 192,
+  "sha256": "2d2f457d3168e2c301516546e0979003a9f0b57df1ce082e5c5f880752ec8e15"
+ },
+ "settings": {
+  "episode_output_ceiling": 40000,
+  "fresh_context_per_episode": true,
+  "one_attempt_per_cell": true,
+  "retries": 0,
+  "temperature": 0.0,
+  "turns": 25
+ },
+ "split": "development",
+ "subject": {
+  "requested_id": "nvidia/nemotron-3-ultra-550b-a55b:free"
+ },
+ "subjects": [
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "inclusionai/ling-3.0-flash-fin:free"
+ ],
+ "written_before_any_model_call": true
+}

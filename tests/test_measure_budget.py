@@ -51,6 +51,13 @@ Two framework-semantics findings are PINNED here rather than assumed:
     reasoning either way; only the wire projection drops it). Witnessed in
     `test_reasoning_replay_projection...` below with a structural diff.
 
+Round 19 added the runner's RETRY POLICY to what is witnessed here:
+`PacedClient`'s 429 pacing loop is bounded by the same `--retries` value the
+framework retries use (`1 + retries` requests per turn; the default 0 is one
+request and a 429 is terminal), replacing the fixed seven-attempt loop that
+made "never a retry" false. `test_the_pacing_loop_is_bounded_by_retries...`
+drives it offline with scripted 429s and through the real `evaluate()` door.
+
     python tests/test_measure_budget.py
 """
 
@@ -2380,7 +2387,13 @@ def test_attempt_identity_binds_every_request_to_one_attempt():
 
 def test_requests_log_records_every_attempt_including_rate_limited_ones():
     """`PacedClient`'s own 429 pacing loop records EVERY
-    attempt in `row["requests"]`, and a 429 carries no billed tokens."""
+    attempt in `row["requests"]`, and a 429 carries no billed tokens.
+
+    Built with `retries=1` EXPLICITLY: the loop is bounded by `1 + retries`
+    (round 19), so a client under the default `retries=0` would make one
+    request and raise on this script's first 429 — which is the policy
+    `test_the_pacing_loop_is_bounded_by_retries...` witnesses. This test is
+    about what a re-sent attempt records, so it asks for one re-send."""
     import openai
     import verifiers.legacy.clients.openai_chat_completions_client as oai_mod
 
@@ -2402,7 +2415,7 @@ def test_requests_log_records_every_attempt_including_rate_limited_ones():
         headers: dict = {}
         request = None
 
-    client = mb.make_client_cls(0.0, True)(DUMMY_CONFIG)
+    client = mb.make_client_cls(0.0, True, retries=1)(DUMMY_CONFIG)
     original = oai_mod.post_chat_completion_with_routed_experts_sidecar
     oai_mod.post_chat_completion_with_routed_experts_sidecar = flaky_post
     original_sleep = asyncio.sleep
@@ -4551,8 +4564,11 @@ def test_window_evidence_separates_billed_rejected_and_current_request():
         mb.window_ledger_append(ledger, {"t": time.time(), "provider": "mistral", "model": "m",
                                          "cell": "earlier", "status": "ok",
                                          "billed_input_tokens": 120_000, "billed_output_tokens": 400})
+        # `retries=1` explicitly: this witness wants a 429 that is RE-SENT
+        # (so the surviving request follows it); the bounded loop's default
+        # of one request per turn would make the first 429 terminal.
         client_cls = mb.make_client_cls(0.0, True, window_ledger=ledger, provider="mistral",
-                                        cell="thiscell", session_id="s1")
+                                        cell="thiscell", session_id="s1", retries=1)
         client = client_cls(DUMMY_CONFIG)
         original = oai_mod.post_chat_completion_with_routed_experts_sidecar
         oai_mod.post_chat_completion_with_routed_experts_sidecar = flaky_post
@@ -7719,6 +7735,232 @@ def test_the_model_slug_is_a_file_name_and_published_names_do_not_move():
                  "every id that was already file-safe keeps the stem it published under",
                  not problems, "\n".join(problems))
 
+def test_the_pacing_loop_is_bounded_by_retries_and_a_terminal_429_leaves_a_row():
+    """THE DEFECT (round 19): `PacedClient`'s pacing wrapper re-sent a
+    rate-limited request up to SEVEN times — `for attempt in range(6)` plus a
+    final try — whatever `--retries` said, so the pack's "never a retry" was
+    false in the shipped runner.
+
+    Driven offline with the same scripted `RateLimitError` technique as the
+    request-log witness above (the post function is substituted; the
+    back-off sleep is intercepted and COUNTED, never waited out):
+
+      1. `retries=0` (the default, and the documented Screen-2 policy): an
+         always-429 provider gets EXACTLY ONE request; the attempt is logged
+         as the terminal `error:RateLimitError` with status 429, the
+         provider's code, the request id and every rate-limit / retry-after
+         header; no back-off is slept; the exception propagates; and every
+         attempt-record field historical rows carry is still present.
+      2. `retries=2`: up to THREE requests — three against an always-429
+         provider (`rate_limited`, `rate_limited`, `error:RateLimitError`,
+         with the 20 s and 40 s back-offs requested), two when the second
+         succeeds.
+      3. end to end through the real `evaluate()` door with `retries=0`: the
+         terminal 429 becomes a durable ATTEMPTED_UNSCORED row whose request
+         log holds that ONE request, the row records the pacing bound it ran
+         under as read off the client, and an ordinary 429 stops nothing.
+      4. a negative `retries` is refused loudly, the flag's default is 0, and
+         the class publishes the bound the banner prints.
+    """
+    import inspect
+    import tempfile
+
+    import httpx
+    import openai
+    import verifiers.legacy.clients.openai_chat_completions_client as oai_mod
+
+    problems = []
+    body_429 = {"error": {"code": "rate_limit_exceeded", "type": "requests",
+                          "message": "Rate limit reached for key nvapi-abcdefghijklmnop"}}
+    rate_limit_headers = {"x-ratelimit-limit-requests": "40", "x-ratelimit-remaining-requests": "0",
+                          "x-ratelimit-reset-requests": "1.5s", "retry-after": "2",
+                          "x-request-id": "req_429_terminal",
+                          "authorization": "Bearer nvapi-abcdefghijklmnop"}
+
+    def real_429():
+        """A REAL `openai.RateLimitError` over a real `httpx` response, so
+        `provider_error_fields` reads headers the way it does in production."""
+        request = httpx.Request("POST", "https://example.invalid/v1/chat/completions")
+        response = httpx.Response(429, request=request, headers=rate_limit_headers)
+        return openai.RateLimitError(f"Error code: 429 - {body_429}", response=response, body=body_429)
+
+    class _FakeResponse:
+        def __init__(self):
+            self.usage = type("U", (), {"prompt_tokens": 11, "completion_tokens": 7})()
+            self.model = "scripted-model"
+
+    def make_post(succeed_on=None):
+        calls = {"n": 0}
+
+        async def post(client, path, *, body, extra_headers=None):
+            calls["n"] += 1
+            if succeed_on is not None and calls["n"] >= succeed_on:
+                return _FakeResponse()
+            raise real_429()
+        return post, calls
+
+    def drive(retries, succeed_on=None):
+        """`(requests_made, client, pauses_requested, raised)` for one turn."""
+        post, calls = make_post(succeed_on)
+        client = mb.make_client_cls(0.0, True, retries=retries)(DUMMY_CONFIG)
+        pauses: list[float] = []
+        original_post = oai_mod.post_chat_completion_with_routed_experts_sidecar
+        original_sleep = asyncio.sleep
+
+        async def counting_sleep(seconds):
+            pauses.append(seconds)
+            return await original_sleep(0)
+
+        oai_mod.post_chat_completion_with_routed_experts_sidecar = post
+        asyncio.sleep = counting_sleep
+        raised = None
+        try:
+            asyncio.run(client.get_native_response([{"role": "system", "content": "s"}], "m",
+                                                   {"max_tokens": 100}, None, state={"piv_rollout_id": "r"}))
+        except openai.RateLimitError as exc:
+            raised = exc
+        finally:
+            oai_mod.post_chat_completion_with_routed_experts_sidecar = original_post
+            asyncio.sleep = original_sleep
+        return calls["n"], client, pauses, raised
+
+    # 1. retries=0: ONE request, terminal, fully evidenced, nothing slept.
+    made, client, pauses, raised = drive(0)
+    if made != 1:
+        problems.append(f"retries=0 made {made} requests; the policy is exactly one")
+    if not isinstance(raised, openai.RateLimitError):
+        problems.append(f"retries=0 must re-raise the 429 as the terminal refusal, got {raised!r}")
+    if pauses:
+        problems.append(f"retries=0 slept a back-off it had no attempt left to spend on: {pauses}")
+    if len(client.requests) != 1:
+        problems.append(f"retries=0 must log exactly one attempt: {client.requests}")
+    else:
+        attempt = client.requests[0]
+        if (attempt.get("status"), attempt.get("attempt"), attempt.get("attempt_limit")) != \
+                ("error:RateLimitError", 1, 1):
+            problems.append(f"the terminal attempt must read error:RateLimitError, attempt 1 of 1: "
+                            f"{attempt.get('status')}/{attempt.get('attempt')}/{attempt.get('attempt_limit')}")
+        if attempt.get("http_status") != 429 or attempt.get("provider_error_code") != "rate_limit_exceeded":
+            problems.append(f"status/code on the attempt: {attempt.get('http_status')}/"
+                            f"{attempt.get('provider_error_code')}")
+        if attempt.get("provider_request_id") != "req_429_terminal":
+            problems.append(f"provider_request_id {attempt.get('provider_request_id')!r}")
+        headers = attempt.get("rate_limit_headers") or {}
+        for name in ("x-ratelimit-limit-requests", "x-ratelimit-remaining-requests",
+                     "x-ratelimit-reset-requests", "retry-after"):
+            if name not in headers:
+                problems.append(f"the provider's {name} header was not preserved on the attempt: {headers}")
+        if "authorization" in headers:
+            problems.append("a non-rate-limit header leaked into rate_limit_headers")
+        if attempt.get("billed_input_tokens") is not None or attempt.get("billed_output_tokens") is not None:
+            problems.append("a 429 must carry no billed tokens")
+        for key in ("turn", "attempt", "status", "seconds", "attempt_id", "rollout_id", "billed_input_tokens",
+                    "billed_output_tokens", "t", "t_monotonic", "estimated_request_tokens", "error_class",
+                    "http_status", "provider_error_code", "provider_error_type", "error_message",
+                    "rate_limit_headers", "provider_request_id"):
+            if key not in attempt:
+                problems.append(f"the attempt record lost the historical field {key}")
+    if "nvapi-abcdefghijklmnop" in json.dumps(client.requests, default=str):
+        problems.append("a key-shaped string survived into the request log")
+    if client.wire_caps:
+        problems.append(f"a refused request must add no wire cap: {client.wire_caps}")
+
+    # 2. retries=2: up to three requests.
+    made, client, pauses, raised = drive(2)
+    statuses = [r.get("status") for r in client.requests]
+    if made != 3 or statuses != ["rate_limited", "rate_limited", "error:RateLimitError"]:
+        problems.append(f"retries=2 against an always-429 provider: {made} requests, statuses {statuses}; "
+                        f"expected three, the last terminal")
+    if [r.get("attempt") for r in client.requests] != [1, 2, 3] or \
+            {r.get("attempt_limit") for r in client.requests} != {3}:
+        problems.append(f"attempt numbering / limit: {[(r.get('attempt'), r.get('attempt_limit')) for r in client.requests]}")
+    if pauses != [20.0, 40.0]:
+        problems.append(f"retries=2 must request the 20 s and 40 s back-offs and no third: {pauses}")
+    if not isinstance(raised, openai.RateLimitError):
+        problems.append("retries=2 must still end in the terminal refusal once the bound is spent")
+    made, client, pauses, raised = drive(2, succeed_on=2)
+    statuses = [r.get("status") for r in client.requests]
+    if made != 2 or statuses != ["rate_limited", "ok"] or raised is not None or pauses != [20.0]:
+        problems.append(f"retries=2 with success on the second request: {made} requests, {statuses}, "
+                        f"pauses {pauses}, raised {raised!r}")
+    if client.billed_input_tokens_all_attempts != 11 or client.billed_output_tokens_all_attempts != 7:
+        problems.append("only the succeeded request may bill")
+
+    # 3. end to end, retries=0: one request, one durable terminal row.
+    with tempfile.TemporaryDirectory() as directory:
+        journal = Path(directory) / "c.starts.jsonl"
+        post, calls = make_post(None)
+        original_post = oai_mod.post_chat_completion_with_routed_experts_sidecar
+        oai_mod.post_chat_completion_with_routed_experts_sidecar = post
+        row = {}
+        try:
+            row = mb.one_rollout(DEFAULT_SHIM, mb.make_client_cls(0.0, True, retries=0), DUMMY_CONFIG,
+                                 "test:0", "m", 4000, 0, 0, True, archive=Path(directory) / "arc", arm="A",
+                                 planned_ordinal=1, session_id="s-2", screen="cash-application-screen-2",
+                                 selection_digest="deadbeef", start_journal=journal)
+        except BaseException as escaped:                                   # noqa: BLE001 — the whole point
+            problems.append(f"one_rollout raised {type(escaped).__name__}: {escaped}")
+        finally:
+            oai_mod.post_chat_completion_with_routed_experts_sidecar = original_post
+        if calls["n"] != 1:
+            problems.append(f"the cell made {calls['n']} provider requests under retries=0; the policy is one")
+        if (row.get("cell_status"), row.get("quarantined"), row.get("scored"), row.get("reward")) != \
+                (mb.CELL_ATTEMPTED_UNSCORED, True, False, None):
+            problems.append(f"disposition: {row.get('cell_status')} quarantined={row.get('quarantined')} "
+                            f"scored={row.get('scored')} reward={row.get('reward')!r}")
+        if row.get("failure_stage") != mb.FAILURE_STAGE_EVALUATION:
+            problems.append(f"failure_stage {row.get('failure_stage')!r}: the 429 did not take the real "
+                            f"client-wrapper -> quarantine road")
+        logged = row.get("requests") or []
+        if len(logged) != 1 or logged[0].get("http_status") != 429 \
+                or logged[0].get("status") != "error:RateLimitError":
+            problems.append(f"the row's request log must hold exactly the one terminal 429: {logged}")
+        if row.get("attempts") != 1:
+            problems.append(f"attempts {row.get('attempts')!r}, expected 1")
+        if row.get("http_status") != 429:
+            problems.append(f"row http_status {row.get('http_status')!r}: the terminal 429 was not recovered")
+        if (row.get("retries"), row.get("pacing_retries"), row.get("pacing_attempts_per_request"),
+                row.get("sdk_retries")) != (0, 0, 1, DUMMY_CONFIG.max_retries):
+            problems.append(f"the row must record the retry policy as observed: retries={row.get('retries')} "
+                            f"pacing_retries={row.get('pacing_retries')} "
+                            f"pacing_attempts_per_request={row.get('pacing_attempts_per_request')} "
+                            f"sdk_retries={row.get('sdk_retries')}")
+        if row.get("stop_schedule") or row.get("quota_exhausted") or row.get("session_fatal"):
+            problems.append("an ordinary 429 must not stop the session or claim quota exhaustion")
+        starts = [json.loads(line) for line in journal.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if len(starts) != 1 or starts[0].get("cell_status") != mb.CELL_STARTED:
+            problems.append(f"start journal: {starts}")
+        if "nvapi-abcdefghijklmnop" in json.dumps(row, default=str):
+            problems.append("a key-shaped string survived into the terminal row")
+
+    # 4. the bound is refused when nonsensical, defaults to 0, and is published.
+    try:
+        mb.make_client_cls(0.0, True, retries=-1)
+        problems.append("a negative retries was accepted")
+    except ValueError:
+        pass
+    signature = inspect.signature(mb.make_client_cls)
+    if "retries" not in signature.parameters or signature.parameters["retries"].default != 0:
+        problems.append(f"make_client_cls must take retries with default 0: {signature}")
+    default_cls = mb.make_client_cls(0.0, True)
+    if (default_cls.pacing_retries, default_cls.pacing_attempts_per_request) != (0, 1):
+        problems.append(f"the default class publishes {default_cls.pacing_retries}/"
+                        f"{default_cls.pacing_attempts_per_request}, expected 0/1")
+    main_source = inspect.getsource(mb.main)
+    # The flag's parser is a non-negative-int validator (argparse refuses -1
+    # before any provider configuration runs); what this pins is the default.
+    if not re.search(r'parser\.add_argument\("--retries", type=(int|_non_negative_int), default=0', main_source):
+        problems.append("the --retries flag no longer defaults to 0")
+    if "retries=args.retries" not in main_source:
+        problems.append("main() does not hand --retries to make_client_cls")
+    if "range(6)" in inspect.getsource(mb.make_client_cls):
+        problems.append("the fixed six-iteration loop is still there")
+    return check("the 429 pacing loop is bounded by --retries (1 + retries requests per turn): retries=0 makes "
+                 "ONE request and a durable terminal row with status, code, request id and rate-limit headers; "
+                 "retries=2 makes up to three; the row records the policy as observed",
+                 not problems, "\n".join(problems))
+
+
 TESTS = [
     test_no_write_is_no_artifact_no_write,
     test_refused_write_is_no_artifact_write_refused,
@@ -7823,6 +8065,8 @@ TESTS = [
     test_a_cancelled_cell_is_recorded_as_cancelled_and_the_cancellation_propagates,
     test_a_legacy_rollouts_breakdown_and_archive_are_unchanged_in_shape,
     test_the_model_slug_is_a_file_name_and_published_names_do_not_move,
+    # round 19: the runner's retry policy
+    test_the_pacing_loop_is_bounded_by_retries_and_a_terminal_429_leaves_a_row,
 ]
 
 

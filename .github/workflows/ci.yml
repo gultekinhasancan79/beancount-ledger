@@ -89,6 +89,17 @@ jobs:
       - name: Run the documented reference-solution walkthrough
         run: uv run --no-sync python examples/scoring_walkthrough.py
 
+      - name: Verify the evaluation pack on this runtime
+        shell: bash
+        # The pack's portable declaration (declared literals, components,
+        # per-Unicode parser and scorer-contract pins, episode contracts,
+        # library pins) and the package tree digest must hold NATIVELY on
+        # every runtime the pack advertises; the whole-freeze digest folds
+        # the native runtime in and is reported here, never demanded off
+        # the reference runtime. This job is the native evidence for its
+        # own (os, python, unicode) cell.
+        run: uv run --no-sync python docs/evaluation_pack/check_pack.py
+
   artefact-audit:
     name: wheel/sdist ship no tests, goldens or evidence
     runs-on: ubuntu-latest

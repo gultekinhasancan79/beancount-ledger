@@ -1,4 +1,9 @@
 {
+ "bytes_are": "the bytes a clean checkout under .gitattributes (* text=auto eol=lf) yields, i.e. git's own copy: a working copy that holds an indexed text file with CRLF verifies as changed in line endings only, and the fix is to renormalise that copy, not the index",
+ "directories": [
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces",
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual"
+ ],
  "files": {
   "reviews/RELEASE_ATTESTATION.md": {
    "bytes": 120803,
@@ -17,8 +22,8 @@
    "sha256": "2b2ad0651bd90c42bc720ff0df327e6e784e65cf3cf531aff5dcbbed2d7bc3d6"
   },
   "reviews/cash_application_adjudication_2026-09-10/cash_adjudication.jsonl": {
-   "bytes": 27253,
-   "sha256": "668c20fee5f50214e17fe94210be9b63af987ce9792e76dca4b4d899f9fc172d"
+   "bytes": 27248,
+   "sha256": "fd4d79114f334a0a565b7d934631013bbd89dd4a149ba6e3fba2357302472ad5"
   },
   "reviews/cash_application_adjudication_2026-09-10/predeclared.md": {
    "bytes": 3483,
@@ -33,36 +38,36 @@
    "sha256": "537669a639d4f63170ea05186f090b3725b497ec82142ed7eb7d817ecbcff5ed"
   },
   "reviews/cash_application_development_population_2026-09-13_replacement/aggregates.json": {
-   "bytes": 2416,
-   "sha256": "a595db61a1ec571d348d2a8ba014c6000275c32c66fb78dceebd8372082a7c8a"
+   "bytes": 2308,
+   "sha256": "11838d9879c76fed145400bb29633d663f0ec79bf82fec2310f818250697c55a"
   },
   "reviews/cash_application_development_population_2026-09-13_replacement/census.json": {
-   "bytes": 334335,
-   "sha256": "48574c09eee752662e0025eb73599b2fcc3f96266f9edae2b1f70b66d38a7c7d"
+   "bytes": 317501,
+   "sha256": "745e54d32c92446d6972a46b06e304f25e4935e47b16721b5a981d809965b96e"
   },
   "reviews/cash_application_development_population_2026-09-13_replacement/freeze.json": {
-   "bytes": 3093,
-   "sha256": "3ecbbc8778eec21ac8294df2d62772ce238e3ef4f59453cdd49eec08ace55b2a"
+   "bytes": 2987,
+   "sha256": "22b993f5fe81026b6de938d53bb2c9e209a24607423237a079a867f6bfe7bbbf"
   },
   "reviews/cash_application_development_population_2026-09-13_replacement/serving.json": {
-   "bytes": 73770,
-   "sha256": "deec36bd50ce117cffcd17b75e6d54712880a2477404fc947e91643cbe677c15"
+   "bytes": 72037,
+   "sha256": "2d2f457d3168e2c301516546e0979003a9f0b57df1ce082e5c5f880752ec8e15"
   },
   "reviews/cash_application_development_population_2026-09-13_replacement/superseded_rejections.json": {
-   "bytes": 2343,
-   "sha256": "a047793b9c9ceb860ff9a9767a929b1d74f384891309b2f3c88d7523cc0a2b9d"
+   "bytes": 2282,
+   "sha256": "e25ace71470a71a1f968835255d23ed67714cb9bf3525e06bccfef636e3f306f"
   },
   "reviews/cash_application_development_population_2026-09-13_replacement/validation.json": {
-   "bytes": 325329,
-   "sha256": "dc0ecabcd70fd163907c4203c59189f603b1483307edba74f71bcd93d296bfdb"
+   "bytes": 315333,
+   "sha256": "c163c3be6356c57d52e5deb36f6ab121cadb5c82473cc2e5f93cbeb926949595"
   },
   "reviews/cash_application_generated_screen_2026-09-13.md": {
    "bytes": 15322,
    "sha256": "252c62b9e9cccf6c17b51dce50ebf6a18af256f404fae63d5d6fa688c9aeb1d8"
   },
   "reviews/cash_application_generated_screen_2026-09-13/README.md": {
-   "bytes": 5246,
-   "sha256": "153c258abc03d292a523f44795270f9bba2595dc17090d903e1f6a98138fe863"
+   "bytes": 5841,
+   "sha256": "bc26e21c425bb8ba3b1317c47fd2f1b33ef5cddbbfb3132f521f610558165af7"
   },
   "reviews/cash_application_generated_screen_2026-09-13/cash_screen_1_runner.log": {
    "bytes": 22080,
@@ -72,13 +77,505 @@
    "bytes": 5324,
    "sha256": "d5572e654c571b1f0ed58174d3a9b133c0e98f6cfdc84e709bb30af3e45b2d97"
   },
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual/ar-tenterhook_22_a/cash_application.corrected.json": {
+   "bytes": 3857,
+   "sha256": "3cd0ea585aa5c8f3d37f663455d206590151914dcfdec0c398f65ee3a35b9a38"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual/ar-tenterhook_22_a/cash_application.delivered.json": {
+   "bytes": 3213,
+   "sha256": "a34b7dfac5ece2ccd14a91df51ed0a43bf1cb52fcee3b6e0862e344781607fe8"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual/ar-tenterhook_22_a/cash_application.diff": {
+   "bytes": 892,
+   "sha256": "fbf759cd7654f9bb3a7bc91e557a5ea04e67f17ed417bf2e8205eea960a55a16"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual/ar-tenterhook_24_a/cash_application.corrected.json": {
+   "bytes": 4041,
+   "sha256": "4db9885ed623a6ee079a30ddacecc60b489abc0602ee8cd2ef1a2f4f505ed639"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual/ar-tenterhook_24_a/cash_application.delivered.json": {
+   "bytes": 3394,
+   "sha256": "50117e3c41e859240a02c2f80cb885d869223e5db0d6033e3cbcffd64056b1fa"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/counterfactual/ar-tenterhook_24_a/cash_application.diff": {
+   "bytes": 895,
+   "sha256": "d462d09da9b049e2aa53b11240031baf195edd637816d52c9218744feb0ea901"
+  },
   "reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.json": {
    "bytes": 44758,
    "sha256": "5bdc3823dfac575a537899b726ce6fc0ab01859b2196f7e1f0572c39ab038489"
   },
   "reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.py": {
-   "bytes": 20558,
-   "sha256": "11f18049a30e51b239f08003897013c7cf86d20edd8f34423e3eaeba76037dd6"
+   "bytes": 27998,
+   "sha256": "a45a878c5ce461bff89a251880c3424086a5ef4d994f4a39d1eb564cdd170582"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/accounts.csv": {
+   "bytes": 798,
+   "sha256": "69bb4be4ff9cda8df0141510519fc93419e2581fc1f3fe4484777333fd6a0397"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/archive_prior_period.csv": {
+   "bytes": 249,
+   "sha256": "1f1b6927e9c4e4517e5325d72f1a5ed49dc08209ba511542b2e0c2630aab036b"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/bank_statement.csv": {
+   "bytes": 566,
+   "sha256": "483c5efe103a4228ec2b1cd7b3b20cff350c6d4c12c95ef7c731da56a2e546c3"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/cash_application.json": {
+   "bytes": 3213,
+   "sha256": "a34b7dfac5ece2ccd14a91df51ed0a43bf1cb52fcee3b6e0862e344781607fe8"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/credit_notes.csv": {
+   "bytes": 245,
+   "sha256": "24a409ea7c12cacbb0b2ad2ccaa8a36a738bd20189ba6c233605ae1eba7c4f36"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/customers.csv": {
+   "bytes": 162,
+   "sha256": "574987ef7d300853153f2a3c24437936384b5c9d07c80e9767c49fe7431ab181"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/delivery.json": {
+   "bytes": 1685,
+   "sha256": "c8d4ae6683eecc53937e12f0bde5235f533326ce01c1b96e833b77770d5c7d43"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/ledger.beancount": {
+   "bytes": 4194,
+   "sha256": "f41a745ab799245b9938fd4877cab94aa53356ef39fc1a7ea6247760dc5d73c1"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/manifest.md": {
+   "bytes": 1381,
+   "sha256": "9ebc680fca0b4ab4d55306dffc091cf40215e98df2182c0806c85512fadd3f7d"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/open_items.csv": {
+   "bytes": 724,
+   "sha256": "a84f49cca515353fd76135c137f0eb35a6df6edebe1e3c4457704cd4aa14d48e"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/policy.md": {
+   "bytes": 7515,
+   "sha256": "f95c72802ec006211c5c3a12622d5cb2812698cc6fcbf88976b6e7156a735762"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/remittance_advice.csv": {
+   "bytes": 1126,
+   "sha256": "9cfb06ea6cccff5241acee14b298ac03ff1f6a896d5ce7154f6e9b0ae7eb5945"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_a/vendors.csv": {
+   "bytes": 80,
+   "sha256": "ac307110c82230978494d1df079aa60338e9591ae26cee087d6ede4bc61ad865"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/accounts.csv": {
+   "bytes": 798,
+   "sha256": "69bb4be4ff9cda8df0141510519fc93419e2581fc1f3fe4484777333fd6a0397"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/archive_prior_period.csv": {
+   "bytes": 249,
+   "sha256": "1f1b6927e9c4e4517e5325d72f1a5ed49dc08209ba511542b2e0c2630aab036b"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/bank_statement.csv": {
+   "bytes": 566,
+   "sha256": "483c5efe103a4228ec2b1cd7b3b20cff350c6d4c12c95ef7c731da56a2e546c3"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/cash_application.json": {
+   "bytes": 3994,
+   "sha256": "2bd16c222808f5750e4531f6384c6c1b73cfc042c514d3964e71d5654b866371"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/credit_notes.csv": {
+   "bytes": 245,
+   "sha256": "24a409ea7c12cacbb0b2ad2ccaa8a36a738bd20189ba6c233605ae1eba7c4f36"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/customers.csv": {
+   "bytes": 162,
+   "sha256": "574987ef7d300853153f2a3c24437936384b5c9d07c80e9767c49fe7431ab181"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/delivery.json": {
+   "bytes": 1671,
+   "sha256": "b6798fb66007f195094d1aaea42cf451037425984d2b6436b3b4926d8a805074"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/ledger.beancount": {
+   "bytes": 4194,
+   "sha256": "f41a745ab799245b9938fd4877cab94aa53356ef39fc1a7ea6247760dc5d73c1"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/manifest.md": {
+   "bytes": 1381,
+   "sha256": "9ebc680fca0b4ab4d55306dffc091cf40215e98df2182c0806c85512fadd3f7d"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/open_items.csv": {
+   "bytes": 724,
+   "sha256": "a84f49cca515353fd76135c137f0eb35a6df6edebe1e3c4457704cd4aa14d48e"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/policy.md": {
+   "bytes": 7515,
+   "sha256": "f95c72802ec006211c5c3a12622d5cb2812698cc6fcbf88976b6e7156a735762"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/remittance_advice.csv": {
+   "bytes": 1126,
+   "sha256": "6ae7606c16c1ec20c15f0c37a768a89f3ecafea8c7a619c47cf7d0a032858adb"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_22_b/vendors.csv": {
+   "bytes": 80,
+   "sha256": "ac307110c82230978494d1df079aa60338e9591ae26cee087d6ede4bc61ad865"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/accounts.csv": {
+   "bytes": 798,
+   "sha256": "69bb4be4ff9cda8df0141510519fc93419e2581fc1f3fe4484777333fd6a0397"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/archive_prior_period.csv": {
+   "bytes": 257,
+   "sha256": "54ed1dc88d55f02bcc443aaf2cdef8ab9e061488d97d3fc1e992f0a1508b841f"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/bank_statement.csv": {
+   "bytes": 589,
+   "sha256": "0a456a6bea21db5fcc32690d0d8930cbb7c6802400c4a8988acf8862be71b714"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/cash_application.json": {
+   "bytes": 3394,
+   "sha256": "50117e3c41e859240a02c2f80cb885d869223e5db0d6033e3cbcffd64056b1fa"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/credit_notes.csv": {
+   "bytes": 247,
+   "sha256": "b4e5e0ea2c18018bd0f2896eea49c69428b2bc373d85e208ca361735516c2766"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/customers.csv": {
+   "bytes": 165,
+   "sha256": "a17aaee01b7f9f0ff7e629f3e15d1b6e4404e97cc76c7bc69f0adb9fce160e40"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/delivery.json": {
+   "bytes": 1685,
+   "sha256": "c60ef9abf26a453f1ff682c453ead91530685205290654233afbc648b844c123"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/ledger.beancount": {
+   "bytes": 4219,
+   "sha256": "32f2a6b90fb4fe81ed00fb3a861ee8b57fbfb0328c90613d2076db39da23d343"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/manifest.md": {
+   "bytes": 1382,
+   "sha256": "37cd5fc337d1bb59019a0785ee288ded8da07818e01bc0b2d2bf6e283563a513"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/open_items.csv": {
+   "bytes": 738,
+   "sha256": "a69bbce9dc4ef01624f0c0c330c29ffafab152fc477e30ab8e4049209ec8b6a2"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/policy.md": {
+   "bytes": 7515,
+   "sha256": "f95c72802ec006211c5c3a12622d5cb2812698cc6fcbf88976b6e7156a735762"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/remittance_advice.csv": {
+   "bytes": 1163,
+   "sha256": "5c61f7d0511f7cedceb5b28094c17023e8d77be414a7688691a26dd5af8e1205"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_a/vendors.csv": {
+   "bytes": 80,
+   "sha256": "f683e8ebad9cc146e4d600377620456ddcae94f232ed01a09caa1faf286de064"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/accounts.csv": {
+   "bytes": 798,
+   "sha256": "69bb4be4ff9cda8df0141510519fc93419e2581fc1f3fe4484777333fd6a0397"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/archive_prior_period.csv": {
+   "bytes": 257,
+   "sha256": "54ed1dc88d55f02bcc443aaf2cdef8ab9e061488d97d3fc1e992f0a1508b841f"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/bank_statement.csv": {
+   "bytes": 589,
+   "sha256": "0a456a6bea21db5fcc32690d0d8930cbb7c6802400c4a8988acf8862be71b714"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/cash_application.json": {
+   "bytes": 3885,
+   "sha256": "1370867bf4294c72af98a88fd9e25c95d62a814834fea28fd1cd4442f2af8443"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/credit_notes.csv": {
+   "bytes": 247,
+   "sha256": "b4e5e0ea2c18018bd0f2896eea49c69428b2bc373d85e208ca361735516c2766"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/customers.csv": {
+   "bytes": 165,
+   "sha256": "a17aaee01b7f9f0ff7e629f3e15d1b6e4404e97cc76c7bc69f0adb9fce160e40"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/delivery.json": {
+   "bytes": 1671,
+   "sha256": "4bf5ad2d7f947521deed2c8f16e2a2452c4c63103f9f94ef366f39f7c917d99f"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/ledger.beancount": {
+   "bytes": 4219,
+   "sha256": "32f2a6b90fb4fe81ed00fb3a861ee8b57fbfb0328c90613d2076db39da23d343"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/manifest.md": {
+   "bytes": 1382,
+   "sha256": "37cd5fc337d1bb59019a0785ee288ded8da07818e01bc0b2d2bf6e283563a513"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/open_items.csv": {
+   "bytes": 738,
+   "sha256": "a69bbce9dc4ef01624f0c0c330c29ffafab152fc477e30ab8e4049209ec8b6a2"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/policy.md": {
+   "bytes": 7515,
+   "sha256": "f95c72802ec006211c5c3a12622d5cb2812698cc6fcbf88976b6e7156a735762"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/remittance_advice.csv": {
+   "bytes": 1163,
+   "sha256": "849b688efa429338458a44c1cb1a18013b11f702e2c405b03f58c2819af1e0f7"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/ar-tenterhook_24_b/vendors.csv": {
+   "bytes": 80,
+   "sha256": "f683e8ebad9cc146e4d600377620456ddcae94f232ed01a09caa1faf286de064"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/accounts.csv": {
+   "bytes": 798,
+   "sha256": "ea68a3e2db45c3c6edfa4bc77a0b3468fb1ce27a89f05da718afc32e604437a8"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/archive_prior_period.csv": {
+   "bytes": 251,
+   "sha256": "709d2bf007312d978754e16b23b0d216e835ec1116e2d3a60442a24c6fe75701"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/bank_statement.csv": {
+   "bytes": 572,
+   "sha256": "3598590b604d82f3cf8985d0a6182314dc30ddc72b52b8a08c39e45ffa3b03a0"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/cash_application.json": {
+   "bytes": 3579,
+   "sha256": "3e1463689e6d652dda1242a52f678fd162ee11c63b8006d3bad16d43e9426f13"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/credit_notes.csv": {
+   "bytes": 260,
+   "sha256": "fa8858c20cfd143ec520bd32020fddca31297f4b6321f8a779a09143376095e0"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/customers.csv": {
+   "bytes": 162,
+   "sha256": "141a3f13cc55ae75f1dc5e55d027cdcedf003ff1353cdda10c1e5f5eab57f0eb"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/delivery.json": {
+   "bytes": 1671,
+   "sha256": "31a9f420100818a94476244f8fbe72c89207ed3cd861ac24579274190cf702c2"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/ledger.beancount": {
+   "bytes": 3982,
+   "sha256": "40f834d2c37047266745856a9f0da865255b861112b12dd5f72a034e19d60ab0"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/manifest.md": {
+   "bytes": 1384,
+   "sha256": "2bfc6dffb9865c5be3fc646779061aaac1c8ea27b8e8a02401fa0631ca458a78"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/open_items.csv": {
+   "bytes": 652,
+   "sha256": "7428475069ed690dbe771f940fe5d97bd26040d2375d95d93ea867a6830925b1"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/policy.md": {
+   "bytes": 7506,
+   "sha256": "de0fdc046710a8a6ca24f976fde918c1b31fd138e91a11d591586f409a6721be"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/remittance_advice.csv": {
+   "bytes": 904,
+   "sha256": "db82af653a335d5d659954ccdbeff3eeaff276c6bf431b7b64e52e433b0f1159"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_12_b/vendors.csv": {
+   "bytes": 80,
+   "sha256": "c1bed3788ade70eaafe9af301b7e74a9693ac112130ef881351f770814162368"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/accounts.csv": {
+   "bytes": 793,
+   "sha256": "8e1db72b95904cf4a8e5372ce1d40dd4e93ad1b78918c3ded1d474d1a2fb9b36"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/archive_prior_period.csv": {
+   "bytes": 246,
+   "sha256": "3681a0aa988e9935817584b220c28b99c7e84fe2bd82bc6cf14e0232116fd72a"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/bank_statement.csv": {
+   "bytes": 567,
+   "sha256": "5d95a8fda62e6a282ed50e8b60426e854f27335945b61822f9549cd967e53f8b"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/cash_application.json": {
+   "bytes": 3573,
+   "sha256": "198c25240f144a005f745a748e39681fcc1b0dfd5a4e97a55f696f9a04738b6e"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/credit_notes.csv": {
+   "bytes": 257,
+   "sha256": "e6ca34327b6331f7c9e357487ba66deac32120f85d9539eb12a6eec46d6d3569"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/customers.csv": {
+   "bytes": 162,
+   "sha256": "25f4a5957baf232d0108a95998641160e766ca891edab92b83f4c3ba76c4e28d"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/delivery.json": {
+   "bytes": 1671,
+   "sha256": "624579b78abeb06c18682c43eb4d889303b065107146ea2d08782091223bb384"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/ledger.beancount": {
+   "bytes": 3966,
+   "sha256": "90f37e22453843b469d7caeb604c422fed6d22c6021931cce220c960c4bcd7e8"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/manifest.md": {
+   "bytes": 1382,
+   "sha256": "7ce1b8a8a731c6f6fd86033ea0d47ce66384df6985c20edff1d6814e6e723a76"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/open_items.csv": {
+   "bytes": 651,
+   "sha256": "4b42a5d8f023d47116fb36e85b6673223a46150e1c8ac69f25b9619ff59aa500"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/policy.md": {
+   "bytes": 7496,
+   "sha256": "29e683a4ee55e7b6b4ba3408b8f4e861f36e01cf256d6f0c20f8bbff5063df0e"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/remittance_advice.csv": {
+   "bytes": 892,
+   "sha256": "4fa83e89e048179437f9e6f5ed137f0c59efac57cb1903f1656147c90c8c5772"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_a/vendors.csv": {
+   "bytes": 78,
+   "sha256": "87c4363bdb3f88ac1c55b638194463d23e2405254188ee662c793ef280555534"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/accounts.csv": {
+   "bytes": 793,
+   "sha256": "8e1db72b95904cf4a8e5372ce1d40dd4e93ad1b78918c3ded1d474d1a2fb9b36"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/archive_prior_period.csv": {
+   "bytes": 246,
+   "sha256": "3681a0aa988e9935817584b220c28b99c7e84fe2bd82bc6cf14e0232116fd72a"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/bank_statement.csv": {
+   "bytes": 567,
+   "sha256": "5d95a8fda62e6a282ed50e8b60426e854f27335945b61822f9549cd967e53f8b"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/cash_application.json": {
+   "bytes": 3575,
+   "sha256": "b6ea723234f2085e42fb29e6cdf7b6d5ed3db89c0dd8c04723a0d85b0a30354e"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/credit_notes.csv": {
+   "bytes": 257,
+   "sha256": "fb5b0a3b1ab7e07958a3fde95e3091d2c46ece14ea6d08a3c8ab1add7a0438e0"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/customers.csv": {
+   "bytes": 162,
+   "sha256": "25f4a5957baf232d0108a95998641160e766ca891edab92b83f4c3ba76c4e28d"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/delivery.json": {
+   "bytes": 1671,
+   "sha256": "1252be6ba56cdbee41eca8b14a5e0ad00f31392a94364b784a6b5c612cab7a44"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/ledger.beancount": {
+   "bytes": 3966,
+   "sha256": "252bdba5550b4941d16be4d167e7cbb38be4fb09a13bc6870f16d9a589183e94"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/manifest.md": {
+   "bytes": 1382,
+   "sha256": "7ce1b8a8a731c6f6fd86033ea0d47ce66384df6985c20edff1d6814e6e723a76"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/open_items.csv": {
+   "bytes": 651,
+   "sha256": "4b42a5d8f023d47116fb36e85b6673223a46150e1c8ac69f25b9619ff59aa500"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/policy.md": {
+   "bytes": 7496,
+   "sha256": "29e683a4ee55e7b6b4ba3408b8f4e861f36e01cf256d6f0c20f8bbff5063df0e"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/remittance_advice.csv": {
+   "bytes": 892,
+   "sha256": "4fa83e89e048179437f9e6f5ed137f0c59efac57cb1903f1656147c90c8c5772"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/cr-pikestaff_6_b/vendors.csv": {
+   "bytes": 78,
+   "sha256": "87c4363bdb3f88ac1c55b638194463d23e2405254188ee662c793ef280555534"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/accounts.csv": {
+   "bytes": 797,
+   "sha256": "4db7369bf39c86651aa07e8943ee939636d56df9d6a3b793975ff6e300791b4a"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/archive_prior_period.csv": {
+   "bytes": 251,
+   "sha256": "c9855d94ee08013bbf6f9a5d31219b7b868623246ba16ded02b0c7fe36ee0bef"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/bank_statement.csv": {
+   "bytes": 597,
+   "sha256": "c4948f2ad5989c9bddbfb37e172b3fd59ba220e7ae929046f0d9491dee690985"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/cash_application.json": {
+   "bytes": 4029,
+   "sha256": "526e94ef70cc3b2c91455bb9288d1b83e47e98b5133b15f1cea40ac9e254987f"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/credit_notes.csv": {
+   "bytes": 253,
+   "sha256": "2c8cec99eae1a073ec7be170e9cb66611ba5a00af678c802802b2a6c432feecf"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/customers.csv": {
+   "bytes": 164,
+   "sha256": "75a1e94e9ff16dfb192fb329f665c73c8079f589aaf8241082968de7c8a547a1"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/delivery.json": {
+   "bytes": 1671,
+   "sha256": "ba9ed0eb2af583d398b13d86482be560c59bfeb8f850cc0e44505a84e96f2612"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/ledger.beancount": {
+   "bytes": 3996,
+   "sha256": "70a050950246defc1ce09c38901401cb5ce03f93e68e2da1715f359fed092a9b"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/manifest.md": {
+   "bytes": 1384,
+   "sha256": "a7f731246954da3eab4f0ea5ec79561a4bbbe7f88a9f372c3911a00dfb7da73a"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/open_items.csv": {
+   "bytes": 731,
+   "sha256": "f5a96e1b91ea589b65f8de8790b9906b207af593daf221b807c2e249600367da"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/policy.md": {
+   "bytes": 7827,
+   "sha256": "9fbb9292027c5b2dbc89610523f24e09cee431d614374e066b9212cda3d84504"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/remittance_advice.csv": {
+   "bytes": 692,
+   "sha256": "705d67362de1dd412233407c30881924d5d121e0b4cc17c31674ea8072faf92d"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_a/vendors.csv": {
+   "bytes": 78,
+   "sha256": "87c4363bdb3f88ac1c55b638194463d23e2405254188ee662c793ef280555534"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/accounts.csv": {
+   "bytes": 797,
+   "sha256": "4db7369bf39c86651aa07e8943ee939636d56df9d6a3b793975ff6e300791b4a"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/archive_prior_period.csv": {
+   "bytes": 251,
+   "sha256": "c9855d94ee08013bbf6f9a5d31219b7b868623246ba16ded02b0c7fe36ee0bef"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/bank_statement.csv": {
+   "bytes": 597,
+   "sha256": "3bc37a7384fde8537dc3d4cf82fbb6ecd4b55a61e2bc36c4dd66722f430e89b7"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/cash_application.json": {
+   "bytes": 3960,
+   "sha256": "b0408757a7fe1b77f40e56205d95dd0ed48569ff5566674b77474e11fffdee9b"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/credit_notes.csv": {
+   "bytes": 253,
+   "sha256": "2c8cec99eae1a073ec7be170e9cb66611ba5a00af678c802802b2a6c432feecf"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/customers.csv": {
+   "bytes": 164,
+   "sha256": "75a1e94e9ff16dfb192fb329f665c73c8079f589aaf8241082968de7c8a547a1"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/delivery.json": {
+   "bytes": 1671,
+   "sha256": "0bcec436197790b3cc3bed88f85f4a4ad6938bfdb6c9d16590ac824de611ae62"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/ledger.beancount": {
+   "bytes": 3996,
+   "sha256": "a3f15247dd3e9ab67c2908e58bcf71e17e1b5cb39957037ac2e67285fd991425"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/manifest.md": {
+   "bytes": 1384,
+   "sha256": "a7f731246954da3eab4f0ea5ec79561a4bbbe7f88a9f372c3911a00dfb7da73a"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/open_items.csv": {
+   "bytes": 731,
+   "sha256": "f5a96e1b91ea589b65f8de8790b9906b207af593daf221b807c2e249600367da"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/policy.md": {
+   "bytes": 7827,
+   "sha256": "9fbb9292027c5b2dbc89610523f24e09cee431d614374e066b9212cda3d84504"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/remittance_advice.csv": {
+   "bytes": 692,
+   "sha256": "705d67362de1dd412233407c30881924d5d121e0b4cc17c31674ea8072faf92d"
+  },
+  "reviews/cash_application_generated_screen_2026-09-13/workspaces/fc-quarrymill_4_b/vendors.csv": {
+   "bytes": 78,
+   "sha256": "87c4363bdb3f88ac1c55b638194463d23e2405254188ee662c793ef280555534"
   },
   "reviews/cash_application_screen_2026-09-10.md": {
    "bytes": 10841,
@@ -132,11 +629,24 @@
    "bytes": 278826,
    "sha256": "4276b3465eeb34ce2e5fcb1f922de7fc7a03a77c45c7d592168cc491d19151d7"
   },
+  "tests/measure_budget.py": {
+   "bytes": 285523,
+   "sha256": "5a91a5fdde4ed62c3b90c95109c4dcb7deb7606cb99ada592fba76dbaa2ea7e4"
+  },
+  "tests/observed_truth.py": {
+   "bytes": 16013,
+   "sha256": "76c20c5ebda5010f205f25d146ef99c69526538c205053a3743e26e4252077ca"
+  },
+  "tests/test_measure_budget.py": {
+   "bytes": 498697,
+   "sha256": "fd18361639b425c4be758d0142cbdad4809e62a6dcb337cb1056a5f0cbefa426"
+  },
   "tests/unicode_pins.py": {
    "bytes": 15121,
    "sha256": "cf40b8674e8f69a5208093937c38fe5c5d2548f8567ddc7ce66a342220f29393"
   }
  },
- "schema": "piv.evaluation-pack.evidence-index/1",
- "source_commit": "9d59c078eec91792b1d1a5983e724d6cf928fae6"
+ "pack_commit": "unpublished",
+ "reference_source_commit": "9d59c078eec91792b1d1a5983e724d6cf928fae6",
+ "schema": "piv.evaluation-pack.evidence-index/2"
 }

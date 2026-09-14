@@ -36,6 +36,13 @@ Beside this directory, in `reviews/`:
 .venv/Scripts/python.exe reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.py
 ```
 
+A plain run is a **verification run** and modifies nothing here: it rebuilds the record and the
+counterfactual files into a fresh directory (`--out DIR`, or a new directory under the system temp),
+then compares them with the published copies, the record field by field except `written_at` and every
+counterfactual file byte for byte, printing `PASS` or `FAIL` per comparison and exiting non-zero on any
+difference. `rescore_cash_screen_1.json` and `counterfactual/` are pinned by digest in
+`docs/evaluation_pack/evidence_index.json`, so they are rewritten only by an explicit `--write-record`.
+
 Offline, no model calls, no evaluator key. It exits non-zero and names the problem if anything fails
 to bind. What it checks:
 

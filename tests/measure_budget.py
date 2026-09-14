@@ -48,8 +48,21 @@ THE MEASUREMENT SIDE:
     `config.max_retries` straight into the SDK constructor, and
     `ClientConfig.max_retries` defaults to 10) — a late 200 the SDK
     discards is billed by the provider and invisible to every layer above
-    it. `PacedClient` additionally records EVERY attempt of its own 429
-    pacing loop in `row["requests"]`.
+    it. `PacedClient`'s own 429 pacing loop is bounded by the SAME
+    `--retries` value the framework retries use: `1 + retries` requests per
+    turn, every one of them recorded in `row["requests"]` (each attempt
+    record also carries `attempt_limit`, the bound it ran under). The
+    default `--retries 0` therefore means EXACTLY ONE request per turn: a
+    429 is a terminal provider refusal that takes the durable failure path
+    below (an ATTEMPTED_UNSCORED row carrying the HTTP status, the
+    provider's code/type, the request identifier and the rate-limit /
+    retry-after headers the provider sent), never a pause-and-resend. THIS
+    IS A CHANGE OF DEFAULT BEHAVIOUR: the previous loop re-sent a
+    rate-limited request up to SEVEN times (20 s .. 120 s back-offs)
+    regardless of `--retries`, so the published "never a retry" was false
+    in the shipped runner (round 19). Rows written by that loop still
+    validate — their attempt records carry the same fields — and are told
+    apart by the absence of `attempt_limit` on their requests.
   - `validate_row()` — ONE pure validator that re-derives every
     predicate from an ARCHIVED row's own fields. `one_rollout` runs it on
     the row it just wrote; `tests/arm_table.py` runs it on every row it
@@ -2559,7 +2572,9 @@ def client_config(key_var: str, base_url: str, timeout: float, connect_timeout: 
     wire-cardinality rule exists to catch, so the retries are turned off
     rather than merely measured: retrying is a decision this instrument makes
     explicitly, in `PacedClient`'s own 429 loop, where every attempt is
-    recorded on the row.
+    recorded on the row — and that loop is bounded by the same `--retries`
+    value the framework retries use (`1 + retries` requests per turn; the
+    default 0 is one request, and a 429 is then terminal).
     """
     from verifiers.legacy.types import ClientConfig
     return ClientConfig(client_type="openai_chat_completions", api_key_var=key_var,
@@ -3310,11 +3325,20 @@ def archive_cell(archive: Path, selector: str, *, env_mod, public_files: dict,
 
 def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=None,
                     provider: str | None = None, cell: str | None = None,
-                    session_id: str | None = None):
+                    session_id: str | None = None, retries: int = 0):
     """A `Client` subclass factory: provider pacing/retry plus the reasoning-
     replay projection, both bound to this run's settings rather than closed
     over `argparse` `Namespace` — so a fake client under test can inject the
     same class shape without a live `args` object.
+
+    `retries` is THE `--retries` value, the same number `one_rollout` hands
+    the framework as `max_retries`: the 429 pacing loop makes at most
+    `1 + retries` requests per turn. It used to be a fixed seven, independent
+    of the flag, which made the documented "never a retry" false; now
+    `retries=0` — the default here and on the command line — is exactly one
+    request, and a 429 on the last allowed attempt is re-raised as the
+    terminal provider refusal it is. A negative value is refused loudly
+    rather than rounded up to "one request".
 
     `window_ledger` is the path of the SHARED provider-window
     ledger. When it is given, every HTTP attempt is appended to it and the
@@ -3344,9 +3368,20 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
     # The ledger is a PROVIDER-wide record; a cell that did not name its
     # provider still writes under whichever one `configure_provider` selected.
     provider = provider or PROVIDER
+    if isinstance(retries, bool) or not isinstance(retries, int) or retries < 0:
+        raise ValueError(f"make_client_cls: retries must be a non-negative int (the --retries value), "
+                         f"got {retries!r}")
+    attempts_allowed = 1 + retries
 
     class PacedClient(OpenAIChatCompletionsClient):
         _last = 0.0
+        #: THE PACING POLICY THIS CLIENT RUNS UNDER, readable off the client
+        #: so `one_rollout` records what the client actually does rather than
+        #: what a flag was declared to mean: at most `pacing_attempts_per_
+        #: request` provider requests per turn, i.e. `pacing_retries` re-sends
+        #: after a 429, and none after any other failure.
+        pacing_retries = retries
+        pacing_attempts_per_request = attempts_allowed
         # Serializes the module-level monkeypatch window below across
         # concurrent calls on the SAME event loop. `measure_budget.py`
         # always runs with `max_concurrent=1`, so this never actually
@@ -3483,6 +3518,11 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                      ledger_unhealthy: str | None = None) -> None:
                 ledger_failure = None
                 entry = {"turn": turn, "attempt": attempt_no, "status": status,
+                         # The bound this attempt ran under (`1 + --retries`),
+                         # so "attempt 1 of 1" is legible on the row itself.
+                         # Absent from every row the unbounded seven-attempt
+                         # loop wrote, which is how the two are told apart.
+                         "attempt_limit": attempts_allowed,
                          "seconds": round(seconds, 3), "attempt_id": attempt_id,
                          "rollout_id": rollout_id,
                          "billed_input_tokens": billed_in, "billed_output_tokens": billed_out,
@@ -3595,7 +3635,24 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                         PacedClient._last = time.monotonic()
                         return time.time(), time.monotonic()
 
-                    for attempt in range(6):
+                    # THE PACING LOOP IS BOUNDED BY `--retries`, the same value
+                    # the framework retries use: `attempts_allowed = 1 +
+                    # retries` requests per turn, so the default 0 is EXACTLY
+                    # ONE request. The previous loop made up to seven requests
+                    # on repeated 429s whatever the flag said, which is the
+                    # defect round 19 named ("never a retry" was false in the
+                    # shipped runner). A 429 on the LAST allowed attempt is a
+                    # terminal provider refusal: it is logged under the
+                    # `error:<class>` status every other terminal failure
+                    # carries — with the provider's status, code, request id,
+                    # rate-limit headers and the observed window — and
+                    # re-raised into the existing failure path (`vf.
+                    # ModelError` -> quarantine -> `terminal_row`). Only a 429
+                    # is ever re-sent; every other failure is terminal on the
+                    # first attempt, as before.
+                    for attempt in range(attempts_allowed):
+                        attempt_no = attempt + 1
+                        final = attempt_no >= attempts_allowed
                         sent_at, sent_mono = await _pace()
                         t0 = time.monotonic()
                         try:
@@ -3621,36 +3678,38 @@ def make_client_cls(min_interval: float, reasoning_replay: bool, window_ledger=N
                                     # be reconstructed, and the NEXT request is
                                     # refused by `window_ledger_precheck`.
                                     unhealthy = str(ledger_exc)[:300]
-                            _log("rate_limited", time.monotonic() - t0, attempt_no=attempt + 1,
+                            # A 429 that will be re-sent is `rate_limited`; the
+                            # one that ends the turn is `error:RateLimitError`,
+                            # the shape every terminal failure has always had
+                            # on the row (`arm_table.fatal_attempt` reads the
+                            # last non-ok entry, and its archived windows).
+                            _log("rate_limited" if not final else f"error:{type(exc).__name__}",
+                                 time.monotonic() - t0, attempt_no=attempt_no,
                                  error=provider_error_fields(exc), window=snapshot,
                                  prospective=prospective, ledger_unhealthy=unhealthy,
                                  sent_at=sent_at, sent_monotonic=sent_mono)
-                            pause = 20.0 * (attempt + 1)
-                            print(f"  429; pausing {pause:.0f}s (attempt {attempt + 1}/6)", flush=True)
+                            if final:
+                                print(f"  429 on attempt {attempt_no}/{attempts_allowed}; no pacing attempt "
+                                      f"left (--retries {retries}) -- terminal provider refusal", flush=True)
+                                raise
+                            pause = 20.0 * attempt_no
+                            print(f"  429; pausing {pause:.0f}s (attempt {attempt_no}/{attempts_allowed})",
+                                  flush=True)
                             await asyncio.sleep(pause)
                             continue
                         except Exception as exc:                    # noqa: BLE001 -- recorded, then re-raised
-                            _log(f"error:{type(exc).__name__}", time.monotonic() - t0, attempt_no=attempt + 1,
+                            _log(f"error:{type(exc).__name__}", time.monotonic() - t0, attempt_no=attempt_no,
                                  error=provider_error_fields(exc), sent_at=sent_at, sent_monotonic=sent_mono)
                             raise
                         _record(captured)
                         _log("ok", time.monotonic() - t0, captured.get("usage_prompt_tokens"),
-                             captured.get("usage_completion_tokens"), attempt_no=attempt + 1,
+                             captured.get("usage_completion_tokens"), attempt_no=attempt_no,
                              sent_at=sent_at, sent_monotonic=sent_mono)
                         return response
-                    sent_at, sent_mono = await _pace()
-                    t0 = time.monotonic()
-                    try:
-                        response = await super(PacedClient, self).get_native_response(*a, **k)
-                    except Exception as exc:                        # noqa: BLE001 -- recorded, then re-raised
-                        _log(f"error:{type(exc).__name__}", time.monotonic() - t0, attempt_no=7,
-                             error=provider_error_fields(exc), sent_at=sent_at, sent_monotonic=sent_mono)
-                        raise
-                    _record(captured)
-                    _log("ok", time.monotonic() - t0, captured.get("usage_prompt_tokens"),
-                         captured.get("usage_completion_tokens"), attempt_no=7,
-                         sent_at=sent_at, sent_monotonic=sent_mono)
-                    return response
+                    # Unreachable: `attempts_allowed >= 1` is enforced above and
+                    # every iteration returns or raises. Loud if it ever is.
+                    raise RuntimeError(f"PacedClient: the pacing loop ended after {attempts_allowed} allowed "
+                                       f"attempt(s) without a response or a failure")
                 finally:
                     _oai_client_mod.post_chat_completion_with_routed_experts_sidecar = original_post
 
@@ -3739,6 +3798,13 @@ def capability_probe(client_cls, config, model: str, timeout: float = 60.0) -> d
                                    ToolMessage(tool_call_id=str(getattr(calls[0], "id", "0")), content="pong")]
         try:
             await client.get_response(replayed, model, sampling_args, tools=[tool])
+        except openai.RateLimitError as exc:
+            # One request per probe stage now (the pacing loop is bounded by
+            # --retries, and a probe runs with none): a 429 here is the
+            # endpoint refusing, not the replay contract failing, so it is
+            # inconclusive rather than a capability verdict.
+            return {"ok": None, "stage": "replay_request_rate_limited", "tool_called": True,
+                    **provider_error_fields(exc)}
         except Exception as exc:                                           # noqa: BLE001
             return {"ok": False, "stage": "replay_request", "tool_called": True,
                     **provider_error_fields(exc)}
@@ -3921,6 +3987,14 @@ def one_rollout(env_mod, client_cls, config, selector: str, model: str, max_toke
         "replay_policy": "full" if reasoning_replay else "no_reasoning_content",
         "max_total_completion_tokens": max_total_completion_tokens,
         "timeout": getattr(config, "timeout", None), "retries": retries,
+        # THE RETRY POLICY, read off the objects that enforce it rather than
+        # restated from the flag: the SDK's own retries from the client config
+        # that was handed to the SDK, the pacing bound from the client class
+        # (`None` for a scripted client that has no pacing loop). `retries`
+        # above is what the framework was asked for; these say what ran.
+        "sdk_retries": getattr(config, "max_retries", None),
+        "pacing_retries": getattr(client, "pacing_retries", None),
+        "pacing_attempts_per_request": getattr(client, "pacing_attempts_per_request", None),
         "provider": PROVIDER, "endpoint": getattr(config, "api_base_url", BASE_URL), "model": model,
         "client_version": _client_version(), "started_at": started_at,
         "temperature": temperature, "top_p": top_p, "seed": seed,
@@ -4410,6 +4484,15 @@ def abandon_cell_on_drift(detail: str, row_path: Path, markdown_path: Path,
     return INSTRUMENT_DRIFT_EXIT
 
 
+def _non_negative_int(text: str) -> int:
+    """`--retries` is a count: refused by argparse, before any provider
+    configuration runs, rather than by a ValueError deep in make_client_cls."""
+    value = int(text)
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"must be 0 or more, not {value}")
+    return value
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
@@ -4422,8 +4505,13 @@ def main() -> int:
                              "B2=8000/off B3=16000/off; --max-tokens/--no-reasoning-replay still override it")
     parser.add_argument("--max-tokens", type=int, default=None,
                         help="per-turn completion cap; default 4000, or the --arm's cap")
-    parser.add_argument("--timeout", type=float, default=180.0)
-    parser.add_argument("--retries", type=int, default=0,
+    parser.add_argument("--timeout", type=float, default=180.0,
+                        help="per-REQUEST timeout in seconds: ClientConfig.timeout, which the framework turns "
+                             "into httpx.Timeout(timeout, connect=15) on the SDK client (read/write/pool per "
+                             "provider request, connect fixed at 15 s by client_config()). Not a per-episode "
+                             "budget. With SDK retries 0 a timed-out request is terminal and is recorded as "
+                             "error:APITimeoutError on the row; recorded on every row as `timeout`")
+    parser.add_argument("--retries", type=_non_negative_int, default=0,
                         help="framework-level rollout retries on InfraError/InvalidModelResponseError "
                              "(verifiers.legacy.utils.async_utils.maybe_retry). DEFAULT 0 (adversarial-review "
                              "finding 1): `Environment.run_rollout` retries with a FRESH state on the SAME "
@@ -4433,7 +4521,11 @@ def main() -> int:
                              "provider-failed/quarantined row, not a silent retry this instrument cannot fully "
                              "account for. Raise it only if you also read `row['attempts']`/`row['billed_*_"
                              "all_attempts']` and treat attempts > 1 as INVALID/framework_retry, which "
-                             "compute_budget_accounting already does.")
+                             "compute_budget_accounting already does. THE SAME VALUE bounds PacedClient's "
+                             "429 pacing loop: 1 + retries provider requests per turn, so 0 is exactly ONE "
+                             "request and a 429 is a terminal provider refusal (durable ATTEMPTED_UNSCORED "
+                             "row with status, provider code, request id and rate-limit headers). The "
+                             "previous loop made up to seven requests regardless of this flag.")
     parser.add_argument("--min-interval", type=float, default=6.0, help="seconds between model calls (provider pacing)")
     parser.add_argument("--tag", default="", help="suffix for the output files (one run per selector keeps earlier rows)")
     parser.add_argument("--no-reasoning-replay", action="store_true",
@@ -4528,7 +4620,17 @@ def main() -> int:
     arm_label = args.arm or "custom"
     client_cls = make_client_cls(args.min_interval, reasoning_replay,
                                  window_ledger=args.window_ledger, provider=PROVIDER,
-                                 cell=args.tag or None, session_id=args.session_id)
+                                 cell=args.tag or None, session_id=args.session_id,
+                                 retries=args.retries)
+    # The pacing bound, READ OFF THE CLASS that enforces it (`PacedClient`
+    # publishes `pacing_attempts_per_request`), so the banner and the summary
+    # state what will run rather than restate the flag. A class without the
+    # attribute (a scripted client under test) has no pacing loop, and the
+    # banner says exactly that rather than printing `1 + --retries` for it.
+    pacing_attempts = getattr(client_cls, "pacing_attempts_per_request", None)
+    pacing_policy = (f"pacing attempts per request {pacing_attempts} (1 + --retries; a 429 on the last "
+                     f"allowed attempt is a terminal provider refusal)" if pacing_attempts is not None
+                     else "pacing attempts per request n/a (this client class has no pacing loop)")
     # A literal hash of the exact system prompt and native tool schema THIS
     # checkout serves, computed once, up
     # front, from the package under `sys.path[0]` — recorded on every row of
@@ -4559,7 +4661,8 @@ def main() -> int:
           f"replicate {args.replicate}; default-profile prompt_schema_digest "
           f"{prompt_schema_digest[:12]}...; "
           f"replay_contract v{REPLAY_CONTRACT_VERSION} {replay_contract_digest(reasoning_replay)[:12]}...; "
-          f"SDK retries 0\n", flush=True)
+          f"SDK retries {SDK_MAX_RETRIES} (ClientConfig.max_retries); framework retries {args.retries}; "
+          f"{pacing_policy}; timeout {args.timeout:.0f}s; min-interval {args.min_interval}s\n", flush=True)
     markdown_path = out_dir / f"budget_{slug}_{stamp}.md"
     # THE CELL-START JOURNAL and THE CELL CENSUS, beside the rows.
     #
@@ -4693,7 +4796,8 @@ def main() -> int:
              f"prompt_schema_digest {row_prompt_schema_digests(rows) or prompt_schema_digest}.",
              f"replay_contract v{REPLAY_CONTRACT_VERSION}, digest "
              f"{replay_contract_digest(reasoning_replay)}, libraries {library_versions()}. "
-             f"SDK retries 0 (ClientConfig.max_retries), framework retries {args.retries}."
+             f"SDK retries {SDK_MAX_RETRIES} (ClientConfig.max_retries), framework retries {args.retries}, "
+             f"{pacing_policy}."
              + (f" Schedule {args.schedule_id}." if args.schedule_id else ""), "",
              # `over_plan_budget` compares TOTAL tokens (input + output)
              # against PLAN §6's 50,000-token BUDGET; `ceiling_hit` names

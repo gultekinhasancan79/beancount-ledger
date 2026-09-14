@@ -1,121 +1,239 @@
 {
  "describes": {
+  "commits_note": "reference_source_commit is the commit whose package this declaration describes; pack_commit is the later commit that carries the pack itself, or 'unpublished'. Neither is verified by check_pack: what it verifies is the package tree digest and the installed version, and it REPORTS the checkout commit it observes beside these.",
   "hub_entry": "cangultekn/beancount-ledger (0.2.0 as of 2026-09-14; 0.3.0 is the owner's upload, and it is a new version, not a rebuilt 0.2.0)",
+  "pack_commit": "unpublished",
+  "package_tree": {
+   "files": 71,
+   "logical_text_digest": "2a3165d39755783b45ccd265bbfaffc93ed4d89c8ca4a60730d1a8ac926666a4",
+   "method": "every file under the imported beancount_ledger package directory except __pycache__/ and *.pyc, sorted by POSIX relative path from the package's parent (so 'beancount_ledger/graph/cash_gate.py'); per file, sha256(relpath + '\\n' + text) where text is the file's logical text - strict UTF-8, CRLF and CR mapped to LF, the same rule beancount_ledger.logical_text applies to delivered artifacts; the tree digest is sha256 over the concatenated raw per-file digests in that order. Logical text rather than stored bytes because the released 0.3.0 wheel was built from a Windows checkout and carries CRLF in graph/cash_profile.py while a clean checkout under .gitattributes (eol=lf) has LF: same source, different bytes. The stored-bytes tree digest is recorded beside it and REPORTED at verify time, not demanded.",
+   "per_file_logical_text": {
+    "beancount_ledger/__init__.py": "e51f30ac72dd73586086a0ef2c3206210e053b491d28054529a05f4d9864a522",
+    "beancount_ledger/beancount_ledger.py": "d28e40bcae0cd3f73bd465f84c0e6045e6a345947d6642b6c23beff8b42ec72f",
+    "beancount_ledger/candidate/__init__.py": "d7fdb50be4cbb5cf8a552da262eadfc6284c78d10a442289c1731284654af372",
+    "beancount_ledger/candidate/application.py": "c3f46dd6bca5a8b03e8f8336bce33c215e65358128ae528907f9d22a203f6db1",
+    "beancount_ledger/candidate/canonical.py": "5436e7e3286d31a61c6d96f42b733b4e9f9ee79a2141b3647ce97124457335b6",
+    "beancount_ledger/candidate/committed.py": "c48666eba517315593b7046abc8101409aa3656e88ff204767d8a46f98b191b4",
+    "beancount_ledger/candidate/compat.py": "0a258c57435eb0370fc999503f05ac6ab38f330c42e16428d3be67459c815947",
+    "beancount_ledger/candidate/composite.py": "be0dc5dffe51b6bc84226da6a637dfdeb40cc4bf45400bccbf7a8c0ce63ff2e8",
+    "beancount_ledger/candidate/entities.py": "eb76204b4337d2597f75aafd72199ffc0fbf4273bae136d697a694b85f8f732b",
+    "beancount_ledger/candidate/mapping.py": "827db0e3b18a51e44d11745d8c66fb3cfe34001e45dafa80fdceb57013120aa0",
+    "beancount_ledger/candidate/normalise.py": "1c52788fb54d1663bea2ceea7ff419024cbe49b301d09975d149827aee1f91f1",
+    "beancount_ledger/candidate/policy.py": "50d8258ba87e2c50cebec2aec221216d38f7f205d274b4852852f82a767a235e",
+    "beancount_ledger/candidate/render.py": "1a592a628edd1d805e7c86bd178e5b7ffd4f810317de0c64045380d83401521f",
+    "beancount_ledger/candidate/schema.py": "0c9c97bc4eb459de3a6cb9a401aeb1bbedf81c240878fd98e858cb10f6d6b709",
+    "beancount_ledger/candidate/validate.py": "126d990601ab9426191bc91b5d88a37680b43fc3622e5931f05420c43a881c65",
+    "beancount_ledger/graph/__init__.py": "672838ae7f102204e93b90cbb1864b326b3a6090f78b2938bf9d3fd62ddcd867",
+    "beancount_ledger/graph/cash_admit.py": "24b23572455a85d4ae08dd3a822c13a863c8d89fc12b79fa44d489fcc2781dbc",
+    "beancount_ledger/graph/cash_application.py": "1abc4d7f1b93faed58cd9ed123fdab311f99bfcfb012cd2ad6633768cf38a0aa",
+    "beancount_ledger/graph/cash_construct.py": "6f3b711892d1309e019792f069b765f1e4cf4de2744b688cd48ef5df6a070dad",
+    "beancount_ledger/graph/cash_gate.py": "0cb1c8622ce6cf6cfc1ff9a1edae494422ee5bfaa3f23867a1cab53293f53a07",
+    "beancount_ledger/graph/cash_identity.py": "7692918e101e6bba0de33683c28d1d2bb303d16979734054eaa1586e507ccec0",
+    "beancount_ledger/graph/cash_manifest.py": "a5afd3d5965d447362fa1bf13692a2a9f14167c2116c7b34ec6f411ff11540ce",
+    "beancount_ledger/graph/cash_population.py": "eda972a4b744112b72f7cc42217468027571a0e0c4e96984e339931f29983683",
+    "beancount_ledger/graph/cash_profile.py": "56dae55ecaf7ad124253de7deb9f602596bc9b3445f7dba1f30d92795ae70ac2",
+    "beancount_ledger/graph/cash_split.py": "567afe876d6c03c5635d8c04d2485f9162b3cecf56ca9264cb07ea4fcfa1e7cb",
+    "beancount_ledger/graph/content.py": "c39098253e46824f6e8e35485eed3a53a3ea8a0f8e0ff865595abedb719afca2",
+    "beancount_ledger/graph/derive.py": "a896620a348377ebfc0e4415d5732a6484249102db512aa008eb681e0cb8c196",
+    "beancount_ledger/graph/generate.py": "12b7b8a12d9e76986e60d40c5ce4c0c2e390c9e6aaf304e6c6ccc8d1fe5ac5bc",
+    "beancount_ledger/graph/identify.py": "298ab754419623c67246b49cbdcd168b70f43911db2eecc204418b0480f0ae95",
+    "beancount_ledger/graph/manifest.py": "12830bcd071cfd68597064aaa839cae3873eb63e25416895aaee6b8dee0c85b2",
+    "beancount_ledger/graph/mint.py": "e501a52209932ca54fdadae7ab596386aeddb3cb240fad779df371bc189b1dba",
+    "beancount_ledger/graph/policy.py": "81b5796039807f2871e58ad94f7d40bf8320d530ddede0c53574200c4eb8bed3",
+    "beancount_ledger/graph/project.py": "d225df5c6280e063ce5ccca598be59093488c01dfbb325d6f58654a2662987fd",
+    "beancount_ledger/graph/repair_keys.py": "9e71de8fdce51de59581c84acc35389dfc59b090e7aedfae318e9ccd9a964860",
+    "beancount_ledger/graph/schema.py": "4a1cc1bd4d916977eed0d021cbaea9a398383cb81dc0d1616abb4d30cf0855b5",
+    "beancount_ledger/graph/state_contract.py": "0f5224e59cda1acaaae2c80b15b44a9be97e4a6beca641687fb3c236fa26f650",
+    "beancount_ledger/graph/worlds/__init__.py": "213335f1909b91969d5403071ee56c3b590cdc71afc8ddc626543cb058cfed52",
+    "beancount_ledger/graph/worlds/_assurance.py": "cf3e635d7eec613605359343703e89dc1931d5bcc0eae7ae98b3bb97e461cd2f",
+    "beancount_ledger/graph/worlds/_bowline.py": "9c55b39c907c01860494c5bac6c7c7d8b41092caab19b50e23c65b2943ff2c32",
+    "beancount_ledger/graph/worlds/_variant_pack.py": "435ddcf546a9df6316106dd1e22891d2cfc64b5ee41066d35a36fcb35e18ef9d",
+    "beancount_ledger/graph/worlds/alpine_2025_11.py": "0f96ccdf40d7f9bca36762f70b34cb78209df051a05837dc4eb77060a1aa7ff9",
+    "beancount_ledger/graph/worlds/bluewater_2025_10.py": "4b4aa99f83af4a49bb155bae7c09758a4354fc2d70bc320963224db4e4e48729",
+    "beancount_ledger/graph/worlds/bowline_2026_04_c1.py": "e389e51d5e576af8a7ccb7f1dfd7d599ed625506fff720c663a2b13de8593553",
+    "beancount_ledger/graph/worlds/bowline_2026_04_c2.py": "f283478cde3bc038c9c14dbbfea163a630de513aa402e46986294e1fb93dfc1e",
+    "beancount_ledger/graph/worlds/bowline_2026_04_c3.py": "050a070e3a15cdec16126f408d3cbdc6858f0f5472b4a134b7cec2fc8e394dcb",
+    "beancount_ledger/graph/worlds/bowline_2026_04_c4.py": "8e5c6bd96b67fbe4136d6ddf3462e39f4484d2e54c2c60cecb475fecbb6ba8b7",
+    "beancount_ledger/graph/worlds/bowline_2026_04_c5.py": "62da1ed12166c345f71e15aaa55e932ce98e4c743914389562b62312a5d1ce1b",
+    "beancount_ledger/graph/worlds/falcon_2026_02.py": "b5d39d24a8994649378d4167b88005dd0978c9c7bd1ef6f68270ae529d8e6584",
+    "beancount_ledger/graph/worlds/hawthorn_2025_12.py": "86552a3eb2e0999cf190783d6e8aa9d83cdddf87eb86281575c7dc5c288e618c",
+    "beancount_ledger/graph/worlds/ironwood_2025_10.py": "4cd8237ec472be2962ec64d6f341f60e69bbcc26451a8dc92c8bbbac364ab314",
+    "beancount_ledger/graph/worlds/maple_2025_12.py": "baf47a3f2cbebfa512ad13f47b311eea62e4083df6f2fb48ed70c872b6224365",
+    "beancount_ledger/graph/worlds/oakridge_2026_03.py": "c28ec29731dd9742dc672f38e22efb1ec617b6d72db9dbe5f99159f005fd2370",
+    "beancount_ledger/graph/worlds/pennywhistle_2026_06.py": "ebfb1d678b61ca1a67b1fb9d980af509ae005fcc5721a5d27d40ce5b2e449064",
+    "beancount_ledger/graph/worlds/redwood_2025_11.py": "64bf2e4be6246f6844d9ba147100e5a7619d217e395be5768b845dfee8a6a6c7",
+    "beancount_ledger/graph/worlds/silverbrook_2025_11.py": "fa705259d806c20706256e95fe0170c463cf378f022ba663c0ef69b8ce8812c6",
+    "beancount_ledger/graph/worlds/tallowmere_2026_07.py": "6b4f44c8d6cfc3b8c71efd3192af2a479a802325053269848ac78d80ef65a89f",
+    "beancount_ledger/graph/worlds/thistle_2026_01.py": "0f5a3e73ce7194be8520c1ce7d01862d0bd6714f7af6d478043d05d13280050d",
+    "beancount_ledger/graph/worlds/thornbury_2026_06.py": "7f9e58ecdb50e5f1955b6304247dfac30e93ec399493799dc95904aee96425e8",
+    "beancount_ledger/reward.py": "9bb082434ded14c05eaf581d7ca650b11c905b0c3eb3d14ed5d8c0c8dbdd6dad",
+    "beancount_ledger/safe_parse.py": "c1bbb2c9b35f56a85c37d4820c018ee50d6703b0dfd1016c0575fdc869aa8196",
+    "beancount_ledger/task.py": "5710a3ac08e9973377663f7bbf6c6d8bef91143d7e9df08a51c29029ae0f1ad3",
+    "beancount_ledger/tasks/bank_recon_001.json": "96c4e3e61d26cf1bc4b0097ef0d9119c379e095b0c93cf3283516ae39e3b2b53",
+    "beancount_ledger/world/accounts.csv": "a9dcbad81b6f5928123b3bc7199add90a45988fc7eadadac11de3647c5a3d810",
+    "beancount_ledger/world/archive_prior_period.csv": "85597763602fff86abbfdc813009bb2b504db5b8d02004aff40529da4c07e64e",
+    "beancount_ledger/world/bank_statement.csv": "61478e5864d042e528e477faf4ad58e28853a321b8a67faa8bd1ce548dbdbfaf",
+    "beancount_ledger/world/customers.csv": "369c792fddaece2499c388f0fe89d9c11d8eda0183d89d71d8d51519a305e3e4",
+    "beancount_ledger/world/ledger.beancount": "a74607d569c71187de809c9e082f71c72b8a12a26d24825311e0bc9c3bfffcd4",
+    "beancount_ledger/world/manifest.md": "7d602e66fd0e57dcf5f7f6e84984fecb27f6a3de865cde7f6c9e75ea4a0506e6",
+    "beancount_ledger/world/policy.md": "1d1a4bbdab0abc4d6b27f44bd9fdf88f65b56dd75fcee41d6ed881f6a212f199",
+    "beancount_ledger/world/vendors.csv": "91b98f869fce7b45ba33f4ad4dc748c55f52e846293b4f403b342fc3fd67e3f9",
+    "beancount_ledger/world_checks.py": "fd14e04c864fdadeecbf00f3bc5bc94c5a2dcba82bd2fc2834620bcbefa98d66"
+   },
+   "stored_bytes_digest_at_write": "2a3165d39755783b45ccd265bbfaffc93ed4d89c8ca4a60730d1a8ac926666a4"
+  },
   "package_version": "0.3.0",
+  "reference_source_commit": "9d59c078eec91792b1d1a5983e724d6cf928fae6",
   "release_artifact": {
    "measured_in": "reviews/installable_serving_check_2026-09-14/",
    "members": 75,
+   "record_sha256": "22b0fd268dd301e5c4c9294998546328623b3135919d306c957f629f14c2d584",
    "runtime_members": 71,
    "wheel": "beancount_ledger-0.3.0-py3-none-any.whl",
    "wheel_bytes": 657365,
    "wheel_sha256": "52665840cfff99813ef65248f162fefaa43b56c48b886f42668adc1e6dfc8457"
   },
-  "source_commit": "9d59c078eec91792b1d1a5983e724d6cf928fae6"
- },
- "episode_contracts": {
-  "cash_application": {
-   "digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
-   "profile": "cash_application",
-   "reference_task": "cash_application_001"
-  },
-  "legacy": {
-   "digest": "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866",
-   "profile": "legacy",
-   "reference_task": "bank_recon_001"
-  },
-  "note": "episode settings (turns, token budgets) are part of the contract digest; rows taken under different budgets are different arms and must never be pooled"
- },
- "family_freeze": {
-  "declared": {
-   "baseline_catalogue": "cash_application_baselines/1",
-   "binding_baselines": 9,
-   "construction_version": 1,
-   "development_population": "cash-application-development-2",
-   "diagnostic_baselines": 1,
-   "family": "cash_application",
-   "family_generator_version": 1,
-   "family_manifest_schema": 1,
-   "family_preflight_contract": 2,
-   "gate_count": 31,
-   "gate_set_digest": "2491e97f97b48cee",
-   "gate_version": 2,
-   "max_baseline_readings": 256,
-   "max_layout_attempts": 64,
-   "population_schema": 1,
-   "profile": "bounded-v1",
-   "profile_digest": "310e96729061410467f0e4285976743f",
-   "split_map_digest": "c41f5d150aec53ccce514f7123206ac5",
-   "split_map_schema": 1,
-   "structure_schema": 1,
-   "superseded_populations": [
-    "cash-application-development-1"
-   ],
-   "template_version": 1
-  },
-  "digest": "b371a45a0186648e40c7aa18f03efb28",
-  "schema": 1
- },
- "library_versions": {
-  "beancount": "3.2.3",
-  "datasets": "5.0.1",
-  "griffelib": "2.2.0",
-  "openai": "3.5.0",
-  "openai-agents": "0.22.0",
-  "pydantic": "2.13.4",
-  "pydantic-core": "2.46.4",
-  "verifiers": "0.3.1"
- },
- "runtime_scoped_by_unicode_database": {
-  "note": "the parser component is parse_policy_digest(); it records unicodedata.unidata_version, so it is pinned per Unicode database with the provenance tests/unicode_pins.py requires. A database this table does not carry is an UNVERIFIED runtime for this pack, not a passing one.",
-  "rows": {
-   "14.0.0": {
-    "parser": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
-    "provenance": {
-     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
-     "method": "derived-by-substitution",
-     "native_confirmation": "confirmed natively by the CI battery job (.github/workflows/ci.yml, ubuntu-latest, CPython 3.11 / unicode 14.0.0), which runs this suite and compares this row strictly on every push to main, every v* tag, and every pull request"
-    },
-    "scorer_contract_digest": "d1b7131ad316962490fcec637ba17acf3ac1d2f4e0c69171e041622b45cac683"
+  "written_on": {
+   "baseline_catalogue_digest": "b7fa69753bcf1f5e732968f2819696a4",
+   "import_path": "beancount_ledger",
+   "observed_checkout_commit": "8abffe0995d7f5964cec499a81f166519d6d5c49",
+   "runtime": {
+    "implementation": "CPython",
+    "machine": "AMD64",
+    "system": "Windows",
+    "unicode_database": "15.0.0",
+    "version": "3.12.12"
    },
-   "15.0.0": {
-    "parser": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
-    "provenance": {
-     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
-     "method": "native",
-     "native_confirmation": "observed natively on CPython 3.12.12 (Windows), which ships unicode 15.0.0"
-    },
-    "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa"
-   },
-   "15.1.0": {
-    "parser": "9f39ade4bcf5bc9ee174995bd7a2765e0009894d90167fbaee5a5b3c1d0a70ca",
-    "provenance": {
-     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
-     "method": "derived-by-substitution",
-     "native_confirmation": "derived by substitution on CPython 3.12 (unicode 15.0.0), then checked against a runtime that really ships unicode 15.1.0: a native CPython 3.13.11 (Windows) run of this suite and of tests/run_all.py, 34/34 suites, 2026-09-10. Linux is not confirmed yet: the ubuntu-latest CPython 3.13 battery job in .github/workflows/ci.yml runs on every push to main, every v* tag, and every pull request, so it first compares this row when this branch is opened as a pull request or merged to main -- a push of the branch itself runs no job at all."
-    },
-    "scorer_contract_digest": "3f12c01c905d62547fc8f156221ec587836e7f3615e61b1c24b0b184e5f2d5fb"
-   }
+   "whole_freeze_digest": "b371a45a0186648e40c7aa18f03efb28"
   }
  },
- "schema": "piv.evaluation-pack.declaration/1",
- "semantic_components_unicode_independent": {
-  "application_engine": "application/1",
-  "checker": 7,
-  "composite_engine": "composite/1",
-  "family_manifest_schema": 1,
-  "family_preflight_contract": 2,
-  "gate_set": "2491e97f97b48cee",
-  "ledger_engine": {
-   "id": "candidate/1",
-   "score_reduction": 1,
-   "scorer_contract": 1,
-   "task_contract": 1
+ "portable": {
+  "census_components_runtime_independent": {
+   "baseline_catalogue": "cash_application_baselines/1",
+   "construction": 1,
+   "gate": 2,
+   "gate_set": "2491e97f97b48cee",
+   "max_baseline_readings": 256,
+   "max_layout_attempts": 64,
+   "template": 1
   },
-  "public_fold": {
-   "schema": "piv.cash-application/1",
-   "version": 1
+  "episode_contracts": {
+   "cash_application": {
+    "digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+    "profile": "cash_application",
+    "reference_task": "cash_application_001"
+   },
+   "legacy": {
+    "digest": "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866",
+    "profile": "legacy",
+    "reference_task": "bank_recon_001"
+   },
+   "note": "episode settings (turns, token budgets) are part of the contract digest; rows taken under different budgets are different arms and must never be pooled. The digest does NOT cover every client setting (per-turn cap, sampling, timeout, retries, routing): equal digests do not establish equal arms; the screen's arm record does"
   },
-  "reference_identity": 2,
-  "renderer": 1
- }
+  "family_freeze": {
+   "declared": {
+    "baseline_catalogue": "cash_application_baselines/1",
+    "binding_baselines": 9,
+    "construction_version": 1,
+    "development_population": "cash-application-development-2",
+    "diagnostic_baselines": 1,
+    "family": "cash_application",
+    "family_generator_version": 1,
+    "family_manifest_schema": 1,
+    "family_preflight_contract": 2,
+    "gate_count": 31,
+    "gate_set_digest": "2491e97f97b48cee",
+    "gate_version": 2,
+    "max_baseline_readings": 256,
+    "max_layout_attempts": 64,
+    "population_schema": 1,
+    "profile": "bounded-v1",
+    "profile_digest": "310e96729061410467f0e4285976743f",
+    "split_map_digest": "c41f5d150aec53ccce514f7123206ac5",
+    "split_map_schema": 1,
+    "structure_schema": 1,
+    "superseded_populations": [
+     "cash-application-development-1"
+    ],
+    "template_version": 1
+   },
+   "schema": 1
+  },
+  "library_versions": {
+   "beancount": "3.2.3",
+   "datasets": "5.0.1",
+   "griffelib": "2.2.0",
+   "openai": "3.5.0",
+   "openai-agents": "0.22.0",
+   "pydantic": "2.13.4",
+   "pydantic-core": "2.46.4",
+   "verifiers": "0.3.1"
+  },
+  "note": "everything under this key is a function of the source alone and is compared strictly on every runtime. The WHOLE freeze digest is not here: freeze_record() folds runtime_freeze() into it - the baseline-catalogue digest over predicate bytecode, the Unicode-scoped parser and the native runtime - so it reproduces only on the reference runtime and is recorded under reference_runtime_attestation instead.",
+  "runtime_scoped_by_unicode_database": {
+   "note": "the parser component is parse_policy_digest(); it records unicodedata.unidata_version, so it and scorer_contract_digest() are pinned per Unicode database with the provenance tests/unicode_pins.py requires, and both are compared strictly against the running interpreter's own database. A database this table does not carry is an UNVERIFIED runtime for this pack, not a passing one.",
+   "rows": {
+    "14.0.0": {
+     "parser": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
+     "provenance": {
+      "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+      "method": "derived-by-substitution",
+      "native_confirmation": "confirmed natively by the CI battery job (.github/workflows/ci.yml, ubuntu-latest, CPython 3.11 / unicode 14.0.0), which runs this suite and compares this row strictly on every push to main, every v* tag, and every pull request"
+     },
+     "scorer_contract_digest": "d1b7131ad316962490fcec637ba17acf3ac1d2f4e0c69171e041622b45cac683"
+    },
+    "15.0.0": {
+     "parser": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+     "provenance": {
+      "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+      "method": "native",
+      "native_confirmation": "observed natively on CPython 3.12.12 (Windows), which ships unicode 15.0.0"
+     },
+     "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa"
+    },
+    "15.1.0": {
+     "parser": "9f39ade4bcf5bc9ee174995bd7a2765e0009894d90167fbaee5a5b3c1d0a70ca",
+     "provenance": {
+      "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+      "method": "derived-by-substitution",
+      "native_confirmation": "derived by substitution on CPython 3.12 (unicode 15.0.0), then checked against a runtime that really ships unicode 15.1.0: a native CPython 3.13.11 (Windows) run of this suite and of tests/run_all.py, 34/34 suites, 2026-09-10. Linux is not confirmed yet: the ubuntu-latest CPython 3.13 battery job in .github/workflows/ci.yml runs on every push to main, every v* tag, and every pull request, so it first compares this row when this branch is opened as a pull request or merged to main -- a push of the branch itself runs no job at all."
+     },
+     "scorer_contract_digest": "3f12c01c905d62547fc8f156221ec587836e7f3615e61b1c24b0b184e5f2d5fb"
+    }
+   }
+  },
+  "semantic_components_unicode_independent": {
+   "application_engine": "application/1",
+   "checker": 7,
+   "composite_engine": "composite/1",
+   "family_manifest_schema": 1,
+   "family_preflight_contract": 2,
+   "gate_set": "2491e97f97b48cee",
+   "ledger_engine": {
+    "id": "candidate/1",
+    "score_reduction": 1,
+    "scorer_contract": 1,
+    "task_contract": 1
+   },
+   "public_fold": {
+    "schema": "piv.cash-application/1",
+    "version": 1
+   },
+   "reference_identity": 2,
+   "renderer": 1
+  }
+ },
+ "reference_runtime_attestation": {
+  "baseline_catalogue_digest": "b7fa69753bcf1f5e732968f2819696a4",
+  "note": "the whole-freeze digest freeze_record()['digest'] as observed on the runtime that minted the released population; the published census, serving record and screen carry this value. An evaluator on another runtime computes and records its OWN whole-freeze digest, which check_pack prints and writes with --record; a difference there is expected and is not a failure. On this exact runtime the digest must reproduce.",
+  "runtime": {
+   "implementation": "CPython",
+   "machine": "AMD64",
+   "system": "Windows",
+   "unicode_database": "15.0.0",
+   "version": "3.12.12"
+  },
+  "whole_freeze_digest": "b371a45a0186648e40c7aa18f03efb28"
+ },
+ "schema": "piv.evaluation-pack.declaration/2"
 }
