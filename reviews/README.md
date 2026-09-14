@@ -344,6 +344,16 @@ bookkeeping.
   re-runs the published eleven-authored-task check on the same wheel, twelve of twelve. **The wheel
   measured is a build of that tree, NOT the 0.2.0 artifact uploaded to the Hub, which still cannot mint.**
   No model was called.
+- `installable_serving_check_2026-09-14/` — **the 0.3.0 release evidence.** The same two checks, repeated
+  against the artifact 0.3.0 actually is: a wheel built from this tree (sha256 `52665840…`, built twice
+  byte-identically), installed into a clean throwaway virtual environment with the repository absent from
+  `sys.path`, mints one declared group per mechanism stratum of the released development population and
+  serves all six variants at reward 1.0, `complete`, register `delivered`, composite 1 — and the eleven
+  authored cash tasks plus a legacy control score twelve of twelve on the same wheel. Holds both bound
+  records; the two runners are NOT copied, they are the published bytes in the two directories above, at
+  `e59e4715…` and `893f2e6f…`, executed from copies outside the repository. **Nothing was uploaded**:
+  0.2.0 stands on the Hub untouched, and 0.3.0 is a new version precisely so that no rebuilt wheel shares
+  its identity. No model was called.
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 
 ## A note on citations inside the dated documents

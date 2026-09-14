@@ -297,6 +297,28 @@ it and what does not.
     untouched. The only file this phase wrote outside the repository is the rewritten
     `~/.piv/cash_application_manifest.json`.
 
+## Released with 0.3.0 (2026-09-14)
+
+Added on the day the generator was released, and additive: nothing above is rewritten.
+
+This population is **distributed** in package version **0.3.0** and is described there, in
+`README.md` and in `docs/REFERENCE.md`, as a **released development population**. The two words do
+different jobs. **Released** describes distribution: the generator, this population's declaration
+and the admission battery ship in the wheel, and a package installed from that wheel can mint a
+declared group and serve both its variants — measured in
+`reviews/installable_serving_check_2026-09-14/` against the 0.3.0 artifact itself. **Development**
+describes this population's experimental role, and that role does not change by being distributed.
+
+Specifically, and for the avoidance of doubt: **the split assignment stays exactly as it is**, all
+96 declared groups remain in the `development` split, and **the evaluation split remains unopened** —
+`fc-harrowfield`, `cr-oysterbank` and `ar-coldharbour` are still sealed into `evaluation`, still
+declared by no released population, and still unspellable by any selector.
+
+The correction ships under a NEW package version rather than as a rebuilt 0.2.0 wheel, so no
+artifact built from the corrected tree can share the published 0.2.0 identity. Nothing was uploaded
+to the Environments Hub here; publishing is the owner's act. Every number in this record still comes
+from the repository-checkout run it describes.
+
 ## Reproducing this record
 
 ```

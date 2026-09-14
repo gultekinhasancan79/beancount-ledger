@@ -1,3 +1,225 @@
+# Release attestation — beancount-ledger v0.3.0 (2026-09-14)
+
+**Document order.** This 0.3.0 section is now first. The v0.2.0 attestation follows it, then v0.1.0,
+then the dated branch attestations, errata, the publication record and the known-issue sets, in the
+order they were written. The 0.2.0 section's own sentence "This 0.2.0 section is first" is superseded
+by this one and **left standing where it is**: nothing below this section is rewritten, and an
+earlier statement that later became false is superseded in place by a dated note, never deleted.
+
+## Why there is a 0.3.0, and why it is not a rebuilt 0.2.0
+
+Round 17 found one of the thirty-one cash-application admission conditions wrong, and round 18
+authorised the engineering release that corrects it, **independently of the screen run on the
+population**. The corrected generator is therefore distributed here.
+
+It is distributed under a **new package version**. `pyproject.toml` moves `0.2.0` → `0.3.0`, and no
+artifact built from the corrected tree carries the published 0.2.0 identity. The wheel uploaded to
+the Environments Hub (`1c83e4c5…`, version 0.2.0, RECORD `78d05932…`) is **not** rebuilt, not
+re-uploaded and not withdrawn by anything in this phase; it stands exactly as it was uploaded, and it
+contains no cash-application generation that can run installed. A rebuilt wheel silently sharing the
+0.2.0 version string is precisely what the ruling forbids and what this version bump prevents.
+
+**Nothing was pushed and nothing was uploaded to the Environments Hub.** Publishing is the owner's
+act and is not performed or recorded here.
+
+## What 0.3.0 is
+
+- `pyproject.toml` version `0.2.0` → `0.3.0`. No other field moved: the pins, the Python range, the
+  packaging excludes and `[tool.verifiers.eval]` are byte-identical.
+- **The same 106 hand-authored task ids** ship in the wheel and need no evaluator secret: 95 legacy
+  (91 workflow tasks + the four-task clean-month pack) and eleven cash-application tasks
+  (`cash_application_001`..`011`). Their public bytes are unmoved; see the byte pins below.
+- **The same two episode profiles, two resolved views, two digests** — `legacy` contract 4 /
+  `e8b8753d…`, `cash_application` contract 5 / `b11bc1ac…` — both pinned in
+  `tests/test_episode_contract.py`. Neither moved, so 0.3.0 is not a new measurement condition for
+  anything measured under 0.2.0.
+- bank-family component versions, unchanged: `{'generator': 9, 'identify': 7, 'scorer_contract': 1,
+  'renderer': 1, 'task_contract': 1, 'manifest_schema': 2, 'preflight_contract': 1,
+  'gate_set': 'e2f26ab5cdf60d53'}`
+- **What is new in 0.3.0 is the cash-application generator's distribution**: the construction path,
+  the thirty-one-gate admission battery (`beancount_ledger/world_checks.py`, with
+  `beancount_ledger/graph/repair_keys.py`) and the population declaration all ship in the wheel, so a
+  package installed from it can mint a declared group and serve both its variants. Under 0.2.0 that
+  was possible only from a repository checkout.
+
+## The released development population
+
+0.3.0 distributes `cash-application-development-2` as a **released development population**. The two
+words do different jobs and neither is shorthand for the other.
+
+- **Released** describes **distribution**. The generator, the population's declaration and the
+  admission battery ship in the wheel, and installed serving of a minted group is measured below.
+- **Development** describes the population's **experimental role**, and distributing it does not
+  change that role.
+
+**The split assignment stays exactly as it is.** All 96 declared parent groups (32 per mechanism
+stratum, two variants each, 192 variants) remain in the `development` split, assigned by the frozen
+60/20/20 split map alone — schema `1`, digest `c41f5d150aec53ccce514f7123206ac5`. **The evaluation
+split remains unopened**, and it stays closed by the *absence of a roster entry* rather than by a
+prohibition: `fc-harrowfield`, `cr-oysterbank` and `ar-coldharbour` are sealed into `evaluation`, no
+released population declares them, so no selector spells them and the door refuses them as
+undeclared members. Nothing in this release opens, samples from, or reports anything about that
+split.
+
+**The corrected admission contract, versioned.** `cumulative_reversal_bounded` bounded a credit note
+against the original sale it names — correct — and then additionally rejected any note whose gross
+exceeded the invoice's *opening balance*. That second clause was not the intended specification: a
+credit reverses a sale, and part-payment of that sale does not shrink what may be credited against
+it. The cap is gone; the original-sale net and tax constraints, the cumulative reach across several
+notes against one sale, and the positive-net requirement are retained.
+
+| what | 0.3.0 | was |
+|---|---|---|
+| family / family generator version | `cash_application` / `1` | unchanged |
+| **gate implementation version** | **2** | 1 |
+| **family preflight contract** | **2**, 31 gates | 1 |
+| **gate-set digest** | **`2491e97f97b48cee`** | `6b246422badd05a6` |
+| family manifest schema | `1` | unchanged |
+| profile | `bounded-v1`, digest `310e96729061410467f0e4285976743f` | unchanged |
+| baseline catalogue | `cash_application_baselines/1`, 9 binding + 1 diagnostic | unchanged |
+| freeze digest | `b371a45a0186648e40c7aa18f03efb28` | — |
+
+A population *selected* under an additional, incorrect accounting restriction cannot establish
+conformity to the intended specification, whatever the accepted instances look like, so the
+population was replaced rather than re-validated. `cash-application-development-1` is retired from
+`RELEASED_POPULATIONS`, recorded in `SUPERSEDED_POPULATIONS` with its reason, and unspellable; its
+record and its five JSON files are preserved unaltered, and `tests/test_cash_gate.py` fails if they
+are edited.
+
+**The census this release stands on**, all of it offline and deterministic, no model called:
+96 declared groups, 96 admitted, 0 exhausted, 98 retained attempts (0.980 acceptance), **zero
+accounting-gate refusals**; 192/192 variants pass all seven offline validation gates, including both
+goldens and their `composite/1` at `1.000000` through the shipped engines; 192/192 signed records
+serve through the real `load_environment` under the same episode-contract digest an authored cash
+task serves; and the paired replay shows both refusals the removed clause caused now admitted at
+attempt ordinal 0. Record:
+`reviews/cash_application_development_population_2026-09-13_replacement.md`, which carries a dated
+2026-09-14 note stating the release status, the unchanged split assignment and the unopened
+evaluation split in its own words. Its numbers were taken from a repository checkout, and it says so.
+
+**One screen has been run on this population, and it is incomplete.** Nine scored cells, one
+attempted but unscored (a provider quota 403 took the cell), two unattempted, against twelve
+planned — `reviews/cash_application_generated_screen_2026-09-13.md`, published as an **INCOMPLETE
+DEVELOPMENT SCREEN**. It was **not** a release prerequisite and the release does not rest on it: the
+ruling authorised this release independently of that screen, on the corrected admission rule, the
+replacement census and the installed-serving evidence. The screen establishes no population success
+rate, no difficulty and no training utility, and its three missing outcomes stay missing.
+
+## The claim, stated exactly
+
+> A versioned, keyed cash-application generator with a frozen development population, deterministic
+> accounting checks, golden-artifact validation and signed-manifest serving under the recorded
+> repository runtime. No model performance, difficulty, training benefit or generalization beyond the
+> development templates has been established.
+
+That sentence is the whole of what the generator deliverable claims. It is carried verbatim in
+`README.md`, `docs/REFERENCE.md` and the population record, and `tests/test_cash_population.py`
+fails if the record rewords it.
+
+## Artifacts (built from this checkout, `uv build`, hatchling, CPython 3.13.11)
+
+- wheel `beancount_ledger-0.3.0-py3-none-any.whl`: sha256
+  `52665840cfff99813ef65248f162fefaa43b56c48b886f42668adc1e6dfc8457`, 657,365 bytes, 75 members
+  (71 under `beancount_ledger/`); RECORD sha256
+  `22b0fd268dd301e5c4c9294998546328623b3135919d306c957f629f14c2d584`; METADATA sha256
+  `e253d53923d50b4613529ececa43c92c6214360b7d147ee780698a2a5a0434f9`
+- sdist `beancount_ledger-0.3.0.tar.gz`: sha256
+  `769594488becdd6f278e3d27be776247b89292aa7a630520446a4e683f38434c`, 598,709 bytes, 76 members
+- **reproducible**: built twice from the same checkout, both artifacts byte-identical both times
+- audit: neither artifact contains `tests/`, `reviews/`, a golden ledger, a `.pyc`, a `__pycache__`
+  or a secret
+- `pyproject.toml` sets `readme = "README.md"`, so README.md is embedded in the wheel's
+  `dist-info/METADATA` and shipped in the sdist: **any edit to README.md moves all three hashes**,
+  even when no code changes. Editing files under `reviews/` and `docs/` does not — both are excluded
+  from the sdist and absent from the wheel, so this document and the reference can be corrected
+  without invalidating the hashes recorded here.
+- license: Apache-2.0 (SPDX), LICENSE unchanged
+
+## The installed-wheel check, repeated against the 0.3.0 artifact (2026-09-14)
+
+Method, unchanged from the check it repeats: the wheel attested above, installed into a **clean
+throwaway virtual environment** (CPython 3.13.11, Unicode database 15.1.0, nothing but the wheel and
+its pins; never the repository's own `.venv`), driven from **outside** the repository with the
+repository asserted absent from `sys.path`, the package asserted inside `site-packages`, and every
+one of the wheel's 71 `beancount_ledger/` members compared byte for byte with the installed file
+before anything ran. Both runners are the **published bytes** —
+`reviews/installable_serving_check_2026-09-13/installable_serving_check.py` at `e59e4715…` and
+`reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py` at `893f2e6f…` — executed from
+copies taken outside the repository, with no edit of any kind.
+
+- **where the battery came from**, through `cash_admit._world_checks()` itself:
+  `…\cv030\Lib\site-packages\beancount_ledger\world_checks.py` — inside the installed package, not a
+  checkout.
+- **that the battery can still fail**: run twice over one minted variant through
+  `world_checker_problems`, it is silent on the clean variant and returns three problems on a copy
+  whose golden ledger was replaced by the opening ledger ("the golden scores 0.000000, not 1").
+- **minting**: one declared parent group per mechanism stratum of `cash-application-development-2`
+  (`fc-quarrymill/1/0`, `cr-pikestaff/1/0`, `ar-tenterhook/1/0`), a prefix of the frozen roster,
+  minted by the installed package on attempt 0 with all 31 gates evaluated and passed, under the
+  run's own throwaway secret and rotation and a manifest in a temporary directory — never the
+  evaluator's provisioned key, never `~/.piv`, and no development bypass.
+- **serving**: all six variants signed into that manifest and served through the real
+  `env.evaluate()` door with a scripted offline client delivering the installed package's own golden
+  ledger and golden register — **six of six at reward 1.0**, `delivery.json` `complete`, score `1`,
+  register `delivered`, composite `1`, each served id the one its record was signed for, profile
+  `cash_application`, and every episode-contract digest CAPTURED from its own state column and equal
+  to the one `cash_application_001` serves under in the same process (`b11bc1ac…`). `failures: []`.
+- **the authored eleven and a legacy control, on the same wheel**: **twelve of twelve**,
+  `failures: []` — the eleven at `b11bc1ac…` with `application` blocks and composite `1`, and
+  `bank_recon_001` at `e8b8753d…` with none, as a legacy receipt must be.
+- **no model or API call** was made anywhere in this check: both clients are scripts.
+
+Evidence: `reviews/installable_serving_check_2026-09-14/` — both bound records and the index that
+names the two runners by hash rather than copying them.
+
+**What this check does not say.** It says nothing about difficulty, model performance, training
+utility or generalization, and it tests the artifact built from this tree, not the 0.2.0 wheel on the
+Hub, which still cannot mint.
+
+## Suites and byte pins at this release
+
+- `tests/run_all.py`: **all 39 suites pass** on this checkout with the repository's own venv.
+- **No served byte moved.** The 95 legacy tasks' and the eleven authored cash tasks' public bytes
+  roll to `dbac991578fcc6292af8d547c335e648c068d1d8320c538001dd9cc9cb500f0b` before and after this
+  phase, over all 106; `tests/test_legacy_freeze.py` passes, so the 760 legacy public files,
+  `candidate/committed.py` and the contract-4 episode view and digest are byte-identical;
+  `GENERATOR_VERSION` is 9 and the bank family's manifest is untouched; both episode-contract digests
+  are unchanged.
+- This phase changed `pyproject.toml` (the version string, and nothing else), `README.md`,
+  `docs/REFERENCE.md` and files under `reviews/`. **No file in the wheel's `beancount_ledger/` tree
+  changed at all**, which is why the 0.3.0 artifact differs from a 0.2.0 build of the same tree only
+  in its version metadata and the README embedded in it.
+
+## Evidence files at this release (sha256 over the bytes git stores, LF)
+
+| file | sha256 |
+|---|---|
+| `README.md` | `b7a5762040032f181bffcb0b2dae491f9ad62652ae5014e0429f55074ee4e9fb` |
+| `docs/REFERENCE.md` | `c7f3c26ea8655a17e84893ac046dc435e0cc22cf268f737628af52d78c896418` |
+| `pyproject.toml` | `7f3eb5dd8ae8745c4fd838c33b1e315ab0c37ee2c86eddb51e5566137dd08627` |
+| `reviews/cash_application_development_population_2026-09-13_replacement.md` | `537669a639d4f63170ea05186f090b3725b497ec82142ed7eb7d817ecbcff5ed` |
+| `reviews/cash_application_generated_screen_2026-09-13.md` | `c2eb50f53b7f82c052cc76cdd764aaff3a06283edff3c80d0279676816519043` |
+| `reviews/installable_serving_check_2026-09-14/README.md` | `44aaef2dc9431afa400476c040ad48e290baee3372e5f4c8ef90b97e4358ccc4` |
+| `reviews/installable_serving_check_2026-09-14/installable_serving_0.3.0.json` | `16a022a6319e0be73372fac3e4992e548168482f2ea5f7c5c462ab3e1f736621` |
+| `reviews/installable_serving_check_2026-09-14/installed_wheel_recheck_0.3.0.json` | `b4393d43eb73ed24ab68c476421115a63481f771cda1e68f15ac069269d109a5` |
+| `reviews/installable_serving_check_2026-09-13/installable_serving_check.py` | `e59e47151d2f8122cc4a07f3ffd698f07810337e2eb87f60adafbefa5357e841` |
+| `reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py` | `893f2e6f56c5135d81a635af55cb7de91676921dac5c109e3e4ad6844668dc48` |
+| `LICENSE` | `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30` |
+
+## Not done here, by design
+
+- **No upload, no push, no Hub interaction of any kind.** 0.3.0 exists as a local build and a
+  version string; distributing it is the owner's act.
+- **No rebuild, re-upload or withdrawal of 0.2.0**, and no earlier hash deleted.
+- **No model or API call.** Every episode in this phase is scripted and offline.
+- **No evaluation split.** It is not opened, not sampled, not described beyond the fact that it is
+  sealed.
+- **No performance, difficulty, training or generalization claim**, and none is implied by the word
+  *released*.
+- No v1 migration: 0.3.0 is a v0 environment, exactly as 0.2.0 was, and a v1 port would move the
+  episode-contract digest and so be a new measurement condition rather than a packaging change.
+
+
 # Release attestation — beancount-ledger v0.2.0 (2026-09-11)
 
 **Document order.** This 0.2.0 section is first. The v0.1.0 release attestation follows below it,
