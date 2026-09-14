@@ -1,0 +1,36 @@
+--- ar-tenterhook_22_a/cash_application.delivered.json
++++ ar-tenterhook_22_a/cash_application.corrected.json
+@@ -152,6 +152,33 @@
+    "credited": "0.00",
+    "written_off": "0.00",
+    "remaining": "3573.00"
++  },
++  {
++   "invoice_id": "SI-7346",
++   "customer": "Glenhaven Resorts Company",
++   "period_basis": "3180.00",
++   "applied_total": "0.00",
++   "credited": "0.00",
++   "written_off": "0.00",
++   "remaining": "3180.00"
++  },
++  {
++   "invoice_id": "SI-7351",
++   "customer": "Ivyrise Contract Interiors",
++   "period_basis": "1166.00",
++   "applied_total": "0.00",
++   "credited": "0.00",
++   "written_off": "0.00",
++   "remaining": "1166.00"
++  },
++  {
++   "invoice_id": "SI-7353",
++   "customer": "Aldergate Facilities Group",
++   "period_basis": "1802.00",
++   "applied_total": "0.00",
++   "credited": "0.00",
++   "written_off": "0.00",
++   "remaining": "1802.00"
+   }
+  ]
+ }

@@ -1,0 +1,9 @@
+invoice_id,customer,invoice_date,due_date,original_amount,open_balance
+SI-5801,Fairstead Property Services,2027-06-28,2027-07-28,749.00,749.00
+SI-5803,Aldergate Facilities Group,2027-07-12,2027-08-26,4066.00,4066.00
+SI-5811,Calloway Marine Services,2027-07-16,2027-08-15,3317.00,3317.00
+SI-5813,Fairstead Property Services,2027-08-04,2027-09-03,5350.00,3531.00
+SI-5815,Aldergate Facilities Group,2027-08-06,2027-09-20,3798.50,3798.50
+SI-5817,Calloway Marine Services,2027-08-17,2027-09-16,4440.50,4440.50
+SI-5819,Fairstead Property Services,2027-08-30,2027-09-29,1605.00,1605.00
+SI-5821,Aldergate Facilities Group,2027-09-10,2027-10-25,4119.50,4119.50

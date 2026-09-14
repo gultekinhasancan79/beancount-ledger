@@ -1,0 +1,170 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2025-11-10:CALLOWAY PAYRUN 1107",
+   "applied": [
+    {
+     "invoice_id": "SI-7910",
+     "amount": "1961.00"
+    },
+    {
+     "invoice_id": "SI-7931",
+     "amount": "1696.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2025-11-13:IVYRISE PAYRUN 1111",
+   "applied": [
+    {
+     "invoice_id": "SI-7905",
+     "amount": "3233.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2025-11-17:FAIRSTEAD PAYRUN 1114",
+   "applied": [
+    {
+     "invoice_id": "SI-7909",
+     "amount": "2968.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2025-11-19:IVYRISE PAYRUN 1117",
+   "applied": [
+    {
+     "invoice_id": "SI-7912",
+     "amount": "2279.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-629",
+   "applied": [
+    {
+     "invoice_id": "SI-7901",
+     "amount": "1166.00"
+    },
+    {
+     "invoice_id": "SI-7910",
+     "amount": "2014.00"
+    }
+   ],
+   "unapplied_amount": "159.00"
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-7901",
+   "customer": "Calloway Marine Services",
+   "period_basis": "1166.00",
+   "applied_total": "0.00",
+   "credited": "1166.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7905",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "3233.00",
+   "applied_total": "3233.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7909",
+   "customer": "Fairstead Property Services",
+   "period_basis": "2968.00",
+   "applied_total": "2968.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7910",
+   "customer": "Calloway Marine Services",
+   "period_basis": "3975.00",
+   "applied_total": "1961.00",
+   "credited": "2014.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7912",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "2279.00",
+   "applied_total": "2279.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7926",
+   "customer": "Fairstead Property Services",
+   "period_basis": "1590.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1590.00"
+  },
+  {
+   "invoice_id": "SI-7931",
+   "customer": "Calloway Marine Services",
+   "period_basis": "1696.00",
+   "applied_total": "1696.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-7933",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "4558.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "4558.00"
+  },
+  {
+   "invoice_id": "SI-7941",
+   "customer": "Calloway Marine Services",
+   "period_basis": "3074.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "3074.00"
+  },
+  {
+   "invoice_id": "SI-7943",
+   "customer": "Ivyrise Contract Interiors",
+   "period_basis": "2279.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2279.00"
+  },
+  {
+   "invoice_id": "SI-7945",
+   "customer": "Fairstead Property Services",
+   "period_basis": "1325.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1325.00"
+  }
+ ]
+}

@@ -41,9 +41,10 @@ embeds both of those). These four live under `unicode_scoped`, keyed by
 
 A row for a version this interpreter is not running is DERIVED by
 substituting the version string into the same view-building code
-(`substituted_unicode_version` below patches the STDLIB attribute, so this
-suite and `candidate/canonical.py` read one and the same string). That
-derivation GENERATES a row; it does not verify one:
+(`substituted_unicode_version`, from the shared convention in
+`tests/unicode_pins.py`, patches the STDLIB attribute, so this suite and
+`candidate/canonical.py` read one and the same string). That derivation
+GENERATES a row; it does not verify one:
 
   * the DECLARED views take the Unicode database in only through the version
     string, so substitution reproduces them exactly;
@@ -61,7 +62,11 @@ survives only as a printed DIAGNOSTIC — it can tell that reviewer whether
 the declared views also drifted, and it never turns a failure into a pass.
 Every row carries a `provenance` block saying how it was generated
 (`native` or `derived-by-substitution`) and where a runtime that actually
-ships that database confirmed it. The battery matrix in
+ships that database confirmed it. The convention itself — the version key,
+that vocabulary, the substitution and the refusal — lives in
+`tests/unicode_pins.py` and is shared with the 007 result-digest pins in
+`tests/test_cash_application_scoring.py`, so the next runtime-scoped pin
+reuses it rather than growing a third bespoke table. The battery matrix in
 `.github/workflows/ci.yml` covers CPython 3.11 (14.0.0), 3.12 (15.0.0) and
 3.13 (15.1.0) natively and runs on every push to main, every v* tag, and
 every pull request -- so a job's native evidence arrives on a pull request or
@@ -95,7 +100,6 @@ import copy
 import hashlib
 import io
 import json
-import platform
 import re
 import shutil
 import sys
@@ -115,6 +119,9 @@ from beancount_ledger.candidate.validate import VALIDATOR_VERSION  # noqa: E402
 from beancount_ledger.graph.derive import derive_contract  # noqa: E402
 from beancount_ledger.graph.mint import public_task_id  # noqa: E402
 from beancount_ledger.graph.worlds import REGISTRY  # noqa: E402
+from unicode_pins import (ANCHOR_UNICODE_VERSION, NATIVE_UNICODE_VERSION,  # noqa: E402
+                          UNSEEN_UNICODE_PROBE, UnicodeScopedPins,
+                          provenance_block, substituted_unicode_version)
 
 FIXTURE = ROOT / "tests" / "legacy_freeze.json"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
@@ -128,30 +135,21 @@ EPISODE_CONTRACT_TEST = ROOT / "tests" / "test_episode_contract.py"
 SCORER_UNICODE_KEYS = ("parse_policy_digest", "scorer_contract_digest")
 TASK_UNICODE_KEYS = ("task_contract_digest", "environment_digest")
 
-#: The version this repository's own Python (3.12) ships, and the row every
-#: derivation starts from. It must be pinned, and pinned NATIVELY.
-ANCHOR_UNICODE_VERSION = "15.0.0"
+#: How a reviewer opens a row this fixture does not pin. `{version}` is
+#: filled in by `UnicodeScopedPins.resolve` when it refuses one.
+HOW_TO_ADD_A_UNICODE_ROW = "`python tests/test_legacy_freeze.py --regenerate-unicode-scoped {version}`"
 
-#: This interpreter's real Unicode database version, read ONCE at import so
-#: that `substituted_unicode_version` — which patches the stdlib attribute —
-#: can never be mistaken for it.
-NATIVE_UNICODE_VERSION = unicodedata.unidata_version
 
-#: How a `unicode_scoped` row came to exist. `native`: computed on an
-#: interpreter that actually ships that Unicode database. `derived-by-
-#: substitution`: the version string was substituted on some other
-#: interpreter, which reproduces the DECLARED views and nothing else.
-UNICODE_PROVENANCE_METHODS = ("native", "derived-by-substitution")
-
-#: What a derived row's `native_confirmation` says until a runtime shipping
-#: that database has actually run this suite against it.
-PENDING_CONFIRMATION = ("PENDING: no runtime shipping this Unicode database has run this suite against this row "
-                        "yet; the row is derived, not observed")
-
-#: A Unicode version no database will ever carry, used by
-#: `test_an_unpinned_unicode_version_fails_the_freeze` to prove on every run
-#: that an unseen runtime is refused rather than believed.
-UNSEEN_UNICODE_PROBE = "99.0.0"
+def unicode_pins(pinned_scoped: dict) -> UnicodeScopedPins:
+    """This fixture's `unicode_scoped` map as the SHARED runtime-scoped pin
+    table (`tests/unicode_pins.py`) — the same convention, and the same
+    refusal, that `tests/test_cash_application_scoring.py` uses for the 007
+    result digests. Built per call and never validated on construction: the
+    end-to-end guard hands this deliberately mutated fixtures."""
+    return UnicodeScopedPins(
+        name="unicode_scoped", source=FIXTURE.name, rows=pinned_scoped,
+        value_keys=("scorer", "tasks"), how_to_add=HOW_TO_ADD_A_UNICODE_ROW,
+        anchor=ANCHOR_UNICODE_VERSION)
 
 #: The legacy public files, in the order the environment declares them.
 LEGACY_PUBLIC_FILES = (
@@ -185,27 +183,6 @@ def sha256(data: bytes) -> str:
 # `unicode_scoped[unicodedata.unidata_version]` row instead — see
 # `resolve_unicode_scoped` for what happens when that row is absent.
 # --------------------------------------------------------------------------
-
-@contextlib.contextmanager
-def substituted_unicode_version(version: str):
-    """Within the block, `unicodedata.unidata_version` reads as `version` for
-    EVERY reader, because the attribute is set on the STDLIB module object
-    itself — the one object this suite, `candidate/canonical.py`,
-    `candidate/entities.py` and `graph/schema.py` all hold a reference to.
-    (Patching only `canonical`'s own reference, as this did before, derived a
-    row on a runtime half of which still reported the native database.)
-
-    Every other `unicodedata` attribute — `category`, `normalize`, the tables
-    behind them — is untouched and stays the running interpreter's. That is
-    exactly why a substituted run DERIVES a row and cannot verify one.
-    Restores the real version on exit, including on error."""
-    real = unicodedata.unidata_version
-    unicodedata.unidata_version = version
-    try:
-        yield
-    finally:
-        unicodedata.unidata_version = real
-
 
 def task_snapshot(task_id: str) -> dict:
     """The INVARIANT half of what the freeze holds for one task, recomputed
@@ -250,32 +227,11 @@ def scorer_unicode_digests(version: str) -> dict:
 
 
 def unicode_provenance(version: str, row: dict, before: dict | None, note: str | None) -> dict:
-    """The `provenance` block for a freshly computed `unicode_scoped` row.
-
-    An explicit `--note` always wins. A row computed on an interpreter that
-    really ships this database documents itself. A DERIVED row keeps a
-    confirmation already recorded only while the digests it was recorded
-    against have not moved; once they move it reverts to `PENDING`, because
-    nothing has confirmed the new ones."""
-    native = version == NATIVE_UNICODE_VERSION
-    previous = (before or {}).get("provenance")
-    kept = previous.get("native_confirmation") if isinstance(previous, dict) else None
-    unchanged = before is not None and {k: v for k, v in before.items() if k != "provenance"} == row
-    if note is not None:
-        confirmation = note
-    elif native:
-        confirmation = (f"observed natively on CPython {platform.python_version()} "
-                        f"({platform.system()}), which ships unicode {version}")
-    elif unchanged and isinstance(kept, str) and kept.strip():
-        confirmation = kept
-    else:
-        confirmation = PENDING_CONFIRMATION
-    return {
-        "method": "native" if native else "derived-by-substitution",
-        "generated_on": f"CPython {platform.python_version()} ({platform.system()}, unicode "
-                        f"{NATIVE_UNICODE_VERSION})",
-        "native_confirmation": confirmation,
-    }
+    """The `provenance` block for a freshly computed `unicode_scoped` row —
+    the shared builder in `tests/unicode_pins.py`, so this fixture's rows and
+    the 007 table's rows mean the same thing by `native`, by `derived-by-
+    substitution` and by a `PENDING` confirmation."""
+    return provenance_block(version, row, before, note)
 
 
 def pinned_episode_contract_digest() -> str | None:
@@ -403,64 +359,37 @@ def test_the_fixture_is_well_formed():
     if not isinstance(scoped, dict) or not scoped:
         problems.append("the fixture carries no unicode_scoped map")
     else:
-        for version, row in sorted(scoped.items()):
-            if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-                problems.append(f"unicode_scoped key {version!r} does not look like a Unicode database version")
-            if not isinstance(row, dict):
-                problems.append(f"unicode_scoped[{version}] is {type(row).__name__}, not an object")
-                continue
-            if sorted(row) != ["provenance", "scorer", "tasks"]:
-                problems.append(f"unicode_scoped[{version}] has keys {sorted(row)}, "
-                                f"not ['provenance', 'scorer', 'tasks']")
-            # Provenance is not decoration: it is the record of whether a
-            # runtime that actually ships this database has ever confirmed
-            # the row, which substitution cannot establish (module docstring).
-            prov = row.get("provenance")
-            if not isinstance(prov, dict):
-                problems.append(f"unicode_scoped[{version}] carries no provenance block: every row must record "
-                                f"whether it was observed natively or derived by substitution, and where a "
-                                f"runtime shipping unicode {version} confirmed it")
-            else:
-                if prov.get("method") not in UNICODE_PROVENANCE_METHODS:
-                    problems.append(f"unicode_scoped[{version}].provenance.method is {prov.get('method')!r}, "
-                                    f"not one of {list(UNICODE_PROVENANCE_METHODS)}")
-                for key in ("generated_on", "native_confirmation"):
-                    if not (isinstance(prov.get(key), str) and prov[key].strip()):
-                        problems.append(f"unicode_scoped[{version}].provenance.{key} is {prov.get(key)!r}, "
-                                        f"not a non-empty string")
-            scorer_row = row.get("scorer", {})
-            if sorted(scorer_row) != sorted(SCORER_UNICODE_KEYS):
-                problems.append(f"unicode_scoped[{version}].scorer has keys {sorted(scorer_row)}, "
-                                f"not {sorted(SCORER_UNICODE_KEYS)}")
-            for key, digest in scorer_row.items():
-                if not (isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest)):
-                    problems.append(f"unicode_scoped[{version}].scorer.{key}: {digest!r} is not a sha256 hex digest")
-            task_rows = row.get("tasks", {})
-            missing_tasks = set(pinned.get("tasks", {})) - set(task_rows)
-            extra_tasks = set(task_rows) - set(pinned.get("tasks", {}))
-            if missing_tasks:
-                problems.append(f"unicode_scoped[{version}].tasks is missing {sorted(missing_tasks)}")
-            if extra_tasks:
-                problems.append(f"unicode_scoped[{version}].tasks has unknown task ids {sorted(extra_tasks)}")
-            for task_id, task_row in task_rows.items():
-                if sorted(task_row) != sorted(TASK_UNICODE_KEYS):
-                    problems.append(f"unicode_scoped[{version}].tasks[{task_id}] has keys {sorted(task_row)}, "
-                                    f"not {sorted(TASK_UNICODE_KEYS)}")
-                for key, digest in task_row.items():
+        # The version key, the row shape, the provenance block and the
+        # natively-observed anchor are the SHARED convention's rules, checked
+        # once in `tests/unicode_pins.py`. What is specific to this fixture --
+        # which digest names a row carries and which task ids it must cover --
+        # is checked here, through the `value_check` hook.
+        def value_check(version: str, key: str, value, found: list) -> None:
+            if key == "scorer":
+                if sorted(value) != sorted(SCORER_UNICODE_KEYS):
+                    found.append(f"unicode_scoped[{version}].scorer has keys {sorted(value)}, "
+                                 f"not {sorted(SCORER_UNICODE_KEYS)}")
+                for name, digest in value.items():
                     if not (isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest)):
-                        problems.append(f"unicode_scoped[{version}].tasks[{task_id}].{key}: {digest!r} "
-                                        f"is not a sha256 hex digest")
-        if ANCHOR_UNICODE_VERSION not in scoped:
-            problems.append(f"unicode_scoped has no {ANCHOR_UNICODE_VERSION!r} row: every other version is "
-                            f"derived from it by substitution, so it must always be pinned directly")
-        else:
-            anchor_prov = scoped[ANCHOR_UNICODE_VERSION].get("provenance") \
-                if isinstance(scoped[ANCHOR_UNICODE_VERSION], dict) else None
-            method = anchor_prov.get("method") if isinstance(anchor_prov, dict) else None
-            if method != "native":
-                problems.append(f"unicode_scoped[{ANCHOR_UNICODE_VERSION}].provenance.method is {method!r}: the "
-                                f"anchor is the row every derivation starts from, so it must itself have been "
-                                f"observed on an interpreter that ships unicode {ANCHOR_UNICODE_VERSION}")
+                        found.append(f"unicode_scoped[{version}].scorer.{name}: {digest!r} "
+                                     f"is not a sha256 hex digest")
+                return
+            missing_tasks = set(pinned.get("tasks", {})) - set(value)
+            extra_tasks = set(value) - set(pinned.get("tasks", {}))
+            if missing_tasks:
+                found.append(f"unicode_scoped[{version}].tasks is missing {sorted(missing_tasks)}")
+            if extra_tasks:
+                found.append(f"unicode_scoped[{version}].tasks has unknown task ids {sorted(extra_tasks)}")
+            for task_id, task_row in value.items():
+                if sorted(task_row) != sorted(TASK_UNICODE_KEYS):
+                    found.append(f"unicode_scoped[{version}].tasks[{task_id}] has keys {sorted(task_row)}, "
+                                 f"not {sorted(TASK_UNICODE_KEYS)}")
+                for name, digest in task_row.items():
+                    if not (isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest)):
+                        found.append(f"unicode_scoped[{version}].tasks[{task_id}].{name}: {digest!r} "
+                                     f"is not a sha256 hex digest")
+
+        unicode_pins(scoped).check_shape(problems, value_check=value_check)
     return check(f"the fixture pins {LEGACY_TASK_COUNT} tasks x {len(LEGACY_PUBLIC_FILES)} files under schema "
                  f"{FIXTURE_SCHEMA}, with the Unicode-scoped digests under unicode_scoped and every one of those "
                  f"rows declaring its provenance", not problems, "\n".join(problems))
@@ -599,19 +528,14 @@ def resolve_unicode_scoped(pinned_scoped: dict, running_version: str, problems: 
     An unpinned version therefore fails, naming itself and naming the row a
     reviewer has to add. The substitution still runs, as the printed
     diagnostic above; it never becomes the answer.
+
+    The refusal itself is the shared convention's
+    (`tests/unicode_pins.py`); this wrapper only supplies the diagnostic,
+    which prints and decides nothing.
     """
-    if running_version in pinned_scoped:
-        return pinned_scoped[running_version]
-    problems.append(
-        f"unicode {running_version} is NOT pinned in {FIXTURE.name}. This runtime's Unicode database has never "
-        f"been reviewed against the freeze, and the freeze does not certify a database it has not seen: identical "
-        f"source can accept different characters under different databases, so the running interpreter's own "
-        f"digests are not evidence about themselves. Add the row deliberately, under review -- "
-        f"`python tests/test_legacy_freeze.py --regenerate-unicode-scoped {running_version}` -- record in its "
-        f"provenance where a runtime shipping unicode {running_version} confirmed it, and commit it. "
-        f"Pinned versions: {sorted(pinned_scoped)}")
-    print_unpinned_unicode_diagnostic(pinned_scoped, running_version)
-    return None
+    return unicode_pins(pinned_scoped).resolve(
+        running_version, problems,
+        diagnostic=lambda: print_unpinned_unicode_diagnostic(pinned_scoped, running_version))
 
 
 def test_the_unicode_scoped_digests_are_pinned_for_this_runtime():
@@ -660,21 +584,16 @@ def test_an_unpinned_unicode_version_fails_the_freeze():
     passing on any runtime at all, silently, and no other suite would notice.
     """
     pinned_scoped = fixture().get("unicode_scoped", {})
-    failures = []
-    if UNSEEN_UNICODE_PROBE in pinned_scoped:
-        failures.append(f"{UNSEEN_UNICODE_PROBE} is a pinned row: the probe no longer probes anything")
-    else:
+    failures: list = []
+    unicode_pins(pinned_scoped).check_refuses_an_unpinned_version(
+        failures, must_say=("--regenerate-unicode-scoped",))
+    # and through THIS module's wrapper, so the printed diagnostic runs too
+    if UNSEEN_UNICODE_PROBE not in pinned_scoped:
         problems: list = []
-        resolved = resolve_unicode_scoped(pinned_scoped, UNSEEN_UNICODE_PROBE, problems)
-        if resolved is not None:
-            failures.append(f"an unpinned unicode version resolved to a row ({sorted(resolved)}) instead of failing")
+        if resolve_unicode_scoped(pinned_scoped, UNSEEN_UNICODE_PROBE, problems) is not None:
+            failures.append("resolve_unicode_scoped returned a row for an unpinned unicode version")
         if not problems:
-            failures.append("an unpinned unicode version produced no problem at all")
-        else:
-            if not all(UNSEEN_UNICODE_PROBE in p for p in problems):
-                failures.append(f"the reported failure does not name the version: {problems}")
-            if not any("--regenerate-unicode-scoped" in p for p in problems):
-                failures.append("the reported failure does not tell the reviewer how to add the row")
+            failures.append("resolve_unicode_scoped reported no problem for an unpinned unicode version")
     if unicodedata.unidata_version != NATIVE_UNICODE_VERSION:
         failures.append(f"the diagnostic left unicodedata.unidata_version patched to "
                         f"{unicodedata.unidata_version!r} (expected {NATIVE_UNICODE_VERSION!r})")

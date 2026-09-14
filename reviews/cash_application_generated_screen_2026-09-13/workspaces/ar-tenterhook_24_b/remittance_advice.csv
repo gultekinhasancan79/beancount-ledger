@@ -1,0 +1,8 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-1105-BL,Brackenhurst Leisure Partners,2026-11-05,ACH,BRACKENHURST PAYRUN 1105,4006.00,SI-8401,0.00,no,0.00,withheld; short shipment; credit requested
+RA-1105-BL,Brackenhurst Leisure Partners,2026-11-05,ACH,BRACKENHURST PAYRUN 1105,4006.00,SI-8416,2756.00,yes,0.00,
+RA-1105-BL,Brackenhurst Leisure Partners,2026-11-05,ACH,BRACKENHURST PAYRUN 1105,4006.00,SI-8428,1250.00,no,0.00,part payment; balance to follow on the next payment run
+RA-1112-EH,Eastmoor Hospitality Group,2026-11-12,ACH,EASTMOOR PAYRUN 1112,2613.00,SI-8404,2613.00,yes,90.00,freight overcharge; credit requested
+RA-1118-EH,Eastmoor Hospitality Group,2026-11-18,ACH,EASTMOOR PAYRUN 1118,90.00,SI-8404,90.00,yes,0.00,
+RA-1127-BL,Brackenhurst Leisure Partners,2026-11-27,ACH,BRACKENHURST PAYRUN 1127,2357.00,SI-8428,1327.00,yes,20.00,minor remittance discrepancy; invoice treated as settled
+RA-1127-BL,Brackenhurst Leisure Partners,2026-11-27,ACH,BRACKENHURST PAYRUN 1127,2357.00,SI-8433,1030.00,no,0.00,part payment against the balance on account

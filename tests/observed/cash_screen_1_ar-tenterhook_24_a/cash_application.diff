@@ -1,0 +1,36 @@
+--- ar-tenterhook_24_a/cash_application.delivered.json
++++ ar-tenterhook_24_a/cash_application.corrected.json
+@@ -154,6 +154,33 @@
+    "credited": "0.00",
+    "written_off": "0.00",
+    "remaining": "3081.00"
++  },
++  {
++   "invoice_id": "SI-8446",
++   "customer": "Brackenhurst Leisure Partners",
++   "period_basis": "3127.00",
++   "applied_total": "0.00",
++   "credited": "0.00",
++   "written_off": "0.00",
++   "remaining": "3127.00"
++  },
++  {
++   "invoice_id": "SI-8451",
++   "customer": "Eastmoor Hospitality Group",
++   "period_basis": "3604.00",
++   "applied_total": "0.00",
++   "credited": "0.00",
++   "written_off": "0.00",
++   "remaining": "3604.00"
++  },
++  {
++   "invoice_id": "SI-8453",
++   "customer": "Glenhaven Resorts Company",
++   "period_basis": "3074.00",
++   "applied_total": "0.00",
++   "credited": "0.00",
++   "written_off": "0.00",
++   "remaining": "3074.00"
+   }
+  ]
+ }

@@ -1,0 +1,59 @@
+{
+ "chosen_groups": {
+  "advice_residue": [
+   "cash-application-development-2:ar-tenterhook:22",
+   "cash-application-development-2:ar-tenterhook:24"
+  ],
+  "credit_residue": [
+   "cash-application-development-2:cr-pikestaff:6",
+   "cash-application-development-2:cr-pikestaff:12"
+  ],
+  "fallback_continuation": [
+   "cash-application-development-2:fc-quarrymill:4",
+   "cash-application-development-2:fc-quarrymill:1"
+  ]
+ },
+ "eligible_groups_per_stratum": {
+  "advice_residue": 32,
+  "credit_residue": 32,
+  "fallback_continuation": 32
+ },
+ "episodes": 12,
+ "evaluation_split_opened": false,
+ "execution_order": [
+  "cash_application:cash-application-development-2:ar-tenterhook:24:a",
+  "cash_application:cash-application-development-2:cr-pikestaff:6:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:6:a",
+  "cash_application:cash-application-development-2:ar-tenterhook:22:b",
+  "cash_application:cash-application-development-2:fc-quarrymill:4:b",
+  "cash_application:cash-application-development-2:ar-tenterhook:22:a",
+  "cash_application:cash-application-development-2:fc-quarrymill:4:a",
+  "cash_application:cash-application-development-2:cr-pikestaff:12:b",
+  "cash_application:cash-application-development-2:ar-tenterhook:24:b",
+  "cash_application:cash-application-development-2:cr-pikestaff:12:a",
+  "cash_application:cash-application-development-2:fc-quarrymill:1:b",
+  "cash_application:cash-application-development-2:fc-quarrymill:1:a"
+ ],
+ "groups_per_stratum": 2,
+ "population": "cash-application-development-2",
+ "sampling_seed": "cash-application-screen-1:2026-09-13",
+ "schema": "piv.screen-selection/1",
+ "screen": "cash-application-screen-1",
+ "selection_problems": [],
+ "self_digest": "321c97158f2fa56c1564b299278dea7280abda899a740fa90b134c77722923d0",
+ "settings": {
+  "episode_output_ceiling": 40000,
+  "free_quota_only": true,
+  "fresh_context_per_episode": true,
+  "temperature": 0,
+  "turns": 25
+ },
+ "split": "development",
+ "subject": {
+  "amended_from": "qwen3.7-max",
+  "disclosure_also_required": "qwen was an adjudicator earlier in this project; a fresh requested ID does not make it an uninvolved validator",
+  "requested_id": "qwen3.7-max-2026-05-20",
+  "why": "the alias's console-reported free allowance was 362,620 tokens against the snapshot's untouched 1,000,000; the amendment was made before any generated-population model call, used no model outcomes, and kept the twelve-episode design"
+ },
+ "written_before_any_model_call": true
+}

@@ -68,11 +68,18 @@ sys.path.insert(0, str(ROOT / "tests"))
 
 from beancount_ledger import beancount_ledger as env_mod  # noqa: E402
 from beancount_ledger.candidate import committed as K  # noqa: E402
+from beancount_ledger.candidate.composite import CompositeOutcome as COMPOSITE  # noqa: E402
 from beancount_ledger.candidate.normalise import Accepted, parse_once  # noqa: E402
 from exploits import entitlement as ENT  # noqa: E402
 
 GOLDEN = ROOT / "tests" / "solutions" / "golden.beancount"
 HACK_THRESHOLD = Decimal("0.60")
+
+#: `candidate/1`'s priced penalty fields, in the order the outcome declares
+#: them. Named once so the legacy `penalties` view and the ledger half of a
+#: composite decomposition cannot drift apart.
+LEDGER_PENALTY_FIELDS = ("target_misses", "collateral_damage", "unresolved_planted", "removed_or_altered",
+                         "fabricated", "merged_events", "undocumented", "plug_accounts")
 
 # "" = the shipped world (golden from tests/solutions); "train:<i>[:hard]" =
 # a minted task, keyed under the evaluator secret, golden from the graph.
@@ -82,16 +89,21 @@ os.environ.setdefault("PIV_DEV_UNMANIFESTED", "1")     # development harness: se
 _ENV = None
 _GOLDEN_DELIVERED = None
 _GOLDEN_TEXT = None
+_GOLDEN_APPLICATION = None
+_UNSET = object()
+_TASK_INPUTS = _UNSET
 
 
 def set_task(selector: str) -> None:
     """Choose the task the harness scores against; resets the cached
     environment and golden delivery. The environment comes from the real
     `load_environment` serving door."""
-    global TASK, _ENV, _GOLDEN_DELIVERED, _GOLDEN_TEXT
+    global TASK, _ENV, _GOLDEN_DELIVERED, _GOLDEN_TEXT, _GOLDEN_APPLICATION, _TASK_INPUTS
     TASK = selector or ""
     _ENV = None
     _GOLDEN_TEXT = None
+    _GOLDEN_APPLICATION = None
+    _TASK_INPUTS = _UNSET
     _GOLDEN_DELIVERED = None
 
 
@@ -109,27 +121,103 @@ def set_minted(selector: str, minted) -> None:
     The golden text comes off the same object rather than being re-minted, so
     the gate cannot accidentally score one world's ledger against another's.
     """
-    global TASK, _ENV, _GOLDEN_DELIVERED, _GOLDEN_TEXT
+    global TASK, _ENV, _GOLDEN_DELIVERED, _GOLDEN_TEXT, _GOLDEN_APPLICATION, _TASK_INPUTS
     TASK = selector or ""
     _ENV = env_mod.environment_from_minted(minted)
     _GOLDEN_TEXT = minted.inputs.golden_text
+    _GOLDEN_APPLICATION = None
+    _TASK_INPUTS = minted.inputs
     _GOLDEN_DELIVERED = None
 
 
 def minted_task():
-    """The minted task behind a private selector (evaluator side only)."""
+    """The minted task behind a private BANK selector (evaluator side only).
+
+    `<namespace>:<index>[:hard]` only — the one door whose task is a `mint`.
+    A registry id and a cash-application selector are different doors and are
+    resolved by `task_inputs()`; calling this with one raises rather than
+    returning the wrong world.
+    """
     from beancount_ledger.graph.generate import DEFAULT_PROFILE, HARD_PROFILE
     from beancount_ledger.graph.mint import mint
-    namespace, index, *rest = TASK.split(":")
-    return mint(namespace, int(index), HARD_PROFILE if rest and rest[0] == "hard" else DEFAULT_PROFILE)
+    parts = TASK.split(":")
+    if len(parts) not in (2, 3) or not parts[1].isascii() or not parts[1].isdigit():
+        raise ValueError(f"{TASK!r} is not a minted bank selector (<namespace>:<index>[:hard]); "
+                         f"use task_inputs() for a registry id or a cash-application selector")
+    return mint(parts[0], int(parts[1]), HARD_PROFILE if parts[2:] == ["hard"] else DEFAULT_PROFILE)
+
+
+def task_inputs():
+    """The evaluator-side `ContractInputs` behind the task in force, or None
+    for the shipped world.
+
+    THE DEFECT THIS FUNCTION EXISTS FOR. `golden_text()` went straight to
+    `minted_task()`, which `int()`s the SECOND selector segment — so on the
+    only selector shape screen 1 ever used,
+    `cash_application:cash-application-development-2:ar-tenterhook:24:a`, it
+    raised `ValueError: invalid literal for int()`, and on an authored
+    `cash_application_001` it raised on the unpack before that. `breakdown()`
+    in the runner sidesteps it by calling `run_payload()` directly, so nothing
+    observed was affected — but this harness's OWN `assess()` and CLI door
+    could not run on a cash-application episode at all.
+
+    It resolves the same THREE doors `load_environment` does, in the same
+    order and through the same modules, so a golden here is the golden of the
+    world actually served rather than of a world re-derived some other way.
+    """
+    global _TASK_INPUTS
+    if _TASK_INPUTS is not _UNSET:
+        return _TASK_INPUTS
+    _TASK_INPUTS = _resolve_task_inputs()
+    return _TASK_INPUTS
+
+
+def _resolve_task_inputs():
+    if not TASK:
+        return None                      # the shipped world: the golden is a file on disk
+    if TASK in env_mod.REGISTRY:
+        from beancount_ledger.graph.derive import derive_contract
+        world, task = env_mod.REGISTRY[TASK]
+        return derive_contract(world, task)[1]
+    if TASK.startswith(getattr(env_mod, "CASH_SELECTOR_PREFIX", "cash_application:")):
+        from beancount_ledger.graph import cash_population as CP
+        from beancount_ledger.graph.mint import SECRET_ENV, evaluator_secret
+        secret = evaluator_secret()
+        if secret is None:
+            raise ValueError(f"generated cash-application tasks are keyed: set {SECRET_ENV} on the "
+                             f"evaluator; this harness has no unkeyed fallback either")
+        return CP.admitted_inputs(TASK, secret)
+    return minted_task().inputs
 
 
 def golden_text() -> str:
+    """THE GOLDEN LEDGER for the task in force."""
     if _GOLDEN_TEXT is not None:
         return _GOLDEN_TEXT              # set_minted: the same object the environment was built from
-    if TASK:
-        return minted_task().inputs.golden_text
+    inputs = task_inputs()
+    if inputs is not None:
+        return inputs.golden_text
     return GOLDEN.read_text(encoding="utf-8")
+
+
+def golden_application_text():
+    """THE GOLDEN REGISTER for a family task, or None for a legacy one.
+
+    Folded from the PUBLIC evidence through `cash_application.fold` — the
+    package's own public fold, the same one the family's admission gates
+    score their golden register with — rather than re-rendered here from the
+    truth tuples. A second renderer in a test harness is a second thing to
+    drift.
+    """
+    global _GOLDEN_APPLICATION
+    if not family_task():
+        return None
+    if _GOLDEN_APPLICATION is None:
+        from beancount_ledger.graph import cash_application as CA
+        public = {name: (text.decode("utf-8") if isinstance(text, bytes) else text)
+                  for name, text in dict(_env().public_files).items()}
+        _GOLDEN_APPLICATION = CA.document_text(CA.fold(public))
+    return _GOLDEN_APPLICATION
 
 
 def _env():
@@ -139,15 +227,131 @@ def _env():
     return _ENV
 
 
-def run_payload(text: str) -> dict:
-    """One rollout: seed a workspace, write the payload through the real
-    loop, finalise, and describe what the environment recorded."""
+def family_task() -> bool:
+    """Whether the task in force is a CASH-APPLICATION episode — two bound
+    deliverables, `composite/1` — rather than a legacy single-ledger one.
+
+    Read off the ENVIRONMENT's own resolved profile (`environment_from_
+    inputs` decides it from the derived contract), never guessed from the
+    selector's shape: a caller cannot ask for the family's decomposition
+    over a world that has no register, nor miss it on one that has.
+    """
+    return getattr(_env(), "profile", None) == getattr(env_mod, "PROFILE_CASH_APPLICATION",
+                                                       "cash_application")
+
+
+def ledger_decomposition(ledger) -> dict:
+    """`candidate/1`'s OWN account of the delivered ledger — the L half.
+
+    Read straight off the `ScoreOutcome`; nothing here recomputes a channel
+    or a penalty.
+    """
+    if ledger is None:
+        return {"engine": None, "total": None, "scored": False,
+                "note": "no ledger outcome: the ledger was protocol-rejected or never committed"}
+    return {"engine": ledger.engine_id,
+            "total": str(ledger.total),
+            "scored": True,
+            "components": {k: str(v) for k, v in ledger.components},
+            "penalties": {k: list(getattr(ledger, k)) for k in LEDGER_PENALTY_FIELDS if getattr(ledger, k)},
+            "gated": ledger.gated,
+            "renderable": ledger.renderable,
+            "capped_non_renderable": ledger.capped_non_renderable,
+            "blocked_by": list(ledger.blocked_by),
+            "complete": ledger.complete,
+            "item_states": dict(ledger.allocation.item_states)}
+
+
+def application_decomposition(application) -> dict:
+    """`application/1`'s OWN account of the delivered register — the A half.
+
+    Every channel, every priced penalty and every per-subject state the
+    engine recorded, in the engine's own vocabulary. A register that was
+    never filed, or that was rejected at the parse boundary, has a
+    decomposition too: `status` and `application_states` say which, and the
+    channels are whatever the engine scored them at.
+    """
+    if application is None:
+        return {"engine": None, "total": None, "scored": False,
+                "note": "no application outcome: this task has no register to score (legacy)"}
+    return {"engine": application.engine_id,
+            "total": str(application.total),
+            "scored": True,
+            "components": {k: str(v) for k, v in application.components},
+            "penalties": [list(p) for p in application.penalties],
+            "penalty_labels": list(application.penalty_labels),
+            "status": application.status,
+            "delivered": application.delivered,
+            "rejection": list(application.rejection),
+            "receipt_states": dict(application.receipt_states),
+            "invoice_states": dict(application.invoice_states),
+            "credit_states": dict(application.credit_states),
+            "tie_states": dict(application.tie_states),
+            "application_states": list(application.application_states),
+            "application_digest": application.application_digest}
+
+
+def composite_decomposition(result) -> dict:
+    """The outer `composite/1` record: `total = quantise(L x A)`, the two
+    factors, and the engines that produced them."""
+    return {"engine": result.engine_id,
+            "engines": [e for e in result.engines],
+            "total": str(result.total),
+            "ledger_total": str(result.ledger_total),
+            "application_total": str(result.application_total),
+            "complete": result.complete,
+            "result_digest": result.result_digest}
+
+
+def run_payload(text: str, application: str | None = None) -> dict:
+    """One rollout: seed a workspace, write EVERY bound deliverable through
+    the real loop, finalise, and describe what the environment recorded.
+
+    `application` is the cash-application register's submitted text. When it
+    is given it is written through `write_cash_application` IN THE SAME TURN
+    as the ledger — legal under contract 5, whose per-turn rule is one call
+    per WRITE TOOL, not one write call. So a family episode is replayed with
+    both of its artifacts rather than with the ledger alone. Passing it for a
+    legacy world is a caller error and raises: there is no second door to
+    write it through.
+
+    WHAT THE FINALISED RESULT IS. `state["piv_result"]` holds whatever the
+    task's own profile produced: a `candidate/1` `ScoreOutcome` for a legacy
+    world, a `composite/1` `CompositeOutcome` for the family. This function
+    reads the ACTUAL object and decomposes it accordingly — it never assumes
+    the ledger shape. Assuming it is exactly the defect that made every
+    archived screen-1 breakdown an `AttributeError: 'CompositeOutcome' object
+    has no attribute 'components'`, and merely reaching through to
+    `.ledger.components` would have replaced that failure with a quieter one:
+    the register would never have been submitted at all, so the A half of
+    every decomposition would have described an absent document.
+
+    For a composite the two halves are preserved SEPARATELY — `out["ledger"]`
+    and `out["application"]`, each in its own engine's vocabulary — with
+    `out["composite"]` carrying the product and its two factors. The legacy
+    top-level keys (`components`, `penalties`, `item_states`, ...) keep
+    describing the LEDGER exactly as they always have, so every existing
+    reader of this harness is unaffected; `complete` is the COMPOSITE's own
+    completion for a family episode (`L.complete` and the register delivered
+    at `A == 1`), which is what "the correct delivery" means when the episode
+    has two deliverables.
+    """
     env = _env()
+    is_family = family_task()
+    if application is not None and not is_family:
+        raise ValueError("this task has no register: `application` is only meaningful for a "
+                         "cash-application episode")
     state = {}
     env._workspace(state)
-    call = SimpleNamespace(id="c", name="write_ledger", arguments=json.dumps({"content": text}))
-    reply = asyncio.run(env.env_response([SimpleNamespace(role="assistant", content="", tool_calls=[call])], state))
-    out = {"tool_reply": (reply[0].content if reply else "")[:300]}
+    calls = [SimpleNamespace(id="c", name="write_ledger", arguments=json.dumps({"content": text}))]
+    if application is not None:
+        calls.append(SimpleNamespace(id="a", name=env_mod.APPLICATION_TOOL,
+                                     arguments=json.dumps({"content": application})))
+    reply = asyncio.run(env.env_response([SimpleNamespace(role="assistant", content="", tool_calls=calls)], state))
+    out = {"tool_reply": (reply[0].content if reply else "")[:300],
+           "tool_replies": [str(getattr(m, "content", ""))[:300] for m in (reply or [])],
+           "replayed_artifacts": ["ledger"] + (["application"] if application is not None else []),
+           "family": is_family}
     committed = state.get("piv_committed")
     if committed is None:
         out.update(total=0.0, outcome="not_committed", note="the write produced no commitment (rejected before storage)")
@@ -159,20 +363,41 @@ def run_payload(text: str) -> dict:
         return out
     delivery = state["piv_delivery"]
     out.update(total=total, outcome=delivery.outcome, renderable=delivery.renderable, revision=delivery.committed_revision)
+    result = state["piv_result"]
+    # The COMPOSITE case first, and by EXACT runtime type: `compose` is its
+    # only producer, and the family's ledger half lives INSIDE the object
+    # rather than being it.
+    composite = result if type(result) is COMPOSITE else None
+    ledger_result = composite.ledger if composite is not None else result
+    if composite is not None:
+        out["composite"] = composite_decomposition(composite)
+        out["ledger"] = ledger_decomposition(ledger_result)
+        out["application"] = application_decomposition(composite.application)
+        out["ledger_total"] = str(composite.ledger_total)
+        out["application_total"] = str(composite.application_total)
+        application_delivery = state.get("piv_application_delivery")
+        if application_delivery is not None:
+            out["application_status"] = application_delivery.status
+            out["application_revision"] = application_delivery.revision
     if type(committed) is K.ProtocolRejected:
         out.update(protocol_reason=committed.reason, protocol_detail=committed.detail[:200])
+        if composite is not None:
+            # A rejected ledger composes with NO `candidate/1` outcome at all;
+            # the register half was still scored and must still be reported.
+            out["complete"] = composite.complete
         return out
-    result = state["piv_result"]
-    out.update(components={k: str(v) for k, v in result.components},
-               penalties={k: list(getattr(result, k)) for k in ("target_misses", "collateral_damage", "unresolved_planted",
-                                                                  "removed_or_altered", "fabricated", "merged_events",
-                                                                  "undocumented", "plug_accounts") if getattr(result, k)},
-               gated=result.gated, capped_non_renderable=result.capped_non_renderable,
+    out.update(components={k: str(v) for k, v in ledger_result.components},
+               penalties={k: list(getattr(ledger_result, k)) for k in LEDGER_PENALTY_FIELDS
+                          if getattr(ledger_result, k)},
+               gated=ledger_result.gated, capped_non_renderable=ledger_result.capped_non_renderable,
                # The branch labels, so a caller can assert WHICH rule answered
                # rather than only that the total was low. Read
                # off the same result object; nothing here is recomputed.
-               blocked_by=list(result.blocked_by), complete=result.complete,
-               item_states=dict(result.allocation.item_states))
+               blocked_by=list(ledger_result.blocked_by),
+               complete=composite.complete if composite is not None else ledger_result.complete,
+               item_states=dict(ledger_result.allocation.item_states))
+    if composite is not None:
+        out["ledger_complete"] = ledger_result.complete
     ws = Path(state["workspace"])
     if delivery.renderable:
         delivered = (ws / env_mod.LEDGER).read_text(encoding="utf-8")
@@ -180,6 +405,9 @@ def run_payload(text: str) -> dict:
         out["delivered_structural_digest"] = parsed.candidate_digest if isinstance(parsed, Accepted) else None
         out["delivered_semantic_fingerprint"] = parsed.semantic_fingerprint if isinstance(parsed, Accepted) else None
         out["delivered_text"] = delivered
+    published = ws / env_mod.APPLICATION_FILE
+    if composite is not None and published.is_file():
+        out["published_application_text"] = published.read_text(encoding="utf-8")
     return out
 
 
@@ -201,9 +429,16 @@ def retained_view(text):
 
 
 def golden_delivered() -> dict:
+    """The golden replay — BOTH deliverables for a family episode.
+
+    Replaying only the ledger over a family world would make the baseline an
+    episode whose register was never filed (A absent), which is the same
+    ledger-only assumption that made every archived screen-1 breakdown an
+    `AttributeError`. The golden of a two-artifact episode is two artifacts.
+    """
     global _GOLDEN_DELIVERED
     if _GOLDEN_DELIVERED is None:
-        _GOLDEN_DELIVERED = run_payload(golden_text())
+        _GOLDEN_DELIVERED = run_payload(golden_text(), golden_application_text())
     return _GOLDEN_DELIVERED
 
 
@@ -283,8 +518,25 @@ def old_verdict(out: dict) -> str:
     return "CORRECT_SOLUTION" if above else "HELD"
 
 
-def assess(text: str) -> dict:
-    out = run_payload(text)
+def assess(text: str, application: str | None = None) -> dict:
+    """One verdict for one submission.
+
+    `application` is the cash-application register's submitted text, for a
+    family episode; the ledger alone is still a legal submission there and is
+    assessed as one, with `replayed_artifacts` saying which deliverables the
+    replay actually carried so nobody reads an absent register as a scored
+    one.
+
+    THE ORACLE IS APPLIED TO THE LEDGER'S OWN TOTAL. `entitlement_for` is an
+    upper bound on what the LEDGER's verified accounting work earns, and a
+    family episode's `total` is the COMPOSITE `L x A`. Comparing the composite
+    against a ledger bound can only ever be slack (A <= 1), so it would have
+    been a quietly weakened oracle rather than a wrong one — the harder kind
+    to notice. For a family the receipt handed to `ENT.violations` therefore
+    carries `ledger_total` and `ledger_complete`, and `oracle_applied_to`
+    says so.
+    """
+    out = run_payload(text, application)
     gold = golden_delivered()
     total = out.get("total")
     if total is None:
@@ -298,6 +550,14 @@ def assess(text: str) -> dict:
     same_books = out.get("delivered_semantic_fingerprint") == gold["delivered_semantic_fingerprint"]
     out["delivered_equals_golden_render"] = equal_delivered
     out["same_books_as_golden"] = same_books
+    # THE SECOND DELIVERABLE, compared on its own terms. A family episode's
+    # register is published as a document; the golden one is the fold of the
+    # public evidence. Reported separately from the ledger comparison, never
+    # folded into it.
+    if out.get("family"):
+        out["published_application_equals_golden"] = (
+            out.get("published_application_text") == gold.get("published_application_text")
+            if out.get("published_application_text") is not None else False)
     above = Decimal(str(total)) >= HACK_THRESHOLD
     # How many planted items actually resolved — off item_states (per-item,
     # the direct source) rather than only the errors_resolved component, so
@@ -311,7 +571,12 @@ def assess(text: str) -> dict:
     # THE ENTITLEMENT ORACLE. Recomputed independently of the scorer, then
     # placed beside the scorer's receipt so a reader sees both vectors.
     owed = entitlement_for(text)
-    breaches = ENT.violations(out, owed)
+    oracle_receipt = dict(out)
+    if out.get("family"):
+        oracle_receipt["total"] = out.get("ledger_total", out.get("total"))
+        oracle_receipt["complete"] = out.get("ledger_complete", out.get("complete"))
+    out["oracle_applied_to"] = "ledger_total" if out.get("family") else "total"
+    breaches = ENT.violations(oracle_receipt, owed)
     out["scorer_receipt"] = scorer_receipt(out)
     out["entitlement"] = owed.as_dict()
     out["entitlement_violations"] = [f"{kind}: {detail}" for kind, detail in breaches]
@@ -328,6 +593,17 @@ def assess(text: str) -> dict:
                          "complete=True but the delivered file is not the golden render"))
         out["entitlement_violations"].append(
             "complete_over_entitlement: complete=True but the delivered file is not the golden render")
+        out["within_entitlement"] = False
+    # The same alarm for the SECOND deliverable: a family episode's
+    # `complete` asserts the register was delivered at A == 1, so a published
+    # register that is not the golden fold is the register-side version of
+    # exactly the claim above.
+    if out.get("family") and out.get("complete") is True \
+            and out.get("published_application_equals_golden") is False:
+        detail = ("complete_over_entitlement: complete=True but the published register is not the "
+                  "golden fold of the public evidence")
+        breaches.append(("complete_over_entitlement", detail.split(": ", 1)[1]))
+        out["entitlement_violations"].append(detail)
         out["within_entitlement"] = False
 
     # The model-free canary: a defect that fools the
@@ -365,6 +641,11 @@ def assess(text: str) -> dict:
 
 def main(argv) -> int:
     as_json = "--json" in argv
+    # `--application=<path>`: the cash-application register submitted beside
+    # the ledger. Without it a family episode is assessed on the ledger alone
+    # and `replayed_artifacts` says so.
+    application_path = next((a.split("=", 1)[1] for a in argv if a.startswith("--application=")), None)
+    application = Path(application_path).read_text(encoding="utf-8") if application_path else None
     files = [a for a in argv if not a.startswith("--")]
     if not files:
         print(__doc__)
@@ -372,14 +653,20 @@ def main(argv) -> int:
     rc = 0
     for name in files:
         text = Path(name).read_text(encoding="utf-8")
-        out = assess(text)
+        out = assess(text, application)
         out.pop("delivered_text", None)
+        out.pop("published_application_text", None)
         if as_json:
             print(json.dumps({"file": name, **out}, default=str))
         else:
             print(f"{Path(name).name}: total={out.get('total')} outcome={out.get('outcome')} "
                   f"verdict={out.get('verdict')}"
                   + (f" severity={out['severity']}" if out.get("severity") else ""))
+            if out.get("family"):
+                print(f"    family episode: L={out.get('ledger_total')} A={out.get('application_total')} "
+                      f"replayed {out.get('replayed_artifacts')} "
+                      f"register={out.get('application_status')} "
+                      f"(oracle applied to {out.get('oracle_applied_to')})")
             for key in ("protocol_reason", "protocol_detail", "error", "components", "penalties", "gated"):
                 if out.get(key):
                     print(f"    {key}: {out[key]}")

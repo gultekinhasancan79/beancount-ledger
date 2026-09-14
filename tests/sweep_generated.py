@@ -6,7 +6,7 @@ Per seed: generation error, literal provenance leak, which bounded layout
 attempt produced the world, planted count and kind mix, statement rows,
 public-only identifiability (`graph/identify`) and whether its repairs are
 exactly the planted items under the FULL shared repair key (`identify.repair_key`
-against `tests/repair_keys.planted_key`: kind, date, posting multiset,
+against `graph.repair_keys.planted_key`: kind, date, posting multiset,
 counterparty, booked amount, copies), task-id distinctness.
 Failing seeds are written to reviews/sweep_failures.json so they can be
 pinned as regression fixtures. A sentinel subset (the first N selectors)

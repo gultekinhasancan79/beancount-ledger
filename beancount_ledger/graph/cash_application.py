@@ -139,6 +139,22 @@ class PublicOnly(TypeError):
     """Raised when the input is not a mapping of file name to text."""
 
 
+class ReadingBound(ValueError):
+    """One enumeration crossed `MAX_BASELINE_READINGS`.
+
+    A `ValueError` still, so a caller written before this class existed keeps
+    catching it, and a named type carrying `readings` — the number of open
+    readings at the moment the enumeration was abandoned — because that
+    figure is the only thing a verification-limit record has to say. Round
+    16, decision 3: exceeding the bound means verification was INCOMPLETE, so
+    the count at which it stopped is the finding, not a detail.
+    """
+
+    def __init__(self, message: str, *, readings: int):
+        super().__init__(message)
+        self.readings = readings
+
+
 class Refusal(ValueError):
     """An authoring slip the U-table names. `code` is the spec's name."""
 
@@ -878,7 +894,8 @@ def _run(ev: Evidence, strategy: Strategy, *, validate: bool, dates: dict | None
                 next_states.extend(_unadviced(state, item, date, ev, strategy, validate))
         states = next_states
         if len(states) > MAX_BASELINE_READINGS:
-            raise ValueError(f"more than {MAX_BASELINE_READINGS} readings; the evidence is not a fixture")
+            raise ReadingBound(f"more than {MAX_BASELINE_READINGS} readings ({len(states)} open); the "
+                               f"evidence is not a fixture", readings=len(states))
     return [_finish(state, ev) for state in states]
 
 
@@ -1014,23 +1031,40 @@ def baseline_readings(public: dict, name: str, **kw) -> tuple:
     return tuple(_run(ev, baseline.strategy, validate=False))
 
 
-def baseline_report(public: dict, truth: Application | None = None, **kw) -> dict:
+def baseline_report(public: dict, truth: Application | None = None, evidence: "Evidence | None" = None,
+                    **kw) -> dict:
     """Gate (o): for each baseline the evidence admits, whether ANY of its
     readings equals `truth` (the policy fold by default) on every receipt
-    line, credit application and register row."""
-    ev = read_evidence(public, **kw)
+    line, credit application and register row.
+
+    `evidence` is the same pack ALREADY read, for a caller that has it. The
+    minting gate reads the evidence once and then runs the baselines, the
+    refusal probes and the accounting checks over it; re-reading the bytes
+    here would be a second parse of the same files and — worse — a second
+    opportunity for the two readings to differ.
+    """
+    ev = read_evidence(public, **kw) if evidence is None else evidence
     if truth is None:
         truth = fold(public, **kw)
     target = application_key(truth)
-    report = {}
-    for baseline in BASELINES:
-        if not baseline.admitted_when(ev):
-            report[baseline.name] = BaselineResult(baseline.name, False, baseline.diagnostic, (), None)
-            continue
-        readings = tuple(_run(ev, baseline.strategy, validate=False))
-        reaches = any(application_key(reading) == target for reading in readings)
-        report[baseline.name] = BaselineResult(baseline.name, True, baseline.diagnostic, readings, reaches)
-    return report
+    return {baseline.name: baseline_result(ev, baseline, target) for baseline in BASELINES}
+
+
+def baseline_result(ev: "Evidence", baseline: Baseline, target) -> BaselineResult:
+    """ONE baseline's result against an already-computed truth key.
+
+    `baseline_report` is this function ten times over. It is separate so that
+    a caller who must survive one baseline crossing the reading bound — the
+    minting gate, which has to retain the other nine observations and the
+    offending count — runs the same code the report runs rather than a second
+    copy of it. A `ReadingBound` is raised, not swallowed: what an incomplete
+    verification MEANS is decision 3's question, and the caller answers it.
+    """
+    if not baseline.admitted_when(ev):
+        return BaselineResult(baseline.name, False, baseline.diagnostic, (), None)
+    readings = tuple(_run(ev, baseline.strategy, validate=False))
+    return BaselineResult(baseline.name, True, baseline.diagnostic, readings,
+                          any(application_key(reading) == target for reading in readings))
 
 
 def refused_by(report: dict) -> tuple:
@@ -1042,10 +1076,10 @@ def refused_by(report: dict) -> tuple:
 
 __all__ = [
     "APPLICATION_SCHEMA", "CASH_APPLICATION_VERSION", "EXTRA_PUBLIC_FILES", "SHORT_PAY_TOLERANCE",
-    "REFUSALS", "Refusal", "PublicOnly",
+    "REFUSALS", "Refusal", "PublicOnly", "ReadingBound", "MAX_BASELINE_READINGS",
     "Evidence", "Invoice", "Advice", "AdviceLine", "Receipt", "CreditNote",
     "Application", "ReceiptApplication", "CreditApplication", "InvoiceRow",
     "read_evidence", "fold", "application_key", "document", "document_text",
     "Strategy", "POLICY", "Baseline", "BASELINES", "BASELINE_NAMES", "DIAGNOSTIC_BASELINE_NAMES",
-    "BaselineResult", "baseline_readings", "baseline_report", "refused_by",
+    "BaselineResult", "baseline_readings", "baseline_result", "baseline_report", "refused_by",
 ]

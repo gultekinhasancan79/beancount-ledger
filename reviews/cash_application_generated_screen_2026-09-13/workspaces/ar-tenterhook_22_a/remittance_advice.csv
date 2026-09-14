@@ -1,0 +1,8 @@
+remittance_id,customer,remittance_date,payment_method,payment_reference,payment_amount,invoice_id,amount_paid,settles_invoice,deduction_amount,note
+RA-0106-GR,Glenhaven Resorts Company,2025-01-06,ACH,GLENHAVEN PAYRUN 0106,4844.00,SI-7301,0.00,no,0.00,withheld; short shipment; credit requested
+RA-0106-GR,Glenhaven Resorts Company,2025-01-06,ACH,GLENHAVEN PAYRUN 0106,4844.00,SI-7313,2544.00,yes,0.00,
+RA-0106-GR,Glenhaven Resorts Company,2025-01-06,ACH,GLENHAVEN PAYRUN 0106,4844.00,SI-7328,2300.00,no,0.00,part payment; balance to follow on the next payment run
+RA-0113-IC,Ivyrise Contract Interiors,2025-01-13,ACH,IVYRISE PAYRUN 0113,4604.00,SI-7303,4604.00,yes,60.00,freight overcharge; credit requested
+RA-0120-IC,Ivyrise Contract Interiors,2025-01-20,ACH,IVYRISE PAYRUN 0120,60.00,SI-7303,60.00,yes,0.00,
+RA-0127-GR,Glenhaven Resorts Company,2025-01-27,ACH,GLENHAVEN PAYRUN 0127,3551.00,SI-7328,2301.00,yes,10.00,minor remittance discrepancy; invoice treated as settled
+RA-0127-GR,Glenhaven Resorts Company,2025-01-27,ACH,GLENHAVEN PAYRUN 0127,3551.00,SI-7332,1250.00,no,0.00,part payment against the balance on account

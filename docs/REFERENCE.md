@@ -6,15 +6,15 @@ Everything below is the detailed contract: how worlds are keyed and manifested, 
 
 ## Overview
 - **Environment ID**: `beancount-ledger`
-- **Version**: 0.2.0
+- **Version**: 0.3.0
 - **Short description**: Multi-turn tool-use bank reconciliation with a deterministic, exploit-hardened reward
 - **Tags**: `accounting`, `tool-use`, `multi-turn`, `train`, `eval`
 
-### Compatibility (0.2.0)
+### Compatibility (0.3.0)
 
-This release targets the **v0 workflow**: `load_environment` discovered by name in the installed module, driven by `vf-eval`, configured by `[tool.verifiers.eval]`, against the exactly pinned `verifiers==0.3.1`. Prime Intellect's current environment documentation lists that workflow under **Legacy** and identifies it as deprecated v0. **Publishing 0.2.0 states that compatibility and does not imply v1 support.**
+This release targets the **v0 workflow**: `load_environment` discovered by name in the installed module, driven by `vf-eval`, configured by `[tool.verifiers.eval]`, against the exactly pinned `verifiers==0.3.1`. Prime Intellect's current environment documentation lists that workflow under **Legacy** and identifies it as deprecated v0. **Publishing 0.3.0 states that compatibility and does not imply v1 support.**
 
-Verified against this package's own entry points rather than asserted: `beancount_ledger/__init__.py` exports one serving door, `load_environment`, and the two measurement helpers `tool_call_chars` and `library_versions`; `pyproject.toml` declares no `[project.entry-points]` group, no console script and no v1 protocol object; and every `verifiers` base the environment subclasses resolves into the framework's own legacy tree — `vf.StatefulToolEnv` → `verifiers.legacy.envs.stateful_tool_env`, `vf.Rubric` → `verifiers.legacy.rubrics.rubric`, `vf.Environment` → `verifiers.legacy.envs.environment`, `vf.stop` → `verifiers.legacy.decorators` — while the framework's own loader logs under `verifiers.legacy.utils.env_utils`. A v1 migration is separate work and is deliberately not slipped into this frozen instrument; a v1 port would move the episode-contract digest and is therefore a new measurement condition, not a packaging change. The documented versioned upload preserves earlier releases, so 0.2.0 does not withdraw 0.1.0.
+Verified against this package's own entry points rather than asserted: `beancount_ledger/__init__.py` exports one serving door, `load_environment`, and the two measurement helpers `tool_call_chars` and `library_versions`; `pyproject.toml` declares no `[project.entry-points]` group, no console script and no v1 protocol object; and every `verifiers` base the environment subclasses resolves into the framework's own legacy tree — `vf.StatefulToolEnv` → `verifiers.legacy.envs.stateful_tool_env`, `vf.Rubric` → `verifiers.legacy.rubrics.rubric`, `vf.Environment` → `verifiers.legacy.envs.environment`, `vf.stop` → `verifiers.legacy.decorators` — while the framework's own loader logs under `verifiers.legacy.utils.env_utils`. A v1 migration is separate work and is deliberately not slipped into this frozen instrument; a v1 port would move the episode-contract digest and is therefore a new measurement condition, not a packaging change. The documented versioned upload preserves earlier releases, so 0.3.0 withdraws neither 0.2.0 nor 0.1.0. 0.3.0 is a NEW version rather than a rebuilt 0.2.0: the corrected generator is distributed under its own identity so that no rebuilt wheel ever shares the published 0.2.0 hashes, and the uploaded 0.2.0 artifact is neither rebuilt, re-uploaded nor withdrawn here. Publishing is the owner's act and is not performed in this repository.
 
 ## Quickstart
 
@@ -66,7 +66,8 @@ Generated tasks are **keyed and manifested**: each world derives from an HMAC un
 `PIV` is the prefix of everything the evaluator side owns and the framework does not: `PIV_EVAL_SECRET`, `PIV_MANIFEST`, `PIV_DEV_UNMANIFESTED`, the `~/.piv/` directory, the `piv_*` state keys a rollout carries and the `PIV*` exception classes. When you see it, you are looking at this package's evaluator, not at `verifiers`.
 
 ## Datasets
-- **Primary**: generated worlds, selectors `train:<n>`, `eval:<n>`, `train:<n>:hard` (n < 100,000). The released population is preflighted 1,400/1,400 (1,000 train / 200 eval / 200 hard).
+- **Primary (bank reconciliation)**: generated worlds, selectors `train:<n>`, `eval:<n>`, `train:<n>:hard` (n < 100,000). The released population is preflighted 1,400/1,400 (1,000 train / 200 eval / 200 hard).
+- **Primary (cash application)**: the released development population `cash-application-development-2` — 96 predeclared parent groups, 32 per mechanism stratum, 192 variants, admitted under preflight contract 2 and served from a signed family manifest. Selectors are evaluator-side; the evaluation split is declared by no released population and is not opened. See [The generated cash-application population](#the-generated-cash-application-population).
 - **Shipped**: 106 hand-authored tasks usable with no secret, for smoke tests, demos and cross-workflow comparison — 95 under the `legacy` episode profile (the 91 workflow tasks of the table above: ten companies, ten workflows each except Alpine, plus the four-task clean-month pack) and the eleven `cash_application_001`..`011` of the cash-application family under the `cash_application` profile.
 - Each world is a projection of a private fact graph; everything the scorer requires is derivable from the mounted files or stated in `policy.md`. Ledgers are 7–14 KB; the public observation contract is eight named files, nothing else — eleven for the cash-application family, whose three extra evidence files are read by exactly the same rules.
 
@@ -79,7 +80,7 @@ Generated tasks are **keyed and manifested**: each world derives from an HMAC un
 ## Why this is hard to game
 
 - **The reward is derived, not judged.** Trial balance ties or it does not; planted discrepancies are resolved or they are not. Penalties for damaging existing records, fabricating entries or inventing accounts.
-- **Nothing the agent sees regenerates an answer.** Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The wheel ships no golden ledgers, no tests and no provenance for generated worlds. The hand-authored tasks are the exception by construction: their facts live in the package (`graph/worlds/`) and the demo task's scoring contract (`tasks/bank_recon_001.json`: expected balances and planted keys) ships with it, because a demo must score without a secret. Treat them as demos, never as a held-out evaluation.
+- **Keying protects generation identity, not the accounting.** HMAC protects private generation identity against reconstruction from enumerable selectors. It does not prevent solving the accounting from public evidence. The public cash-application fold intentionally reconstructs the application register from those files. Worlds are HMAC-keyed under an evaluator secret; public ids derive from public bytes only. The wheel ships no golden ledgers, no tests and no provenance for generated worlds. The hand-authored tasks are the exception by construction: their facts live in the package (`graph/worlds/`) and the demo task's scoring contract (`tasks/bank_recon_001.json`: expected balances and planted keys) ships with it, because a demo must score without a secret. Treat them as demos, never as a held-out evaluation.
 - **An exploit corpus and an adversary loop** live in `tests/`: 26 hand-written attacks on the demo world, 14 constructions (13 families, 103 declared payloads, of which a world builds about 90 and skips the rest by name because it lacks the structure they attack) that read a minted world's public bytes to build their attack, and a nightly sweep over rotating shards (canonicalisation, decimal edge cases, duplicate detection, entitlement, and more). The exploit corpus is scored against an oracle independent of the scorer.
 - **Every number above is reproducible from a sealed contract.** The pre-registration is hashed into the schedule id; the instrument commit, episode-contract digest and package pins are recorded in [`reviews/RELEASE_ATTESTATION.md`](../reviews/RELEASE_ATTESTATION.md).
 
@@ -135,26 +136,120 @@ For the capability *spread* (small models 0–17%, stronger 58–92%), see the s
 | Path | What it is |
 |---|---|
 | `beancount_ledger/` | The environment: world generator (`graph/`) and the hand-authored worlds, 106 tasks (`graph/worlds/`: 95 legacy, eleven cash-application), candidate-ledger canonicaliser (`candidate/`), scorer (`reward.py`), tool loop (`beancount_ledger.py`). This is all the wheel ships. |
-| `tests/` | The 34-suite battery, the exploit corpus (14 constructions over 13 families), the adversary loop, the liveness witness, the preflight, sealing and audit scripts; about 110 tracked files. Not shipped. |
-| `reviews/` | Dated evidence: pre-registration, the sealed confirm1v4 schedule with its 143 executed cells, the pilot and budget records that preceded it, rendered arm tables, the release attestation, the reward-lattice audit and the audit receipt, and the three cash-application records above with their self-contained evidence directories. The budget records were run on generator-8 worlds; under generator 9 the same selectors name different worlds, so nothing in them describes a world that is served today. Not shipped. |
+| `tests/` | The 39-suite battery, the exploit corpus (14 constructions over 13 families), the adversary loop, the liveness witness, the preflight, sealing and audit scripts; 154 tracked files. Not shipped. |
+| `reviews/` | Dated evidence: pre-registration, the sealed confirm1v4 schedule with its 143 executed cells, the pilot and budget records that preceded it, rendered arm tables, the release attestation, the reward-lattice audit and the audit receipt, and the cash-application records above — the three authored-task records, the development-population census with its superseded predecessor, the generated-population screen, and the installed-wheel and installable-serving checks — each with its self-contained evidence directory. The budget records were run on generator-8 worlds; under generator 9 the same selectors name different worlds, so nothing in them describes a world that is served today. Not shipped. |
 | `outputs/evals/` | Raw `vf-eval` transcripts on the demo task. |
 
 ## Security and provenance
-- Worlds are keyed (HMAC under the evaluator secret); public ids derive from public bytes only — nothing an agent observes regenerates an answer.
+- Worlds are keyed (HMAC under the evaluator secret); public ids derive from public bytes only. HMAC protects private generation identity against reconstruction from enumerable selectors. It does not prevent solving the accounting from public evidence. The public cash-application fold intentionally reconstructs the application register from those files.
 - The Hub artefact ships **no** goldens, no test suite, no provenance records, no secrets (verified per release: the wheel's file list is audited).
 - Read tools accept only the eight declared names — never paths; symlinks, reparse points and oversized content are refused; agent input can never quarantine an evaluation.
 - Dependencies are pinned exactly (`verifiers==0.3.1`, `openai==3.5.0`, pydantic/griffe/datasets/beancount pinned) because the model-facing tool schemas are generated through them; a bump moves the episode-contract digest and is loud, never silent.
-- Versions: package 0.2.0, generator 9, identify 7, scorer contract 1, manifest schema 2, episode contract 4 (`legacy` profile, digest `e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866`) and 5 (`cash_application` profile, digest `b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f`). Both digests are pinned in `tests/test_episode_contract.py`, parameterised over the profiles.
+- Versions: package 0.3.0, bank generator 9, cash-application family generator 1, cash-application gate implementation 2 and family preflight contract 2 (gate set `2491e97f97b48cee`), identify 7, scorer contract 1, manifest schema 2, episode contract 4 (`legacy` profile, digest `e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866`) and 5 (`cash_application` profile, digest `b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f`). Both digests are pinned in `tests/test_episode_contract.py`, parameterised over the profiles.
+
+## The generated cash-application population
+
+0.3.0 distributes `cash-application-development-2` as a **released development population**. The two
+words carry different jobs and neither is shorthand for the other. **Released** describes
+*distribution*: the generator (`graph/cash_construct.py`, `graph/cash_gate.py`,
+`graph/cash_population.py`), the admission battery (`beancount_ledger/world_checks.py`) and the
+population declaration all ship in the wheel, and a package installed from that wheel can mint a
+declared group and serve both its variants. **Development** describes the population's *experimental
+role*, which is unchanged: it is the development split and nothing here promotes it. The frozen
+60/20/20 split assignment is exactly as it was, and **the evaluation split is not opened**. It stays
+closed by the ABSENCE of a roster entry rather than by a prohibition — `fc-harrowfield`,
+`cr-oysterbank` and `ar-coldharbour` are sealed into `evaluation`, no released population declares
+them, so no selector spells them and the door refuses them as undeclared members.
+
+**The declaration.** 96 predeclared parent groups, 32 per mechanism stratum (`fc-quarrymill`
+fallback continuation, `cr-pikestaff` credit residue, `ar-tenterhook` advice residue), two variants
+each, all in the `development` split, declared in a fixed order before any draw. Membership is a
+function of the frozen split map alone: no secret, no sampling, no property of what a group drew.
+The evaluator secret enters one layer down, at `parent_seed`, and decides what each declared
+identity draws, never which identities exist. Both polarities appear in every stratum in equal
+numbers, and which variant letter carries the positive condition is a keyed coin.
+
+**The corrected admission contract.** Round 17 found one of the thirty-one admission conditions
+wrong: `cumulative_reversal_bounded` checked the original sale a credit note names — correct — and
+then additionally rejected any note whose gross exceeded the invoice's *opening balance*. A credit
+reverses a sale; part-payment of that sale does not shrink what may be credited against it. The cap
+is removed, and the original-sale net and tax constraints, the cumulative reach across several notes
+against one sale and the positive-net requirement are retained. The corrected semantics are
+versioned:
+
+| what | value |
+|---|---|
+| family / family generator version | `cash_application` / `1` |
+| **gate implementation version** | **2** (was 1) |
+| **family preflight contract** | **2** (was 1), 31 gates |
+| **gate-set digest** | **`2491e97f97b48cee`** (was `6b246422badd05a6`) |
+| family manifest schema | `1` |
+| profile | `bounded-v1`, digest `310e96729061410467f0e4285976743f` |
+| baseline catalogue | `cash_application_baselines/1`, 9 binding + 1 diagnostic |
+| split map | schema `1`, digest `c41f5d150aec53ccce514f7123206ac5` |
+| freeze digest | `b371a45a0186648e40c7aa18f03efb28` |
+
+A population *selected* under an additional, incorrect accounting restriction cannot establish
+conformity to the intended specification, whatever the accepted instances look like, so the
+population was replaced rather than re-validated. `cash-application-development-1` is retired from
+`RELEASED_POPULATIONS`, recorded in `SUPERSEDED_POPULATIONS` with its reason, and no selector spells
+it; its record and its five JSON files are preserved unaltered, and `tests/test_cash_gate.py` fails
+if they are edited.
+
+**The census, and what stands on it.** Every number below is offline and deterministic; no model was
+called.
+
+| | `cash-application-development-2`, contract 2 |
+|---|---|
+| declared / admitted / exhausted groups | 96 / 96 / 0 |
+| retained attempts, attempt acceptance | 98, 0.980 (94 groups admitted at ordinal 0, two at ordinal 1) |
+| accounting-gate refusals | **0**, and in particular zero opening-balance refusals |
+| offline validation, all seven gates over every variant | 192/192 — both goldens and their `composite/1` at `1.000000`, the public fold reproducing the private truth register, exactly one identifiable reading, no private construction token on any public surface |
+| serving through the real `load_environment` | 192/192, each served id the one its record was signed for, profile `cash_application`, episode-contract digest equal to `cash_application_001`'s |
+| paired replay of the two refusals the removed clause caused | 2/2 now admitted, at attempt ordinal 0 |
+
+Full record, with the freeze, the complete per-attempt census, the aggregates, the validation rows,
+the serving rows and the replay:
+[`reviews/cash_application_development_population_2026-09-13_replacement.md`](../reviews/cash_application_development_population_2026-09-13_replacement.md).
+
+**Served from the distributed artifact.** The admission battery the construction path runs lives in
+the package, so minting no longer needs a checkout. A 0.3.0 wheel installed into a clean throwaway
+virtual environment — nothing but the wheel and its pins, the repository asserted absent from
+`sys.path`, every runtime member of the wheel compared byte for byte with the installed file —
+mints one declared group per mechanism stratum and serves all six variants through the real
+`env.evaluate()` door at reward 1.0, `complete`, register `delivered`, composite 1; the eleven
+authored cash tasks and a legacy control score twelve of twelve on the same wheel. The battery is
+recorded resolving from `site-packages` through the construction path's own accessor, and is shown
+able to fail on a tampered input. Evidence:
+[`reviews/installable_serving_check_2026-09-14/`](../reviews/installable_serving_check_2026-09-14/).
+
+**What this deliverable claims, in full:**
+
+> A versioned, keyed cash-application generator with a frozen development population, deterministic
+> accounting checks, golden-artifact validation and signed-manifest serving under the recorded
+> repository runtime. No model performance, difficulty, training benefit or generalization beyond the
+> development templates has been established.
+
+**What it does not claim.** 96 groups are three structural templates, so within a stratum the
+customer, invoice, receipt, note, plant, allocation and dependency counts are constant and 96 rows
+are not 96 independent structural examples; any sample drawn from here inherits that clustering.
+Admissibility is not difficulty: gate (o) says ten declared shortcut strategies do not reach the
+truth, not that the task is hard. The 0.980 acceptance rate is a property of this specification and
+this secret. The census is evaluator-side and must not become an agent-visible surface, and the
+population is reproducible only by the evaluator, who holds the key.
 
 ## What has been measured on the cash-application profile
 
-Three zero-cost records, each one requested model ID and one attempt per cell. None of them establishes a population failure rate, accounting accreditation or a training benefit.
+Four zero-cost records, each one requested model ID and one attempt per cell. **None of them establishes a population failure rate, accounting accreditation or a training benefit**, and none was a release prerequisite.
 
 | record | what ran | what it shows |
 |---|---|---|
 | [`reviews/cash_application_screen_2026-09-10.md`](../reviews/cash_application_screen_2026-09-10.md) | three episodes on three of Bowline's five variants | two complete two-artifact deliveries; one case where `L = 1.0` and the register lost a single field (`A = 0.333334`) |
 | [`reviews/cash_application_six_variant_screen_2026-09-11.md`](../reviews/cash_application_six_variant_screen_2026-09-11.md) | one episode on each of the six new variants — an **INCOMPLETE DESCRIPTIVE SCREEN** | five scored deliveries, four a complete `1.0`; `cash_application_007` `0.64` on a complete ledger repair with two in-period invoices missing from the closing register; `cash_application_011` lost to a provider 403, that cell stays missing |
 | [`reviews/cash_application_adjudication_2026-09-10.md`](../reviews/cash_application_adjudication_2026-09-10.md) | two models of different lineages, neither screen subject, each shown only the eleven public files, on the Bowline five | all ten parsed answers agree with the archived truth under the scorer's pre-existing zero-application normalisation; the original comparator results and that correction are reported separately |
+| [`reviews/cash_application_generated_screen_2026-09-13.md`](../reviews/cash_application_generated_screen_2026-09-13.md) | the first screen on the GENERATED development population, one episode per cell — an **INCOMPLETE DEVELOPMENT SCREEN** | nine scored, one attempted but unscored (a provider quota 403 took the cell), two unattempted, against twelve planned; seven complete successes and two application-only partials, all nine recorded `L` at 1.0. Missing outcomes are distinguished from model failures and stay missing; the evaluation split was never opened |
+
+The generated screen's decomposition is labelled **post-run analysis** — the live breakdown capture failed on all nine rows — and the two partials' delivered registers and their minimally corrected counterparts are retained as observed fixtures under `tests/observed/cash_screen_1_ar-tenterhook_{22,24}_a/`.
 
 `cash_application_007`'s delivery is an executed regression fixture (`tests/observed/cash_application_007/`, scored through the shipped `candidate/1`, `application/1` and `composite/1`), together with the counterfactual that adds only the two omitted closing rows and scores `L = A = total = 1`.
 

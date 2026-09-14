@@ -5109,6 +5109,15 @@ _PIV_STATE: contextvars.ContextVar = contextvars.ContextVar("piv_state", default
 # so a request for train:99999999999999 is refused rather than minted.
 MAX_SELECTOR_INDEX = 100_000
 
+# The cash-application family's generated selectors, which are a different
+# selector space from the bank family's `<namespace>:<index>` and are
+# dispatched on this prefix alone. It is `graph.cash_population.SELECTOR_PREFIX`
+# plus a colon, spelled here so the composition root does not import the graph
+# to decide which branch to take; `tests/test_cash_population.py` pins the two
+# together, and no `mint.NAMESPACES` entry is this word, so the two families'
+# selector spaces cannot overlap.
+CASH_SELECTOR_PREFIX = "cash_application:"
+
 
 def load_environment(task_id: str = "bank_recon_001", **kwargs) -> vf.Environment:
     """The production composition root: ADMIT a selector, then build.
@@ -5120,15 +5129,52 @@ def load_environment(task_id: str = "bank_recon_001", **kwargs) -> vf.Environmen
     everything after it is `environment_from_inputs`, which the release
     preflight calls directly on a freshly minted world so its offline gates
     never need a serving bypass."""
-    # Two doors, both evaluator-side. A hand-authored world by its id, or a
-    # generated one by a PRIVATE selector `<namespace>:<index>[:<profile>]`
-    # that never reaches the model: the dataset row, the prompt and every
+    # Three doors, all evaluator-side. A hand-authored world by its id, a
+    # generated CASH-APPLICATION instance by the private selector
+    # `cash_application:<population>:<family>:<index>:<variant>`, or a
+    # generated BANK world by a PRIVATE selector `<namespace>:<index>[:<profile>]`.
+    # None of the private selectors reaches the model: the dataset row, the prompt and every
     # tool reply carry only the public id derived from the public bytes
-    # (`graph.mint`), so nothing an agent sees regenerates the answer.
+    # (`graph.mint`). HMAC protects private generation identity against
+    # reconstruction from enumerable selectors; it does not prevent solving
+    # the accounting from public evidence, and the public cash-application
+    # fold intentionally reconstructs the application register from those
+    # files.
     try:
         if task_id in REGISTRY:
             world, task = REGISTRY[task_id]
             _bundle, inputs = derive_contract(world, task)
+        elif task_id.startswith(CASH_SELECTOR_PREFIX):
+            # The THIRD door: a generated cash-application instance, by a
+            # private selector naming a declared member of a released
+            # population. Round 16 decision 5 requires the signed-manifest
+            # serving path before any measurement, and this is it — the same
+            # shape as the bank family's door and with the same division of
+            # labour, except that everything above `environment_from_inputs`
+            # lives in `graph.cash_population.admitted_inputs`: the selector
+            # is parsed against the frozen roster, the pair is REMINTED
+            # deterministically from the construction identity and the
+            # evaluator's secret, its public surfaces are audited for private
+            # construction tokens, and only then is the family manifest
+            # consulted with the public id and public-content digest of the
+            # world this process just built.
+            #
+            # There is NO development bypass on this path. `manifest.py` has
+            # one for the bank family's suites; `cash_manifest.admit` has
+            # none, so an unpreflighted selector is refused here even under a
+            # test secret, and a suite that wants to serve one signs a
+            # manifest of its own instead.
+            from .graph import cash_population as CP
+            from .graph.mint import SECRET_ENV, evaluator_secret
+            secret = evaluator_secret()
+            if secret is None:
+                raise InitializationFailure([f"generated cash-application tasks are keyed: set {SECRET_ENV} "
+                                             f"(hex, >= 16 bytes) or ~/.piv/eval_secret on the evaluator; no "
+                                             f"unkeyed fallback exists"])
+            try:
+                inputs = CP.admitted_inputs(task_id, secret)
+            except (CP.SelectorError, CP.ServingRefused, CP.PopulationError) as exc:
+                raise InitializationFailure([str(exc)])
         else:
             from .graph.generate import DEFAULT_PROFILE, HARD_PROFILE, GenerationError
             from .graph.mint import NAMESPACES, SECRET_ENV, evaluator_secret, literal_provenance_leaks, mint

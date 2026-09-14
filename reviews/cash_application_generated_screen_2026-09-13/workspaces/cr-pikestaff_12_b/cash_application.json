@@ -1,0 +1,170 @@
+{
+ "schema": "piv.cash-application/1",
+ "receipts": [
+  {
+   "receipt_id": "2027-10-11:FAIRSTEAD PAYRUN 1007",
+   "applied": [
+    {
+     "invoice_id": "SI-5813",
+     "amount": "1765.50"
+    },
+    {
+     "invoice_id": "SI-5819",
+     "amount": "1605.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2027-10-13:ALDERGATE PAYRUN 1011",
+   "applied": [
+    {
+     "invoice_id": "SI-5803",
+     "amount": "4066.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2027-10-18:CALLOWAY PAYRUN 1014",
+   "applied": [
+    {
+     "invoice_id": "SI-5811",
+     "amount": "3317.00"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  },
+  {
+   "receipt_id": "2027-10-20:ALDERGATE PAYRUN 1018",
+   "applied": [
+    {
+     "invoice_id": "SI-5815",
+     "amount": "3798.50"
+    }
+   ],
+   "written_off": [],
+   "unapplied_amount": "0.00"
+  }
+ ],
+ "credit_notes": [
+  {
+   "credit_note_id": "CN-868",
+   "applied": [
+    {
+     "invoice_id": "SI-5801",
+     "amount": "749.00"
+    },
+    {
+     "invoice_id": "SI-5813",
+     "amount": "1765.50"
+    }
+   ],
+   "unapplied_amount": "107.00"
+  }
+ ],
+ "closing_open_items": [
+  {
+   "invoice_id": "SI-5801",
+   "customer": "Fairstead Property Services",
+   "period_basis": "749.00",
+   "applied_total": "0.00",
+   "credited": "749.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5803",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "4066.00",
+   "applied_total": "4066.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5811",
+   "customer": "Calloway Marine Services",
+   "period_basis": "3317.00",
+   "applied_total": "3317.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5813",
+   "customer": "Fairstead Property Services",
+   "period_basis": "3531.00",
+   "applied_total": "1765.50",
+   "credited": "1765.50",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5815",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "3798.50",
+   "applied_total": "3798.50",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5817",
+   "customer": "Calloway Marine Services",
+   "period_basis": "4440.50",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "4440.50"
+  },
+  {
+   "invoice_id": "SI-5819",
+   "customer": "Fairstead Property Services",
+   "period_basis": "1605.00",
+   "applied_total": "1605.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "0.00"
+  },
+  {
+   "invoice_id": "SI-5821",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "4119.50",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "4119.50"
+  },
+  {
+   "invoice_id": "SI-5825",
+   "customer": "Fairstead Property Services",
+   "period_basis": "2354.00",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2354.00"
+  },
+  {
+   "invoice_id": "SI-5846",
+   "customer": "Aldergate Facilities Group",
+   "period_basis": "2728.50",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "2728.50"
+  },
+  {
+   "invoice_id": "SI-5848",
+   "customer": "Calloway Marine Services",
+   "period_basis": "1444.50",
+   "applied_total": "0.00",
+   "credited": "0.00",
+   "written_off": "0.00",
+   "remaining": "1444.50"
+  }
+ ]
+}

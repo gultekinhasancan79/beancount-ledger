@@ -16,7 +16,7 @@ A variant-pack module states TWO worlds, so the derived-literal scan is
 given the sibling as `co_authored`: an amount authored in variant B is an
 authored literal in that file, not a derived number typed in.
 
-What is checked per entry lives in `tests/world_checks.py` — the world
+What is checked per entry lives in `beancount_ledger/world_checks.py` — the world
 schema, derivation and the contract door, the golden at 1.0 and complete,
 the untouched original below 1.0 with nothing resolved — or, for a task that
 plants nothing, already worth 1.0 and complete with no item state at all —

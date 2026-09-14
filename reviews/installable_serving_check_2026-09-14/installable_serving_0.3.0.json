@@ -1,0 +1,271 @@
+{
+ "schema": "piv.installable-serving-check/1",
+ "measured_on": "2026-09-14",
+ "what_this_is": "Round 17, decision 4's delivery boundary, measured. One declared parent group per mechanism stratum is MINTED by the INSTALLED package in a clean throwaway virtual environment with the repository absent from sys.path, signed into a manifest under this run's own throwaway secret, and both variants of each are served through the real env.evaluate() door with a scripted offline client delivering the package's own golden ledger and golden register. No model or API call. Every contract_digest was CAPTURED from the episode's own state column.",
+ "artifact": {
+  "wheel": "beancount_ledger-0.3.0-py3-none-any.whl",
+  "wheel_sha256": "52665840cfff99813ef65248f162fefaa43b56c48b886f42668adc1e6dfc8457",
+  "wheel_bytes": 657365,
+  "members": 75,
+  "runtime_members": 71,
+  "record_sha256": "22b0fd268dd301e5c4c9294998546328623b3135919d306c957f629f14c2d584",
+  "metadata_sha256": "e253d53923d50b4613529ececa43c92c6214360b7d147ee780698a2a5a0434f9",
+  "installed_package": "C:\\Users\\gulte\\AppData\\Local\\Temp\\claude\\C--Users-gulte-Desktop-PIV\\e5af9fd8-5589-401a-8521-18264e0703e0\\scratchpad\\cv030\\Lib\\site-packages\\beancount_ledger\\__init__.py",
+  "every_runtime_member_matches_the_installed_file": true,
+  "ships_no_tests_or_reviews": true,
+  "admission_battery_members": [
+   "beancount_ledger/graph/repair_keys.py",
+   "beancount_ledger/world_checks.py"
+  ]
+ },
+ "runtime": {
+  "python": "3.13.11",
+  "implementation": "CPython",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "unicode_database_version": "15.1.0",
+  "library_versions": {
+   "verifiers": "0.3.1",
+   "openai": "3.5.0",
+   "openai-agents": "0.22.0",
+   "griffelib": "2.2.0",
+   "pydantic": "2.13.4",
+   "pydantic-core": "2.46.4",
+   "datasets": "5.0.1",
+   "beancount": "3.2.3"
+  },
+  "repository_absent_from_sys_path": true
+ },
+ "admission_battery": {
+  "module": "beancount_ledger.world_checks",
+  "file": "C:\\Users\\gulte\\AppData\\Local\\Temp\\claude\\C--Users-gulte-Desktop-PIV\\e5af9fd8-5589-401a-8521-18264e0703e0\\scratchpad\\cv030\\Lib\\site-packages\\beancount_ledger\\world_checks.py",
+  "inside_the_installed_package": true,
+  "loaded_from_a_repository_checkout": false,
+  "has_check_derived": true
+ },
+ "admission_battery_control": {
+  "entry_point": "graph.cash_admit.world_checker_problems (the construction path's own)",
+  "clean_variant_problems": [],
+  "clean_variant_is_silent": true,
+  "tamper": "golden_text replaced by original_text on a copy of the derived inputs",
+  "tampered_variant_problems": [
+   "cash-application-087209636860-a/cash_application_g466141970393: the golden scores 0.000000, not 1; components={'targets_hit': Decimal('0.000000'), 'errors_resolved': Decimal('0.000000')} unresolved=['",
+   "cash-application-087209636860-a/cash_application_g466141970393: the golden is not a complete close: renderable=True blocked_by=[] undocumented=[]",
+   "cash-application-087209636860-a/cash_application_g466141970393: the golden does not resolve every planted item: {'unrecorded_customer_receipt_1': 'MISSING', 'transposed_customer_receipt_2': 'STALE_ONL"
+  ],
+  "tampered_variant_speaks": true
+ },
+ "population": "cash-application-development-2",
+ "groups_declared": 3,
+ "groups_minted": 3,
+ "groups": [
+  {
+   "group": "cash_application/1/cash-application-development-2/development/fc-quarrymill/1/0",
+   "identity_digest": "a6dd23b5399fe0f5a4dc71762a413612",
+   "population": "cash-application-development-2",
+   "family": "fc-quarrymill",
+   "mechanism": "fallback_continuation",
+   "split": "development",
+   "attempt": 0,
+   "gates_evaluated": 31,
+   "gates_passed": true,
+   "variants": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/cr-pikestaff/1/0",
+   "identity_digest": "d3ee6385bb34e4a43a28dc6db86597cb",
+   "population": "cash-application-development-2",
+   "family": "cr-pikestaff",
+   "mechanism": "credit_residue",
+   "split": "development",
+   "attempt": 0,
+   "gates_evaluated": 31,
+   "gates_passed": true,
+   "variants": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/ar-tenterhook/1/0",
+   "identity_digest": "bbc3d56d351e12826b3dc943382266db",
+   "population": "cash-application-development-2",
+   "family": "ar-tenterhook",
+   "mechanism": "advice_residue",
+   "split": "development",
+   "attempt": 0,
+   "gates_evaluated": 31,
+   "gates_passed": true,
+   "variants": [
+    "a",
+    "b"
+   ]
+  }
+ ],
+ "aggregate": {
+  "groups": 3,
+  "admitted_groups": 3,
+  "exhausted_groups": 0,
+  "group_acceptance_rate": 1.0,
+  "attempts": 3,
+  "accepted_attempts": 3,
+  "attempt_acceptance_rate": 1.0,
+  "attempts_per_admitted_group": 1.0,
+  "rejection_distribution": {},
+  "attempts_by_stage": {
+   "gate": 3
+  },
+  "by_mechanism": {
+   "advice_residue": {
+    "groups": 1,
+    "admitted": 1,
+    "attempts": 1
+   },
+   "credit_residue": {
+    "groups": 1,
+    "admitted": 1,
+    "attempts": 1
+   },
+   "fallback_continuation": {
+    "groups": 1,
+    "admitted": 1,
+    "attempts": 1
+   }
+  },
+  "components": "9bfb6d192fbb7eac"
+ },
+ "manifest_records_signed": 6,
+ "authored_reference": "cash_application_001",
+ "authored_episode_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+ "rows": [
+  {
+   "group": "cash_application/1/cash-application-development-2/development/fc-quarrymill/1/0",
+   "variant": "a",
+   "selector": "cash_application:cash-application-development-2:fc-quarrymill:0:a",
+   "expected_public_id": "cash_application_g466141970393",
+   "served_public_id": "cash_application_g466141970393",
+   "profile": "cash_application",
+   "turns": 5,
+   "reward": 1.0,
+   "error": null,
+   "stop": "piv_submitted",
+   "completion": "complete",
+   "score": "1",
+   "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "contract_digest_source": "captured from the episode state column piv_episode_contract_digest",
+   "authored_reference_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "application_status": "delivered",
+   "application_score": "1",
+   "composite": "1",
+   "ok": true
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/fc-quarrymill/1/0",
+   "variant": "b",
+   "selector": "cash_application:cash-application-development-2:fc-quarrymill:0:b",
+   "expected_public_id": "cash_application_g377741088269",
+   "served_public_id": "cash_application_g377741088269",
+   "profile": "cash_application",
+   "turns": 5,
+   "reward": 1.0,
+   "error": null,
+   "stop": "piv_submitted",
+   "completion": "complete",
+   "score": "1",
+   "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "contract_digest_source": "captured from the episode state column piv_episode_contract_digest",
+   "authored_reference_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "application_status": "delivered",
+   "application_score": "1",
+   "composite": "1",
+   "ok": true
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/cr-pikestaff/1/0",
+   "variant": "a",
+   "selector": "cash_application:cash-application-development-2:cr-pikestaff:0:a",
+   "expected_public_id": "cash_application_g503121209443",
+   "served_public_id": "cash_application_g503121209443",
+   "profile": "cash_application",
+   "turns": 5,
+   "reward": 1.0,
+   "error": null,
+   "stop": "piv_submitted",
+   "completion": "complete",
+   "score": "1",
+   "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "contract_digest_source": "captured from the episode state column piv_episode_contract_digest",
+   "authored_reference_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "application_status": "delivered",
+   "application_score": "1",
+   "composite": "1",
+   "ok": true
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/cr-pikestaff/1/0",
+   "variant": "b",
+   "selector": "cash_application:cash-application-development-2:cr-pikestaff:0:b",
+   "expected_public_id": "cash_application_g260826702198",
+   "served_public_id": "cash_application_g260826702198",
+   "profile": "cash_application",
+   "turns": 5,
+   "reward": 1.0,
+   "error": null,
+   "stop": "piv_submitted",
+   "completion": "complete",
+   "score": "1",
+   "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "contract_digest_source": "captured from the episode state column piv_episode_contract_digest",
+   "authored_reference_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "application_status": "delivered",
+   "application_score": "1",
+   "composite": "1",
+   "ok": true
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/ar-tenterhook/1/0",
+   "variant": "a",
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:0:a",
+   "expected_public_id": "cash_application_g512197280778",
+   "served_public_id": "cash_application_g512197280778",
+   "profile": "cash_application",
+   "turns": 5,
+   "reward": 1.0,
+   "error": null,
+   "stop": "piv_submitted",
+   "completion": "complete",
+   "score": "1",
+   "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "contract_digest_source": "captured from the episode state column piv_episode_contract_digest",
+   "authored_reference_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "application_status": "delivered",
+   "application_score": "1",
+   "composite": "1",
+   "ok": true
+  },
+  {
+   "group": "cash_application/1/cash-application-development-2/development/ar-tenterhook/1/0",
+   "variant": "b",
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:0:b",
+   "expected_public_id": "cash_application_g063433184836",
+   "served_public_id": "cash_application_g063433184836",
+   "profile": "cash_application",
+   "turns": 5,
+   "reward": 1.0,
+   "error": null,
+   "stop": "piv_submitted",
+   "completion": "complete",
+   "score": "1",
+   "contract_digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "contract_digest_source": "captured from the episode state column piv_episode_contract_digest",
+   "authored_reference_contract": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "application_status": "delivered",
+   "application_score": "1",
+   "composite": "1",
+   "ok": true
+  }
+ ],
+ "failures": []
+}

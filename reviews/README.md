@@ -304,10 +304,56 @@ bookkeeping.
 - `provider_failed_attempts_2026-08-31/` — the rows of confirmatory cells whose provider call failed before a rollout existed, kept beside the panel they belong to: a failed attempt records what the run met, never a result, and none of them enters an estimand
 - `resume_conductor.log` — the console log of the resumed confirmatory run of 2026-08-31, kept as the record of that resume
 - `oracle_budget_v9.json` — scripted strategies that know the answer, through the real door: turns and output tokens against the caps per (profile, k)
-- **The cash-application records.** Three dated notes, each with a self-contained evidence directory of the same name, and none of them establishing a population failure rate, accounting accreditation or a training benefit:
+- **The cash-application records.** Four dated notes, each with a self-contained evidence directory of the same name, and none of them establishing a population failure rate, accounting accreditation or a training benefit:
   - `cash_application_screen_2026-09-10.{md,/}` — the three-episode Bowline screen (two complete deliveries, one register losing a single field), its rescore and single-field counterfactual, and a provenance sidecar that records every digest **at the revision the screen was measured at**;
   - `cash_application_adjudication_2026-09-10.{md,/}` — the cold adjudication of the Bowline five: two models of different lineages, neither screen subject, shown only the eleven public files. Holds the predeclared rule, the runner as executed, every parsed answer, the original verdicts and the corrected comparison under the scorer's pre-existing zero-application normalisation, and identifies the input revision;
   - `cash_application_six_variant_screen_2026-09-11.{md,/}` — the six-variant screen, published as an **INCOMPLETE DESCRIPTIVE SCREEN**: five scored deliveries and one cell lost to a provider 403, which stays missing. Holds the calibration JSON untouched, the run log, five delivered workspaces, the two executed `cash_application_007` scorer decompositions and a receipt check re-run at publication.
+  - `cash_application_generated_screen_2026-09-13.{md,/}` — the first screen on the GENERATED development population, published as an **INCOMPLETE DEVELOPMENT SCREEN**: nine scored, one attempted but unscored (a provider 403 that took the cell with it), two unattempted, against twelve planned cells. Seven complete successes and two application-only partials; missing outcomes are distinguished from model failures and stay missing. It establishes no population success rate, no general difficulty and no training utility, and the evaluation split stays closed. Holds the nine rescued workspaces, the frozen selection script beside its record, the runner log, the delivered and minimally corrected register bytes with the exact diff, and an executable rescore that binds every recovered file to its result row and reproduces each cell's live `application_result_digest`. The decomposition is labelled **post-run analysis**: the live breakdown capture failed on all nine rows. The two partials' registers and their corrected counterparts are retained as observed fixtures under `tests/observed/cash_screen_1_ar-tenterhook_{22,24}_a/`. The history of the closing-register omission is **one authored occurrence (Thornbury B, on Kimi) and two generated ones (on Qwen) sharing one structural template** — Bowline case 5 omitted unapplied cash, not invoice rows, and is a different failure.
+- `cash_application_development_population_2026-09-13_replacement.{md,/}` — the **current** offline
+  minting census and serving evidence for the generated cash-application development population
+  `cash-application-development-2`: the freeze (gate version 2, preflight contract 2, gate set
+  `2491e97f97b48cee`), 96 predeclared parent groups (32 per mechanism stratum, 0 exhausted, 98
+  retained attempts, 0 accounting-gate refusals), the seven offline validation gates over all 192
+  variants, and 192/192 records served through the real `load_environment` under the same episode
+  contract an authored cash task serves. **No model was called**; it establishes admissibility and
+  serving, not difficulty, and not training utility. Holds the freeze, the complete census, the
+  aggregates, the validation rows, the serving rows, and the paired replay of the two refusals the
+  corrected admission rule overturns.
+- `cash_application_development_population_2026-09-13.{md,/}` — **SUPERSEDED** by the record above,
+  and preserved unaltered beside it. The same evidence for `cash-application-development-1` (104
+  retained attempts), which was selected under an admission rule that additionally capped a credit
+  note at the invoice's opening balance. Round 17, decision 4 found that cap to be an incorrect
+  additional accounting restriction, so passing it could not establish conformity to the intended
+  specification. Its five JSON files are byte-identical to the day they were minted and
+  `tests/test_cash_gate.py` fails if they are altered; only a supersession banner was added to the
+  note. The population is retired from `RELEASED_POPULATIONS` and no selector spells it.
+- `installed_wheel_check_2026-09-12/` — the installed-wheel check, published with its attribution: the runner
+  and two bound records, twelve of twelve each, one against the wheel **uploaded** to the Hub (`1c83e4c5…`)
+  and one against the build the attestation names (`5a1171c5…`). Each record binds the artifact it tested
+  by comparing every runtime member of the wheel with the installed file, and each row's contract digest is
+  captured from the episode's own state column rather than declared. See the publication record at the end
+  of `RELEASE_ATTESTATION.md` for why the two wheels differ.
+- `installable_serving_check_2026-09-13/` — the INSTALLABLE generator, measured. Round 17, decision 4's
+  delivery boundary: the admission battery the construction path runs moved from `tests/world_checks.py`
+  into `beancount_ledger/world_checks.py` (with `graph/repair_keys.py`), the `tests/` files becoming shims
+  onto the same module objects, so an installed package can MINT and not only serve. Holds the runner at
+  the bytes that ran and two bound records: one where a wheel installed in a clean throwaway virtual
+  environment mints one declared group per mechanism stratum and serves all six variants through the real
+  `env.evaluate()` door at reward 1.0, `complete`, register `delivered`, composite 1 — with the battery
+  recorded as resolving from `site-packages` and shown able to fail on tampered inputs — and one that
+  re-runs the published eleven-authored-task check on the same wheel, twelve of twelve. **The wheel
+  measured is a build of that tree, NOT the 0.2.0 artifact uploaded to the Hub, which still cannot mint.**
+  No model was called.
+- `installable_serving_check_2026-09-14/` — **the 0.3.0 release evidence.** The same two checks, repeated
+  against the artifact 0.3.0 actually is: a wheel built from this tree (sha256 `52665840…`, built twice
+  byte-identically), installed into a clean throwaway virtual environment with the repository absent from
+  `sys.path`, mints one declared group per mechanism stratum of the released development population and
+  serves all six variants at reward 1.0, `complete`, register `delivered`, composite 1 — and the eleven
+  authored cash tasks plus a legacy control score twelve of twelve on the same wheel. Holds both bound
+  records; the two runners are NOT copied, they are the published bytes in the two directories above, at
+  `e59e4715…` and `893f2e6f…`, executed from copies outside the repository. **Nothing was uploaded**:
+  0.2.0 stands on the Hub untouched, and 0.3.0 is a new version precisely so that no rebuilt wheel shares
+  its identity. No model was called.
 - `calibration/` — hosted-model budget calibration records (Kimi K3 two arms, Nemotron-3 Super one episode); inconclusive, see the attestation
 
 ## A note on citations inside the dated documents

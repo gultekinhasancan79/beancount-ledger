@@ -1,0 +1,2 @@
+credit_note_id,date,customer,invoice_id,net_amount,tax_amount,gross_amount,reason
+CN-674,2026-11-16,Eastmoor Hospitality Group,SI-8417,1100.00,66.00,1166.00,Agreed price correction on the rate quoted for work already accepted; no goods came back.

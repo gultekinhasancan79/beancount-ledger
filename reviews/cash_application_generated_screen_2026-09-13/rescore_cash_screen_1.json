@@ -1,0 +1,1302 @@
+{
+ "schema": "piv.post-run-rescore/1",
+ "record_type": "POST-RUN ANALYSIS -- computed after the run, not a live observation",
+ "why": "round18.answer.md:69-71 -- the counterfactual had to be made independently reproducible: the delivered and corrected application bytes, the exact diff, and an executable rescore carrying both decompositions rather than totals. The decomposition is labelled post-run because the live breakdown capture failed on all nine rows.",
+ "written_at": "2026-09-14T02:20:34",
+ "built_by": {
+  "script": "reviews/cash_application_generated_screen_2026-09-13/rescore_cash_screen_1.py",
+  "truth_reconstruction": "tests/observed_truth.py",
+  "scorer": "beancount_ledger/candidate/application.py (shipped, unmodified)",
+  "composite": "beancount_ledger/candidate/composite.py (shipped, unmodified)"
+ },
+ "screen": "cash-application-screen-1",
+ "selection_digest": "321c97158f2fa56c1564b299278dea7280abda899a740fa90b134c77722923d0",
+ "subject_requested_id": "qwen3.7-max-2026-05-20",
+ "split": "development",
+ "method": {
+  "truth": "reconstructed from public evidence; see tests/observed_truth.py",
+  "pin": "every cell's recomputed application outcome reproduces the application_result_digest the LIVE run wrote into that workspace's delivery receipt. That digest covers the total, all three channel fractions, every penalty and one state per receipt, invoice, credit note and tie, so the published decomposition is the one the live scorer computed.",
+  "not_recomputed": "L (the keyed golden is out of reach here); the composite is the shipped product rule applied to a live L and a recomputed A.",
+  "observed_bytes": "read-only. The corrected documents are new files; no delivered file is rewritten."
+ },
+ "cells": [
+  {
+   "planned_ordinal": 1,
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:24:a",
+   "workspace": "workspaces/ar-tenterhook_24_a",
+   "task_id": "cash_application_g522591213117",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 0.625,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 0.625,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "0.625000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "0.750000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [
+     [
+      "ar_tie_break",
+      "remaining 17656.00 - unapplied 30.00 != closing receivables 27431.00"
+     ]
+    ],
+    "receipt_states": {
+     "2026-11-09:BRACKENHURST PAYRUN 1105": "RECEIPT_EXACT",
+     "2026-11-16:EASTMOOR PAYRUN 1112": "RECEIPT_EXACT",
+     "2026-11-20:EASTMOOR PAYRUN 1118": "RECEIPT_EXACT",
+     "2026-11-30:BRACKENHURST PAYRUN 1127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-8401": "INVOICE_EXACT",
+     "SI-8404": "INVOICE_EXACT",
+     "SI-8409": "INVOICE_EXACT",
+     "SI-8416": "INVOICE_EXACT",
+     "SI-8417": "INVOICE_EXACT",
+     "SI-8426": "INVOICE_EXACT",
+     "SI-8428": "INVOICE_EXACT",
+     "SI-8429": "INVOICE_EXACT",
+     "SI-8433": "INVOICE_EXACT",
+     "SI-8446": "INVOICE_MISSING",
+     "SI-8451": "INVOICE_MISSING",
+     "SI-8453": "INVOICE_MISSING"
+    },
+    "credit_states": {
+     "CN-674": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_CONTRADICTS",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "1e49aadb997a740571180d398cc214ad5dd5c4617c215a69fc4ee7bfbff257b4",
+    "result_digest": "bbececaf6bf38fc7036525b5114f7c19fb193aa43e4aaa0f280034a896ac000a"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "0.625000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 12,
+    "opening_items": 9,
+    "in_period_sales": [
+     [
+      "SI-8446",
+      "3127.00"
+     ],
+     [
+      "SI-8451",
+      "3604.00"
+     ],
+     [
+      "SI-8453",
+      "3074.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "27431.00",
+    "write_off_movement_from_delivered_ledger": "20.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 2,
+   "selector": "cash_application:cash-application-development-2:cr-pikestaff:6:b",
+   "workspace": "workspaces/cr-pikestaff_6_b",
+   "task_id": "cash_application_g530405700405",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2025-11-10:CALLOWAY PAYRUN 1107": "RECEIPT_EXACT",
+     "2025-11-13:IVYRISE PAYRUN 1111": "RECEIPT_EXACT",
+     "2025-11-17:FAIRSTEAD PAYRUN 1114": "RECEIPT_EXACT",
+     "2025-11-19:IVYRISE PAYRUN 1117": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-7901": "INVOICE_EXACT",
+     "SI-7905": "INVOICE_EXACT",
+     "SI-7909": "INVOICE_EXACT",
+     "SI-7910": "INVOICE_EXACT",
+     "SI-7912": "INVOICE_EXACT",
+     "SI-7926": "INVOICE_EXACT",
+     "SI-7931": "INVOICE_EXACT",
+     "SI-7933": "INVOICE_EXACT",
+     "SI-7941": "INVOICE_EXACT",
+     "SI-7943": "INVOICE_EXACT",
+     "SI-7945": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-629": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "29967d0fa99fd249b8689d2ad601e6930a2a4b4f18703a14a41a667be65b274a",
+    "result_digest": "9e4c58e67b1b3b2c56edfd0f0df989747873e5664f820ccd9f12b07436257329"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 11,
+    "opening_items": 8,
+    "in_period_sales": [
+     [
+      "SI-7941",
+      "3074.00"
+     ],
+     [
+      "SI-7943",
+      "2279.00"
+     ],
+     [
+      "SI-7945",
+      "1325.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "12667.00",
+    "write_off_movement_from_delivered_ledger": "0.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 3,
+   "selector": "cash_application:cash-application-development-2:cr-pikestaff:6:a",
+   "workspace": "workspaces/cr-pikestaff_6_a",
+   "task_id": "cash_application_g888972188071",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2025-11-10:CALLOWAY PAYRUN 1107": "RECEIPT_EXACT",
+     "2025-11-13:IVYRISE PAYRUN 1111": "RECEIPT_EXACT",
+     "2025-11-17:FAIRSTEAD PAYRUN 1114": "RECEIPT_EXACT",
+     "2025-11-19:IVYRISE PAYRUN 1117": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-7901": "INVOICE_EXACT",
+     "SI-7905": "INVOICE_EXACT",
+     "SI-7909": "INVOICE_EXACT",
+     "SI-7910": "INVOICE_EXACT",
+     "SI-7912": "INVOICE_EXACT",
+     "SI-7926": "INVOICE_EXACT",
+     "SI-7931": "INVOICE_EXACT",
+     "SI-7933": "INVOICE_EXACT",
+     "SI-7941": "INVOICE_EXACT",
+     "SI-7943": "INVOICE_EXACT",
+     "SI-7945": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-629": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "6bf5ff3c99ce8a781bb9aa38c42912e52e31b933d252981015354b6645610563",
+    "result_digest": "490e41b2f1144b249bff1c38d11d796739464fcfe9cc48b3c8ff08dd54f8bd5f"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 11,
+    "opening_items": 8,
+    "in_period_sales": [
+     [
+      "SI-7941",
+      "3074.00"
+     ],
+     [
+      "SI-7943",
+      "2279.00"
+     ],
+     [
+      "SI-7945",
+      "1325.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "12826.00",
+    "write_off_movement_from_delivered_ledger": "0.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 4,
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:22:b",
+   "workspace": "workspaces/ar-tenterhook_22_b",
+   "task_id": "cash_application_g338560593754",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2025-01-08:GLENHAVEN PAYRUN 0106": "RECEIPT_EXACT",
+     "2025-01-16:IVYRISE PAYRUN 0113": "RECEIPT_EXACT",
+     "2025-01-22:IVYRISE PAYRUN 0120": "RECEIPT_EXACT",
+     "2025-01-28:GLENHAVEN PAYRUN 0127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-7301": "INVOICE_EXACT",
+     "SI-7303": "INVOICE_EXACT",
+     "SI-7311": "INVOICE_EXACT",
+     "SI-7313": "INVOICE_EXACT",
+     "SI-7321": "INVOICE_EXACT",
+     "SI-7326": "INVOICE_EXACT",
+     "SI-7328": "INVOICE_EXACT",
+     "SI-7330": "INVOICE_EXACT",
+     "SI-7332": "INVOICE_EXACT",
+     "SI-7346": "INVOICE_EXACT",
+     "SI-7351": "INVOICE_EXACT",
+     "SI-7353": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-723": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "821a2ba6374dcdc60dafb9150040086805f6ba3ee1f5f10cd5b20cae8e3b864c",
+    "result_digest": "50983d45058acc91719c0e513167ff93fade73c0b76d53b12d7bbd7e1968dd44"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 12,
+    "opening_items": 9,
+    "in_period_sales": [
+     [
+      "SI-7346",
+      "3180.00"
+     ],
+     [
+      "SI-7351",
+      "1166.00"
+     ],
+     [
+      "SI-7353",
+      "1802.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "19685.00",
+    "write_off_movement_from_delivered_ledger": "10.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 5,
+   "selector": "cash_application:cash-application-development-2:fc-quarrymill:4:b",
+   "workspace": "workspaces/fc-quarrymill_4_b",
+   "task_id": "cash_application_g862432258420",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2026-01-08:BRACKENHURST PAYRUN 0106": "RECEIPT_EXACT",
+     "2026-01-15:TRC7348915 SI-6421 SI-6431 SI-6401": "RECEIPT_EXACT",
+     "2026-01-26:TRC7348952 SI-6441 SI-6451": "RECEIPT_EXACT",
+     "2026-01-26:LARKMEAD PAYRUN 0123": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-6401": "INVOICE_EXACT",
+     "SI-6403": "INVOICE_EXACT",
+     "SI-6407": "INVOICE_EXACT",
+     "SI-6413": "INVOICE_EXACT",
+     "SI-6421": "INVOICE_EXACT",
+     "SI-6426": "INVOICE_EXACT",
+     "SI-6431": "INVOICE_EXACT",
+     "SI-6436": "INVOICE_EXACT",
+     "SI-6441": "INVOICE_EXACT",
+     "SI-6443": "INVOICE_EXACT",
+     "SI-6451": "INVOICE_EXACT",
+     "SI-6453": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-648": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "719b00d9038680330d859a42ee524bc298b77820d2dfd22f32759a01ecbbe3e4",
+    "result_digest": "172d5c28de3d83d0f6345ab312ce19b31a1a565436c90f8a965c541bd0d05718"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 12,
+    "opening_items": 9,
+    "in_period_sales": [
+     [
+      "SI-6413",
+      "2597.00"
+     ],
+     [
+      "SI-6441",
+      "1749.00"
+     ],
+     [
+      "SI-6443",
+      "3657.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "15704.00",
+    "write_off_movement_from_delivered_ledger": "0.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 6,
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:22:a",
+   "workspace": "workspaces/ar-tenterhook_22_a",
+   "task_id": "cash_application_g937470682826",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 0.625,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 0.625,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "0.625000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "0.750000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [
+     [
+      "ar_tie_break",
+      "remaining 13537.00 - unapplied 0.00 != closing receivables 19685.00"
+     ]
+    ],
+    "receipt_states": {
+     "2025-01-08:GLENHAVEN PAYRUN 0106": "RECEIPT_EXACT",
+     "2025-01-16:IVYRISE PAYRUN 0113": "RECEIPT_EXACT",
+     "2025-01-22:IVYRISE PAYRUN 0120": "RECEIPT_EXACT",
+     "2025-01-28:GLENHAVEN PAYRUN 0127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-7301": "INVOICE_EXACT",
+     "SI-7303": "INVOICE_EXACT",
+     "SI-7311": "INVOICE_EXACT",
+     "SI-7313": "INVOICE_EXACT",
+     "SI-7321": "INVOICE_EXACT",
+     "SI-7326": "INVOICE_EXACT",
+     "SI-7328": "INVOICE_EXACT",
+     "SI-7330": "INVOICE_EXACT",
+     "SI-7332": "INVOICE_EXACT",
+     "SI-7346": "INVOICE_MISSING",
+     "SI-7351": "INVOICE_MISSING",
+     "SI-7353": "INVOICE_MISSING"
+    },
+    "credit_states": {
+     "CN-723": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_CONTRADICTS",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "0f342916598b394fc11c14513c3fc04046390b8b0ec4ccada94f20aa3c3f4710",
+    "result_digest": "3a0051aa3a795311b1b537358003bfc4250c67f3c98cc9c20e55c9fcf894561e"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "0.625000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 12,
+    "opening_items": 9,
+    "in_period_sales": [
+     [
+      "SI-7346",
+      "3180.00"
+     ],
+     [
+      "SI-7351",
+      "1166.00"
+     ],
+     [
+      "SI-7353",
+      "1802.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "19685.00",
+    "write_off_movement_from_delivered_ledger": "10.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 7,
+   "selector": "cash_application:cash-application-development-2:fc-quarrymill:4:a",
+   "workspace": "workspaces/fc-quarrymill_4_a",
+   "task_id": "cash_application_g072688239970",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2026-01-08:BRACKENHURST PAYRUN 0106": "RECEIPT_EXACT",
+     "2026-01-15:TRC7348915 SI-6421 SI-6431 SI-6401": "RECEIPT_EXACT",
+     "2026-01-26:TRC7348952 SI-6441 SI-6451": "RECEIPT_EXACT",
+     "2026-01-26:LARKMEAD PAYRUN 0123": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-6401": "INVOICE_EXACT",
+     "SI-6403": "INVOICE_EXACT",
+     "SI-6407": "INVOICE_EXACT",
+     "SI-6413": "INVOICE_EXACT",
+     "SI-6421": "INVOICE_EXACT",
+     "SI-6426": "INVOICE_EXACT",
+     "SI-6431": "INVOICE_EXACT",
+     "SI-6436": "INVOICE_EXACT",
+     "SI-6441": "INVOICE_EXACT",
+     "SI-6443": "INVOICE_EXACT",
+     "SI-6451": "INVOICE_EXACT",
+     "SI-6453": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-648": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "22b219dc9f02408adc3ae4890a8395afe580b0b3beaa8445fc96fb19cdff625d",
+    "result_digest": "e4be826ed7d8aa2ec1892c06c3c05a9bc9012309ad20ca39d86cccfcf87ef8c8"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 12,
+    "opening_items": 9,
+    "in_period_sales": [
+     [
+      "SI-6413",
+      "2597.00"
+     ],
+     [
+      "SI-6441",
+      "1749.00"
+     ],
+     [
+      "SI-6443",
+      "3657.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "14204.00",
+    "write_off_movement_from_delivered_ledger": "0.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 8,
+   "selector": "cash_application:cash-application-development-2:cr-pikestaff:12:b",
+   "workspace": "workspaces/cr-pikestaff_12_b",
+   "task_id": "cash_application_g417734064104",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2027-10-11:FAIRSTEAD PAYRUN 1007": "RECEIPT_EXACT",
+     "2027-10-13:ALDERGATE PAYRUN 1011": "RECEIPT_EXACT",
+     "2027-10-18:CALLOWAY PAYRUN 1014": "RECEIPT_EXACT",
+     "2027-10-20:ALDERGATE PAYRUN 1018": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-5801": "INVOICE_EXACT",
+     "SI-5803": "INVOICE_EXACT",
+     "SI-5811": "INVOICE_EXACT",
+     "SI-5813": "INVOICE_EXACT",
+     "SI-5815": "INVOICE_EXACT",
+     "SI-5817": "INVOICE_EXACT",
+     "SI-5819": "INVOICE_EXACT",
+     "SI-5821": "INVOICE_EXACT",
+     "SI-5825": "INVOICE_EXACT",
+     "SI-5846": "INVOICE_EXACT",
+     "SI-5848": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-868": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "fd7614132419d5666ae8f9d882038225f141abd5ab627ef9bdd37dbeefff1c37",
+    "result_digest": "c587b3e7435453997e92026f7c56f32fd847eae5b8509a13fee25e9ce8a44054"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 11,
+    "opening_items": 8,
+    "in_period_sales": [
+     [
+      "SI-5825",
+      "2354.00"
+     ],
+     [
+      "SI-5846",
+      "2728.50"
+     ],
+     [
+      "SI-5848",
+      "1444.50"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "14980.00",
+    "write_off_movement_from_delivered_ledger": "0.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  },
+  {
+   "planned_ordinal": 9,
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:24:b",
+   "workspace": "workspaces/ar-tenterhook_24_b",
+   "task_id": "cash_application_g771922601733",
+   "bindings": {
+    "application_stored_bytes_digest": true,
+    "application_logical_text_digest": true,
+    "ledger_stored_bytes_digest": true,
+    "ledger_logical_text_digest": true,
+    "receipt_agrees_with_row": true
+   },
+   "pinned_against_live_delivery_receipt": {
+    "application_result_digest": true,
+    "canonical_digest": true,
+    "application_score": true
+   },
+   "live": {
+    "reward": 1.0,
+    "piv/ledger_score": 1.0,
+    "piv/application_score": 1.0,
+    "breakdown": {
+     "error": "AttributeError: 'CompositeOutcome' object has no attribute 'components'"
+    },
+    "note": "the live breakdown is the failure the ruling names; it is quoted, not repaired"
+   },
+   "application_decomposition": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2026-11-09:BRACKENHURST PAYRUN 1105": "RECEIPT_EXACT",
+     "2026-11-16:EASTMOOR PAYRUN 1112": "RECEIPT_EXACT",
+     "2026-11-20:EASTMOOR PAYRUN 1118": "RECEIPT_EXACT",
+     "2026-11-30:BRACKENHURST PAYRUN 1127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-8401": "INVOICE_EXACT",
+     "SI-8404": "INVOICE_EXACT",
+     "SI-8409": "INVOICE_EXACT",
+     "SI-8416": "INVOICE_EXACT",
+     "SI-8417": "INVOICE_EXACT",
+     "SI-8426": "INVOICE_EXACT",
+     "SI-8428": "INVOICE_EXACT",
+     "SI-8429": "INVOICE_EXACT",
+     "SI-8433": "INVOICE_EXACT",
+     "SI-8446": "INVOICE_EXACT",
+     "SI-8451": "INVOICE_EXACT",
+     "SI-8453": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-674": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "60fdaecd12ee415e04fb5a33784c3dc757a7da963be77a523c8a09257db2354c",
+    "result_digest": "fde009aea6979c1547d4ab0514d17c751873f0833218624fa825cb0c6893c9b6"
+   },
+   "ledger_decomposition": {
+    "recomputed": false,
+    "L": "1.000000",
+    "source": "the live row's piv/ledger_score metric",
+    "why_not": "candidate/1 scores against the task's golden ledger, which for a generated task is minted under the evaluator key; this analysis does not read it. The ledger BYTES are published and bound above, so the replay is possible on a machine that holds the key."
+   },
+   "composite": {
+    "recomputed": "product only",
+    "total": "1.000000",
+    "rule": "composite/1: quantise(L x A, 6 places, half-even), executed through the shipped module",
+    "L": "live",
+    "A": "recomputed"
+   },
+   "truth_provenance": {
+    "register_rows_from_public_evidence": 12,
+    "opening_items": 9,
+    "in_period_sales": [
+     [
+      "SI-8446",
+      "3127.00"
+     ],
+     [
+      "SI-8451",
+      "3604.00"
+     ],
+     [
+      "SI-8453",
+      "3074.00"
+     ]
+    ],
+    "closing_ar_from_delivered_ledger": "27431.00",
+    "write_off_movement_from_delivered_ledger": "20.00",
+    "receipt_folds_taken_from": "the submission (see the module docstring; pinned by the result digest)",
+    "credit_folds_taken_from": "the submission (same pin)"
+   }
+  }
+ ],
+ "counterfactual": [
+  {
+   "cell": "ar-tenterhook_24_a",
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:24:a",
+   "claim": "adding ONLY the closing-register rows for the in-period invoices the submission omitted, at their period basis with nothing applied, credited or written off, takes A to 1.000000 and leaves every other state as delivered",
+   "rows_added": [
+    {
+     "invoice_id": "SI-8446",
+     "customer": "Brackenhurst Leisure Partners",
+     "period_basis": "3127.00",
+     "applied_total": "0.00",
+     "credited": "0.00",
+     "written_off": "0.00",
+     "remaining": "3127.00"
+    },
+    {
+     "invoice_id": "SI-8451",
+     "customer": "Eastmoor Hospitality Group",
+     "period_basis": "3604.00",
+     "applied_total": "0.00",
+     "credited": "0.00",
+     "written_off": "0.00",
+     "remaining": "3604.00"
+    },
+    {
+     "invoice_id": "SI-8453",
+     "customer": "Glenhaven Resorts Company",
+     "period_basis": "3074.00",
+     "applied_total": "0.00",
+     "credited": "0.00",
+     "written_off": "0.00",
+     "remaining": "3074.00"
+    }
+   ],
+   "files": {
+    "delivered": "counterfactual/ar-tenterhook_24_a/cash_application.delivered.json",
+    "corrected": "counterfactual/ar-tenterhook_24_a/cash_application.corrected.json",
+    "diff": "counterfactual/ar-tenterhook_24_a/cash_application.diff",
+    "delivered_sha256": "50117e3c41e859240a02c2f80cb885d869223e5db0d6033e3cbcffd64056b1fa",
+    "corrected_sha256": "4db9885ed623a6ee079a30ddacecc60b489abc0602ee8cd2ef1a2f4f505ed639",
+    "diff_sha256": "d462d09da9b049e2aa53b11240031baf195edd637816d52c9218744feb0ea901"
+   },
+   "diff": {
+    "added_lines": 27,
+    "removed_lines": 0,
+    "additive_only": true,
+    "hunks": 1
+   },
+   "delivered": {
+    "engine": "application/1",
+    "total": "0.625000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "0.750000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [
+     [
+      "ar_tie_break",
+      "remaining 17656.00 - unapplied 30.00 != closing receivables 27431.00"
+     ]
+    ],
+    "receipt_states": {
+     "2026-11-09:BRACKENHURST PAYRUN 1105": "RECEIPT_EXACT",
+     "2026-11-16:EASTMOOR PAYRUN 1112": "RECEIPT_EXACT",
+     "2026-11-20:EASTMOOR PAYRUN 1118": "RECEIPT_EXACT",
+     "2026-11-30:BRACKENHURST PAYRUN 1127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-8401": "INVOICE_EXACT",
+     "SI-8404": "INVOICE_EXACT",
+     "SI-8409": "INVOICE_EXACT",
+     "SI-8416": "INVOICE_EXACT",
+     "SI-8417": "INVOICE_EXACT",
+     "SI-8426": "INVOICE_EXACT",
+     "SI-8428": "INVOICE_EXACT",
+     "SI-8429": "INVOICE_EXACT",
+     "SI-8433": "INVOICE_EXACT",
+     "SI-8446": "INVOICE_MISSING",
+     "SI-8451": "INVOICE_MISSING",
+     "SI-8453": "INVOICE_MISSING"
+    },
+    "credit_states": {
+     "CN-674": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_CONTRADICTS",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "1e49aadb997a740571180d398cc214ad5dd5c4617c215a69fc4ee7bfbff257b4",
+    "result_digest": "bbececaf6bf38fc7036525b5114f7c19fb193aa43e4aaa0f280034a896ac000a"
+   },
+   "corrected": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2026-11-09:BRACKENHURST PAYRUN 1105": "RECEIPT_EXACT",
+     "2026-11-16:EASTMOOR PAYRUN 1112": "RECEIPT_EXACT",
+     "2026-11-20:EASTMOOR PAYRUN 1118": "RECEIPT_EXACT",
+     "2026-11-30:BRACKENHURST PAYRUN 1127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-8401": "INVOICE_EXACT",
+     "SI-8404": "INVOICE_EXACT",
+     "SI-8409": "INVOICE_EXACT",
+     "SI-8416": "INVOICE_EXACT",
+     "SI-8417": "INVOICE_EXACT",
+     "SI-8426": "INVOICE_EXACT",
+     "SI-8428": "INVOICE_EXACT",
+     "SI-8429": "INVOICE_EXACT",
+     "SI-8433": "INVOICE_EXACT",
+     "SI-8446": "INVOICE_EXACT",
+     "SI-8451": "INVOICE_EXACT",
+     "SI-8453": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-674": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "6b8d81284b5db974c139c2493d30d02698fb678d7d24b872abd2338bc439bb46",
+    "result_digest": "936e37eb7fe6a5e1977bc914692fe23632e8957b9fb313fbae06bc3080256869"
+   },
+   "everything_else_unchanged": {
+    "receipt_states": true,
+    "credit_states": true,
+    "other_invoice_states": true,
+    "ledger_bytes": true
+   },
+   "composite": {
+    "delivered": "0.625000",
+    "corrected": "1.000000",
+    "L": "1.000000 (live, not recomputed)",
+    "complete_corrected": "candidate/1 holds total == 1 <=> complete, so a live L of 1.000000 is a complete ledger; with A = 1.000000 and no penalty label the composite would be complete. Asserted from the shipped invariant, not replayed."
+   },
+   "what_this_does_not_show": "why the solver omitted the rows, any general variant-a effect, and any prevalence estimate"
+  },
+  {
+   "cell": "ar-tenterhook_22_a",
+   "selector": "cash_application:cash-application-development-2:ar-tenterhook:22:a",
+   "claim": "adding ONLY the closing-register rows for the in-period invoices the submission omitted, at their period basis with nothing applied, credited or written off, takes A to 1.000000 and leaves every other state as delivered",
+   "rows_added": [
+    {
+     "invoice_id": "SI-7346",
+     "customer": "Glenhaven Resorts Company",
+     "period_basis": "3180.00",
+     "applied_total": "0.00",
+     "credited": "0.00",
+     "written_off": "0.00",
+     "remaining": "3180.00"
+    },
+    {
+     "invoice_id": "SI-7351",
+     "customer": "Ivyrise Contract Interiors",
+     "period_basis": "1166.00",
+     "applied_total": "0.00",
+     "credited": "0.00",
+     "written_off": "0.00",
+     "remaining": "1166.00"
+    },
+    {
+     "invoice_id": "SI-7353",
+     "customer": "Aldergate Facilities Group",
+     "period_basis": "1802.00",
+     "applied_total": "0.00",
+     "credited": "0.00",
+     "written_off": "0.00",
+     "remaining": "1802.00"
+    }
+   ],
+   "files": {
+    "delivered": "counterfactual/ar-tenterhook_22_a/cash_application.delivered.json",
+    "corrected": "counterfactual/ar-tenterhook_22_a/cash_application.corrected.json",
+    "diff": "counterfactual/ar-tenterhook_22_a/cash_application.diff",
+    "delivered_sha256": "a34b7dfac5ece2ccd14a91df51ed0a43bf1cb52fcee3b6e0862e344781607fe8",
+    "corrected_sha256": "3cd0ea585aa5c8f3d37f663455d206590151914dcfdec0c398f65ee3a35b9a38",
+    "diff_sha256": "fbf759cd7654f9bb3a7bc91e557a5ea04e67f17ed417bf2e8205eea960a55a16"
+   },
+   "diff": {
+    "added_lines": 27,
+    "removed_lines": 0,
+    "additive_only": true,
+    "hunks": 1
+   },
+   "delivered": {
+    "engine": "application/1",
+    "total": "0.625000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "0.750000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [
+     [
+      "ar_tie_break",
+      "remaining 13537.00 - unapplied 0.00 != closing receivables 19685.00"
+     ]
+    ],
+    "receipt_states": {
+     "2025-01-08:GLENHAVEN PAYRUN 0106": "RECEIPT_EXACT",
+     "2025-01-16:IVYRISE PAYRUN 0113": "RECEIPT_EXACT",
+     "2025-01-22:IVYRISE PAYRUN 0120": "RECEIPT_EXACT",
+     "2025-01-28:GLENHAVEN PAYRUN 0127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-7301": "INVOICE_EXACT",
+     "SI-7303": "INVOICE_EXACT",
+     "SI-7311": "INVOICE_EXACT",
+     "SI-7313": "INVOICE_EXACT",
+     "SI-7321": "INVOICE_EXACT",
+     "SI-7326": "INVOICE_EXACT",
+     "SI-7328": "INVOICE_EXACT",
+     "SI-7330": "INVOICE_EXACT",
+     "SI-7332": "INVOICE_EXACT",
+     "SI-7346": "INVOICE_MISSING",
+     "SI-7351": "INVOICE_MISSING",
+     "SI-7353": "INVOICE_MISSING"
+    },
+    "credit_states": {
+     "CN-723": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_CONTRADICTS",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "0f342916598b394fc11c14513c3fc04046390b8b0ec4ccada94f20aa3c3f4710",
+    "result_digest": "3a0051aa3a795311b1b537358003bfc4250c67f3c98cc9c20e55c9fcf894561e"
+   },
+   "corrected": {
+    "engine": "application/1",
+    "total": "1.000000",
+    "components": {
+     "receipts_exact": "1.000000",
+     "register_exact": "1.000000",
+     "credit_exact": "1.000000"
+    },
+    "penalties": [],
+    "receipt_states": {
+     "2025-01-08:GLENHAVEN PAYRUN 0106": "RECEIPT_EXACT",
+     "2025-01-16:IVYRISE PAYRUN 0113": "RECEIPT_EXACT",
+     "2025-01-22:IVYRISE PAYRUN 0120": "RECEIPT_EXACT",
+     "2025-01-28:GLENHAVEN PAYRUN 0127": "RECEIPT_EXACT"
+    },
+    "invoice_states": {
+     "SI-7301": "INVOICE_EXACT",
+     "SI-7303": "INVOICE_EXACT",
+     "SI-7311": "INVOICE_EXACT",
+     "SI-7313": "INVOICE_EXACT",
+     "SI-7321": "INVOICE_EXACT",
+     "SI-7326": "INVOICE_EXACT",
+     "SI-7328": "INVOICE_EXACT",
+     "SI-7330": "INVOICE_EXACT",
+     "SI-7332": "INVOICE_EXACT",
+     "SI-7346": "INVOICE_EXACT",
+     "SI-7351": "INVOICE_EXACT",
+     "SI-7353": "INVOICE_EXACT"
+    },
+    "credit_states": {
+     "CN-723": "CREDIT_EXACT"
+    },
+    "tie_states": {
+     "ar": "AR_TIE_OK",
+     "writeoff": "WRITEOFF_TIE_OK"
+    },
+    "status": "delivered",
+    "delivered": true,
+    "application_digest": "13ab29633f1d1e54aea5c7bcfbf781e51352fd6f3f1ba44f300d0f93794b9752",
+    "result_digest": "54b4690e2868861089dbaa08367bbca8284b4ed051b28b1161d2f7cafb7c37c4"
+   },
+   "everything_else_unchanged": {
+    "receipt_states": true,
+    "credit_states": true,
+    "other_invoice_states": true,
+    "ledger_bytes": true
+   },
+   "composite": {
+    "delivered": "0.625000",
+    "corrected": "1.000000",
+    "L": "1.000000 (live, not recomputed)",
+    "complete_corrected": "candidate/1 holds total == 1 <=> complete, so a live L of 1.000000 is a complete ledger; with A = 1.000000 and no penalty label the composite would be complete. Asserted from the shipped invariant, not replayed."
+   },
+   "what_this_does_not_show": "why the solver omitted the rows, any general variant-a effect, and any prevalence estimate"
+  }
+ ],
+ "consumption": {
+  "scored_episodes": 9,
+  "input_tokens": 926855,
+  "output_tokens": 157237,
+  "total_tokens": 1084092,
+  "captured_responses": 64,
+  "mean_per_scored_episode": 120454.7,
+  "range_per_episode": [
+   97137,
+   163908
+  ],
+  "per_episode": {
+   "cash-application-development-2:ar-tenterhook:24:a": 163908,
+   "cash-application-development-2:cr-pikestaff:6:b": 97435,
+   "cash-application-development-2:cr-pikestaff:6:a": 99811,
+   "cash-application-development-2:ar-tenterhook:22:b": 133777,
+   "cash-application-development-2:fc-quarrymill:4:b": 125444,
+   "cash-application-development-2:ar-tenterhook:22:a": 120711,
+   "cash-application-development-2:fc-quarrymill:4:a": 97137,
+   "cash-application-development-2:cr-pikestaff:12:b": 132284,
+   "cash-application-development-2:ar-tenterhook:24:b": 113585
+  },
+  "statement": "The nine scored episodes recorded 1,084,092 provider-reported tokens. The next scheduled cell encountered a quota-exhaustion 403; its usage was not preserved in a result row. These records do not reconcile provider-reported usage to the console's quota debits.",
+  "cell_10_usage": "UNKNOWN -- attempted, never recorded; not zero"
+ },
+ "service_attribution": {
+  "raw_records": "unedited: every row still says provider 'nvidia'",
+  "recorded_provider_field": [
+   "nvidia"
+  ],
+  "recorded_endpoint": [
+   "https://ws-r76rtaa6sn7jqbcr.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+  ],
+  "serving_service": "Alibaba Cloud Model Studio (ap-southeast-1 maas endpoint)",
+  "correction": "The `provider` column is a DRIVER / PACING label inside measure_budget, not the identity of the service that served these episodes. The nine episodes were served by the Alibaba endpoint recorded on every row. Read the column as the client path taken, never as the provider.",
+  "requested_model": [
+   "qwen3.7-max-2026-05-20"
+  ],
+  "returned_model_names": [
+   "qwen3.7-max-2026-05-20"
+  ],
+  "returned_matches_requested": true,
+  "system_fingerprints": "all null",
+  "captured_responses": 64
+ },
+ "problems": []
+}
