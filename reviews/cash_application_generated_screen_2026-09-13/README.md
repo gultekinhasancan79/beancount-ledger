@@ -15,7 +15,7 @@ that says so on its face. No observed submission is overwritten anywhere in this
 | `counterfactual/<cell>/cash_application.delivered.json` | a byte-identical copy of that cell's delivered register, so the diff has both sides beside it. **Observed.** |
 | `counterfactual/<cell>/cash_application.corrected.json` | the minimal correction: the delivered document with ONLY the omitted closing rows added. **Post-run analysis.** |
 | `counterfactual/<cell>/cash_application.diff` | the exact unified diff between the two. One hunk, purely additive. |
-| `rescore_cash_screen_1.py` | the executable rescore. Run it; it rebuilds every figure below. |
+| `rescore_cash_screen_1.py` | the executable rescore. Run it; it rebuilds every figure below, and its output is byte-identical to the published record in every field except `written_at`, which carries the time of the run. |
 | `rescore_cash_screen_1.json` | its record: per-cell bindings, both decompositions, the counterfactual, the consumption arithmetic and the service-attribution audit. **Post-run analysis.** |
 | `cash_screen_1_selection.py` | the script that froze the selection before any model call. Published beside the record it produced (`reviews/cash_screen_1_selection_2026-09-13.json`), which the ruling asked for: neither may live only in scratch. |
 | `cash_screen_1_runner.log` | the runner's console log, including the 403 that ended the run. It is the cell-10 reconstruction's evidence. **Observed.** |

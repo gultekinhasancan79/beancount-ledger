@@ -195,10 +195,10 @@ Hub, which still cannot mint.
 | file | sha256 |
 |---|---|
 | `README.md` | `b7a5762040032f181bffcb0b2dae491f9ad62652ae5014e0429f55074ee4e9fb` |
-| `docs/REFERENCE.md` | `c7f3c26ea8655a17e84893ac046dc435e0cc22cf268f737628af52d78c896418` |
+| `docs/REFERENCE.md` | `c4924fc7d3b17ef0be6e23eaf42676cd27e7c4b2a6b04ec5a2b78b67fc931737` (was `c7f3c26e…` before its stale tests/ file count was corrected) |
 | `pyproject.toml` | `7f3eb5dd8ae8745c4fd838c33b1e315ab0c37ee2c86eddb51e5566137dd08627` |
 | `reviews/cash_application_development_population_2026-09-13_replacement.md` | `537669a639d4f63170ea05186f090b3725b497ec82142ed7eb7d817ecbcff5ed` |
-| `reviews/cash_application_generated_screen_2026-09-13.md` | `c2eb50f53b7f82c052cc76cdd764aaff3a06283edff3c80d0279676816519043` |
+| `reviews/cash_application_generated_screen_2026-09-13.md` | `252c62b9e9cccf6c17b51dce50ebf6a18af256f404fae63d5d6fa688c9aeb1d8` (was `c2eb50f5…` before its service-attribution sentence was repaired) |
 | `reviews/installable_serving_check_2026-09-14/README.md` | `44aaef2dc9431afa400476c040ad48e290baee3372e5f4c8ef90b97e4358ccc4` |
 | `reviews/installable_serving_check_2026-09-14/installable_serving_0.3.0.json` | `16a022a6319e0be73372fac3e4992e548168482f2ea5f7c5c462ab3e1f736621` |
 | `reviews/installable_serving_check_2026-09-14/installed_wheel_recheck_0.3.0.json` | `b4393d43eb73ed24ab68c476421115a63481f771cda1e68f15ac069269d109a5` |
@@ -1063,7 +1063,7 @@ the same files after the corrections above.
 | file | at release | now |
 |---|---|---|
 | README.md | `2874b8a4…` | `479bf43f11c6a459a0cd9cc9b9504a32534cb24f473d98ee0f40eeea98f74b68` |
-| docs/REFERENCE.md | `c136da7a…` | `34d419fa965e0f09d938b8cb89c3bad50a6c9a6d3a244310eed95a94054ef98f` |
+| docs/REFERENCE.md | `c136da7a…` | `c4924fc7d3b17ef0be6e23eaf42676cd27e7c4b2a6b04ec5a2b78b67fc931737` (was `34d419fa…` before its stale tests/ file count was corrected) |
 | reviews/cash_application_six_variant_screen_2026-09-11.md | `835ab184…` | `4a2b42fa95a6b90905d1888e9621d1e648da900dfa06dc79b3673dbe40efa890` |
 | reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py | new | `893f2e6f56c5135d81a635af55cb7de91676921dac5c109e3e4ad6844668dc48` |
 | reviews/installed_wheel_check_2026-09-12/README.md | new | `436553e9e0fbb0011460b71cf5372f8e237a7071b745127953b667d09ee666cf` (was `8ff091a8…` before its opening sentence was qualified) |

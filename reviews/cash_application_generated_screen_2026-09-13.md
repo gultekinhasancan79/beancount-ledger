@@ -169,9 +169,10 @@ spent the allowance twelve were budgeted for. Cell 10's usage is `UNKNOWN`, not 
 
 ## 4. Service attribution
 
-Every row records `provider: nvidia` while recording the endpoint
-an `ap-southeast-1.maas.aliyuncs.com` compatible-mode endpoint. **The raw records are preserved
-unedited; the correction is made here, in analysis.**
+Every row records `provider: nvidia` while recording an
+`ap-southeast-1.maas.aliyuncs.com` compatible-mode endpoint — that is, the label names one service
+and the address names another. The endpoint is authoritative: the episodes ran against Alibaba Model
+Studio. **The raw records are preserved unedited; the correction is made here, in analysis.**
 
 - The nine episodes were served by **Alibaba Cloud Model Studio**, at the `ap-southeast-1` endpoint
   recorded on every row.
