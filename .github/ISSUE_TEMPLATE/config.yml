@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Installation and local walkthrough
+    url: https://github.com/gultekinhasancan79/beancount-ledger#quickstart
+    about: Start here to install the package and inspect the current scorer without a model call.
