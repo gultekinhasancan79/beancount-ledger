@@ -1,0 +1,121 @@
+{
+ "describes": {
+  "hub_entry": "cangultekn/beancount-ledger (0.2.0 as of 2026-09-14; 0.3.0 is the owner's upload, and it is a new version, not a rebuilt 0.2.0)",
+  "package_version": "0.3.0",
+  "release_artifact": {
+   "measured_in": "reviews/installable_serving_check_2026-09-14/",
+   "members": 75,
+   "runtime_members": 71,
+   "wheel": "beancount_ledger-0.3.0-py3-none-any.whl",
+   "wheel_bytes": 657365,
+   "wheel_sha256": "52665840cfff99813ef65248f162fefaa43b56c48b886f42668adc1e6dfc8457"
+  },
+  "source_commit": "9d59c078eec91792b1d1a5983e724d6cf928fae6"
+ },
+ "episode_contracts": {
+  "cash_application": {
+   "digest": "b11bc1acf02b7e08c9cea7d42e73b7970756bd9a979b3134c9049e76e6571b9f",
+   "profile": "cash_application",
+   "reference_task": "cash_application_001"
+  },
+  "legacy": {
+   "digest": "e8b8753de3e7ce1f10d4ddc8470589128b8b9b8e15fd67bfeca5102f107ad866",
+   "profile": "legacy",
+   "reference_task": "bank_recon_001"
+  },
+  "note": "episode settings (turns, token budgets) are part of the contract digest; rows taken under different budgets are different arms and must never be pooled"
+ },
+ "family_freeze": {
+  "declared": {
+   "baseline_catalogue": "cash_application_baselines/1",
+   "binding_baselines": 9,
+   "construction_version": 1,
+   "development_population": "cash-application-development-2",
+   "diagnostic_baselines": 1,
+   "family": "cash_application",
+   "family_generator_version": 1,
+   "family_manifest_schema": 1,
+   "family_preflight_contract": 2,
+   "gate_count": 31,
+   "gate_set_digest": "2491e97f97b48cee",
+   "gate_version": 2,
+   "max_baseline_readings": 256,
+   "max_layout_attempts": 64,
+   "population_schema": 1,
+   "profile": "bounded-v1",
+   "profile_digest": "310e96729061410467f0e4285976743f",
+   "split_map_digest": "c41f5d150aec53ccce514f7123206ac5",
+   "split_map_schema": 1,
+   "structure_schema": 1,
+   "superseded_populations": [
+    "cash-application-development-1"
+   ],
+   "template_version": 1
+  },
+  "digest": "b371a45a0186648e40c7aa18f03efb28",
+  "schema": 1
+ },
+ "library_versions": {
+  "beancount": "3.2.3",
+  "datasets": "5.0.1",
+  "griffelib": "2.2.0",
+  "openai": "3.5.0",
+  "openai-agents": "0.22.0",
+  "pydantic": "2.13.4",
+  "pydantic-core": "2.46.4",
+  "verifiers": "0.3.1"
+ },
+ "runtime_scoped_by_unicode_database": {
+  "note": "the parser component is parse_policy_digest(); it records unicodedata.unidata_version, so it is pinned per Unicode database with the provenance tests/unicode_pins.py requires. A database this table does not carry is an UNVERIFIED runtime for this pack, not a passing one.",
+  "rows": {
+   "14.0.0": {
+    "parser": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
+    "provenance": {
+     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+     "method": "derived-by-substitution",
+     "native_confirmation": "confirmed natively by the CI battery job (.github/workflows/ci.yml, ubuntu-latest, CPython 3.11 / unicode 14.0.0), which runs this suite and compares this row strictly on every push to main, every v* tag, and every pull request"
+    },
+    "scorer_contract_digest": "d1b7131ad316962490fcec637ba17acf3ac1d2f4e0c69171e041622b45cac683"
+   },
+   "15.0.0": {
+    "parser": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
+    "provenance": {
+     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+     "method": "native",
+     "native_confirmation": "observed natively on CPython 3.12.12 (Windows), which ships unicode 15.0.0"
+    },
+    "scorer_contract_digest": "20ca7fb33fb1918d4bd9ac8954e9e3336ae8aa83b8cdfeeb8e134649523f1efa"
+   },
+   "15.1.0": {
+    "parser": "9f39ade4bcf5bc9ee174995bd7a2765e0009894d90167fbaee5a5b3c1d0a70ca",
+    "provenance": {
+     "generated_on": "CPython 3.12.12 (Windows, unicode 15.0.0)",
+     "method": "derived-by-substitution",
+     "native_confirmation": "derived by substitution on CPython 3.12 (unicode 15.0.0), then checked against a runtime that really ships unicode 15.1.0: a native CPython 3.13.11 (Windows) run of this suite and of tests/run_all.py, 34/34 suites, 2026-09-10. Linux is not confirmed yet: the ubuntu-latest CPython 3.13 battery job in .github/workflows/ci.yml runs on every push to main, every v* tag, and every pull request, so it first compares this row when this branch is opened as a pull request or merged to main -- a push of the branch itself runs no job at all."
+    },
+    "scorer_contract_digest": "3f12c01c905d62547fc8f156221ec587836e7f3615e61b1c24b0b184e5f2d5fb"
+   }
+  }
+ },
+ "schema": "piv.evaluation-pack.declaration/1",
+ "semantic_components_unicode_independent": {
+  "application_engine": "application/1",
+  "checker": 7,
+  "composite_engine": "composite/1",
+  "family_manifest_schema": 1,
+  "family_preflight_contract": 2,
+  "gate_set": "2491e97f97b48cee",
+  "ledger_engine": {
+   "id": "candidate/1",
+   "score_reduction": 1,
+   "scorer_contract": 1,
+   "task_contract": 1
+  },
+  "public_fold": {
+   "schema": "piv.cash-application/1",
+   "version": 1
+  },
+  "reference_identity": 2,
+  "renderer": 1
+ }
+}
