@@ -14,3 +14,6 @@ tests/adversary_out/
 # own runs; nobody ships theirs.
 outputs/
 docs/replay.html
+# machine-specific notes for AI collaborators (see AGENTS.md); never committed
+AGENTS.local.md
+CLAUDE.md
