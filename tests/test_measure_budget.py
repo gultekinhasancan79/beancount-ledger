@@ -60,6 +60,7 @@ import asyncio
 import copy
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -7688,6 +7689,36 @@ def test_the_assess_door_runs_on_a_cash_application_selector():
                  not problems, "\n".join(problems))
 
 
+
+def test_the_model_slug_is_a_file_name_and_published_names_do_not_move():
+    """A `:free` model id must not write the rows into an NTFS alternate data
+    stream: on Windows `open("budget_x:free.json", "w")` succeeds and leaves a
+    zero-byte `budget_x` with the JSON hidden in a stream named `free.json`,
+    invisible to listings and globs. Informed by the pre-run check for the
+    first OpenRouter screen (14 Sep 2026). Ids that were already file-safe
+    keep the stem they published under."""
+    problems = []
+    for model, want in (("nvidia/nemotron-3-ultra-550b-a55b:free", "nemotron-3-ultra-550b-a55b_free"),
+                        ("inclusionai/ling-3.0-flash-fin:free", "ling-3.0-flash-fin_free"),
+                        ("alibaba/qwen3.7-max-2026-05-20", "qwen3.7-max-2026-05-20"),
+                        ("qwen3.7-max-2026-05-20", "qwen3.7-max-2026-05-20"),
+                        ("devstral-2512", "devstral-2512"),
+                        ("moonshotai/kimi-k3", "kimi-k3")):
+        got = mb.model_slug(model)
+        if got != want:
+            problems.append(f"{model!r} -> {got!r}, expected {want!r}")
+        if re.search(r"[^A-Za-z0-9._-]", got):
+            problems.append(f"{model!r} -> {got!r} still carries a character a file name cannot")
+    for bad in ("nvidia/", "", "/"):
+        try:
+            mb.model_slug(bad)
+            problems.append(f"{bad!r} produced a stem instead of a refusal")
+        except SystemExit:
+            pass
+    return check("the model slug is a file name: `:free` ids cannot land in an alternate data stream, and "
+                 "every id that was already file-safe keeps the stem it published under",
+                 not problems, "\n".join(problems))
+
 TESTS = [
     test_no_write_is_no_artifact_no_write,
     test_refused_write_is_no_artifact_write_refused,
@@ -7791,6 +7822,7 @@ TESTS = [
     test_a_register_that_bound_without_its_ledger_still_decomposes,
     test_a_cancelled_cell_is_recorded_as_cancelled_and_the_cancellation_propagates,
     test_a_legacy_rollouts_breakdown_and_archive_are_unchanged_in_shape,
+    test_the_model_slug_is_a_file_name_and_published_names_do_not_move,
 ]
 
 

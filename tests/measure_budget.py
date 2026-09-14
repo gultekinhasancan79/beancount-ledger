@@ -2986,6 +2986,25 @@ def cell_slug(selector: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", selector)
 
 
+def model_slug(model: str) -> str:
+    """The requested model id as a FILE NAME STEM: the last path segment with
+    every character outside `[A-Za-z0-9._-]` flattened to `_`.
+
+    Why this exists: OpenRouter's free variants end in `:free`, and on NTFS a
+    colon in a file name does not fail — `budget_x:free_2026.json` is written
+    into an alternate data stream named `free_2026.json` on a zero-byte file
+    called `budget_x`, so the rows, the census and the start journal all
+    silently vanish from every directory listing and every glob. Ids that
+    were already file-safe (`qwen3.7-max-2026-05-20`, `devstral-2512`) come
+    back unchanged, so no published file name moves. The requested id itself
+    is still recorded verbatim in every row's `model`; only the stem changes.
+    """
+    stem = model.split("/")[-1]
+    if not stem:
+        raise SystemExit(f"--model {model!r} has no file-safe stem")
+    return re.sub(r"[^A-Za-z0-9._-]", "_", stem)
+
+
 def submitted_texts(completion, write_tools) -> list[dict]:
     """Every text the agent actually SUBMITTED through a write tool, in call
     order, exactly as it sent it.
@@ -4520,7 +4539,7 @@ def main() -> int:
     out_dir = ROOT / "reviews"
     out_dir.mkdir(exist_ok=True)
     stamp = (args.stamp_date or datetime.now().strftime("%Y-%m-%d")) + (f"_{args.tag}" if args.tag else "")
-    slug = args.model.split("/")[-1]
+    slug = model_slug(args.model)
     row_path = out_dir / f"budget_{slug}_{stamp}.json"
     # BEFORE the first provider call, and once — not per write: the row file
     # is rewritten after every selector, so a per-write check would refuse
