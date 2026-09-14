@@ -74,3 +74,5 @@ The JSON includes task ID, public filenames, engine IDs, per-criterion values, f
 - [Acceptance and adversarial tests](../tests/test_cash_application_scoring.py)
 
 To evaluate an actual model, use the separate [model-run workflow](REFERENCE.md#sample-vf-eval-runs-raw-transcripts-included). Its result depends on the chosen model, provider settings, and task; the reference walkthrough makes no prediction about that result.
+
+To evaluate your own models on fresh keyed instances of the generated cash-application population, under your own evaluator key and with a result record comparable to the published screens, use the [evaluation pack](evaluation_pack/PACK.md).
