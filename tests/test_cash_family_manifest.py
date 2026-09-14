@@ -52,6 +52,7 @@ from beancount_ledger.graph.cash_split import MECHANISMS, SplitMap, TemplateFami
 from unicode_pins import (  # noqa: E402
     NATIVE_UNICODE_VERSION,
     UnicodeScopedPins,
+    derived,
     observed,
     substituted_unicode_version,
 )
@@ -86,11 +87,27 @@ RUNTIME_SCOPED = UnicodeScopedPins(
     name="the cash-application family manifest's runtime-scoped components",
     source="tests/test_cash_family_manifest.py (RUNTIME_SCOPED)",
     rows={
-        "15.0.0": {
+        "14.0.0": {                                                   # CPython 3.11
+            "parser": "f06b3513de395193cb0eb437be28ca63b6fd4830c9cb79689e440d21d84950bd",
+            "provenance": derived(
+                "CPython 3.12.12 (Windows, unicode 15.0.0), by substituting the version string",
+                cross_check="equals the 14.0.0 parse_policy_digest that tests/legacy_freeze.json's "
+                            "unicode_scoped map pins (f06b3513…), a row the ubuntu 3.11 CI job confirms "
+                            "natively; the parser component IS parse_policy_digest()"),
+        },
+        "15.0.0": {                                                   # CPython 3.12
             "parser": "623ebaf29e32250d4d7f4aee98e30da6feea015ce6d3daa8ac4f1a3814dbc6a0",
             "provenance": observed(
                 "CPython 3.12.12 (Windows, unicode 15.0.0)",
                 "observed natively on CPython 3.12.12 (Windows), which ships unicode 15.0.0"),
+        },
+        "15.1.0": {                                                   # CPython 3.13
+            "parser": "9f39ade4bcf5bc9ee174995bd7a2765e0009894d90167fbaee5a5b3c1d0a70ca",
+            "provenance": derived(
+                "CPython 3.12.12 (Windows, unicode 15.0.0), by substituting the version string",
+                cross_check="equals the 15.1.0 parse_policy_digest that tests/legacy_freeze.json's "
+                            "unicode_scoped map pins (9f39ade4…), a row the ubuntu 3.13 CI job confirms "
+                            "natively; the parser component IS parse_policy_digest()"),
         },
     },
     value_keys=("parser",),

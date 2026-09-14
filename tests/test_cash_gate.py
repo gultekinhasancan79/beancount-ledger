@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime as _dt
+import inspect
 import sys
 from decimal import Decimal as D
 from pathlib import Path
@@ -1030,8 +1031,11 @@ MINTING_DOCSTRING = (
 
 def test_the_minting_docstring_is_verbatim():
     problems = []
-    doc = G.mint_group.__doc__ or ""
-    head = doc.split("\n\n    ---", 1)[0]
+    # `inspect.cleandoc` first: CPython 3.13 strips the common indentation from
+    # docstrings at compile time and 3.11/3.12 do not, so the raw `__doc__` is
+    # NOT the same string across the CI matrix. Cleaned, it is.
+    doc = inspect.cleandoc(G.mint_group.__doc__ or "")
+    head = doc.split("\n\n---", 1)[0]
     flattened = " ".join(head.split())
     if flattened != MINTING_DOCSTRING:
         problems.append(f"the minting docstring reads:\n{flattened}\n\nand the ruling's paragraph is:\n"
