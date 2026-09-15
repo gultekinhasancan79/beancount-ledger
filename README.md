@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%E2%80%933.13-blue.svg)](pyproject.toml)
 
+> **Reference snapshot.** This public repository is frozen at its state of 15 September 2026 and archived
+> (read-only). Development continues in a private repository. Everything here stays as it was published:
+> the code, the tests, the evidence records and the release attestation.
+
 **An environment for evaluating AI agents on bookkeeping and cash application, with inspectable, deterministic scoring.**
 
 Agents read accounting evidence, repair a Beancount ledger, and, for cash-application tasks, deliver a register of payments and invoice balances. The evaluator checks the work against the task's accounting facts and reports the criteria behind the reward.
@@ -112,4 +116,4 @@ If you evaluate accounting agents or build task graders, start with the local wa
 
 [Contribution guide](CONTRIBUTING.md) · [Report a bug or give evaluation feedback](https://github.com/gultekinhasancan79/beancount-ledger/issues/new/choose)
 
-Built by [Hasancan Gültekin](https://github.com/gultekinhasancan79) on [Prime Intellect's verifiers](https://github.com/PrimeIntellect-ai/verifiers). [Email](mailto:gultekinhasancan79@gmail.com) · [LinkedIn](https://linkedin.com/in/can79) · [Manifund project](https://manifund.org/projects/beancount-ledger-a-deterministic-reward-rl-environment-for-agentic-bookkeeping).
+Built by [Hasancan Gültekin](https://github.com/gultekinhasancan79) on [Prime Intellect's verifiers](https://github.com/PrimeIntellect-ai/verifiers). [Email](mailto:gultekinhasancan79@gmail.com) · [LinkedIn](https://linkedin.com/in/can79).

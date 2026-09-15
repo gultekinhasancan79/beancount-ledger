@@ -194,7 +194,7 @@ Hub, which still cannot mint.
 
 | file | sha256 |
 |---|---|
-| `README.md` | `0821837586904b49b39cef69216795db36d3406893729b8de7269b35ced35c7c` (was `b7a57620…` before the merge with main's contributor-facing rewrite; 0.3.0 facts folded into that structure) |
+| `README.md` | `17648aedce713dd554b6515ef1b6289be32321d14f7b4fd19ff5aff3f8fd18c8` (was `08218375…` before the 15 September 2026 reference-snapshot note and the removal of one external link; before that `b7a57620…` before the merge with main's contributor-facing rewrite; 0.3.0 facts folded into that structure) |
 | `docs/REFERENCE.md` | `c4924fc7d3b17ef0be6e23eaf42676cd27e7c4b2a6b04ec5a2b78b67fc931737` (was `c7f3c26e…` before its stale tests/ file count was corrected) |
 | `pyproject.toml` | `7f3eb5dd8ae8745c4fd838c33b1e315ab0c37ee2c86eddb51e5566137dd08627` |
 | `reviews/cash_application_development_population_2026-09-13_replacement.md` | `537669a639d4f63170ea05186f090b3725b497ec82142ed7eb7d817ecbcff5ed` |
@@ -1062,7 +1062,7 @@ the same files after the corrections above.
 
 | file | at release | now |
 |---|---|---|
-| README.md | `2874b8a4…` | `0821837586904b49b39cef69216795db36d3406893729b8de7269b35ced35c7c` (was `479bf43f…` before the merge with main's contributor-facing rewrite) |
+| README.md | `2874b8a4…` | `17648aedce713dd554b6515ef1b6289be32321d14f7b4fd19ff5aff3f8fd18c8` (was `08218375…` before the 15 September 2026 reference-snapshot note; before that `479bf43f…` before the merge with main's contributor-facing rewrite) |
 | docs/REFERENCE.md | `c136da7a…` | `c4924fc7d3b17ef0be6e23eaf42676cd27e7c4b2a6b04ec5a2b78b67fc931737` (was `34d419fa…` before its stale tests/ file count was corrected) |
 | reviews/cash_application_six_variant_screen_2026-09-11.md | `835ab184…` | `4a2b42fa95a6b90905d1888e9621d1e648da900dfa06dc79b3673dbe40efa890` |
 | reviews/installed_wheel_check_2026-09-12/installed_wheel_check.py | new | `893f2e6f56c5135d81a635af55cb7de91676921dac5c109e3e4ad6844668dc48` |
