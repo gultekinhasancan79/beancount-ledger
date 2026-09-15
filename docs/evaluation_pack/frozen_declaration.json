@@ -96,7 +96,7 @@
   "written_on": {
    "baseline_catalogue_digest": "b7fa69753bcf1f5e732968f2819696a4",
    "import_path": "beancount_ledger",
-   "observed_checkout_commit": "8abffe0995d7f5964cec499a81f166519d6d5c49",
+   "observed_checkout_commit": "47c98e7623f46a13eac2555ab4fc71f7a9a2158c",
    "runtime": {
     "implementation": "CPython",
     "machine": "AMD64",

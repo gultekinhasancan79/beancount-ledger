@@ -638,8 +638,8 @@
    "sha256": "76c20c5ebda5010f205f25d146ef99c69526538c205053a3743e26e4252077ca"
   },
   "tests/test_measure_budget.py": {
-   "bytes": 498697,
-   "sha256": "fd18361639b425c4be758d0142cbdad4809e62a6dcb337cb1056a5f0cbefa426"
+   "bytes": 498884,
+   "sha256": "cfd034e82f48cc0fc4a809d95a00adb0b9e7b10420b50dad16e2c6f2a7eb75a1"
   },
   "tests/unicode_pins.py": {
    "bytes": 15121,
