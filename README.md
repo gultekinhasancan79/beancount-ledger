@@ -59,7 +59,7 @@ uv run --no-sync python tests/replay_webview.py
 
 Live model runs use your provider account. Authored tasks need no evaluator secret; generated worlds require the [operator setup](docs/REFERENCE.md).
 
-**Version and compatibility:** this README describes source **0.3.0**, using `verifiers==0.3.1` and its legacy **v0** workflow. It does not implement v1, and publishing it does not imply v1 support. The package uploaded to the Environments Hub as `cangultekn/beancount-ledger` is **0.2.0** (not publicly listed as of 23 September 2026), which contains no cash-application generation that can run installed; 0.3.0 is a new version and is not a rebuilt 0.2.0. [Compatibility details](docs/REFERENCE.md#compatibility-020).
+**Version and compatibility:** this README describes source **0.3.0.post1**: the 0.3.0 package code, unchanged, with this README. It uses `verifiers==0.3.1` and its legacy **v0** workflow. It does not implement v1, and publishing it does not imply v1 support. It is published on the Environments Hub as `cangultekn/beancount-ledger`, version **0.3.0.post1**, public, on the legacy v0 runtime. The owner deleted the earlier Hub versions 0.1.0, 0.2.0 and 0.3.0 in September 2026, and they can no longer be installed from the Hub. [Compatibility details](docs/REFERENCE.md#compatibility).
 
 ## Environment coverage
 

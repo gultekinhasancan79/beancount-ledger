@@ -56,9 +56,11 @@ no released population. No selector spells it and `freeze_selection.py` cannot c
 ## Setup
 
 1. Install the package into a fresh virtual environment, Python 3.11 to 3.13, from one of:
-   - the Environments Hub entry `cangultekn/beancount-ledger` **once its 0.3.0 upload is visible**
-     (as of 14 September 2026 the Hub carries 0.2.0, which has no installable generator; 0.3.0 is a
-     new version, not a rebuilt 0.2.0);
+   - the Environments Hub entry `cangultekn/beancount-ledger` at version **0.3.0.post1**, once the
+     owner's upload of it is visible. 0.3.0.post1 is the 0.3.0 package code with a corrected README;
+     the identities `check_pack.py` verifies (freeze, semantic components, episode contracts, pins)
+     are the same for both. The owner deleted the Hub's 0.1.0, 0.2.0 and 0.3.0 in September 2026,
+     and none of them installs from the Hub (`docs/dev_journal/2026-09-24.md`);
    - the repository at the declared commit: `git clone`, `git checkout 9d59c07`, `uv venv --python 3.12`,
      `uv pip install -e .` — this is also the only way to get the runner and the evidence files.
 2. Copy this directory next to your work (it needs nothing else from the repository except for the
