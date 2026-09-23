@@ -86,7 +86,7 @@ Generated tasks are **keyed and manifested**: each world derives from an HMAC un
 
 ## Results at a glance (fixed panel)
 
-Preregistered, sealed measurement: 4 open-weight Mistral models × 6 generated tasks × 3 episode-contract arms × 2 replicates. 143 of 144 cells ran, 138 valid, **0 scorer disputes, 0 exploits**. Full table with every failure named: [`reviews/arms_confirm1v4.md`](../reviews/arms_confirm1v4.md).
+Preregistered, sealed measurement: 4 Mistral models (3 open-weight) × 6 generated tasks × 3 episode-contract arms × 2 replicates. 143 of 144 cells ran, 138 valid, **0 scorer disputes, 0 exploits**. Full table with every failure named: [`reviews/arms_confirm1v4.md`](../reviews/arms_confirm1v4.md).
 
 | Model | Arm A: 8k tok/turn, reasoning replayed | Arm B1: 16k tok/turn, replayed | Arm B2: 8k tok/turn, no replay |
 |---|---|---|---|
@@ -105,7 +105,7 @@ Two things this shows and one it does not:
 
 ## What the fixed-panel measurement showed (evidence, not a recommendation)
 
-A preregistered, sealed experiment (4 Mistral open-weight models × 6 tasks × 3 episode-contract arms × 2 replicates; 144 scheduled cells, 143 run, 138 valid, five named exogenous failures, one unrun cell — the full table with censuses and failure evidence is `reviews/arms_confirm1v4.md`):
+A preregistered, sealed experiment (4 Mistral models (3 open-weight) × 6 tasks × 3 episode-contract arms × 2 replicates; 144 scheduled cells, 143 run, 138 valid, five named exogenous failures, one unrun cell — the full table with censuses and failure evidence is `reviews/arms_confirm1v4.md`):
 
 - The reward is **capability-sensitive and non-degenerate** on the panel: small models deliver 0–17% correct, stronger ones 58–92%, with partial credit in between; 138 adversarially-hardened rollouts produced zero scorer disputes and zero exploits.
 - Episode termination works: 83–100% of episodes ended with an explicit accepted submit; the 40K ceiling never bound.

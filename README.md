@@ -2,9 +2,8 @@
 
 [![CI](https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/gultekinhasancan79/beancount-ledger/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%E2%80%933.13-blue.svg)](pyproject.toml)
 
-> **Reference snapshot.** This public repository is frozen at its state of 15 September 2026 and archived
-> (read-only). Development continues in a private repository. Everything here stays as it was published:
-> the code, the tests, the evidence records and the release attestation.
+> **Status.** This repository is active again as of 23 September 2026; it was archived as a reference
+> snapshot from 15 to 23 September 2026. The published evidence records and the release attestation are unchanged.
 
 **An environment for evaluating AI agents on bookkeeping and cash application, with inspectable, deterministic scoring.**
 
@@ -60,7 +59,7 @@ uv run --no-sync python tests/replay_webview.py
 
 Live model runs use your provider account. Authored tasks need no evaluator secret; generated worlds require the [operator setup](docs/REFERENCE.md).
 
-**Version and compatibility:** this README describes source **0.3.0**, using `verifiers==0.3.1` and its legacy **v0** workflow. It does not implement v1, and publishing it does not imply v1 support. The package published on the Environments Hub as `cangultekn/beancount-ledger` is **0.2.0**, which contains no cash-application generation that can run installed; 0.3.0 is a new version and is not a rebuilt 0.2.0. [Compatibility details](docs/REFERENCE.md#compatibility-020).
+**Version and compatibility:** this README describes source **0.3.0**, using `verifiers==0.3.1` and its legacy **v0** workflow. It does not implement v1, and publishing it does not imply v1 support. The package uploaded to the Environments Hub as `cangultekn/beancount-ledger` is **0.2.0** (not publicly listed as of 23 September 2026), which contains no cash-application generation that can run installed; 0.3.0 is a new version and is not a rebuilt 0.2.0. [Compatibility details](docs/REFERENCE.md#compatibility-020).
 
 ## Environment coverage
 
@@ -93,7 +92,7 @@ Generated cash-application selectors are evaluator-side and need the evaluator s
 
 ## Evaluation evidence
 
-- **[Fixed-panel study](reviews/arms_confirm1v4.md):** four open-weight models × six generated bank-reconciliation tasks × three episode-contract arms × two replicates. Of 144 scheduled cells, 143 ran and 138 were valid. The report records the measured source revision, results, missing cells, and limitations.
+- **[Fixed-panel study](reviews/arms_confirm1v4.md):** four Mistral models (three open-weight) × six generated bank-reconciliation tasks × three episode-contract arms × two replicates. Of 144 scheduled cells, 143 ran and 138 were valid. The report records the measured source revision, results, missing cells, and limitations.
 - **[Cash-application screens](reviews/README.md):** three small, zero-cost screens on the authored variants and one on the generated population, each one requested model ID and one attempt per cell. The generated-population screen is **incomplete**: nine scored cells, one lost to a provider quota refusal, two unattempted, against twelve planned; seven complete successes and two application-only partials whose only defect was in-period invoices omitted from the closing register — [record](reviews/cash_application_generated_screen_2026-09-13.md). Missing outcomes are left missing, never inferred.
 - **[Cold adjudication](reviews/cash_application_adjudication_2026-09-10.md):** two models of different lineages, neither a screen's subject, each shown only the public files, reconstructed the specified applications on five authored cases.
 - **[Evidence index](reviews/README.md):** dated screens, scorer audits, exploit tests, and release provenance. Each historical result belongs to its recorded task and instrument version.
