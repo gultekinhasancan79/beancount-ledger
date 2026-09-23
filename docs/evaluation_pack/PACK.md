@@ -63,6 +63,14 @@ no released population. No selector spells it and `freeze_selection.py` cannot c
      and none of them installs from the Hub (`docs/dev_journal/2026-09-24.md`);
    - the repository at the declared commit: `git clone`, `git checkout 9d59c07`, `uv venv --python 3.12`,
      `uv pip install -e .` — this is also the only way to get the runner and the evidence files.
+
+   **Known issue (24 September 2026): use Python 3.12.** With a local build of the 0.3.0.post1 wheel
+   installed, `check_pack.py` prints `PASS` on Python 3.12 (Unicode 15.0.0) only. On Python 3.11
+   (Unicode 14.0.0) and 3.13 (Unicode 15.1.0) it prints `FAIL freeze digest: live … != pack
+   b371a45a0186648e40c7aa18f03efb28`, although step 3 lists both Unicode databases as pinned. The
+   interpreter causes that `FAIL`: the same wheel passes on Python 3.12. A `check_pack.py` that
+   demands the whole-freeze digest only on the reference runtime exists on branch
+   `fix/runner-model-slug` (`47c98e7`) and is not merged (`docs/dev_journal/2026-09-24.md`).
 2. Copy this directory next to your work (it needs nothing else from the repository except for the
    evidence check).
 3. Run `python check_pack.py`. It must print `PASS` naming freeze digest
@@ -192,7 +200,10 @@ expected versus actual outcome.
 
 ## Limits of the pack itself
 
-- It describes one commit and one package version. `check_pack.py` fails on any other.
+- It describes one commit (`9d59c07`) and one package code, distributed as 0.3.0 and, with a
+  corrected README, as 0.3.0.post1. `check_pack.py` does not read the package version; it fails when
+  the freeze, the semantic components, the parser row, the episode contracts or the library pins
+  differ from the pack's.
 - Your census will differ from ours in public ids, attempt ordinals and, possibly, exhaustion: the
   published census (96 admitted, 98 attempts, 0 exhausted) is a property of our key's draw. As a
   second data point, the pack's own scripts were run before publication under a throwaway key on
