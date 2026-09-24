@@ -68,9 +68,14 @@ no released population. No selector spells it and `freeze_selection.py` cannot c
    installed, `check_pack.py` prints `PASS` on Python 3.12 (Unicode 15.0.0) only. On Python 3.11
    (Unicode 14.0.0) and 3.13 (Unicode 15.1.0) it prints `FAIL freeze digest: live … != pack
    b371a45a0186648e40c7aa18f03efb28`, although step 3 lists both Unicode databases as pinned. The
-   interpreter causes that `FAIL`: the same wheel passes on Python 3.12. A `check_pack.py` that
-   demands the whole-freeze digest only on the reference runtime exists on branch
-   `fix/runner-model-slug` (`47c98e7`) and is not merged (`docs/dev_journal/2026-09-24.md`).
+   interpreter causes that `FAIL`: the same wheel passes on Python 3.12. That `PASS` also needs a
+   copy of this directory outside a repository checkout: run inside a checkout, the evidence check
+   fails on every Python (seven rows were hashed from CRLF working copies of LF-stored files, and one
+   indexed file changed after indexing). A `check_pack.py` that demands the whole-freeze digest only
+   on the reference runtime exists on the unmerged branch `fix/runner-model-slug` (`47c98e7`), but it
+   is not a drop-in repair: it also requires the installed version to equal the declared 0.3.0, so it
+   rejects 0.3.0.post1 as it stands, and merging it rewrites `frozen_declaration.json` in place
+   (`docs/dev_journal/2026-09-24.md`).
 2. Copy this directory next to your work (it needs nothing else from the repository except for the
    evidence check).
 3. Run `python check_pack.py`. It must print `PASS` naming freeze digest
