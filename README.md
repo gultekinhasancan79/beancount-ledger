@@ -9,7 +9,7 @@
 
 Agents read accounting evidence, repair a Beancount ledger, and, for cash-application tasks, deliver a register of payments and invoice balances. The evaluator checks the work against the task's accounting facts and reports the criteria behind the reward.
 
-[Try the scorer](#quickstart) · [What gets checked](#what-gets-checked) · [Evaluation evidence](#evaluation-evidence) · [Technical reference](docs/REFERENCE.md)
+[Try the scorer](#quickstart) · [What gets checked](#what-gets-checked) · [Evaluation evidence](#evaluation-evidence) · [Technical reference](docs/REFERENCE.md) · [Environments Hub listing](https://app.primeintellect.ai/dashboard/environments/cangultekn/beancount-ledger)
 
 ![Accounting evidence leads to a ledger and payment register, evaluated through ledger criteria, application criteria, and a completion check.](docs/assets/scoring-overview.svg)
 
@@ -59,7 +59,7 @@ uv run --no-sync python tests/replay_webview.py
 
 Live model runs use your provider account. Authored tasks need no evaluator secret; generated worlds require the [operator setup](docs/REFERENCE.md).
 
-**Version and compatibility:** this README describes source **0.3.0.post1**: the 0.3.0 package code, unchanged, with this README. It uses `verifiers==0.3.1` and its legacy **v0** workflow. It does not implement v1, and publishing it does not imply v1 support. It is published on the Environments Hub as `cangultekn/beancount-ledger`, version **0.3.0.post1**, public, on the legacy v0 runtime. The owner deleted the earlier Hub versions 0.1.0, 0.2.0 and 0.3.0 in September 2026, and they can no longer be installed from the Hub. [Compatibility details](docs/REFERENCE.md#compatibility).
+**Version and compatibility:** this README describes source **0.3.0.post1**: the 0.3.0 package code, unchanged, with this README. It uses `verifiers==0.3.1` and its legacy **v0** workflow. It does not implement v1, and publishing it does not imply v1 support. It is published on the Environments Hub as [`cangultekn/beancount-ledger`](https://app.primeintellect.ai/dashboard/environments/cangultekn/beancount-ledger), version **0.3.0.post1**, public, on the legacy v0 runtime. The owner deleted the earlier Hub versions 0.1.0, 0.2.0 and 0.3.0 in September 2026, and they can no longer be installed from the Hub. [Compatibility details](docs/REFERENCE.md#compatibility).
 
 ## Environment coverage
 
